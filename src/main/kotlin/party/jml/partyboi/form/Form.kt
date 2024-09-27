@@ -3,6 +3,7 @@ package party.jml.partyboi.form
 import arrow.core.*
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import party.jml.partyboi.data.Validateable
@@ -11,7 +12,7 @@ import party.jml.partyboi.errors.FormError
 import party.jml.partyboi.errors.InternalServerError
 import party.jml.partyboi.errors.ValidationError
 import java.io.File
-import kotlin.io.use
+import java.io.InputStream
 import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 
@@ -49,25 +50,21 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T) {
                 val ctor = T::class.primaryConstructor ?: throw NotImplementedError("Primary constructor missing")
 
                 var stringParams: MutableMap<String, String> = mutableMapOf()
-                val fileParams: MutableMap<String, PartData.FileItem> = mutableMapOf()
+                val fileParams: MutableMap<String, FileUpload> = mutableMapOf()
 
                 parameters.forEachPart { part ->
                     val name = part.name ?: throw Error("Anonymous parameters not supported")
                     when (part) {
-                        is PartData.FormItem -> {
-                            stringParams[name] = part.value
-                            part.dispose()
+                        is PartData.FormItem -> stringParams[name] = part.value
+                        is PartData.FileItem -> {
+                            fileParams[name] = FileUpload(
+                                name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
+                                source = part.streamProvider()
+                            )
                         }
-                        is PartData.FileItem -> fileParams[name] = part
-                        is PartData.BinaryItem -> {
-                            part.dispose()
-                            throw Error("Binary parameters not supported")
-                        }
-                        is PartData.BinaryChannelItem -> {
-                            part.dispose()
-                            throw Error("Binary channel parameters not supported")
-                        }
+                        else -> {}
                     }
+                    part.dispose()
                 }
 
                 val args: List<Any> = ctor.valueParameters.map {
@@ -83,11 +80,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T) {
                             try { stringValue.toInt() } catch (_: NumberFormatException) { -1 }
                         }
                         "party.jml.partyboi.form.FileUpload" -> {
-                            val part = fileParams.get(name) ?: throw Error("File parameter '$name' not found")
-                            FileUpload(
-                                name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
-                                part = part
-                            )
+                            fileParams.get(name) ?: throw Error("File parameter '$name' not found")
                         }
                         else -> {
                             throw error("Unsupported data type on property '$name': ${it.type}")
@@ -107,22 +100,25 @@ annotation class Field(val order: Int, val name: String)
 
 data class FileUpload(
     val name: String,
-    val part: PartData.FileItem
+    val source: InputStream,
 ) {
-    suspend fun writeTo(path: String): Either<AppError, Unit> {
+    fun writeTo(path: String): Either<AppError, Unit> {
         return try {
-            val source = part.provider().readRemaining()
-            val out = File("$path/$name")
-            source.read { buf -> out.appendBytes(buf.array()) }
+            File("$path/$name").outputStream().use { out ->
+                while (true) {
+                    val bytes = source.readNBytes(1024)
+                    if (bytes.isEmpty()) break
+                    out.write(bytes)
+                }
+                source.close()
+            }
             Unit.right()
         } catch (err: Error) {
             InternalServerError(err.message ?: err.toString()).left()
-        } finally {
-            part.dispose()
         }
     }
 
     companion object {
-        val Empty = FileUpload("", PartData.FileItem( { TODO("") }, { TODO("") }, Headers.Empty ))
+        val Empty = FileUpload("", InputStream.nullInputStream())
     }
 }

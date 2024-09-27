@@ -15,7 +15,6 @@ fun Application.module() {
     val db = getDatabasePool(embedded = false)
 
     configureSerialization()
-    configureMonitoring()
     configureHTTP()
     configureSecurity()
     configureRouting()

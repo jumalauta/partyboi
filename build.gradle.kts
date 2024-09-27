@@ -7,7 +7,7 @@ val kotlinx_html_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.20"
-    id("io.ktor.plugin") version "3.0.0-rc-1"
+    id("io.ktor.plugin") version "2.3.12"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
 }
 
@@ -42,9 +42,9 @@ dependencies {
     implementation("io.ktor:ktor-server-compression-jvm")
     implementation("io.ktor:ktor-server-host-common-jvm")
     implementation("io.ktor:ktor-server-status-pages-jvm")
-    implementation("io.ktor:ktor-server-sse-jvm")
+    //implementation("io.ktor:ktor-server-sse-jvm")
     implementation("io.ktor:ktor-server-auto-head-response-jvm")
-    implementation("io.ktor:ktor-server-csrf-jvm")
+    //implementation("io.ktor:ktor-server-csrf-jvm")
     implementation("io.ktor:ktor-server-sessions-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("ch.qos.logback:logback-classic:$logback_version")

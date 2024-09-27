@@ -59,7 +59,7 @@ fun Application.configureSubmitRouting(db: DatabasePool) {
         post("/submit") {
             val userResult = users.currentUser(this)
             runBlocking {
-                val params = call.receiveMultipart(1024.megabytes())
+                val params = call.receiveMultipart()
                 val formResult = Form.fromParameters<NewEntry>(params)
 
                 call.respondEither/*({ err -> user.flatMap { submitEntriesPage(it, err) } })*/ {

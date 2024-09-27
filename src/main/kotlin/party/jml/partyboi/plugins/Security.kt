@@ -1,17 +1,12 @@
 package party.jml.partyboi.plugins
 
 import io.ktor.server.application.*
-import io.ktor.server.plugins.csrf.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import kotlinx.serialization.Serializable
 
 fun Application.configureSecurity() {
-    install(CSRF) {
-        // tests Origin matches Host header
-        originMatchesHost()
-    }
     @Serializable
     data class MySession(val count: Int = 0)
     install(Sessions) {
