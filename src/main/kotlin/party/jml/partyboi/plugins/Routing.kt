@@ -6,6 +6,8 @@ import io.ktor.server.plugins.autohead.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import party.jml.partyboi.templates.RedirectPage
+import party.jml.partyboi.templates.respondPage
 
 fun Application.configureRouting() {
     install(StatusPages) {
@@ -16,7 +18,7 @@ fun Application.configureRouting() {
     install(AutoHeadResponse)
     routing {
         get("/") {
-            call.respondText("TODO")
+            call.respondPage(RedirectPage("/submit"))
         }
     }
 }

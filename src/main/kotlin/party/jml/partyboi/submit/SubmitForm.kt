@@ -6,24 +6,30 @@ import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.form.Form
 import arrow.core.*
 
-fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEntry> = Form(NewEntry::class, NewEntry.Empty)) {
+fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
-        values.forEach { label, key, v, error ->
-            when (key) {
-                "compoId" -> dropdown(label, key, compos.map { DropdownOption.fromCompo(it) }, v)
-                "file" -> formFileInput(label, key, error)
-                else -> formTextInput(label, key) { value = v }
+        article {
+            header {
+                +"Submit a new entry"
             }
-        }
-
-        footer {
-            submitInput { value = "Submit" }
+            fieldSet {
+                values.forEach { label, key, v, error ->
+                    when (key) {
+                        "compoId" -> dropdown(label, key, compos.map { DropdownOption.fromCompo(it) }, v, error)
+                        "file" -> formFileInput(label, key, error)
+                        else -> formTextInput(label, key, error) { value = v }
+                    }
+                }
+            }
+            footer {
+                submitInput { value = "Submit" }
+            }
         }
     }
 }
 
 inline fun FlowContent.formError(error: Option<String>) {
-    error.map { div(classes = "error") { +it } }
+    error.map { small(classes = "error") { +it } }
 }
 
 inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(labelText: String, name : String, error: Option<String> = None, crossinline block : INPUT.() -> Unit = {}) {

@@ -19,6 +19,7 @@ fun Application.module() {
     configureSecurity()
     configureRouting()
     configureStyles()
+    configureStaticContent()
 
     configureLoginRouting(db)
     configureSubmitRouting(db)

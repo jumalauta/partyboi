@@ -9,39 +9,12 @@ import kotlinx.css.*
 fun Application.configureStyles() {
 
     routing {
-        get("/styles.css") {
+        get("/theme.css") {
             call.respondCss {
-                body {
-                    rule("form.appForm") {
-                        label {
-                            display = Display.block
-                            marginBottom = LinearDimension("10px")
-
-                            span {
-                                display = Display.block
-                                fontSize = LinearDimension("80%")
-                                paddingLeft = LinearDimension("5px")
-                            }
-                            input {
-                                padding = "5px"
-                                minWidth = LinearDimension("50vw")
-                                borderWidth = LinearDimension("1px")
-                                borderColor = Color.darkGray
-                                borderRadius = LinearDimension("3px")
-                            }
-                            select {
-                                minWidth = LinearDimension("50vw")
-                            }
-                        }
-                        footer {
-                            padding = "5px"
-                        }
-                    }
-
-                    rule(".error") {
-                        color = Color.red
-                    }
+                rule("small.error") {
+                    color = Color("#D93526")
                 }
+                // Theme variables here
             }
         }
     }

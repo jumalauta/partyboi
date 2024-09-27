@@ -6,17 +6,38 @@ import kotlinx.html.stream.createHTML
 
 data class Page(
     val title: String,
-    val body: BODY.() -> Unit
+    val children: MAIN.() -> Unit
 ) : Renderable {
     override fun getHTML(): String {
         val titleText = title
         return createHTML().html {
+            attributes.put("data-theme", "light")
             head {
                 title { +titleText }
-                link(rel = "stylesheet", href = "/styles.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
+                link(rel = "stylesheet", href = "/theme.css", type = "text/css")
             }
             body {
-                body(this)
+                main(classes = "container") {
+                    nav {
+                        ul {
+                            li { strong { +"PartyBoi" } }
+                        }
+                        ul {
+                            li { a(href="/submit") { +"Submit entries" } }
+                            li { a(href="/vote") { +"Vote" } }
+                        }
+                    }
+
+                    children(this)
+
+                    footer {
+                        small {
+                            strong { +"PartyBoi" }
+                            +" v.0.1 by Naetti tyttoe/jML"
+                        }
+                    }
+                }
             }
         }
     }

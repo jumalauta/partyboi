@@ -1,10 +1,7 @@
 package party.jml.partyboi.form
 
 import arrow.core.*
-import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.util.cio.*
-import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.errors.AppError
@@ -16,11 +13,11 @@ import java.io.InputStream
 import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 
-class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T) {
+class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial: Boolean) {
     fun validated() = data.validate()
 
     val errors: List<ValidationError.Message> by lazy {
-        data.validate().fold({ it.errors }, { emptyList() })
+        if (initial) emptyList() else data.validate().fold({ it.errors }, { emptyList() })
     }
 
     fun forEach(block: (label: String, key: String, value: String, error: Option<String>) -> Unit) {
@@ -88,7 +85,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T) {
                     }
                 }
                 val data = ctor.call(*args.toTypedArray())
-                Form(T::class, data).right()
+                Form(T::class, data, initial = false).right()
             } catch (e: Error) {
                 FormError(e.message ?: e.toString()).left()
             }

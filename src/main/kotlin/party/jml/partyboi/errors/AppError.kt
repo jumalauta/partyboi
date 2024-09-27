@@ -14,8 +14,10 @@ interface AppError : Renderable {
     override fun getHTML(): String {
         val className = this::class.simpleName ?: "AppError"
         val page = Page("Error") {
-            h1 { +className }
-            p { +message }
+            article {
+                h1 { +className }
+                p { +message }
+            }
         }
         return page.getHTML()
     }
