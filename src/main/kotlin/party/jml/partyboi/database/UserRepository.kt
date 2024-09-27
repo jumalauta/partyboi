@@ -6,6 +6,7 @@ import kotliquery.queryOf
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.ValidationError
+import party.jml.partyboi.form.Field
 
 class UserRepository(private val db: DatabasePool) {
     fun getUserByAddr(clientIp: String): Either<AppError, Option<User>> {
@@ -39,9 +40,17 @@ data class User(val id: Int, val ipAddr: String, val name: String) {
     }
 }
 
-data class NewUser(val ipAddr: String, val name: String) : Validateable<NewUser> {
+data class NewUser(
+    val ipAddr: String,
+    @property:Field(1, "User name")
+    val name: String,
+) : Validateable<NewUser> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectNotEmpty("name", name),
         expectMaxLength("name", name, 64)
     )
+
+    companion object {
+        val Empty = NewUser("", "")
+    }
 }

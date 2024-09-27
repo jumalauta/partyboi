@@ -7,11 +7,12 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import kotlinx.html.*
-import party.jml.partyboi.data.FormReader
+import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.database.DatabasePool
 import party.jml.partyboi.database.NewUser
 import party.jml.partyboi.database.UserRepository
-import party.jml.partyboi.errors.ValidationError
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.Form
 import party.jml.partyboi.submit.formTextInput
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.RedirectPage
@@ -27,26 +28,33 @@ fun Application.configureLoginRouting(db: DatabasePool) {
         }
 
         post("/register") {
-            val form = FormReader(call.receiveParameters())
-            call.respondEither({ registrationPage(it).right() }) { either {
-                val newUser = NewUser(
-                    ipAddr = call.request.origin.remoteAddress,
-                    name = form.string("name").bind(),
-                ).validate().bind()
-                users.addUser(newUser).bind()
-                RedirectPage("/submit")
-            } }
+            val params = call.receiveMultipart()
+            val formResult = Form.fromParameters<NewUser>(params)
+
+            call.respondEither({ either { registrationPage(formResult.bind()) }}) {
+                either {
+                    val form = formResult.bind()
+                    val newUser = form.validated().bind().copy(ipAddr = call.request.origin.remoteAddress)
+                    users.addUser(newUser).bind()
+                    RedirectPage("/submit")
+                }
+            }
         }
     }
 }
 
-fun registrationPage(error: ValidationError? = null) = Page("Login") {
-    h1 { +"Register" }
+fun registrationPage(formData: Form<NewUser> = Form(NewUser::class, NewUser.Empty, true)) = Page("Register") {
     form(classes = "submitForm appForm", method = FormMethod.post, action = "/register", encType = FormEncType.multipartFormData) {
-        //formTextInput("User name", "name", error)//{ maxLength = "64" }
-        +"TODO: Korjaa lomake"
-        footer {
-            submitInput { value = "Register" }
+        article {
+            header { +"Register as a guest" }
+            fieldSet {
+                formData.forEach { label, key, v, error ->
+                    formTextInput(label, key, error) { value = v }
+                }
+            }
+            footer {
+                submitInput { value = "Register" }
+            }
         }
     }
 }
