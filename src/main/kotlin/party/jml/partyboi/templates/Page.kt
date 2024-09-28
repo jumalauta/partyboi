@@ -3,12 +3,13 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import party.jml.partyboi.database.User
 
 data class Page(
     val title: String,
     val children: MAIN.() -> Unit
 ) : Renderable {
-    override fun getHTML(): String {
+    override fun getHTML(user: User?): String {
         val titleText = title
         return createHTML().html {
             attributes.put("data-theme", "light")
@@ -23,9 +24,20 @@ data class Page(
                         ul {
                             li { strong { +"PartyBoi" } }
                         }
-                        ul {
-                            li { a(href="/submit") { +"Submit entries" } }
-                            li { a(href="/vote") { +"Vote" } }
+                        if (user == null) {
+                            ul {
+                                li { a(href = "/login") { +"Login" } }
+                                li { a(href = "/register") {
+                                    role = "button"
+                                    +"Register" }
+                                }
+                            }
+                        } else {
+                            ul {
+                                li { a(href = "/submit") { +"Submit entries" } }
+                                li { a(href = "/vote") { +"Vote" } }
+                                li { a(href = "/logout") { +"Log out" } }
+                            }
                         }
                     }
 
@@ -44,7 +56,7 @@ data class Page(
 }
 
 class RedirectPage(val location: String) : Renderable {
-    override fun getHTML(): String {
+    override fun getHTML(user: User?): String {
         return ""
     }
 

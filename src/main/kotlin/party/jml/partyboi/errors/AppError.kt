@@ -3,16 +3,18 @@ package party.jml.partyboi.errors
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import io.ktor.http.*
-import kotlinx.html.*
+import kotlinx.html.article
+import kotlinx.html.h1
+import kotlinx.html.p
+import party.jml.partyboi.database.User
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.Renderable
 
 interface AppError : Renderable {
     val message: String
     val statusCode: HttpStatusCode
 
-    override fun getHTML(): String {
+    override fun getHTML(user: User?): String {
         val className = this::class.simpleName ?: "AppError"
         val page = Page("Error") {
             article {
@@ -20,7 +22,7 @@ interface AppError : Renderable {
                 p { +message }
             }
         }
-        return page.getHTML()
+        return page.getHTML(user)
     }
 
 }
@@ -62,7 +64,7 @@ class RedirectInterruption(val location: String) : AppError {
     override val message: String
         get() = "Location: $location"
 
-    override fun getHTML(): String = ""
+    override fun getHTML(user: User?): String = ""
 
     override fun headers(): Map<String, String> =
         mapOf("Location" to location)
