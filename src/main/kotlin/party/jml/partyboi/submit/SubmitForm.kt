@@ -49,6 +49,7 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData
         span { +data.label }
         textInput(name = data.key) {
             value = data.value
+            type = data.type
             block()
         }
         formError(data.error)

@@ -9,7 +9,7 @@ import io.ktor.server.routing.*
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondPage
 
-fun Application.configureRouting() {
+fun Application.configureDefaultRouting() {
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respondText(text = "500: $cause" , status = HttpStatusCode.InternalServerError)

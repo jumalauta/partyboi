@@ -16,11 +16,11 @@ fun Application.module() {
 
     configureSerialization()
     configureHTTP()
-    configureSecurity()
-    configureRouting()
+    configureAuthentication(db)
     configureStyles()
     configureStaticContent()
 
+    configureDefaultRouting()
     configureLoginRouting(db)
     configureSubmitRouting(db)
 }

@@ -1,26 +1,31 @@
 package party.jml.partyboi.database
 
 import arrow.core.*
+import io.ktor.server.auth.*
+import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
+import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.errors.AppError
+import party.jml.partyboi.errors.RedirectInterruption
 import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.form.Field
 
 class UserRepository(private val db: DatabasePool) {
-    fun getUserByAddr(clientIp: String): Either<AppError, Option<User>> {
-        return db.use {
-            val query = queryOf("select * from appuser where ip_addr = ?::inet", clientIp)
+    fun getUser(name: String): Either<AppError, User> =
+        db.use {
+            val query = queryOf("select * from appuser where name = ?", name)
                 .map(User.fromRow)
                 .asSingle
-            it.run(query).toOption()
-        }
-    }
+            it.run(query)
+                .toOption()
+                .toEither { User.LoginError }
+        }.flatten()
 
     fun addUser(user: NewUser): Either<AppError, User> {
         return db.use {
-            val query = queryOf("insert into appuser(ip_addr, name) values (?::inet, ?) returning *", user.ipAddr, user.name)
+            val query = queryOf("insert into appuser(name, password) values (?, ?) returning *", user.name, user.hashedPassword())
                 .map(User.fromRow)
                 .asSingle
             it.run(query) as User
@@ -28,29 +33,52 @@ class UserRepository(private val db: DatabasePool) {
     }
 }
 
-data class User(val id: Int, val ipAddr: String, val name: String) {
+data class User(
+    val id: Int,
+    val name: String,
+    val hashedPassword: String,
+) : Principal {
+    fun authenticate(plainPassword: String): Either<AppError, User> =
+        if (BCrypt.checkpw(plainPassword, hashedPassword)) {
+            this.right()
+        } else {
+            LoginError.left()
+        }
+
     companion object {
         val fromRow: (Row) -> User = { row ->
             User(
                 id = row.int("id"),
-                ipAddr = row.string("ip_addr"),
                 name = row.string("name"),
+                hashedPassword = row.string("password"),
             )
         }
+
+        val LoginError = ValidationError("name", "Invalid user name or password", "")
+        val InvalidSessionError = RedirectInterruption("/login")
     }
 }
 
 data class NewUser(
-    val ipAddr: String,
     @property:Field(1, "User name")
     val name: String,
+    @property:Field(2, "Password", type = InputType.password)
+    val password: String,
+    @property:Field(3, "Password again", type = InputType.password)
+    val password2: String,
 ) : Validateable<NewUser> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64)
+        expectMaxLength("name", name, 64),
+        expectMinLength("password", password, 8),
+        expectMinLength("password2", password2, 8),
+        expectEqual("password2", password2, password)
     )
 
+    fun hashedPassword(): String = BCrypt.hashpw(password, BCrypt.gensalt())
+
     companion object {
-        val Empty = NewUser("", "")
+        val Empty = NewUser("", "", "")
     }
 }
+

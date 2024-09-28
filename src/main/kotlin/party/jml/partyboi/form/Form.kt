@@ -3,6 +3,7 @@ package party.jml.partyboi.form
 import arrow.core.*
 import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
+import kotlinx.html.InputType
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.FormError
@@ -43,7 +44,8 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
                     key = key,
                     value = value,
                     error = error,
-                    isFileInput = prop.returnType.toString() == "party.jml.partyboi.form.FileUpload"
+                    isFileInput = prop.returnType.toString() == "party.jml.partyboi.form.FileUpload",
+                    type = meta.type
                 ))
             }
     }
@@ -54,6 +56,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
         val value: String,
         val error: Option<String>,
         val isFileInput: Boolean,
+        val type: InputType,
     )
 
     companion object {
@@ -111,6 +114,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
 annotation class Field(
     val order: Int,
     val label: String,
+    val type: InputType = InputType.text,
 )
 
 data class FileUpload(
