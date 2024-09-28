@@ -1,19 +1,16 @@
 package party.jml.partyboi.auth
 
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import kotlinx.html.*
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.database.DatabasePool
 import party.jml.partyboi.database.NewUser
 import party.jml.partyboi.database.UserRepository
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.submit.formTextInput
+import party.jml.partyboi.submit.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
@@ -48,7 +45,7 @@ fun registrationPage(formData: Form<NewUser> = Form(NewUser::class, NewUser.Empt
         article {
             header { +"Register as a guest" }
             fieldSet {
-                formData.forEach { formTextInput(it) }
+                renderForm(formData)
             }
             footer {
                 submitInput { value = "Register" }

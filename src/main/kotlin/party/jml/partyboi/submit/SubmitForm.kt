@@ -5,6 +5,7 @@ import party.jml.partyboi.database.Compo
 import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.form.Form
 import arrow.core.*
+import party.jml.partyboi.data.Validateable
 
 fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
@@ -13,16 +14,27 @@ fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEnt
                 +"Submit a new entry"
             }
             fieldSet {
-                values.forEach { data ->
-                    when (data.key) {
-                        "compoId" -> dropdown(data, compos.map { DropdownOption.fromCompo(it) })
-                        "file" -> formFileInput(data)
-                        else -> formTextInput(data)
-                    }
-                }
+                renderForm(values, mapOf(
+                    "compoId" to compos.map { DropdownOption.fromCompo(it) }
+                ))
             }
             footer {
                 submitInput { value = "Submit" }
+            }
+        }
+    }
+}
+
+inline fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
+    form.forEach { data ->
+        if (data.isFileInput) {
+            formFileInput(data)
+        } else {
+            val opts = options?.get(data.key)
+            if (opts == null) {
+                formTextInput(data)
+            } else {
+                dropdown(data, opts)
             }
         }
     }

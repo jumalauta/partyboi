@@ -28,8 +28,9 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
             }
             .sortedBy { it.first.order }
             .forEach { pair ->
-                val key = pair.second.name
-                val value = pair.second.get(data)
+                val (meta, prop) = pair
+                val key = prop.name
+                val value = prop.get(data)
                     .toOption()
                     .map { if (it is String) it else "" }
                     .getOrElse { "" }
@@ -37,7 +38,13 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
                     .filter { it.target == key }
                     .toNonEmptyListOrNone()
                     .map { it.joinToString { it.message } }
-                block(FieldData(pair.first.name, key, value, error))
+                block(FieldData(
+                    label = meta.label,
+                    key = key,
+                    value = value,
+                    error = error,
+                    isFileInput = prop.returnType.toString() == "party.jml.partyboi.form.FileUpload"
+                ))
             }
     }
 
@@ -46,6 +53,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
         val key: String,
         val value: String,
         val error: Option<String>,
+        val isFileInput: Boolean,
     )
 
     companion object {
@@ -100,7 +108,10 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
     }
 }
 
-annotation class Field(val order: Int, val name: String)
+annotation class Field(
+    val order: Int,
+    val label: String,
+)
 
 data class FileUpload(
     val name: String,
