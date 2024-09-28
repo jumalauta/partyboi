@@ -48,9 +48,7 @@ fun registrationPage(formData: Form<NewUser> = Form(NewUser::class, NewUser.Empt
         article {
             header { +"Register as a guest" }
             fieldSet {
-                formData.forEach { label, key, v, error ->
-                    formTextInput(label, key, error) { value = v }
-                }
+                formData.forEach { formTextInput(it) }
             }
             footer {
                 submitInput { value = "Register" }

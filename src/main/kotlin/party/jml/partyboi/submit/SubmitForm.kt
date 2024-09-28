@@ -13,11 +13,11 @@ fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEnt
                 +"Submit a new entry"
             }
             fieldSet {
-                values.forEach { label, key, v, error ->
-                    when (key) {
-                        "compoId" -> dropdown(label, key, compos.map { DropdownOption.fromCompo(it) }, v, error)
-                        "file" -> formFileInput(label, key, error)
-                        else -> formTextInput(label, key, error) { value = v }
+                values.forEach { data ->
+                    when (data.key) {
+                        "compoId" -> dropdown(data, compos.map { DropdownOption.fromCompo(it) })
+                        "file" -> formFileInput(data)
+                        else -> formTextInput(data)
                     }
                 }
             }
@@ -32,36 +32,39 @@ inline fun FlowContent.formError(error: Option<String>) {
     error.map { small(classes = "error") { +it } }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(labelText: String, name : String, error: Option<String> = None, crossinline block : INPUT.() -> Unit = {}) {
+inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData, crossinline block : INPUT.() -> Unit = {}) {
     label {
-        span { +labelText }
-        textInput(name = name, block = block)
-        formError(error)
+        span { +data.label }
+        textInput(name = data.key) {
+            value = data.value
+            block()
+        }
+        formError(data.error)
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formFileInput(labelText: String, name : String, error: Option<String> = None) {
+inline fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
     label {
-        span { +labelText }
-        fileInput(name = name)
-        formError(error)
+        span { +data.label }
+        fileInput(name = data.key)
+        formError(data.error)
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.dropdown(labelText: String, inputName : String, options: List<DropdownOption>, selectedValue: String? = null, error: Option<String> = None) {
+inline fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: List<DropdownOption>) {
     label {
-        span { +labelText }
+        span { +data.label }
         select {
-            name = inputName
+            name = data.key
             options.map { opt ->
                 option {
                     value = opt.value
-                    selected = opt.value == selectedValue
+                    selected = opt.value == data.value
                     +opt.label
                 }
             }
         }
-        formError(error)
+        formError(data.error)
     }
 }
 

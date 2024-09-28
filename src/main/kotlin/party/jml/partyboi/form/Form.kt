@@ -20,7 +20,7 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
         if (initial) emptyList() else data.validate().fold({ it.errors }, { emptyList() })
     }
 
-    fun forEach(block: (label: String, key: String, value: String, error: Option<String>) -> Unit) {
+    fun forEach(block: (FieldData) -> Unit) {
         kclass.memberProperties
             .flatMap { prop ->
                 val field = prop.findAnnotation<Field>()
@@ -37,9 +37,16 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
                     .filter { it.target == key }
                     .toNonEmptyListOrNone()
                     .map { it.joinToString { it.message } }
-                block(pair.first.name, key, value, error)
+                block(FieldData(pair.first.name, key, value, error))
             }
     }
+
+    data class FieldData(
+        val label: String,
+        val key: String,
+        val value: String,
+        val error: Option<String>,
+    )
 
     companion object {
         suspend inline fun <reified T: Validateable<T>> fromParameters(parameters: MultiPartData): Either<AppError, Form<T>> {
