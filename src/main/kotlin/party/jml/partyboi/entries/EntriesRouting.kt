@@ -22,7 +22,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.plugins.userSession
 import party.jml.partyboi.templates.*
 
-fun Application.configureSubmitRouting(app: AppServices) {
+fun Application.configureEntriesRouting(app: AppServices) {
     fun entriesPage(user: User, formData: Form<NewEntry> = Form(NewEntry::class, NewEntry.Empty, initial = true)): Either<AppError, Renderable> = either {
         val userEntries = app.entries.getUserEntries(user.id).bind()
         val compos = app.compos.getAllCompos().bind()
