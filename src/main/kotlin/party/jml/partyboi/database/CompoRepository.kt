@@ -6,6 +6,19 @@ import kotliquery.queryOf
 import party.jml.partyboi.errors.AppError
 
 class CompoRepository(private val db: DatabasePool) {
+    init {
+        db.use {
+            it.run(queryOf("""
+                CREATE TABLE IF NOT EXISTS compo (
+                    id SERIAL PRIMARY KEY,
+                    name text NOT NULL,
+                    allow_submit boolean NOT NULL DEFAULT true,
+                    allow_vote boolean NOT NULL DEFAULT false
+                );
+            """.trimIndent()).asExecute)
+        }
+    }
+
     fun getAllCompos(): Either<AppError, List<Compo>> {
         return getRows("select * from compo order by name")
     }

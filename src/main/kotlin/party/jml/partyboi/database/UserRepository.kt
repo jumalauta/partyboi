@@ -13,6 +13,20 @@ import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.form.Field
 
 class UserRepository(private val db: DatabasePool) {
+    init {
+        db.use {
+            it.run(queryOf("""
+                CREATE TABLE IF NOT EXISTS appuser (
+                    id SERIAL PRIMARY KEY,
+                    name text NOT NULL UNIQUE,
+                    password text NOT NULL,
+                    session_key text,
+                    is_admin boolean DEFAULT false
+                );
+            """.trimIndent()).asExecute)
+        }
+    }
+
     fun getUser(name: String): Either<AppError, User> =
         db.use {
             val query = queryOf("select * from appuser where name = ?", name)
@@ -37,6 +51,7 @@ data class User(
     val id: Int,
     val name: String,
     val hashedPassword: String,
+    val isAdmin: Boolean,
 ) : Principal {
     fun authenticate(plainPassword: String): Either<AppError, User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
@@ -51,6 +66,7 @@ data class User(
                 id = row.int("id"),
                 name = row.string("name"),
                 hashedPassword = row.string("password"),
+                isAdmin = row.boolean("is_admin")
             )
         }
 

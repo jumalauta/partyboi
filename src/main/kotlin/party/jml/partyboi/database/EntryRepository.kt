@@ -17,6 +17,24 @@ import party.jml.partyboi.form.FileUpload
 import java.time.LocalDateTime
 
 class EntryRepository(private val db: DatabasePool) {
+    init {
+        db.use {
+            it.run(queryOf("""
+                CREATE TABLE IF NOT EXISTS entry (
+                    id SERIAL PRIMARY KEY,
+                    title text NOT NULL,
+                    author text NOT NULL,
+                    filename text NOT NULL,
+                    screen_comment text,
+                    org_comment text,
+                    compo_id integer REFERENCES compo(id),
+                    user_id integer REFERENCES appuser(id),
+                    timestamp timestamp with time zone DEFAULT now()
+                );
+            """.trimIndent()).asExecute)
+        }
+    }
+
     fun getAllEntries(): Either<AppError, List<Entry>> {
         return db.use {
             val query = queryOf("select * from entry")
