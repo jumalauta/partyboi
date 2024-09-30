@@ -1,4 +1,4 @@
-package party.jml.partyboi.submit
+package party.jml.partyboi.entries
 
 import kotlinx.html.*
 import party.jml.partyboi.database.Compo
@@ -6,8 +6,9 @@ import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.form.Form
 import arrow.core.*
 import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.database.EntryUpdate
 
-fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
+fun FlowContent.submitNewEntryForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
         article {
             header {
@@ -25,10 +26,30 @@ fun FlowContent.submitForm(url: String, compos: List<Compo>, values: Form<NewEnt
     }
 }
 
+fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<EntryUpdate>) {
+    form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
+        article {
+            header {
+                +"Edit an entry"
+            }
+            fieldSet {
+                renderForm(values, mapOf(
+                    "compoId" to compos.map { DropdownOption.fromCompo(it) }
+                ))
+            }
+            footer {
+                submitInput { value = "Submit" }
+            }
+        }
+    }
+}
+
 inline fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
     form.forEach { data ->
         if (data.isFileInput) {
             formFileInput(data)
+        } else if (data.type == InputType.hidden) {
+            formHiddenValue(data)
         } else {
             val opts = options?.get(data.key)
             if (opts == null) {
@@ -53,6 +74,12 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData
             block()
         }
         formError(data.error)
+    }
+}
+
+inline fun FlowOrInteractiveOrPhrasingContent.formHiddenValue(data: Form.FieldData, crossinline block : INPUT.() -> Unit = {}) {
+    hiddenInput(name = data.key) {
+        value = data.value
     }
 }
 

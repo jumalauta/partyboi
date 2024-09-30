@@ -34,7 +34,7 @@ data class Page(
                             }
                         } else {
                             ul {
-                                li { a(href = "/submit") { +"Submit entries" } }
+                                li { a(href = "/entries") { +"Submit entries" } }
                                 li { a(href = "/vote") { +"Vote" } }
                                 li { a(href = "/logout") { +"Log out" } }
                             }

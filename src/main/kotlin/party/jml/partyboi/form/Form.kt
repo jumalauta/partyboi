@@ -33,7 +33,11 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
                 val key = prop.name
                 val value = prop.get(data)
                     .toOption()
-                    .map { if (it is String) it else "" }
+                    .map { when (it) {
+                        is String -> it
+                        is Int -> it.toString()
+                        else -> ""
+                    } }
                     .getOrElse { "" }
                 val error = errors
                     .filter { it.target == key }
@@ -112,8 +116,8 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
 }
 
 annotation class Field(
-    val order: Int,
-    val label: String,
+    val order: Int = 0,
+    val label: String = "",
     val type: InputType = InputType.text,
 )
 
@@ -136,6 +140,8 @@ data class FileUpload(
             InternalServerError(err.message ?: err.toString()).left()
         }
     }
+
+    val isDefined = name.isNotEmpty()
 
     companion object {
         val Empty = FileUpload("", InputStream.nullInputStream())

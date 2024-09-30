@@ -16,7 +16,7 @@ import party.jml.partyboi.database.UserRepository
 import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.submit.renderForm
+import party.jml.partyboi.entries.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
@@ -39,7 +39,7 @@ fun Application.configureLoginRouting(db: DatabasePool) {
                     val user = users.getUser(login.name).bind()
                     val session = user.authenticate(login.password).bind()
                     call.sessions.set(session)
-                    RedirectPage("/submit")
+                    RedirectPage("/entries")
                 }
             }
         }
@@ -57,7 +57,7 @@ fun Application.configureLoginRouting(db: DatabasePool) {
                     val newUser = registration.validated().bind()
                     val session = users.addUser(newUser).bind()
                     call.sessions.set(session)
-                    RedirectPage("/submit")
+                    RedirectPage("/entries")
                 }
             }
         }

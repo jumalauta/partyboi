@@ -73,8 +73,12 @@ class RedirectInterruption(val location: String) : AppError {
 
 class Unauthorized : AppError {
     override val statusCode: HttpStatusCode = HttpStatusCode.Unauthorized
-
     override val message: String = "Unauthorized"
+}
+
+class NotFound : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.NotFound
+    override val message: String = "Not found"
 }
 
 fun <A> catchError(f: () -> A): Either<AppError, A> =
