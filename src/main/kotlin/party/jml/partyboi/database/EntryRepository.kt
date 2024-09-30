@@ -80,7 +80,7 @@ class EntryRepository(private val db: DatabasePool) {
             it.run(query)
         }
 
-    fun deleteEntryOfUser(entryId: Int, userId: Int): Either<AppError, Unit> =
+    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> =
         db.use {
             val query = queryOf("delete from entry where id = ? and user_id = ?", entryId, userId).asUpdate
             it.run(query)

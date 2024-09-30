@@ -8,23 +8,20 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import kotlinx.html.*
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.database.DatabasePool
 import party.jml.partyboi.database.NewUser
 import party.jml.partyboi.database.User
-import party.jml.partyboi.database.UserRepository
+import party.jml.partyboi.entries.renderForm
 import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.entries.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
-fun Application.configureLoginRouting(db: DatabasePool) {
-    val users = UserRepository(db)
-
+fun Application.configureLoginRouting(app: AppServices) {
     routing {
         get("/login") {
             call.respondPage(loginPage())
@@ -36,7 +33,7 @@ fun Application.configureLoginRouting(db: DatabasePool) {
             call.respondEither({ either { loginPage(loginRequest.bind()) } }) {
                 either {
                     val login = loginRequest.bind().validated().bind()
-                    val user = users.getUser(login.name).bind()
+                    val user = app.users.getUser(login.name).bind()
                     val session = user.authenticate(login.password).bind()
                     call.sessions.set(session)
                     RedirectPage("/entries")
@@ -55,7 +52,7 @@ fun Application.configureLoginRouting(db: DatabasePool) {
                 either {
                     val registration = registrationRequest.bind()
                     val newUser = registration.validated().bind()
-                    val session = users.addUser(newUser).bind()
+                    val session = app.users.addUser(newUser).bind()
                     call.sessions.set(session)
                     RedirectPage("/entries")
                 }

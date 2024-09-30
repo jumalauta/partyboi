@@ -13,14 +13,15 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val db = getDatabasePool(embedded = false)
+    val app = AppServices(db)
 
     configureSerialization()
     configureHTTP()
-    configureAuthentication(db)
+    configureAuthentication(app)
     configureStyles()
     configureStaticContent()
 
     configureDefaultRouting()
-    configureLoginRouting(db)
-    configureSubmitRouting(db)
+    configureLoginRouting(app)
+    configureSubmitRouting(app)
 }
