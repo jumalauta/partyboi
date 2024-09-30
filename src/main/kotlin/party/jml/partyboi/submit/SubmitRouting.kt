@@ -6,9 +6,11 @@ import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.flatten
 import arrow.core.raise.either
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
@@ -16,10 +18,10 @@ import party.jml.partyboi.database.*
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.plugins.userSession
-import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.RedirectPage
-import party.jml.partyboi.templates.Renderable
-import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.templates.*
+import kotlinx.html.*
+import party.jml.partyboi.errors.Unauthorized
+import party.jml.partyboi.errors.catchError
 
 fun Application.configureSubmitRouting(db: DatabasePool) {
     val entries = EntryRepository(db)
@@ -60,8 +62,14 @@ fun Application.configureSubmitRouting(db: DatabasePool) {
                                         td {
                                             if (compo?.allowSubmit == true) {
                                                 a {
-                                                    href="/submit/delete/${entry.id}"
+                                                    href="#"
                                                     role = "button"
+                                                    onClick = Javascript.build {
+                                                        confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
+                                                            httpDelete("/submit/${entry.id}")
+                                                            refresh()
+                                                        }
+                                                    }
                                                     +"Delete"
                                                 }
                                             }
@@ -105,6 +113,18 @@ fun Application.configureSubmitRouting(db: DatabasePool) {
                             RedirectPage("/submit")
                         }
                     }
+                }
+            }
+        }
+
+        authenticate("user", optional = true) {
+            delete("/submit/{id}") {
+                either {
+                    val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
+                    val user = call.userSession().bind()
+                    entries.deleteEntryOfUser(id, user.id).bind()
+                }.mapLeft {
+                    call.respond(HttpStatusCode.Unauthorized)
                 }
             }
         }

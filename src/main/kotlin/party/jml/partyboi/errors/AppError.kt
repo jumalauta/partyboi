@@ -1,5 +1,6 @@
 package party.jml.partyboi.errors
 
+import arrow.core.Either
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import io.ktor.http.*
@@ -69,3 +70,12 @@ class RedirectInterruption(val location: String) : AppError {
     override fun headers(): Map<String, String> =
         mapOf("Location" to location)
 }
+
+class Unauthorized : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.Unauthorized
+
+    override val message: String = "Unauthorized"
+}
+
+fun <A> catchError(f: () -> A): Either<AppError, A> =
+    Either.catch { f() }.mapLeft { InternalServerError(it.message ?: it.toString()) }

@@ -68,3 +68,13 @@ class RedirectPage(val location: String) : Renderable {
         return mapOf("Location" to location)
     }
 }
+
+class EmptyPage() : Renderable {
+    override fun getHTML(user: User?): String {
+        return ""
+    }
+
+    override fun statusCode(): HttpStatusCode {
+        return HttpStatusCode.NoContent
+    }
+}

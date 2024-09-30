@@ -44,6 +44,18 @@ class EntryRepository(private val db: DatabasePool) {
             ).asUpdate
             it.run(query)
         }
+
+    fun deleteEntryOfUser(entryId: Int, userId: Int): Either<AppError, Unit> =
+        db.use {
+            val query = queryOf("delete from entry where id = ? and user_id = ?", entryId, userId).asUpdate
+            it.run(query)
+        }
+
+    fun delete(id: Int): Either<AppError, Unit> =
+        db.use {
+            val query = queryOf("delete from entry where id = ?", id).asUpdate
+            it.run(query)
+        }
 }
 
 data class Entry(
