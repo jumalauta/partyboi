@@ -20,7 +20,6 @@ class UserRepository(private val db: DatabasePool) {
                     id SERIAL PRIMARY KEY,
                     name text NOT NULL UNIQUE,
                     password text NOT NULL,
-                    session_key text,
                     is_admin boolean DEFAULT false
                 );
             """.trimIndent()).asExecute)

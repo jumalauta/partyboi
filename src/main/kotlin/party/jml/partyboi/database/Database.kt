@@ -16,6 +16,10 @@ class DatabasePool(val dataSource: HikariDataSource) {
             .catch { sessionOf(dataSource).use(block) }
             .mapLeft { DatabaseError(it.toString()) }
     }
+
+    fun <A> useUnsafe(block: (Session) -> A): A {
+        return sessionOf(dataSource).use(block)
+    }
 }
 
 /**

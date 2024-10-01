@@ -31,8 +31,8 @@ fun Application.configureAuthentication(app: AppServices) {
     }
 
     install(Sessions) {
-        val secretSignKey = hex((1..64).map { Random.nextLong(0, 15) }.joinToString(""))
-        cookie<User>("user_session", SessionStorageMemory()) {
+        val secretSignKey = hex("0f823487adb2749201aed46b480")
+        cookie<User>("user_session", app.sessions) {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 7.days.inWholeSeconds
             transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
