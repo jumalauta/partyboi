@@ -18,6 +18,8 @@ object Config {
             ConfigurationProperties.fromResource("defaults.properties")
 
     private val secretSignKey = Key("sessions.secretSignKey", stringType)
+    private val entryDir = Key("entries.files", stringType)
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
+    fun getEntryDir() = config.get(entryDir)
 }
