@@ -10,6 +10,7 @@ import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.InternalServerError
 import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.getAny
 
 interface Renderable {
     fun getHTML(user: User?): String
@@ -17,25 +18,23 @@ interface Renderable {
     fun headers(): Map<String, String> = mapOf()
 }
 
-suspend fun ApplicationCall.respondEither(errorHandler: ((ValidationError) -> Either<AppError, Renderable>)? = null, block: () -> Either<AppError, Renderable>) {
-    val result = try {
+private fun safely(block: () -> Either<AppError, Renderable>) =
+    try {
         block()
     } catch (err: Error) {
         Either.Left(InternalServerError(err.message ?: err.toString()))
     }
-    result.fold({ error ->
-        if (error is ValidationError) {
-            errorHandler
-                .toOption()
-                .toEither { error }
-                .flatMap { handler -> handler(error) }
-                .fold({ respondPage(it) }, { respondPage(it) })
-        } else {
-            respondPage(error)
-        }
-    }, {
-        respondPage(it)
-    })
+
+suspend fun ApplicationCall.respondEither(
+    block: () -> Either<AppError, Renderable>,
+    vararg retries: (AppError) -> Either<AppError, Renderable>
+) {
+    var result = safely { block() }
+    for (retry in retries) {
+        if (result.isRight()) break
+        result = safely { retry(result.leftOrNull() ?: throw Error("Unexpected")) }
+    }
+    respondPage(result.getAny())
 }
 
 suspend fun ApplicationCall.respondPage(renderable: Renderable) {

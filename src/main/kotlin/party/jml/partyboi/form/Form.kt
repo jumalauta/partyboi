@@ -14,11 +14,16 @@ import java.io.InputStream
 import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 
-class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial: Boolean) {
+class Form<T : Validateable<T>>(
+    val kclass: KClass<T>,
+    val data: T,
+    val initial: Boolean,
+    val accumulatedErrors: List<ValidationError.Message> = emptyList()
+) {
     fun validated() = data.validate()
 
     val errors: List<ValidationError.Message> by lazy {
-        if (initial) emptyList() else data.validate().fold({ it.errors }, { emptyList() })
+        if (initial) accumulatedErrors else data.validate().fold({ accumulatedErrors + it.errors }, { accumulatedErrors })
     }
 
     fun forEach(block: (FieldData) -> Unit) {
@@ -52,6 +57,14 @@ class Form<T : Validateable<T>>(val kclass: KClass<T>, val data: T, val initial:
                     type = meta.type
                 ))
             }
+    }
+
+    fun with(error: AppError): Form<T> {
+        val newErrors = when(error) {
+            is ValidationError -> error.errors
+            else -> emptyList()
+        }
+        return Form(kclass, data, initial, accumulatedErrors + newErrors)
     }
 
     data class FieldData(

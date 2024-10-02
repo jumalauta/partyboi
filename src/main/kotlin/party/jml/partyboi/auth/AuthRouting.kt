@@ -24,15 +24,15 @@ fun Application.configureLoginRouting(app: AppServices) {
             call.sessions.clear<User>()
             val loginRequest = Form.fromParameters<LoginPage.UserLogin>(call.receiveMultipart())
 
-            call.respondEither({ either { LoginPage.render(loginRequest.bind()) } }) {
-                either {
-                    val login = loginRequest.bind().validated().bind()
-                    val user = app.users.getUser(login.name).bind()
-                    val session = user.authenticate(login.password).bind()
-                    call.sessions.set(session)
-                    RedirectPage("/entries")
-                }
-            }
+            call.respondEither({ either {
+                val login = loginRequest.bind().validated().bind()
+                val user = app.users.getUser(login.name).bind()
+                val session = user.authenticate(login.password).bind()
+                call.sessions.set(session)
+                RedirectPage("/entries")
+            } }, { error -> either {
+                LoginPage.render(loginRequest.bind().with(error))
+            } })
         }
 
         get("/register") {
@@ -42,15 +42,15 @@ fun Application.configureLoginRouting(app: AppServices) {
         post("/register") {
             val registrationRequest = Form.fromParameters<NewUser>(call.receiveMultipart())
 
-            call.respondEither({ either { RegistrationPage.render(registrationRequest.bind()) }}) {
-                either {
-                    val registration = registrationRequest.bind()
-                    val newUser = registration.validated().bind()
-                    val session = app.users.addUser(newUser).bind()
-                    call.sessions.set(session)
-                    RedirectPage("/entries")
-                }
-            }
+            call.respondEither({ either {
+                val registration = registrationRequest.bind()
+                val newUser = registration.validated().bind()
+                val session = app.users.addUser(newUser).bind()
+                call.sessions.set(session)
+                RedirectPage("/entries")
+            } }, { error -> either {
+                RegistrationPage.render(registrationRequest.bind().with(error))
+            } })
         }
 
         get("/logout") {

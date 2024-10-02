@@ -44,7 +44,7 @@ fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<Ent
     }
 }
 
-inline fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
+fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
     form.forEach { data ->
         if (data.isFileInput) {
             formFileInput(data)
@@ -61,7 +61,7 @@ inline fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map
     }
 }
 
-inline fun FlowContent.formError(error: Option<String>) {
+fun FlowContent.formError(error: Option<String>) {
     error.map { small(classes = "error") { +it } }
 }
 
@@ -77,13 +77,13 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formHiddenValue(data: Form.FieldData, crossinline block : INPUT.() -> Unit = {}) {
+fun FlowOrInteractiveOrPhrasingContent.formHiddenValue(data: Form.FieldData) {
     hiddenInput(name = data.key) {
         value = data.value
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
+fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
     label {
         span { +data.label }
         fileInput(name = data.key)
@@ -91,7 +91,7 @@ inline fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: List<DropdownOption>) {
+fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: List<DropdownOption>) {
     label {
         span { +data.label }
         select {

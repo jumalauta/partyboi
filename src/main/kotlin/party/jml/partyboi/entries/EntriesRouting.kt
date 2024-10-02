@@ -26,54 +26,54 @@ fun Application.configureEntriesRouting(app: AppServices) {
     routing {
         authenticate("user") {
             get("/entries") {
-                call.respondEither {
+                call.respondEither({
                     call.userSession().flatMap { EntriesPage.render(app, it) }
-                }
+                })
             }
 
             post("/entries") {
                 val user = call.userSession()
                 val submitRequest = Form.fromParameters<NewEntry>(call.receiveMultipart())
 
-                call.respondEither({ _ -> either { EntriesPage.render(app, user.bind(), submitRequest.bind()) }.flatten() }) {
-                    either {
-                        val userId = user.bind().id
-                        val form = submitRequest.bind()
-                        val newEntry = form.validated().bind().copy(userId = userId)
-                        runBlocking { newEntry.file.writeTo(Config.getEntryDir()).bind() }
-                        app.entries.add(newEntry).bind()
-                        RedirectPage("/entries")
-                    }
-                }
+                call.respondEither({ either {
+                    val userId = user.bind().id
+                    val form = submitRequest.bind()
+                    val newEntry = form.validated().bind().copy(userId = userId)
+                    runBlocking { newEntry.file.writeTo(Config.getEntryDir()).bind() }
+                    app.entries.add(newEntry).bind()
+                    RedirectPage("/entries")
+                } }, { error -> either {
+                    EntriesPage.render(app, user.bind(), submitRequest.bind().with(error))
+                }.flatten() })
             }
 
             get("/entries/{id}") {
-                call.respondEither { either {
+                call.respondEither({ either {
                     val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
                     val user = call.userSession().bind()
                     val entry = app.entries.get(id, user.id).bind()
                     val form = Form(EntryUpdate::class, EntryUpdate.fromEntry(entry), initial = true)
 
                     EditEntryPage.render(app, form).bind()
-                } }
+                } })
             }
 
             post("/entries/{id}") {
                 val maybeUser = call.userSession()
                 val submitRequest = Form.fromParameters<EntryUpdate>(call.receiveMultipart())
 
-                call.respondEither({ _ -> submitRequest.flatMap { EditEntryPage.render(app, it) } }) {
-                    either {
-                        val userId = maybeUser.bind().id
-                        val form = submitRequest.bind()
-                        val entry = form.validated().bind()
-                        app.entries.update(entry, userId).bind()
-                        if (entry.file.isDefined) {
-                            runBlocking { entry.file.writeTo(Config.getEntryDir()).bind() }
-                        }
-                        RedirectPage("/entries")
+                call.respondEither({ either {
+                    val userId = maybeUser.bind().id
+                    val form = submitRequest.bind()
+                    val entry = form.validated().bind()
+                    app.entries.update(entry, userId).bind()
+                    if (entry.file.isDefined) {
+                        runBlocking { entry.file.writeTo(Config.getEntryDir()).bind() }
                     }
-                }
+                    RedirectPage("/entries")
+                } }, { error -> either {
+                    EditEntryPage.render(app, submitRequest.bind().with(error))
+                }.flatten() })
             }
         }
 
