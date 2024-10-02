@@ -4,6 +4,7 @@ import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.database.NewCompo
@@ -38,19 +39,17 @@ fun Application.configureComposRouting(app: AppServices) {
         // API routes (we don't want to redirect user to login page)
         authenticate("admin", optional = true) {
             put("/compos/{id}/setSubmit/{state}") {
-                val id = catchError { call.parameters["id"]?.toInt() ?: -1 }
-                val state = catchError { call.parameters["state"]?.toBoolean() ?: false }
-                either {
-                    app.compos.allowSubmit(id.bind(), state.bind()).bind()
-                }
+                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
+                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
+                app.compos.allowSubmit(id, state)
+                call.respondText("OK")
             }
 
             put("/compos/{id}/setVoting/{state}") {
-                val id = catchError { call.parameters["id"]?.toInt() ?: -1 }
-                val state = catchError { call.parameters["state"]?.toBoolean() ?: false }
-                either {
-                    app.compos.allowVoting(id.bind(), state.bind()).bind()
-                }
+                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
+                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
+                app.compos.allowVoting(id, state)
+                call.respondText("OK")
             }
         }
     }

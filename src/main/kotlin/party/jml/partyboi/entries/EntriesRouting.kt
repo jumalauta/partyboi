@@ -84,6 +84,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
                     val user = call.userSession().bind()
                     app.entries.delete(id, user.id).bind()
+                    call.respondText("OK")
                 }.mapLeft {
                     call.respond(HttpStatusCode.Unauthorized)
                 }
