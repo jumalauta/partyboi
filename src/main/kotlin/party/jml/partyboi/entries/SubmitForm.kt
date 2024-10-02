@@ -7,6 +7,7 @@ import party.jml.partyboi.form.Form
 import arrow.core.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.database.EntryUpdate
+import party.jml.partyboi.templates.Javascript
 
 fun FlowContent.submitNewEntryForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
@@ -53,7 +54,11 @@ fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String
         } else {
             val opts = options?.get(data.key)
             if (opts == null) {
-                formTextInput(data)
+                if (data.large) {
+                    formTextArea(data)
+                } else {
+                    formTextInput(data)
+                }
             } else {
                 dropdown(data, opts)
             }
@@ -72,6 +77,17 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData
             value = data.value
             type = data.type
             block()
+        }
+        formError(data.error)
+    }
+}
+
+inline fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData) {
+    label {
+        span { +data.label }
+        textArea {
+            name = data.key
+            +data.value
         }
         formError(data.error)
     }
@@ -113,5 +129,18 @@ data class DropdownOption(val value: String, val label: String) {
         fun fromCompo(compo: Compo): DropdownOption {
             return DropdownOption(compo.id.toString(), compo.name)
         }
+    }
+}
+
+fun FlowContent.switchLink(toggled: Boolean, labelOn: String, labelOff: String, urlPrefix: String) {
+    input {
+        type = InputType.checkBox
+        role = "switch"
+        checked = toggled
+        onClick = Javascript.build {
+            httpPut("$urlPrefix/${!toggled}")
+            refresh()
+        }
+        +(if (toggled) labelOn else labelOff)
     }
 }

@@ -54,7 +54,8 @@ class Form<T : Validateable<T>>(
                     value = value,
                     error = error,
                     isFileInput = prop.returnType.toString() == "party.jml.partyboi.form.FileUpload",
-                    type = meta.type
+                    type = meta.type,
+                    large = meta.large,
                 ))
             }
     }
@@ -74,6 +75,7 @@ class Form<T : Validateable<T>>(
         val error: Option<String>,
         val isFileInput: Boolean,
         val type: InputType,
+        val large: Boolean,
     )
 
     companion object {
@@ -132,6 +134,7 @@ annotation class Field(
     val order: Int = 0,
     val label: String = "",
     val type: InputType = InputType.text,
+    val large: Boolean = false,
 )
 
 data class FileUpload(

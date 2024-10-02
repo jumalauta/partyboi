@@ -1,16 +1,56 @@
 package party.jml.partyboi.compos
 
+import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.response.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.database.NewCompo
+import party.jml.partyboi.errors.catchError
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.templates.RedirectPage
+import party.jml.partyboi.templates.respondEither
 
 fun Application.configureComposRouting(app: AppServices) {
     routing {
         authenticate("admin") {
             get("/compos") {
-                call.respondText("TODO")
+                call.respondEither({ either {
+                    val compos = app.compos.getAllCompos().bind()
+                    val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
+                    ComposPage.render(newCompo, compos)
+                }})
+            }
+
+            post("/compos") {
+                val newCompo = Form.fromParameters<NewCompo>(call.receiveMultipart())
+                call.respondEither({ either {
+                    app.compos.add(newCompo.bind().validated().bind()).bind()
+                    RedirectPage("/compos")
+                }}, { error -> either {
+                    val compos = app.compos.getAllCompos().bind()
+                    ComposPage.render(newCompo.bind().with(error), compos)
+                }})
+            }
+        }
+
+        // API routes (we don't want to redirect user to login page)
+        authenticate("admin", optional = true) {
+            put("/compos/{id}/setSubmit/{state}") {
+                val id = catchError { call.parameters["id"]?.toInt() ?: -1 }
+                val state = catchError { call.parameters["state"]?.toBoolean() ?: false }
+                either {
+                    app.compos.allowSubmit(id.bind(), state.bind()).bind()
+                }
+            }
+
+            put("/compos/{id}/setVoting/{state}") {
+                val id = catchError { call.parameters["id"]?.toInt() ?: -1 }
+                val state = catchError { call.parameters["state"]?.toBoolean() ?: false }
+                either {
+                    app.compos.allowVoting(id.bind(), state.bind()).bind()
+                }
             }
         }
     }

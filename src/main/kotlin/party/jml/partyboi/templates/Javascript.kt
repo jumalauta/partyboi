@@ -9,6 +9,8 @@ class Javascript {
         with(js) { block() }
         return Statements(js.stack)
     }
+    fun goto(url: String) = push(JAssign("location", url))
+    fun httpPut(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("PUT"))))
     fun httpDelete(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("DELETE"))))
     fun refresh() = push(JCall("location.reload"))
     fun confirm(message: String, onTrue: Javascript.() -> Unit) = push(JIf(JCall("confirm", JStr(message)), scope(onTrue) ))
@@ -31,6 +33,11 @@ class Javascript {
                     separator = ",",
                     postfix = "}"
                 ) { JStr(it.first).toJS() + ":" + it.second.toJS() }
+    }
+
+    data class JAssign(val varName: String, val value: Statement) : Statement {
+        constructor(varName: String, value: String) : this(varName, JStr(value))
+        override fun toJS(): String = "$varName=${value.toJS()}"
     }
 
     data class JCall(val name: String, val args: List<Statement> = emptyList()) : Statement {
