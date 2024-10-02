@@ -19,7 +19,7 @@ import party.jml.partyboi.database.*
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.catchError
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.plugins.userSession
+import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.templates.*
 
 fun Application.configureEntriesRouting(app: AppServices) {

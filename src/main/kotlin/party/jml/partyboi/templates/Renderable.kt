@@ -9,7 +9,7 @@ import party.jml.partyboi.database.User
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.InternalServerError
 import party.jml.partyboi.errors.ValidationError
-import party.jml.partyboi.plugins.userSession
+import party.jml.partyboi.auth.userSession
 
 interface Renderable {
     fun getHTML(user: User?): String

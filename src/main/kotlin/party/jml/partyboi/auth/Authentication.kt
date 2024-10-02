@@ -1,4 +1,4 @@
-package party.jml.partyboi.plugins
+package party.jml.partyboi.auth
 
 import arrow.core.Either
 import arrow.core.toOption
@@ -16,16 +16,12 @@ import kotlin.time.Duration.Companion.days
 fun Application.configureAuthentication(app: AppServices) {
     install(Authentication) {
         session<User>("user") {
-            validate { session ->
-                if (app.users.getUser(session.name).isRight()) {
-                    session
-                } else {
-                    null
-                }
-            }
-            challenge {
-                call.respondRedirect("/login")
-            }
+            validate { it }
+            challenge { call.respondRedirect("/login") }
+        }
+        session<User>("admin") {
+            validate { if (it.isAdmin) it else null }
+            challenge { call.respondRedirect("/login?admin") }
         }
     }
 

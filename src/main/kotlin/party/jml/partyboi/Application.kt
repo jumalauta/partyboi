@@ -1,7 +1,9 @@
 package party.jml.partyboi
 
 import io.ktor.server.application.*
+import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.auth.configureLoginRouting
+import party.jml.partyboi.compos.configureComposRouting
 import party.jml.partyboi.database.getDatabasePool
 import party.jml.partyboi.plugins.*
 import party.jml.partyboi.entries.configureEntriesRouting
@@ -24,4 +26,5 @@ fun Application.module() {
     configureDefaultRouting()
     configureLoginRouting(app)
     configureEntriesRouting(app)
+    configureComposRouting(app)
 }

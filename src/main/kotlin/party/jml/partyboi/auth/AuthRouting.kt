@@ -28,6 +28,7 @@ fun Application.configureLoginRouting(app: AppServices) {
         }
 
         post("/login") {
+            call.sessions.clear<User>()
             val loginRequest = Form.fromParameters<UserLogin>(call.receiveMultipart())
 
             call.respondEither({ either { loginPage(loginRequest.bind()) } }) {
