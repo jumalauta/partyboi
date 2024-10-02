@@ -9,19 +9,23 @@ import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.database.EntryUpdate
 import party.jml.partyboi.templates.Javascript
 
-fun FlowContent.submitNewEntryForm(url: String, compos: List<Compo>, values: Form<NewEntry>) {
+fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
         article {
-            header {
-                +"Submit a new entry"
-            }
-            fieldSet {
-                renderForm(values, mapOf(
-                    "compoId" to compos.map { DropdownOption.fromCompo(it) }
-                ))
-            }
-            footer {
-                submitInput { value = "Submit" }
+            if (openCompos.isEmpty()) {
+                +"Submitting is closed"
+            } else {
+                header {
+                    +"Submit a new entry"
+                }
+                fieldSet {
+                    renderForm(values, mapOf(
+                        "compoId" to openCompos.map { DropdownOption.fromCompo(it) }
+                    ))
+                }
+                footer {
+                    submitInput { value = "Submit" }
+                }
             }
         }
     }
