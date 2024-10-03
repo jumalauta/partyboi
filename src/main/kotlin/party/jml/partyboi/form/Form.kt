@@ -111,7 +111,12 @@ class Form<T : Validateable<T>>(
                             stringValue
                         }
                         "kotlin.Int" -> {
-                            try { stringValue.toInt() } catch (_: NumberFormatException) { -1 }
+                            try {
+                                stringValue.toInt()
+                            } catch (_: NumberFormatException) { -1 }
+                        }
+                        "kotlin.Boolean" -> {
+                            try { stringValue.toBoolean() } catch (_: NumberFormatException) { false }
                         }
                         "party.jml.partyboi.form.FileUpload" -> {
                             fileParams.get(name) ?: throw Error("File parameter '$name' not found")

@@ -2,10 +2,14 @@ package party.jml.partyboi.database
 
 import arrow.core.Either
 import arrow.core.Option
+import arrow.core.flatten
+import arrow.core.toOption
+import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.errors.AppError
+import party.jml.partyboi.errors.NotFound
 import party.jml.partyboi.errors.ValidationError
 import party.jml.partyboi.form.Field
 
@@ -16,13 +20,23 @@ class CompoRepository(private val db: DatabasePool) {
                 CREATE TABLE IF NOT EXISTS compo (
                     id SERIAL PRIMARY KEY,
                     name text NOT NULL,
-                    rules text NOT NULL DEFAULT "",
+                    rules text NOT NULL DEFAULT '',
                     allow_submit boolean NOT NULL DEFAULT true,
                     allow_vote boolean NOT NULL DEFAULT false
                 );
             """.trimIndent()).asExecute)
         }
     }
+
+    fun getById(id: Int): Either<AppError, Compo> =
+        db.use {
+            val query = queryOf("select * from compo where id = ?", id)
+                .map(Compo.fromRow)
+                .asSingle
+            it.run(query)
+                .toOption()
+                .toEither { NotFound() }
+        }.flatten()
 
     fun getAllCompos(): Either<AppError, List<Compo>> {
         return getRows("select * from compo order by name")
@@ -35,6 +49,12 @@ class CompoRepository(private val db: DatabasePool) {
     fun add(compo: NewCompo): Either<AppError, Unit> =
         db.use {
             val query = queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules).asExecute
+            it.run(query)
+        }
+
+    fun update(compo: Compo): Either<AppError, Unit> =
+        db.use {
+            val query = queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id).asUpdate
             it.run(query)
         }
 
@@ -60,12 +80,20 @@ class CompoRepository(private val db: DatabasePool) {
 }
 
 data class Compo(
+    @property:Field(type = InputType.hidden)
     val id: Int,
+    @property:Field(order = 0, label = "Name")
     val name: String,
+    @property:Field(order = 1, label = "Description / rules", large = true)
     val rules: String,
     val allowSubmit: Boolean,
     val allowVote: Boolean,
-) {
+) : Validateable<Compo> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectNotEmpty("name", name),
+        expectMaxLength("name", name, 64),
+    )
+
     companion object {
         val fromRow: (Row) -> Compo = { row ->
             Compo(

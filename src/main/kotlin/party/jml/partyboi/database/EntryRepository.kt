@@ -44,6 +44,17 @@ class EntryRepository(private val db: DatabasePool) {
         }
     }
 
+    fun getAllEntriesByCompo(): Either<AppError, Map<Int, List<Entry>>> =
+        getAllEntries().map { it.groupBy { it.compoId } }
+
+    fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> =
+        db.use {
+            val query = queryOf("select * from entry where id = ?", compoId)
+                .map(Entry.fromRow)
+                .asList
+            it.run(query)
+        }
+
     fun get(entryId: Int, userId: Int): Either<AppError, Entry> =
         db.use {
             val query = queryOf("select * from entry where id = ? and user_id = ?", entryId, userId)

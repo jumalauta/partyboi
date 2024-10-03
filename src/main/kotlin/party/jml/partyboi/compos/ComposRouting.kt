@@ -7,6 +7,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.database.Compo
+import party.jml.partyboi.database.EntryUpdate
 import party.jml.partyboi.database.NewCompo
 import party.jml.partyboi.errors.catchError
 import party.jml.partyboi.form.Form
@@ -19,8 +21,9 @@ fun Application.configureComposRouting(app: AppServices) {
             get("/compos") {
                 call.respondEither({ either {
                     val compos = app.compos.getAllCompos().bind()
+                    val entries = app.entries.getAllEntriesByCompo().bind()
                     val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
-                    ComposPage.render(newCompo, compos)
+                    ComposPage.render(newCompo, compos, entries)
                 }})
             }
 
@@ -31,8 +34,30 @@ fun Application.configureComposRouting(app: AppServices) {
                     RedirectPage("/compos")
                 }}, { error -> either {
                     val compos = app.compos.getAllCompos().bind()
-                    ComposPage.render(newCompo.bind().with(error), compos)
+                    val entries = app.entries.getAllEntriesByCompo().bind()
+                    ComposPage.render(newCompo.bind().with(error), compos, entries)
                 }})
+            }
+
+            get("/compos/{id}") {
+                call.respondEither({ either {
+                    val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
+                    val compo = app.compos.getById(id).bind()
+                    val form = Form(Compo::class, compo, initial = true)
+                    val entries = app.entries.getEntriesForCompo(id).bind()
+                    EditCompoPage.render(form, entries)
+                }})
+            }
+
+            post("/compos/{id}") {
+                val compo = Form.fromParameters<Compo>(call.receiveMultipart())
+                call.respondEither({ either {
+                    app.compos.update(compo.bind().validated().bind()).bind()
+                    RedirectPage("/compos")
+                } }, { error -> either {
+                    val entries = app.entries.getEntriesForCompo(compo.bind().data.id).bind()
+                    EditCompoPage.render(compo.bind().with(error), entries)
+                } })
             }
         }
 
