@@ -6,6 +6,7 @@ import io.ktor.server.application.*
 import kotliquery.HikariCP
 import kotliquery.Session
 import kotliquery.sessionOf
+import party.jml.partyboi.Config
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.DatabaseError
 import java.sql.Connection
@@ -43,18 +44,13 @@ class DatabasePool(val dataSource: HikariDataSource) {
  * @return [Connection] that represent connection to the database. Please, don't forget to close this connection when
  * your application shuts down by calling [Connection.close]
  * */
-fun Application.getDatabasePool(embedded: Boolean): DatabasePool {
+fun Application.getDatabasePool(): DatabasePool {
     Class.forName("org.postgresql.Driver")
 
-    return DatabasePool(
-        if (embedded) {
-            HikariCP.default("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "root", "")
-        } else {
-            val url = environment.config.property("postgres.url").getString()
-            val user = environment.config.property("postgres.user").getString()
-            val password = environment.config.property("postgres.password").getString()
+    val host = Config.getDbHost()
+    val port = Config.getDbPort()
+    val database = Config.getDbDatabase()
+    val url = "jdbc:postgresql://$host:$port/$database"
 
-            HikariCP.default(url, user, password)
-        }
-    )
+    return DatabasePool(HikariCP.default(url, Config.getDbUser(), Config.getDbPassword()))
 }

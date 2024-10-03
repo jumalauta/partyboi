@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val db = getDatabasePool(embedded = false)
+    val db = getDatabasePool()
     val app = AppServices(db)
 
     configureSerialization()
