@@ -5,6 +5,7 @@ import kotlinx.html.*
 import party.jml.partyboi.database.Compo
 import party.jml.partyboi.database.Entry
 import party.jml.partyboi.entries.renderForm
+import party.jml.partyboi.entries.switchLink
 import party.jml.partyboi.form.Form
 
 object EditCompoPage {
@@ -28,6 +29,7 @@ object EditCompoPage {
                             tr {
                                 th { +"Title" }
                                 th { +"Author" }
+                                th { +"State" }
                             }
                         }
                         tbody {
@@ -35,6 +37,14 @@ object EditCompoPage {
                                 tr {
                                     td { +entry.title }
                                     td { +entry.author }
+                                    td {
+                                        switchLink(
+                                            toggled = entry.qualified,
+                                            labelOn = "OK",
+                                            labelOff = "Disqualified",
+                                            urlPrefix = "/compos/entries/${entry.id}/setQualified"
+                                        )
+                                    }
                                 }
                             }
                         }

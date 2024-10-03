@@ -29,6 +29,8 @@ class EntryRepository(private val db: DatabasePool) {
                     org_comment text,
                     compo_id integer REFERENCES compo(id),
                     user_id integer REFERENCES appuser(id),
+                    qualified boolean NOT NULL DEFAULT true,
+                    run_order integer NOT NULL DEFAULT 0,
                     timestamp timestamp with time zone DEFAULT now()
                 );
             """.trimIndent()).asExecute)
@@ -49,7 +51,7 @@ class EntryRepository(private val db: DatabasePool) {
 
     fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> =
         db.use {
-            val query = queryOf("select * from entry where id = ?", compoId)
+            val query = queryOf("select * from entry where compo_id = ? order by run_order, id", compoId)
                 .map(Entry.fromRow)
                 .asList
             it.run(query)
@@ -120,6 +122,11 @@ class EntryRepository(private val db: DatabasePool) {
             val query = queryOf("delete from entry where id = ?", id).asUpdate
             it.run(query)
         }
+
+    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Int> =
+        db.use {
+            it.run(queryOf("update entry set qualified = ? where id = ?", state, entryId).asUpdate)
+        }
 }
 
 data class Entry(
@@ -131,6 +138,8 @@ data class Entry(
     val orgComment: Option<String>,
     val compoId: Int,
     val userId: Int,
+    val qualified: Boolean,
+    val runOrder: Int,
     val timestamp: LocalDateTime,
 ) {
     companion object {
@@ -144,6 +153,8 @@ data class Entry(
                 Option.fromNullable(row.stringOrNull("org_comment")),
                 row.int("compo_id"),
                 row.int("user_id"),
+                row.boolean("qualified"),
+                row.int("run_order"),
                 row.localDateTime("timestamp")
             )
         }

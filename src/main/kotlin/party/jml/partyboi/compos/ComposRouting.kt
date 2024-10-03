@@ -76,6 +76,13 @@ fun Application.configureComposRouting(app: AppServices) {
                 app.compos.allowVoting(id, state)
                 call.respondText("OK")
             }
+
+            put("/compos/entries/{id}/setQualified/{state}") {
+                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
+                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
+                app.entries.setQualified(id, state)
+                call.respondText("OK")
+            }
         }
     }
 }
