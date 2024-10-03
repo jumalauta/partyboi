@@ -14,13 +14,11 @@ object ComposPage {
                     footer {
                         if (compo.allowSubmit) {
                             a(href = "/submit") {
-                                role = "button"
                                 +"Submit an entry"
                             }
                         }
                         if (compo.allowVote) {
                             a(href = "/vote") {
-                                role = "button"
                                 +"Vote entries"
                             }
                         }
