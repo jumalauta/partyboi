@@ -1,4 +1,4 @@
-package party.jml.partyboi.compos
+package party.jml.partyboi.admin.compos
 
 import kotlinx.html.*
 import party.jml.partyboi.database.Compo
@@ -9,10 +9,10 @@ import party.jml.partyboi.entries.switchLink
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Page
 
-object ComposPage {
+object AdminComposPage {
     fun render(newCompoForm: Form<NewCompo>, compos: List<Compo>, entries: Map<Int, List<Entry>>) =
         Page("Compos") {
-            form(method = FormMethod.post, action = "/compos", encType = FormEncType.multipartFormData) {
+            form(method = FormMethod.post, action = "/admin/compos", encType = FormEncType.multipartFormData) {
                 if (compos.isNotEmpty()) {
                     article {
                         header { +"Compos" }
@@ -28,13 +28,13 @@ object ComposPage {
                             tbody {
                                 compos.forEach { compo ->
                                     tr {
-                                        td { a(href = "/compos/${compo.id}") { +compo.name } }
+                                        td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
                                         td {
                                             switchLink(
                                                 toggled = compo.allowSubmit,
                                                 labelOn = "Open",
                                                 labelOff = "Closed",
-                                                urlPrefix = "/compos/${compo.id}/setSubmit"
+                                                urlPrefix = "/admin/compos/${compo.id}/setSubmit"
                                             )
                                         }
                                         td {
@@ -42,7 +42,7 @@ object ComposPage {
                                                 toggled = compo.allowVote,
                                                 labelOn = "Open",
                                                 labelOff = "Closed",
-                                                urlPrefix = "/compos/${compo.id}/setVoting"
+                                                urlPrefix = "/admin/compos/${compo.id}/setVoting"
                                             )
                                         }
                                         td {

@@ -1,4 +1,4 @@
-package party.jml.partyboi.compos
+package party.jml.partyboi.admin.compos
 
 import party.jml.partyboi.templates.Page
 import kotlinx.html.*
@@ -8,10 +8,10 @@ import party.jml.partyboi.entries.renderForm
 import party.jml.partyboi.entries.switchLink
 import party.jml.partyboi.form.Form
 
-object EditCompoPage {
+object AdminEditCompoPage {
     fun render(compo: Form<Compo>, entries: List<Entry>) =
         Page("Edit compo") {
-            form(method = FormMethod.post, action = "/compos/${compo.data.id}", encType = FormEncType.multipartFormData) {
+            form(method = FormMethod.post, action = "/admin/compos/${compo.data.id}", encType = FormEncType.multipartFormData) {
                 article {
                     header { +"Edit '${compo.data.name}' compo" }
                     fieldSet {
@@ -42,7 +42,7 @@ object EditCompoPage {
                                             toggled = entry.qualified,
                                             labelOn = "OK",
                                             labelOff = "Disqualified",
-                                            urlPrefix = "/compos/entries/${entry.id}/setQualified"
+                                            urlPrefix = "/admin/compos/entries/${entry.id}/setQualified"
                                         )
                                     }
                                 }
