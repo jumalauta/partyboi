@@ -14,7 +14,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 
-fun Application.configureComposRouting(app: AppServices) {
+fun Application.configureAdminComposRouting(app: AppServices) {
     routing {
         authenticate("admin") {
             get("/admin/compos") {
