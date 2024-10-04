@@ -50,6 +50,7 @@ data class Page(
                         }
                     }
                 }
+                script(src = "/assets/partyboi.js") {}
             }
         }
     }
