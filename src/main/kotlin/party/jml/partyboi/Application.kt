@@ -9,6 +9,7 @@ import party.jml.partyboi.database.getDatabasePool
 import party.jml.partyboi.plugins.*
 import party.jml.partyboi.entries.configureEntriesRouting
 import party.jml.partyboi.templates.configureStyles
+import party.jml.partyboi.voting.configureVotingRouting
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -28,4 +29,5 @@ fun Application.module() {
     configureEntriesRouting(app)
     configureComposRouting(app)
     configureAdminComposRouting(app)
+    configureVotingRouting(app)
 }

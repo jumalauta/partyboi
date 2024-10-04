@@ -88,6 +88,26 @@ class EntryRepository(private val db: DatabasePool) {
 
     fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
         db.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+
+    fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> =
+        db.many(queryOf("""
+                SELECT
+                    compo_id,
+                    compo.name AS compo_name,
+                    entry.id AS entry_id,
+                    run_order,
+                    title,
+                    author,
+                    points
+                FROM entry
+                JOIN compo ON compo.id = entry.compo_id
+                LEFT JOIN vote ON vote.entry_id = entry.id AND vote.user_id = ?
+                WHERE qualified AND allow_vote
+                ORDER BY compo_id, run_order
+            """.trimIndent(),
+            userId)
+            .map(VoteableEntry.fromRow)
+        )
 }
 
 data class Entry(
@@ -181,5 +201,29 @@ data class EntryUpdate(
             compoId = e.compoId,
             userId = e.userId
         )
+    }
+}
+
+data class VoteableEntry(
+        val compoId: Int,
+        val compoName: String,
+        val entryId: Int,
+        val runOrder: Int,
+        val title: String,
+        val author: String,
+        val points: Option<Int>,
+) {
+    companion object {
+        val fromRow: (Row) -> VoteableEntry = { row ->
+            VoteableEntry(
+                compoId = row.int("compo_id"),
+                compoName = row.string("compo_name"),
+                entryId = row.int("entry_id"),
+                runOrder = row.int("run_order"),
+                title = row.string("title"),
+                author = row.string("author"),
+                points = Option.fromNullable(row.intOrNull("points")),
+            )
+        }
     }
 }

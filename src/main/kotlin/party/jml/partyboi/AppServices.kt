@@ -10,6 +10,7 @@ class AppServices(db: DatabasePool) {
     val sessions = SessionRepository(db)
     val compos = CompoRepository(db)
     val entries = EntryRepository(db)
+    val votes = VoteRepository(db)
 }
 
 object Config {
