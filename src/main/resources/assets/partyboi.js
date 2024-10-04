@@ -8,3 +8,34 @@ submitBtns.forEach(submitBtn => {
         submitBtn.form.submit()
     })
 })
+
+const sortableSelector = '.sortable'
+const sortableContainers = document.querySelectorAll(sortableSelector)
+
+sortableContainers.forEach(container => {
+    const sortable = new window.Draggable.Sortable(
+        container,
+        {
+            draggable: container.dataset.draggable,
+            handle: container.dataset.handle,
+            mirror: {
+                appendTo: container,
+                constrainDimensions: true
+            }
+        }
+    )
+
+    const ids = Array.from(container.querySelectorAll(container.dataset.draggable)).map(i => i.dataset.dragid)
+    console.log(ids)
+
+    sortable.on('sortable:sorted', (event) => {
+        ids.splice(event.newIndex, 0, ...ids.splice(event.oldIndex, 1))
+        fetch(container.dataset.callback, {
+            method: 'PUT',
+            body: JSON.stringify(ids),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+    })
+})

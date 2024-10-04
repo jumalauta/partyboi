@@ -82,6 +82,12 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 app.entries.setQualified(id, state)
                 call.respondText("OK")
             }
+
+            put("/admin/compos/{compoId}/runOrder") {
+                call.receive<List<String>>()
+                    .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
+                call.respondText("OK")
+            }
         }
     }
 }

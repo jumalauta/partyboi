@@ -7,7 +7,7 @@ import party.jml.partyboi.database.User
 
 data class Page(
     val title: String,
-    val children: MAIN.() -> Unit
+    val children: MAIN.() -> Unit,
 ) : Renderable {
     override fun getHTML(user: User?): String {
         val titleText = title

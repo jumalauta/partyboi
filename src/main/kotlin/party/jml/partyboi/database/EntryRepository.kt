@@ -85,6 +85,9 @@ class EntryRepository(private val db: DatabasePool) {
 
     fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
         db.updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
+
+    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
+        db.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
 }
 
 data class Entry(

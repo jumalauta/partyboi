@@ -29,19 +29,23 @@ object AdminEditCompoPage {
                             tr {
                                 th { +"Title" }
                                 th { +"Author" }
-                                th { +"State" }
+                                th { +"Qualified" }
                             }
                         }
-                        tbody {
+                        tbody(classes = "sortable") {
+                            attributes.put("data-draggable", "tr")
+                            attributes.put("data-handle", ".handle")
+                            attributes.put("data-callback", "/admin/compos/${compo.data.id}/runOrder")
                             entries.forEach { entry ->
                                 tr {
-                                    td { +entry.title }
-                                    td { +entry.author }
+                                    attributes.put("data-dragid", entry.id.toString())
+                                    td(classes = "handle") { +entry.title }
+                                    td(classes = "handle") { +entry.author }
                                     td {
                                         switchLink(
                                             toggled = entry.qualified,
-                                            labelOn = "OK",
-                                            labelOff = "Disqualified",
+                                            labelOn = "Yes",
+                                            labelOff = "No",
                                             urlPrefix = "/admin/compos/entries/${entry.id}/setQualified"
                                         )
                                     }
@@ -51,5 +55,6 @@ object AdminEditCompoPage {
                     }
                 }
             }
+            script(src = "/assets/draggable.min.js") {}
         }
 }
