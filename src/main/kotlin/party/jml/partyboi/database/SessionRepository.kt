@@ -5,21 +5,16 @@ import kotliquery.queryOf
 
 class SessionRepository(private val db: DatabasePool) : SessionStorage {
     init {
-        db.use {
-            it.run(
-                queryOf("""
-                CREATE TABLE IF NOT EXISTS session (
-                    id text NOT NULL,
-                    value text NOT NULL
-                );
-            """.trimIndent()).asExecute)
-        }
+        db.init("""
+            CREATE TABLE IF NOT EXISTS session (
+                id text NOT NULL,
+                value text NOT NULL
+            );
+        """)
     }
 
     override suspend fun invalidate(id: String) {
-        db.use {
-            it.run(queryOf("DELETE FROM session WHERE id = ?", id).asExecute)
-        }
+        db.execute(queryOf("DELETE FROM session WHERE id = ?", id))
     }
 
     override suspend fun read(id: String): String {
@@ -32,8 +27,6 @@ class SessionRepository(private val db: DatabasePool) : SessionStorage {
     }
 
     override suspend fun write(id: String, value: String) {
-        db.use {
-            it.run(queryOf("INSERT INTO session(id, value) VALUES (?, ?)", id, value).asExecute)
-        }
+        db.execute(queryOf("INSERT INTO session(id, value) VALUES (?, ?)", id, value))
     }
 }

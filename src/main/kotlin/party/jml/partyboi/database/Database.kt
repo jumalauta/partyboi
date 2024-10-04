@@ -1,26 +1,45 @@
 package party.jml.partyboi.database
 
-import arrow.core.Either
+import arrow.core.*
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import kotliquery.HikariCP
-import kotliquery.Session
-import kotliquery.sessionOf
+import kotliquery.*
+import kotliquery.action.ResultQueryActionBuilder
 import party.jml.partyboi.Config
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.DatabaseError
+import party.jml.partyboi.errors.NotFound
 import java.sql.Connection
 
 class DatabasePool(val dataSource: HikariDataSource) {
-    fun <A> use(block: (Session) -> A): Either<AppError, A> {
-        return Either
+    fun <A> use(block: (Session) -> A): Either<AppError, A> =
+        Either
             .catch { sessionOf(dataSource).use(block) }
             .mapLeft { DatabaseError(it.toString()) }
-    }
 
-    fun <A> useUnsafe(block: (Session) -> A): A {
-        return sessionOf(dataSource).use(block)
-    }
+    fun <A> useUnsafe(block: (Session) -> A): A =
+        sessionOf(dataSource).use { block(it) }
+
+    fun init(query: String): Unit =
+        sessionOf(dataSource).use { it.run(queryOf(query.trimIndent()).asExecute) }
+
+    fun <A> option(query: ResultQueryActionBuilder<A>): Either<AppError, Option<A>> =
+        use { it.run(query.asSingle).toOption() }
+
+    fun <A> one(query: ResultQueryActionBuilder<A>): Either<AppError, A> =
+        option(query).flatMap { it.toEither { NotFound() } }
+
+    fun <A> many(query: ResultQueryActionBuilder<A>): Either<AppError, List<A>> =
+        use { it.run(query.asList) }
+
+    fun execute(query: Query): Either<AppError, Unit> =
+        use { it.run(query.asExecute) }
+
+    fun update(query: Query): Either<AppError, Int> =
+        use { it.run(query.asUpdate) }
+
+    fun updateOne(query: Query): Either<AppError, Unit> =
+        update(query).flatMap { if (it != 1) NotFound().left() else Unit.right() }
 }
 
 /**

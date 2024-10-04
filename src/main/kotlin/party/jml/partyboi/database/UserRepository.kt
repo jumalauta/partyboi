@@ -14,36 +14,25 @@ import party.jml.partyboi.form.Field
 
 class UserRepository(private val db: DatabasePool) {
     init {
-        db.use {
-            it.run(queryOf("""
-                CREATE TABLE IF NOT EXISTS appuser (
-                    id SERIAL PRIMARY KEY,
-                    name text NOT NULL UNIQUE,
-                    password text NOT NULL,
-                    is_admin boolean DEFAULT false
-                );
-            """.trimIndent()).asExecute)
-        }
+        db.init("""
+            CREATE TABLE IF NOT EXISTS appuser (
+                id SERIAL PRIMARY KEY,
+                name text NOT NULL UNIQUE,
+                password text NOT NULL,
+                is_admin boolean DEFAULT false
+            );
+        """)
     }
 
     fun getUser(name: String): Either<AppError, User> =
-        db.use {
-            val query = queryOf("select * from appuser where name = ?", name)
-                .map(User.fromRow)
-                .asSingle
-            it.run(query)
-                .toOption()
-                .toEither { User.LoginError }
-        }.flatten()
+        db.one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
 
-    fun addUser(user: NewUser): Either<AppError, User> {
-        return db.use {
-            val query = queryOf("insert into appuser(name, password) values (?, ?) returning *", user.name, user.hashedPassword())
-                .map(User.fromRow)
-                .asSingle
-            it.run(query) as User
-        }
-    }
+    fun addUser(user: NewUser): Either<AppError, User> =
+        db.one(queryOf(
+            "insert into appuser(name, password) values (?, ?) returning *",
+            user.name,
+            user.hashedPassword(),
+            ).map(User.fromRow))
 }
 
 data class User(

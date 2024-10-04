@@ -18,115 +18,73 @@ import java.time.LocalDateTime
 
 class EntryRepository(private val db: DatabasePool) {
     init {
-        db.use {
-            it.run(queryOf("""
-                CREATE TABLE IF NOT EXISTS entry (
-                    id SERIAL PRIMARY KEY,
-                    title text NOT NULL,
-                    author text NOT NULL,
-                    filename text NOT NULL,
-                    screen_comment text,
-                    org_comment text,
-                    compo_id integer REFERENCES compo(id),
-                    user_id integer REFERENCES appuser(id),
-                    qualified boolean NOT NULL DEFAULT true,
-                    run_order integer NOT NULL DEFAULT 0,
-                    timestamp timestamp with time zone DEFAULT now()
-                );
-            """.trimIndent()).asExecute)
-        }
+        db.init("""
+            CREATE TABLE IF NOT EXISTS entry (
+                id SERIAL PRIMARY KEY,
+                title text NOT NULL,
+                author text NOT NULL,
+                filename text NOT NULL,
+                screen_comment text,
+                org_comment text,
+                compo_id integer REFERENCES compo(id),
+                user_id integer REFERENCES appuser(id),
+                qualified boolean NOT NULL DEFAULT true,
+                run_order integer NOT NULL DEFAULT 0,
+                timestamp timestamp with time zone DEFAULT now()
+            );
+        """)
     }
 
-    fun getAllEntries(): Either<AppError, List<Entry>> {
-        return db.use {
-            val query = queryOf("select * from entry")
-                .map(Entry.fromRow)
-                .asList
-            it.run(query)
-        }
-    }
+    fun getAllEntries(): Either<AppError, List<Entry>> =
+        db.many(queryOf("select * from entry").map(Entry.fromRow))
 
     fun getAllEntriesByCompo(): Either<AppError, Map<Int, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
     fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> =
-        db.use {
-            val query = queryOf("select * from entry where compo_id = ? order by run_order, id", compoId)
-                .map(Entry.fromRow)
-                .asList
-            it.run(query)
-        }
+        db.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
 
     fun get(entryId: Int, userId: Int): Either<AppError, Entry> =
-        db.use {
-            val query = queryOf("select * from entry where id = ? and user_id = ?", entryId, userId)
-                .map(Entry.fromRow)
-                .asSingle
-            it.run(query)
-                .toOption()
-                .toEither { NotFound() }
-        }.flatten()
+        db.one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
 
-    fun getUserEntries(userId: Int): Either<AppError, List<Entry>> {
-        return db.use {
-            val query = queryOf("select * from entry where user_id = ?", userId)
-                .map(Entry.fromRow)
-                .asList
-            it.run(query)
-        }
-    }
+    fun getUserEntries(userId: Int): Either<AppError, List<Entry>> =
+        db.many(query = queryOf("select * from entry where user_id = ?", userId).map(Entry.fromRow))
 
     fun add(entry: NewEntry): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("""
-                insert into entry(title, author, filename, compo_id, user_id)
-                    values(?, ?, ?, ?, ?)
-                """.trimIndent(),
-                entry.title,
-                entry.author,
-                entry.file.name,
-                entry.compoId,
-                entry.userId,
-            ).asUpdate
-            it.run(query)
-        }
+        db.execute(queryOf(
+            "insert into entry(title, author, filename, compo_id, user_id) values(?, ?, ?, ?, ?)",
+            entry.title,
+            entry.author,
+            entry.file.name,
+            entry.compoId,
+            entry.userId,
+        ))
 
     fun update(entry: EntryUpdate, userId: Int): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("""
-                update entry set
-                    title = ?,
-                    author = ?,
-                    filename = coalesce(?, filename),
-                    compo_id = ?
-                where id = ? and user_id = ?
+        db.updateOne(queryOf("""
+            update entry set
+                title = ?,
+                author = ?,
+                filename = coalesce(?, filename),
+                compo_id = ?
+            where id = ? and user_id = ?
             """.trimIndent(),
-                entry.title,
-                entry.author,
-                entry.file.name.nonEmptyString(),
-                entry.compoId,
-                entry.id,
-                userId
-            ).asUpdate
-            it.run(query)
-        }
+            entry.title,
+            entry.author,
+            entry.file.name.nonEmptyString(),
+            entry.compoId,
+            entry.id,
+            userId
+        ))
 
     fun delete(entryId: Int, userId: Int): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("delete from entry where id = ? and user_id = ?", entryId, userId).asUpdate
-            it.run(query)
-        }
+        db.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
 
     fun delete(id: Int): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("delete from entry where id = ?", id).asUpdate
-            it.run(query)
-        }
+        db.updateOne(queryOf("delete from entry where id = ?", id))
 
-    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Int> =
-        db.use {
-            it.run(queryOf("update entry set qualified = ? where id = ?", state, entryId).asUpdate)
-        }
+    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
+        db.updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
 }
 
 data class Entry(

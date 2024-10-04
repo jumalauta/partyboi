@@ -15,68 +15,37 @@ import party.jml.partyboi.form.Field
 
 class CompoRepository(private val db: DatabasePool) {
     init {
-        db.use {
-            it.run(queryOf("""
-                CREATE TABLE IF NOT EXISTS compo (
-                    id SERIAL PRIMARY KEY,
-                    name text NOT NULL,
-                    rules text NOT NULL DEFAULT '',
-                    allow_submit boolean NOT NULL DEFAULT true,
-                    allow_vote boolean NOT NULL DEFAULT false
-                );
-            """.trimIndent()).asExecute)
-        }
+        db.init("""
+            CREATE TABLE IF NOT EXISTS compo (
+                id SERIAL PRIMARY KEY,
+                name text NOT NULL,
+                rules text NOT NULL DEFAULT '',
+                allow_submit boolean NOT NULL DEFAULT true,
+                allow_vote boolean NOT NULL DEFAULT false
+            );
+        """)
     }
 
     fun getById(id: Int): Either<AppError, Compo> =
-        db.use {
-            val query = queryOf("select * from compo where id = ?", id)
-                .map(Compo.fromRow)
-                .asSingle
-            it.run(query)
-                .toOption()
-                .toEither { NotFound() }
-        }.flatten()
+        db.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
 
-    fun getAllCompos(): Either<AppError, List<Compo>> {
-        return getRows("select * from compo order by name")
-    }
+    fun getAllCompos(): Either<AppError, List<Compo>> =
+        db.many(queryOf("select * from compo order by name").map(Compo.fromRow))
 
-    fun getOpenCompos(): Either<AppError, List<Compo>> {
-        return getRows("select * from compo where allow_submit order by name")
-    }
+    fun getOpenCompos(): Either<AppError, List<Compo>> =
+        db.many(queryOf("select * from compo where allow_submit order by name").map(Compo.fromRow))
 
     fun add(compo: NewCompo): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules).asExecute
-            it.run(query)
-        }
+        db.execute(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
 
     fun update(compo: Compo): Either<AppError, Unit> =
-        db.use {
-            val query = queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id).asUpdate
-            it.run(query)
-        }
+        db.updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
 
-    fun allowSubmit(compoId: Int, state: Boolean): Either<AppError, Int> =
-        db.use {
-            it.run(queryOf("update compo set allow_submit = ? where id = ?", state, compoId).asUpdate)
-        }
+    fun allowSubmit(compoId: Int, state: Boolean): Either<AppError, Unit> =
+        db.updateOne(queryOf("update compo set allow_submit = ? where id = ?", state, compoId))
 
-    fun allowVoting(compoId: Int, state: Boolean): Either<AppError, Int> =
-        db.use {
-            it.run(queryOf("update compo set allow_vote = ? where id = ?", state, compoId).asUpdate)
-        }
-
-    private fun getRows(queryStr: String): Either<AppError, List<Compo>> {
-        return db.use {
-            val query = queryOf(queryStr)
-                .map(Compo.fromRow)
-                .asList
-            it.run(query)
-        }
-
-    }
+    fun allowVoting(compoId: Int, state: Boolean): Either<AppError, Unit> =
+        db.updateOne(queryOf("update compo set allow_vote = ? where id = ?", state, compoId))
 }
 
 data class Compo(
