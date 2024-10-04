@@ -26,7 +26,6 @@ sortableContainers.forEach(container => {
     )
 
     const ids = Array.from(container.querySelectorAll(container.dataset.draggable)).map(i => i.dataset.dragid)
-    console.log(ids)
 
     sortable.on('sortable:sorted', (event) => {
         ids.splice(event.newIndex, 0, ...ids.splice(event.oldIndex, 1))
