@@ -22,21 +22,39 @@ data class Page(
                 main(classes = "container") {
                     nav {
                         ul {
-                            li { strong { +"PartyBoi" } }
+                            li { strong { a(href="/") { +"PartyBoi" } } }
                         }
-                        if (user == null) {
-                            ul {
+                        ul {
+                            if (user == null) {
                                 li { a(href = "/login") { +"Login" } }
                                 li { a(href = "/register") {
                                     role = "button"
                                     +"Register" }
                                 }
-                            }
-                        } else {
-                            ul {
+                            } else {
+                                li { a(href = "/compos") { +"Compos" } }
                                 li { a(href = "/entries") { +"Submit entries" } }
                                 li { a(href = "/vote") { +"Vote" } }
-                                li { a(href = "/logout") { +"Log out" } }
+                                if (user.isAdmin) {
+                                    li {
+                                        details(classes = "dropdown") {
+                                            summary { +"Admin" }
+                                            ul {
+                                                attributes.put("dir", "rtl")
+                                                li { a(href = "/admin/compos") { +"Compos" } }
+                                            }
+                                        }
+                                    }
+                                }
+                                li {
+                                    details(classes = "dropdown") {
+                                        summary { +user.name }
+                                        ul {
+                                            attributes.put("dir", "rtl")
+                                            li { a(href = "/logout") { +"Log out" } }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
