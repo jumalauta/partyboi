@@ -91,5 +91,10 @@ class MissingInput(name: String) : AppError {
     override val message: String = "Missing input: $name"
 }
 
+class Forbidden : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.Forbidden
+    override val message: String = "Forbidden"
+}
+
 fun <A> catchError(f: () -> A): Either<AppError, A> =
     Either.catch { f() }.mapLeft { InternalServerError(it.message ?: it.toString()) }

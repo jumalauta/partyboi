@@ -2,14 +2,11 @@
 
 package party.jml.partyboi.entries
 
-import arrow.core.flatMap
 import arrow.core.flatten
 import arrow.core.raise.either
-import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
@@ -28,9 +25,24 @@ fun Application.configureEntriesRouting(app: AppServices) {
     routing {
         authenticate("user") {
             get("/entries") {
-                call.respondEither({
-                    call.userSession().flatMap { EntriesPage.render(app, it) }
-                })
+                call.respondEither({ either {
+                    val user = call.userSession().bind()
+                    val form = Form(NewEntry::class, NewEntry.Empty, initial = true)
+                    val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) }
+                    val userEntries = app.entries.getUserEntries(user.id).bind()
+                    EntriesPage.render(compos, userEntries, form)
+                }})
+            }
+
+            get("/entries/submit/{compoId}") {
+                call.respondEither({ either {
+                    val compoId = call.parameterInt("compoId").bind()
+                    val user = call.userSession().bind()
+                    val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
+                    val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) }
+                    val userEntries = app.entries.getUserEntries(user.id).bind()
+                    EntriesPage.render(compos, userEntries, form)
+                }})
             }
 
             post("/entries") {
@@ -41,12 +53,17 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val userId = user.bind().id
                     val form = submitRequest.bind()
                     val newEntry = form.validated().bind().copy(userId = userId)
+
+                    app.compos.assertCanSubmit(newEntry.compoId, user.bind().isAdmin).bind()
+
                     runBlocking { newEntry.file.writeTo(Config.getEntryDir()).bind() }
                     app.entries.add(newEntry).bind()
                     RedirectPage("/entries")
                 } }, { error -> either {
-                    EntriesPage.render(app, user.bind(), submitRequest.bind().with(error))
-                }.flatten() })
+                    val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) }
+                    val userEntries = app.entries.getUserEntries(user.bind().id).bind()
+                    EntriesPage.render(compos, userEntries, submitRequest.bind().with(error))
+                } })
             }
 
             get("/entries/{id}") {

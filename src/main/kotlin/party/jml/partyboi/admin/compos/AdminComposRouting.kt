@@ -67,6 +67,10 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         // API routes (we don't want to redirect user to login page)
         authenticate("admin", optional = true) {
+            put("/admin/compos/{id}/setVisible/{state}") {
+                call.switchApi { id, state -> app.compos.setVisible(id, state) }
+            }
+
             put("/admin/compos/{id}/setSubmit/{state}") {
                 call.switchApi { id, state -> app.compos.allowSubmit(id, state) }
             }

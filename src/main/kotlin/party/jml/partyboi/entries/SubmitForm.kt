@@ -50,6 +50,11 @@ fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<Ent
 }
 
 fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
+    if (form.error != null) {
+        section(classes = "error") {
+            +form.error.message
+        }
+    }
     form.forEach { data ->
         if (data.isFileInput) {
             formFileInput(data)

@@ -20,6 +20,7 @@ object AdminComposPage {
                             thead {
                                 tr {
                                     th { +"Name" }
+                                    th { +"Visible" }
                                     th { +"Submitting"}
                                     th { +"Voting" }
                                     th { +"Entries" }
@@ -29,6 +30,14 @@ object AdminComposPage {
                                 compos.forEach { compo ->
                                     tr {
                                         td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
+                                        td {
+                                            switchLink(
+                                                toggled = compo.visible,
+                                                labelOn = "Visible",
+                                                labelOff = "Hidden",
+                                                urlPrefix = "/admin/compos/${compo.id}/setVisible",
+                                            )
+                                        }
                                         td {
                                             switchLink(
                                                 toggled = compo.allowSubmit,

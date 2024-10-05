@@ -14,6 +14,9 @@ fun Application.configureStyles() {
                 rule("small.error") {
                     color = Color("#D93526")
                 }
+                rule("section.error") {
+                    color = Color("#D93526")
+                }
                 // Theme variables here
             }
         }

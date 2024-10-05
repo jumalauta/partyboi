@@ -18,12 +18,20 @@ class Form<T : Validateable<T>>(
     val kclass: KClass<T>,
     val data: T,
     val initial: Boolean,
-    val accumulatedErrors: List<ValidationError.Message> = emptyList()
+    val accumulatedValidationErrors: List<ValidationError.Message> = emptyList(),
+    val error: AppError? = null,
 ) {
     fun validated() = data.validate()
 
     val errors: List<ValidationError.Message> by lazy {
-        if (initial) accumulatedErrors else data.validate().fold({ accumulatedErrors + it.errors }, { accumulatedErrors })
+        if (initial) {
+            accumulatedValidationErrors
+        } else {
+            data.validate().fold(
+                { (accumulatedValidationErrors + it.errors).distinct() },
+                { accumulatedValidationErrors }
+            )
+        }
     }
 
     fun forEach(block: (FieldData) -> Unit) {
@@ -61,11 +69,12 @@ class Form<T : Validateable<T>>(
     }
 
     fun with(error: AppError): Form<T> {
-        val newErrors = when(error) {
+        val errors = accumulatedValidationErrors + when(error) {
             is ValidationError -> error.errors
             else -> emptyList()
         }
-        return Form(kclass, data, initial, accumulatedErrors + newErrors)
+        val uniqueErrors = errors.distinct()
+        return Form(kclass, data, initial, uniqueErrors, if (error is ValidationError) null else error)
     }
 
     data class FieldData(

@@ -32,8 +32,8 @@ data class Page(
                                     +"Register" }
                                 }
                             } else {
-                                li { a(href = "/compos") { +"Compos" } }
-                                li { a(href = "/entries") { +"Submit entries" } }
+                                li { a(href = "/compos") { +"Competitions" } }
+                                li { a(href = "/entries") { +"Entries" } }
                                 li { a(href = "/vote") { +"Vote" } }
                                 if (user.isAdmin) {
                                     li {

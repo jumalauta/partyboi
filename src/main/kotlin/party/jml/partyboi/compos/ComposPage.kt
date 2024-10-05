@@ -7,20 +7,18 @@ import party.jml.partyboi.templates.Page
 object ComposPage {
     fun render(compos: List<Compo>) =
         Page("Compos") {
-            compos.forEach { compo ->
+            compos.filter { it.visible }.forEach { compo ->
                 article {
                     header { +compo.name }
-                    p { +(if (compo.rules.isEmpty()) "Rules are missing... :-(" else compo.rules) }
-                    footer {
-                        if (compo.allowSubmit) {
-                            a(href = "/submit") {
-                                +"Submit an entry"
-                            }
+                    p { +compo.rules }
+                    if (compo.allowSubmit) {
+                        a(href = "/entries/submit/${compo.id}") {
+                            +"Submit an entry"
                         }
-                        if (compo.allowVote) {
-                            a(href = "/vote") {
-                                +"Vote entries"
-                            }
+                    }
+                    if (compo.allowVote) {
+                        a(href = "/vote") {
+                            +"Vote"
                         }
                     }
                 }
