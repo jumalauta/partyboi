@@ -81,5 +81,15 @@ class NotFound : AppError {
     override val message: String = "Not found"
 }
 
+class InvalidInput(name: String) : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
+    override val message: String = "Invalid input: $name"
+}
+
+class MissingInput(name: String) : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
+    override val message: String = "Missing input: $name"
+}
+
 fun <A> catchError(f: () -> A): Either<AppError, A> =
     Either.catch { f() }.mapLeft { InternalServerError(it.message ?: it.toString()) }

@@ -7,6 +7,11 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.parameterBoolean
+import party.jml.partyboi.data.parameterInt
+import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.database.Compo
 import party.jml.partyboi.database.NewCompo
 import party.jml.partyboi.errors.catchError
@@ -63,24 +68,15 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         // API routes (we don't want to redirect user to login page)
         authenticate("admin", optional = true) {
             put("/admin/compos/{id}/setSubmit/{state}") {
-                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
-                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
-                app.compos.allowSubmit(id, state)
-                call.respondText("OK")
+                call.switchApi { id, state -> app.compos.allowSubmit(id, state) }
             }
 
             put("/admin/compos/{id}/setVoting/{state}") {
-                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
-                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
-                app.compos.allowVoting(id, state)
-                call.respondText("OK")
+                call.switchApi { id, state -> app.compos.allowVoting(id, state) }
             }
 
             put("/admin/compos/entries/{id}/setQualified/{state}") {
-                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid id")
-                val state = call.parameters["state"]?.toBoolean() ?: throw IllegalArgumentException("Invalid state")
-                app.entries.setQualified(id, state)
-                call.respondText("OK")
+                call.switchApi { id, state -> app.entries.setQualified(id, state) }
             }
 
             put("/admin/compos/{compoId}/runOrder") {

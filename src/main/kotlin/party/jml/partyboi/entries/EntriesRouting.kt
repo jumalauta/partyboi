@@ -15,6 +15,8 @@ import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.database.EntryUpdate
 import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.errors.catchError
@@ -80,14 +82,11 @@ fun Application.configureEntriesRouting(app: AppServices) {
         // API routes (we don't want to redirect user to login page)
         authenticate("user", optional = true) {
             delete("/entries/{id}") {
-                either {
-                    val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
+                call.apiRespond { either {
                     val user = call.userSession().bind()
+                    val id = call.parameterInt("id").bind()
                     app.entries.delete(id, user.id).bind()
-                    call.respondText("OK")
-                }.mapLeft {
-                    call.respond(HttpStatusCode.Unauthorized)
-                }
+                } }
             }
         }
     }
