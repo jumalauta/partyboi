@@ -42,10 +42,10 @@ class CompoRepository(private val db: DatabasePool) {
         db.updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
 
     fun allowSubmit(compoId: Int, state: Boolean): Either<AppError, Unit> =
-        db.updateOne(queryOf("update compo set allow_submit = ? where id = ?", state, compoId))
+        db.updateOne(queryOf("update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)", state, compoId, state))
 
     fun allowVoting(compoId: Int, state: Boolean): Either<AppError, Unit> =
-        db.updateOne(queryOf("update compo set allow_vote = ? where id = ?", state, compoId))
+        db.updateOne(queryOf("update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)", state, compoId, state))
 }
 
 data class Compo(

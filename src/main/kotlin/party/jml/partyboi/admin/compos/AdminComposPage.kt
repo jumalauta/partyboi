@@ -34,7 +34,8 @@ object AdminComposPage {
                                                 toggled = compo.allowSubmit,
                                                 labelOn = "Open",
                                                 labelOff = "Closed",
-                                                urlPrefix = "/admin/compos/${compo.id}/setSubmit"
+                                                urlPrefix = "/admin/compos/${compo.id}/setSubmit",
+                                                disable = compo.allowVote,
                                             )
                                         }
                                         td {
@@ -42,7 +43,8 @@ object AdminComposPage {
                                                 toggled = compo.allowVote,
                                                 labelOn = "Open",
                                                 labelOff = "Closed",
-                                                urlPrefix = "/admin/compos/${compo.id}/setVoting"
+                                                urlPrefix = "/admin/compos/${compo.id}/setVoting",
+                                                disable = compo.allowSubmit,
                                             )
                                         }
                                         td {
