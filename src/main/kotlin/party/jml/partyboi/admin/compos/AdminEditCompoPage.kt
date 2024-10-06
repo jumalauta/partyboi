@@ -53,6 +53,12 @@ object AdminEditCompoPage {
                             }
                         }
                     }
+                    footer {
+                        a(href = "/admin/compos/${compo.data.id}/download") {
+                            attributes.put("role", "button")
+                            +"Download files"
+                        }
+                    }
                 }
             }
             script(src = "/assets/draggable.min.js") {}

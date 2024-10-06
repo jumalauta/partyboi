@@ -31,12 +31,12 @@ class CompoRepository(private val db: DatabasePool) {
         it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
 
-    fun getOpenCompos(): Either<AppError, List<Compo>> = db.use{
+    fun getOpenCompos(): Either<AppError, List<Compo>> = db.use {
         it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
     }
 
-    fun add(compo: NewCompo): Either<AppError, Unit> = db.use{
-        it.execAlways(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
+    fun add(compo: NewCompo): Either<AppError, Unit> = db.use {
+        it.exec(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
     }
 
     fun update(compo: Compo): Either<AppError, Unit> = db.use {

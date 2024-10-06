@@ -1,6 +1,7 @@
 package party.jml.partyboi.form
 
 import arrow.core.*
+import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
@@ -8,6 +9,7 @@ import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Path
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
@@ -98,16 +100,18 @@ class Form<T : Validateable<T>>(
                 parameters.forEachPart { part ->
                     val name = part.name ?: throw Error("Anonymous parameters not supported")
                     when (part) {
-                        is PartData.FormItem -> stringParams[name] = part.value
+                        is PartData.FormItem -> {
+                            stringParams[name] = part.value
+                            part.dispose()
+                        }
                         is PartData.FileItem -> {
                             fileParams[name] = FileUpload(
                                 name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
-                                source = part.streamProvider()
+                                fileItem = part,
                             )
                         }
-                        else -> {}
+                        else -> part.dispose()
                     }
-                    part.dispose()
                 }
 
                 val args: List<Any> = ctor.valueParameters.map {
@@ -153,11 +157,12 @@ annotation class Field(
 
 data class FileUpload(
     val name: String,
-    val source: InputStream,
+    val fileItem: PartData.FileItem,
 ) {
-    fun write(storageFilename: String): Either<AppError, Unit> {
+    fun write(storageFilename: Path): Either<AppError, Unit> {
         return try {
-            val file = File("${Config.getEntryDir()}/$storageFilename")
+            val source = fileItem.streamProvider()
+            val file = Config.getEntryDir().resolve(storageFilename).toFile()
             File(file.parent).mkdirs()
             file.outputStream().use { out ->
                 while (true) {
@@ -167,6 +172,7 @@ data class FileUpload(
                 }
                 source.close()
             }
+            fileItem.dispose()
             Unit.right()
         } catch (err: Error) {
             InternalServerError(err.message ?: err.toString()).left()
@@ -176,6 +182,10 @@ data class FileUpload(
     val isDefined = name.isNotEmpty()
 
     companion object {
-        val Empty = FileUpload("", InputStream.nullInputStream())
+        val Empty = FileUpload("", PartData.FileItem(
+            { throw Error("Empty file") },
+            { },
+            Headers.Empty
+        ))
     }
 }

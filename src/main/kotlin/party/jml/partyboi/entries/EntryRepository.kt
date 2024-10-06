@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.toOption
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
@@ -70,10 +71,9 @@ class EntryRepository(private val app: AppServices) {
     fun add(newEntry: NewEntry): Either<AppError, Unit> =
         db.transaction { either {
             val entry = it.one(queryOf(
-            "insert into entry(title, author, filename, compo_id, user_id) values(?, ?, ?, ?, ?) returning *",
+            "insert into entry(title, author, compo_id, user_id) values(?, ?, ?, ?) returning *",
                 newEntry.title,
                 newEntry.author,
-                newEntry.file.name,
                 newEntry.compoId,
                 newEntry.userId,
             ).map(Entry.fromRow)).bind()
@@ -85,7 +85,7 @@ class EntryRepository(private val app: AppServices) {
                 originalFilename = newEntry.file.name,
                 storageFilename = storageFilename,
             )
-            newEntry.file.write(fileDesc.storageFilename).bind()
+            runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
             app.files.add(fileDesc, it).bind()
         } }
 

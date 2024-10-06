@@ -3,6 +3,7 @@ package party.jml.partyboi
 import com.natpryce.konfig.*
 import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
 import io.ktor.util.*
+import party.jml.partyboi.admin.compos.CompoRunService
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
 import party.jml.partyboi.compos.CompoRepository
@@ -10,6 +11,8 @@ import party.jml.partyboi.data.DatabasePool
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.voting.VoteRepository
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class AppServices(db: DatabasePool) {
     val db: DatabasePool = db
@@ -19,6 +22,7 @@ class AppServices(db: DatabasePool) {
     val entries = EntryRepository(this)
     val files = FileRepository(this)
     val votes = VoteRepository(db)
+    val compoRun = CompoRunService(this)
 }
 
 object Config {
@@ -35,7 +39,7 @@ object Config {
     private val dbDatabase = Key("db.database", stringType)
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
-    fun getEntryDir() = config.get(entryDir)
+    fun getEntryDir(): Path = Paths.get(config[entryDir])
     fun getDbHost() = config.getOrElse(dbHost, "localhost")
     fun getDbPort() = config.getOrElse(dbPort, 5432)
     fun getDbUser() = config.getOrElse(dbUser, "postgres")

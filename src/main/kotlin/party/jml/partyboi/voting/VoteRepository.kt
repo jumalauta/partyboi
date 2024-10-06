@@ -5,7 +5,7 @@ import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.DatabasePool
-import party.jml.partyboi.data.execAlways
+import party.jml.partyboi.data.exec
 import party.jml.partyboi.data.many
 
 class VoteRepository(private val db: DatabasePool) {
@@ -21,7 +21,7 @@ class VoteRepository(private val db: DatabasePool) {
     }
 
     fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> = db.use {
-        it.execAlways(queryOf("""
+        it.exec(queryOf("""
                 INSERT INTO vote (user_id, entry_id, points)
                 VALUES (?, ?, ?)
                 ON CONFLICT (user_id, entry_id) DO UPDATE SET

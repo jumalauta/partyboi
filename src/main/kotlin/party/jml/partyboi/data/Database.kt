@@ -46,22 +46,19 @@ fun <A> Session.option(query: ResultQueryActionBuilder<A>): Either<AppError, Opt
     runSafely(query.asSingle)
 
 fun <A> Session.one(query: ResultQueryActionBuilder<A>): Either<AppError, A> =
-    option(query).flatMap { it.toEither { NotFound() } }
+    option(query).flatMap { it.toEither { NotFound("Not found by $query") } }
 
 fun <A> Session.many(query: ResultQueryActionBuilder<A>): Either<AppError, List<A>> =
     runSafely(query.asList)
 
-fun Session.exec(query: Query): Either<AppError, Boolean> =
-    runSafely(query.asExecute)
-
-fun Session.execAlways(query: Query): Either<AppError, Unit> =
-    runSafely(query.asExecute).flatMap { if (it) Unit.right() else NotFound().left() }
+fun Session.exec(query: Query): Either<AppError, Unit> =
+    runSafely(query.asExecute).map {}
 
 fun Session.updateAny(query: Query): Either<AppError, Int> =
     runSafely(query.asUpdate)
 
 fun Session.updateOne(query: Query): Either<AppError, Unit> =
-    updateAny(query).flatMap { if (it != 1) NotFound().left() else Unit.right() }
+    updateAny(query).flatMap { if (it != 1) NotFound("Not found by $query").left() else Unit.right() }
 
 object DbBasicMappers {
     val asBoolean: (Row) -> Boolean = { it.boolean(1) }

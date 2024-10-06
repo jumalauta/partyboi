@@ -1,6 +1,7 @@
 package party.jml.partyboi.admin.compos
 
 import arrow.core.raise.either
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -10,10 +11,14 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.data.catchError
+import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.toFilenameToken
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 fun Application.configureAdminComposRouting(app: AppServices) {
     routing {
@@ -58,6 +63,29 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                     val entries = app.entries.getEntriesForCompo(compo.bind().data.id).bind()
                     AdminEditCompoPage.render(compo.bind().with(error), entries)
                 } })
+            }
+
+            get("/admin/compos/{id}/download") {
+                either {
+                    val compoId = call.parameterInt("id").bind()
+                    val compo = app.compos.getById(compoId).bind()
+                    val entries = app.compoRun.prepareFiles(compoId).bind()
+                    val zipFile = app.compoRun.compressDirectory(entries).bind()
+
+                    val compoName = compo.name.toFilenameToken(true)
+                    val timestamp = LocalDateTime.now()
+                        .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        .toFilenameToken(true)
+
+                    call.response.header(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.Attachment.withParameter(
+                            ContentDisposition.Parameters.FileName,
+                            "$compoName-compo-$timestamp.zip"
+                        ).toString()
+                    )
+                    call.respondFile(zipFile.toFile())
+                }
             }
         }
 

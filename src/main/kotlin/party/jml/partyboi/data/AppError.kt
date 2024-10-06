@@ -76,9 +76,8 @@ class Unauthorized : AppError {
     override val message: String = "Unauthorized"
 }
 
-class NotFound : AppError {
+class NotFound(override val message: String) : AppError {
     override val statusCode: HttpStatusCode = HttpStatusCode.NotFound
-    override val message: String = "Not found"
 }
 
 class InvalidInput(name: String) : AppError {
