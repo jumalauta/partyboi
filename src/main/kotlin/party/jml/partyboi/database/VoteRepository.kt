@@ -16,8 +16,8 @@ class VoteRepository(private val db: DatabasePool) {
         """)
     }
 
-    fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> =
-        db.use().execAlways(queryOf("""
+    fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> = db.use {
+        it.execAlways(queryOf("""
                 INSERT INTO vote (user_id, entry_id, points)
                 VALUES (?, ?, ?)
                 ON CONFLICT (user_id, entry_id) DO UPDATE SET
@@ -27,9 +27,10 @@ class VoteRepository(private val db: DatabasePool) {
             entryId,
             points,
         ))
+    }
 
-    fun getUserVotes(userId: Int): Either<AppError, List<UserVote>> =
-        db.use().many(queryOf("""
+    fun getUserVotes(userId: Int): Either<AppError, List<UserVote>> = db.use {
+        it.many(queryOf("""
                 SELECT
                     entry_id,
                     points
@@ -38,9 +39,10 @@ class VoteRepository(private val db: DatabasePool) {
             """.trimIndent(),
             userId,
         ).map(UserVote.fromRow))
+    }
 
-    fun getAllResults(): Either<AppError, List<CompoResult>> =
-        db.use().many(queryOf("""
+    fun getAllResults(): Either<AppError, List<CompoResult>> = db.use {
+        it.many(queryOf("""
             SELECT
                 compo_id,
                 compo.name as compo_name,
@@ -54,6 +56,7 @@ class VoteRepository(private val db: DatabasePool) {
             GROUP BY compo_id, compo.name, entry_id, title, author
             ORDER BY compo_id, points DESC
         """.trimIndent()).map(CompoResult.fromRow))
+    }
 }
 
 data class CompoResult(

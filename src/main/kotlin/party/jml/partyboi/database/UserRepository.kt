@@ -24,15 +24,17 @@ class UserRepository(private val db: DatabasePool) {
         """)
     }
 
-    fun getUser(name: String): Either<AppError, User> =
-        db.use().one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
+    fun getUser(name: String): Either<AppError, User> = db.use {
+        it.one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
+    }
 
-    fun addUser(user: NewUser): Either<AppError, User> =
-        db.use().one(queryOf(
+    fun addUser(user: NewUser): Either<AppError, User> = db.use {
+        it.one(queryOf(
             "insert into appuser(name, password) values (?, ?) returning *",
             user.name,
             user.hashedPassword(),
-            ).map(User.fromRow))
+        ).map(User.fromRow))
+    }
 }
 
 data class User(

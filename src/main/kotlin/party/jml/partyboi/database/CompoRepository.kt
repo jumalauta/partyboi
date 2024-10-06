@@ -25,37 +25,60 @@ class CompoRepository(private val db: DatabasePool) {
         """)
     }
 
-    fun getById(id: Int, tx: TransactionalSession? = null): Either<AppError, Compo> =
-        db.use(tx).one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
+    fun getById(id: Int, tx: TransactionalSession? = null): Either<AppError, Compo> = db.use(tx) {
+        it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
+    }
 
-    fun getAllCompos(): Either<AppError, List<Compo>> =
-        db.use().many(queryOf("select * from compo order by name").map(Compo.fromRow))
+    fun getAllCompos(): Either<AppError, List<Compo>> = db.use {
+        it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
+    }
 
-    fun getOpenCompos(): Either<AppError, List<Compo>> =
-        db.use().many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
+    fun getOpenCompos(): Either<AppError, List<Compo>> = db.use{
+        it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
+    }
 
-    fun add(compo: NewCompo): Either<AppError, Unit> =
-        db.use().execAlways(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
+    fun add(compo: NewCompo): Either<AppError, Unit> = db.use{
+        it.execAlways(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
+    }
 
-    fun update(compo: Compo): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
+    fun update(compo: Compo): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
+    }
 
-    fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
+    fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use{
+        it.updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
+    }
 
-    fun allowSubmit(compoId: Int, state: Boolean): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)", state, compoId, state))
+    fun allowSubmit(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(
+            queryOf(
+                "update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)",
+                state,
+                compoId,
+                state
+            )
+        )
+    }
 
-    fun allowVoting(compoId: Int, state: Boolean): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)", state, compoId, state))
+    fun allowVoting(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(
+            queryOf(
+                "update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)",
+                state,
+                compoId,
+                state
+            )
+        )
+    }
 
-    fun assertCanSubmit(compoId: Int, isAdmin: Boolean): Either<AppError, Unit> =
-        db.use().one(queryOf(
+    fun assertCanSubmit(compoId: Int, isAdmin: Boolean): Either<AppError, Unit> = db.use {
+        it.one(queryOf(
             "select ? or (visible and allow_submit) from compo where id = ?",
             isAdmin,
             compoId,
         ).map { it.boolean(1) })
             .flatMap { if (it) Unit.right() else Forbidden().left() }
+    }
 }
 
 data class Compo(

@@ -12,7 +12,12 @@ import party.jml.partyboi.errors.NotFound
 import java.sql.Connection
 
 class DatabasePool(private val dataSource: HikariDataSource) {
-    fun use(tx: TransactionalSession? = null): Session = tx ?: sessionOf(dataSource)
+    fun <A> use(tx: TransactionalSession? = null, block: (Session) -> A): A =
+        if (tx != null) {
+            block(tx)
+        } else {
+            sessionOf(dataSource).use { block(it) }
+        }
 
     fun <A> transaction(block: (TransactionalSession) -> Either<AppError, A>): Either<AppError, A> =
         sessionOf(dataSource).transactionEither { block(it) }

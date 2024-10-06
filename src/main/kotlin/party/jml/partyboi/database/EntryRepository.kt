@@ -39,20 +39,23 @@ class EntryRepository(private val app: AppServices) {
         """)
     }
 
-    fun getAllEntries(): Either<AppError, List<Entry>> =
-        db.use().many(queryOf("select * from entry").map(Entry.fromRow))
+    fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
+        it.many(queryOf("select * from entry").map(Entry.fromRow))
+    }
 
     fun getAllEntriesByCompo(): Either<AppError, Map<Int, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
-    fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> =
-        db.use().many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
+    fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> = db.use {
+        it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
+    }
 
-    fun get(entryId: Int, userId: Int): Either<AppError, Entry> =
-        db.use().one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
+    fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use{
+        it.one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
+    }
 
-    fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> =
-        db.use().many(query = queryOf("""
+    fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> = db.use {
+        it.many(query = queryOf("""
             SELECT *
             FROM entry
             LEFT JOIN LATERAL(
@@ -68,6 +71,7 @@ class EntryRepository(private val app: AppServices) {
             ) ON 1=1
             WHERE user_id = ?
         """.trimIndent(), userId).map(EntryWithLatestFile.fromRow))
+    }
 
     fun add(newEntry: NewEntry): Either<AppError, Unit> =
         db.transaction { either {
@@ -91,8 +95,8 @@ class EntryRepository(private val app: AppServices) {
             app.files.add(fileDesc, it).bind()
         } }
 
-    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("""
+    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("""
             update entry set
                 title = ?,
                 author = ?,
@@ -107,21 +111,26 @@ class EntryRepository(private val app: AppServices) {
             entry.id,
             userId
         ))
+    }
 
-    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+    }
 
-    fun delete(id: Int): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("delete from entry where id = ?", id))
+    fun delete(id: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("delete from entry where id = ?", id))
+    }
 
-    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
+    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
+    }
 
-    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
-        db.use().updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+    }
 
-    fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> =
-        db.use().many(queryOf("""
+    fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> = db.use {
+        it.many(queryOf("""
                 SELECT
                     compo_id,
                     compo.name AS compo_name,
@@ -139,6 +148,7 @@ class EntryRepository(private val app: AppServices) {
             userId)
             .map(VoteableEntry.fromRow)
         )
+    }
 }
 
 data class Entry(

@@ -46,7 +46,9 @@ class FileRepository(private val app: AppServices) {
     }
 
     fun latestVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Option<Int>> =
-        db.use(tx).option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))
+        db.use(tx) {
+            it.option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))
+        }
 
     fun nextVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Int> =
         latestVersion(entryId, tx).map { it.getOrElse { 0 } + 1 }
@@ -54,15 +56,17 @@ class FileRepository(private val app: AppServices) {
     fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, Unit> = either {
         val version = nextVersion(file.entryId, tx).bind()
         val fileSize = 0 // TODO
-        db.use(tx).execute(queryOf(
-            "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?)",
-            file.entryId,
-            version,
-            file.originalFilename,
-            file.storageFilename,
-            file.type,
-            fileSize,
-        ))
+        db.use(tx) {
+            it.execute(queryOf(
+                "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?)",
+                file.entryId,
+                version,
+                file.originalFilename,
+                file.storageFilename,
+                file.type,
+                fileSize,
+            ))
+        }
     }
 
     private fun buildStorageFilename(compoName: String, entryId: Int, version: Int, author: String, title: String, originalFilename: String): String {
