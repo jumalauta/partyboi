@@ -1,7 +1,6 @@
 package party.jml.partyboi.data
 
 import arrow.core.*
-import party.jml.partyboi.errors.ValidationError
 
 interface Validateable<T : Validateable<T>> {
     fun validationErrors(): List<Option<ValidationError.Message>>

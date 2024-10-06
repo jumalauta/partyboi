@@ -1,7 +1,7 @@
 package party.jml.partyboi.voting
 
 import kotlinx.html.*
-import party.jml.partyboi.database.VoteableEntry
+import party.jml.partyboi.entries.VoteableEntry
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 

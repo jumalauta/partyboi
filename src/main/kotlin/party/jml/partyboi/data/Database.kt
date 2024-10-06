@@ -1,4 +1,4 @@
-package party.jml.partyboi.database
+package party.jml.partyboi.data
 
 import arrow.core.*
 import com.zaxxer.hikari.HikariDataSource
@@ -6,9 +6,6 @@ import io.ktor.server.application.*
 import kotliquery.*
 import kotliquery.action.*
 import party.jml.partyboi.Config
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.DatabaseError
-import party.jml.partyboi.errors.NotFound
 import java.sql.Connection
 
 class DatabasePool(private val dataSource: HikariDataSource) {

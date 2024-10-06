@@ -2,12 +2,10 @@ package party.jml.partyboi.entries
 
 import arrow.core.getOrElse
 import kotlinx.html.*
+import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.Filesize
-import party.jml.partyboi.database.Compo
-import party.jml.partyboi.database.Entry
-import party.jml.partyboi.database.EntryWithLatestFile
-import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.submitNewEntryForm
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 

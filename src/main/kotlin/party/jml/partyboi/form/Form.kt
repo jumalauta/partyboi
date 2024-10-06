@@ -5,16 +5,14 @@ import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.database.NewFileDesc
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.FormError
-import party.jml.partyboi.errors.InternalServerError
-import party.jml.partyboi.errors.ValidationError
+import party.jml.partyboi.data.*
 import java.io.File
 import java.io.InputStream
 import kotlin.reflect.KClass
-import kotlin.reflect.full.*
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.full.valueParameters
 
 class Form<T : Validateable<T>>(
     val kclass: KClass<T>,

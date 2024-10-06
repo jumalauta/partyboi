@@ -1,4 +1,4 @@
-package party.jml.partyboi.errors
+package party.jml.partyboi.data
 
 import arrow.core.Either
 import arrow.core.NonEmptyList
@@ -7,7 +7,7 @@ import io.ktor.http.*
 import kotlinx.html.article
 import kotlinx.html.h1
 import kotlinx.html.p
-import party.jml.partyboi.database.User
+import party.jml.partyboi.auth.User
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
 

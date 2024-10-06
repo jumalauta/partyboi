@@ -1,12 +1,12 @@
 package party.jml.partyboi.admin.compos
 
 import kotlinx.html.*
-import party.jml.partyboi.database.Compo
-import party.jml.partyboi.database.Entry
-import party.jml.partyboi.database.NewCompo
-import party.jml.partyboi.entries.renderForm
-import party.jml.partyboi.entries.switchLink
+import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.switchLink
 import party.jml.partyboi.templates.Page
 
 object AdminComposPage {

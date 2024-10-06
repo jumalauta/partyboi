@@ -3,7 +3,7 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
-import party.jml.partyboi.database.User
+import party.jml.partyboi.auth.User
 
 data class Page(
     val title: String,

@@ -1,7 +1,9 @@
 package party.jml.partyboi.compos
 
-import kotlinx.html.*
-import party.jml.partyboi.database.Compo
+import kotlinx.html.a
+import kotlinx.html.article
+import kotlinx.html.header
+import kotlinx.html.p
 import party.jml.partyboi.templates.Page
 
 object ComposPage {

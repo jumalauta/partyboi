@@ -7,14 +7,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.parameterBoolean
-import party.jml.partyboi.data.parameterInt
+import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.data.catchError
 import party.jml.partyboi.data.switchApi
-import party.jml.partyboi.database.Compo
-import party.jml.partyboi.database.NewCompo
-import party.jml.partyboi.errors.catchError
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither

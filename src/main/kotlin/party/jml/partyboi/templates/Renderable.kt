@@ -1,15 +1,14 @@
 package party.jml.partyboi.templates
 
-import arrow.core.*
+import arrow.core.Either
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
-import party.jml.partyboi.database.User
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.InternalServerError
-import party.jml.partyboi.errors.ValidationError
+import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.getAny
 
 interface Renderable {

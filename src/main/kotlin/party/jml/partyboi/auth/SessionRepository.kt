@@ -1,7 +1,8 @@
-package party.jml.partyboi.database
+package party.jml.partyboi.auth
 
 import io.ktor.server.sessions.*
 import kotliquery.queryOf
+import party.jml.partyboi.data.DatabasePool
 
 class SessionRepository(private val db: DatabasePool) : SessionStorage {
     init {

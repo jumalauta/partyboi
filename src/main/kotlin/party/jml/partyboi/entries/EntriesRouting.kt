@@ -13,11 +13,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.catchError
 import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.database.EntryUpdate
-import party.jml.partyboi.database.NewEntry
-import party.jml.partyboi.database.NewFileDesc
-import party.jml.partyboi.errors.catchError
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither

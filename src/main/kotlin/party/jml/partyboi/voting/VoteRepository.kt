@@ -1,8 +1,12 @@
-package party.jml.partyboi.database
+package party.jml.partyboi.voting
 
 import arrow.core.Either
-import kotliquery.*
-import party.jml.partyboi.errors.AppError
+import kotliquery.Row
+import kotliquery.queryOf
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.DatabasePool
+import party.jml.partyboi.data.execAlways
+import party.jml.partyboi.data.many
 
 class VoteRepository(private val db: DatabasePool) {
     init {

@@ -1,17 +1,14 @@
 package party.jml.partyboi.voting
 
+import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.templates.respondEither
-import arrow.core.raise.either
-import io.ktor.http.*
-import io.ktor.server.response.*
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.errors.catchError
+import party.jml.partyboi.templates.respondEither
 
 fun Application.configureVotingRouting(app: AppServices) {
     routing {

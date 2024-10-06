@@ -1,12 +1,11 @@
-package party.jml.partyboi.entries
+package party.jml.partyboi.form
 
+import arrow.core.Option
 import kotlinx.html.*
-import party.jml.partyboi.database.Compo
-import party.jml.partyboi.database.NewEntry
-import party.jml.partyboi.form.Form
-import arrow.core.*
+import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.database.EntryUpdate
+import party.jml.partyboi.entries.EntryUpdate
+import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {

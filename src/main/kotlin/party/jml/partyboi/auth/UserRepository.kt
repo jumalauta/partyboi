@@ -1,15 +1,15 @@
-package party.jml.partyboi.database
+package party.jml.partyboi.auth
 
-import arrow.core.*
+import arrow.core.Either
+import arrow.core.Option
+import arrow.core.left
+import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
 import org.mindrot.jbcrypt.BCrypt
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.RedirectInterruption
-import party.jml.partyboi.errors.ValidationError
+import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
 
 class UserRepository(private val db: DatabasePool) {

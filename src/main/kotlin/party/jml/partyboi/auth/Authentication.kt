@@ -8,9 +8,8 @@ import io.ktor.server.response.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
-import party.jml.partyboi.database.User
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.RedirectInterruption
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.RedirectInterruption
 import kotlin.time.Duration.Companion.days
 
 fun Application.configureAuthentication(app: AppServices) {

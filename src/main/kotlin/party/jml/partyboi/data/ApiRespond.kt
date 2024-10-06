@@ -8,9 +8,6 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.errors.AppError
-import party.jml.partyboi.errors.InvalidInput
-import party.jml.partyboi.errors.MissingInput
 
 suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
     Either.catch {
