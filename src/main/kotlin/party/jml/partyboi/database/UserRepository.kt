@@ -25,10 +25,10 @@ class UserRepository(private val db: DatabasePool) {
     }
 
     fun getUser(name: String): Either<AppError, User> =
-        db.one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
+        db.use().one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
 
     fun addUser(user: NewUser): Either<AppError, User> =
-        db.one(queryOf(
+        db.use().one(queryOf(
             "insert into appuser(name, password) values (?, ?) returning *",
             user.name,
             user.hashedPassword(),

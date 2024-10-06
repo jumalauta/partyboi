@@ -6,10 +6,12 @@ import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
 import io.ktor.util.*
 
 class AppServices(db: DatabasePool) {
+    val db: DatabasePool = db
     val users = UserRepository(db)
     val sessions = SessionRepository(db)
     val compos = CompoRepository(db)
-    val entries = EntryRepository(db)
+    val entries = EntryRepository(this)
+    val files = FileRepository(this)
     val votes = VoteRepository(db)
 }
 

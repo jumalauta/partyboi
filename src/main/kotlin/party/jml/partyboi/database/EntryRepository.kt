@@ -3,10 +3,13 @@ package party.jml.partyboi.database
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.flatten
+import arrow.core.raise.either
 import arrow.core.toOption
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.errors.AppError
@@ -16,14 +19,15 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FileUpload
 import java.time.LocalDateTime
 
-class EntryRepository(private val db: DatabasePool) {
+class EntryRepository(private val app: AppServices) {
+    private val db = app.db
+
     init {
         db.init("""
             CREATE TABLE IF NOT EXISTS entry (
                 id SERIAL PRIMARY KEY,
                 title text NOT NULL,
                 author text NOT NULL,
-                filename text NOT NULL,
                 screen_comment text,
                 org_comment text,
                 compo_id integer REFERENCES compo(id),
@@ -36,32 +40,59 @@ class EntryRepository(private val db: DatabasePool) {
     }
 
     fun getAllEntries(): Either<AppError, List<Entry>> =
-        db.many(queryOf("select * from entry").map(Entry.fromRow))
+        db.use().many(queryOf("select * from entry").map(Entry.fromRow))
 
     fun getAllEntriesByCompo(): Either<AppError, Map<Int, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
     fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> =
-        db.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
+        db.use().many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
 
     fun get(entryId: Int, userId: Int): Either<AppError, Entry> =
-        db.one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
+        db.use().one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
 
-    fun getUserEntries(userId: Int): Either<AppError, List<Entry>> =
-        db.many(query = queryOf("select * from entry where user_id = ?", userId).map(Entry.fromRow))
+    fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> =
+        db.use().many(query = queryOf("""
+            SELECT *
+            FROM entry
+            LEFT JOIN LATERAL(
+            	SELECT
+            		version,
+            		orig_filename,
+            		size,
+                    uploaded_at
+            	FROM file
+            	WHERE entry_id = entry.id
+            	ORDER BY version
+            	DESC LIMIT 1
+            ) ON 1=1
+            WHERE user_id = ?
+        """.trimIndent(), userId).map(EntryWithLatestFile.fromRow))
 
-    fun add(entry: NewEntry): Either<AppError, Unit> =
-        db.execute(queryOf(
-            "insert into entry(title, author, filename, compo_id, user_id) values(?, ?, ?, ?, ?)",
-            entry.title,
-            entry.author,
-            entry.file.name,
-            entry.compoId,
-            entry.userId,
-        ))
+    fun add(newEntry: NewEntry): Either<AppError, Unit> =
+        db.transaction { either {
+            val entry = it.one(queryOf(
+            "insert into entry(title, author, filename, compo_id, user_id) values(?, ?, ?, ?, ?) returning *",
+                newEntry.title,
+                newEntry.author,
+                newEntry.file.name,
+                newEntry.compoId,
+                newEntry.userId,
+            ).map(Entry.fromRow)).bind()
+
+            val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
+
+            val fileDesc = NewFileDesc(
+                entryId = entry.id,
+                originalFilename = newEntry.file.name,
+                storageFilename = storageFilename,
+            )
+            newEntry.file.write(fileDesc.storageFilename).bind()
+            app.files.add(fileDesc, it).bind()
+        } }
 
     fun update(entry: EntryUpdate, userId: Int): Either<AppError, Unit> =
-        db.updateOne(queryOf("""
+        db.use().updateOne(queryOf("""
             update entry set
                 title = ?,
                 author = ?,
@@ -78,19 +109,19 @@ class EntryRepository(private val db: DatabasePool) {
         ))
 
     fun delete(entryId: Int, userId: Int): Either<AppError, Unit> =
-        db.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+        db.use().updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
 
     fun delete(id: Int): Either<AppError, Unit> =
-        db.updateOne(queryOf("delete from entry where id = ?", id))
+        db.use().updateOne(queryOf("delete from entry where id = ?", id))
 
     fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
-        db.updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
+        db.use().updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
 
     fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
-        db.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+        db.use().updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
 
     fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> =
-        db.many(queryOf("""
+        db.use().many(queryOf("""
                 SELECT
                     compo_id,
                     compo.name AS compo_name,
@@ -114,7 +145,6 @@ data class Entry(
     val id: Int,
     val title: String,
     val author: String,
-    val filename: String,
     val screenComment: Option<String>,
     val orgComment: Option<String>,
     val compoId: Int,
@@ -129,7 +159,6 @@ data class Entry(
                 row.int("id"),
                 row.string("title"),
                 row.string("author"),
-                row.string("filename"),
                 Option.fromNullable(row.stringOrNull("screen_comment")),
                 Option.fromNullable(row.stringOrNull("org_comment")),
                 row.int("compo_id"),
@@ -137,6 +166,44 @@ data class Entry(
                 row.boolean("qualified"),
                 row.int("run_order"),
                 row.localDateTime("timestamp")
+            )
+        }
+    }
+}
+
+data class EntryWithLatestFile(
+    val id: Int,
+    val title: String,
+    val author: String,
+    val screenComment: Option<String>,
+    val orgComment: Option<String>,
+    val compoId: Int,
+    val userId: Int,
+    val qualified: Boolean,
+    val runOrder: Int,
+    val timestamp: LocalDateTime,
+    val originalFilename: Option<String>,
+    val fileVersion: Option<Int>,
+    val uploadedAt: Option<LocalDateTime>,
+    val fileSize: Option<Long>,
+) {
+    companion object {
+        val fromRow: (Row) -> EntryWithLatestFile = { row ->
+            EntryWithLatestFile(
+                row.int("id"),
+                row.string("title"),
+                row.string("author"),
+                Option.fromNullable(row.stringOrNull("screen_comment")),
+                Option.fromNullable(row.stringOrNull("org_comment")),
+                row.int("compo_id"),
+                row.int("user_id"),
+                row.boolean("qualified"),
+                row.int("run_order"),
+                row.localDateTime("timestamp"),
+                row.stringOrNull("orig_filename").toOption(),
+                row.intOrNull("version").toOption(),
+                row.localDateTimeOrNull("uploaded_at").toOption(),
+                row.longOrNull("size").toOption(),
             )
         }
     }

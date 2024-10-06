@@ -52,6 +52,7 @@ fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<Ent
 fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
     if (form.error != null) {
         section(classes = "error") {
+            strong { +"${form.error.javaClass.simpleName}: " }
             +form.error.message
         }
     }

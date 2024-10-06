@@ -1,22 +1,25 @@
 package party.jml.partyboi.entries
 
+import arrow.core.getOrElse
 import kotlinx.html.*
+import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.database.Compo
 import party.jml.partyboi.database.Entry
+import party.jml.partyboi.database.EntryWithLatestFile
 import party.jml.partyboi.database.NewEntry
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 
 object EntriesPage {
-    fun render(compos: List<Compo>, userEntries: List<Entry>, formData: Form<NewEntry>) =
+    fun render(compos: List<Compo>, userEntries: List<EntryWithLatestFile>, formData: Form<NewEntry>) =
         Page("Submit entries") {
             submitNewEntryForm("/entries", compos, formData)
             entryList(userEntries, compos)
         }
 }
 
-fun FlowContent.entryList(userEntries: List<Entry>, compos: List<Compo>) {
+fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<Compo>) {
     if (userEntries.isNotEmpty()) {
         article {
             header { +"My entries" }
@@ -41,7 +44,12 @@ fun FlowContent.entryList(userEntries: List<Entry>, compos: List<Compo>) {
                             }
                             td { +entry.author }
                             td { +(compo?.name ?: "Invalid compo") }
-                            td { +entry.filename }
+                            td {
+                                entry.originalFilename
+                                    .map { +it }
+                                    .getOrElse { span(classes = "error") { +"File not uploaded" } }
+                                +entry.fileSize.map { " (${Filesize.humanFriendly(it)})" }.getOrElse{ "" }
+                            }
                             td {
                                 if (compo?.allowSubmit == true) {
                                     a {

@@ -4,7 +4,9 @@ import arrow.core.*
 import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
+import party.jml.partyboi.Config
 import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.database.NewFileDesc
 import party.jml.partyboi.errors.AppError
 import party.jml.partyboi.errors.FormError
 import party.jml.partyboi.errors.InternalServerError
@@ -155,9 +157,11 @@ data class FileUpload(
     val name: String,
     val source: InputStream,
 ) {
-    fun writeTo(path: String): Either<AppError, Unit> {
+    fun write(storageFilename: String): Either<AppError, Unit> {
         return try {
-            File("$path/$name").outputStream().use { out ->
+            val file = File("${Config.getEntryDir()}/$storageFilename")
+            File(file.parent).mkdirs()
+            file.outputStream().use { out ->
                 while (true) {
                     val bytes = source.readNBytes(1024)
                     if (bytes.isEmpty()) break

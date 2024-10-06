@@ -17,7 +17,7 @@ class VoteRepository(private val db: DatabasePool) {
     }
 
     fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> =
-        db.execute(queryOf("""
+        db.use().execAlways(queryOf("""
                 INSERT INTO vote (user_id, entry_id, points)
                 VALUES (?, ?, ?)
                 ON CONFLICT (user_id, entry_id) DO UPDATE SET
@@ -29,7 +29,7 @@ class VoteRepository(private val db: DatabasePool) {
         ))
 
     fun getUserVotes(userId: Int): Either<AppError, List<UserVote>> =
-        db.many(queryOf("""
+        db.use().many(queryOf("""
                 SELECT
                     entry_id,
                     points
@@ -40,7 +40,7 @@ class VoteRepository(private val db: DatabasePool) {
         ).map(UserVote.fromRow))
 
     fun getAllResults(): Either<AppError, List<CompoResult>> =
-        db.many(queryOf("""
+        db.use().many(queryOf("""
             SELECT
                 compo_id,
                 compo.name as compo_name,

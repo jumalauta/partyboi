@@ -11,10 +11,7 @@ fun Application.configureStyles() {
     routing {
         get("/theme.css") {
             call.respondCss {
-                rule("small.error") {
-                    color = Color("#D93526")
-                }
-                rule("section.error") {
+                rule(".error") {
                     color = Color("#D93526")
                 }
                 // Theme variables here

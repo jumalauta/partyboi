@@ -16,6 +16,7 @@ import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.database.EntryUpdate
 import party.jml.partyboi.database.NewEntry
+import party.jml.partyboi.database.NewFileDesc
 import party.jml.partyboi.errors.catchError
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
@@ -55,9 +56,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val newEntry = form.validated().bind().copy(userId = userId)
 
                     app.compos.assertCanSubmit(newEntry.compoId, user.bind().isAdmin).bind()
-
-                    runBlocking { newEntry.file.writeTo(Config.getEntryDir()).bind() }
                     app.entries.add(newEntry).bind()
+
                     RedirectPage("/entries")
                 } }, { error -> either {
                     val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) }
@@ -87,7 +87,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val entry = form.validated().bind()
                     app.entries.update(entry, userId).bind()
                     if (entry.file.isDefined) {
-                        runBlocking { entry.file.writeTo(Config.getEntryDir()).bind() }
+                        runBlocking { entry.file.write(Config.getEntryDir()).bind() }
                     }
                     RedirectPage("/entries")
                 } }, { error -> either {

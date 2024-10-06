@@ -14,7 +14,7 @@ class SessionRepository(private val db: DatabasePool) : SessionStorage {
     }
 
     override suspend fun invalidate(id: String) {
-        db.execute(queryOf("DELETE FROM session WHERE id = ?", id))
+        db.use().execute(queryOf("DELETE FROM session WHERE id = ?", id))
     }
 
     override suspend fun read(id: String): String {
@@ -27,6 +27,6 @@ class SessionRepository(private val db: DatabasePool) : SessionStorage {
     }
 
     override suspend fun write(id: String, value: String) {
-        db.execute(queryOf("INSERT INTO session(id, value) VALUES (?, ?)", id, value))
+        db.use().execute(queryOf("INSERT INTO session(id, value) VALUES (?, ?)", id, value))
     }
 }
