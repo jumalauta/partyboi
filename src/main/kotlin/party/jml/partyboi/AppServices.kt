@@ -23,6 +23,7 @@ class AppServices(db: DatabasePool) {
     val files = FileRepository(this)
     val votes = VoteRepository(db)
     val compoRun = CompoRunService(this)
+    val screen = ScreenService(this)
 }
 
 object Config {

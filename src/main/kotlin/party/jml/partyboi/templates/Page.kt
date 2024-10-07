@@ -59,8 +59,6 @@ data class Page(
                         }
                     }
 
-                    children(this)
-
                     footer {
                         small {
                             strong { +"PartyBoi" }

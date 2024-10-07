@@ -20,6 +20,9 @@ suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
     }
 }
 
+fun ApplicationCall.parameterString(name: String): Either<AppError, String> =
+    parameters[name]?.right() ?: MissingInput(name).left()
+
 fun ApplicationCall.parameterInt(name: String): Either<AppError, Int> =
     try {
         parameters[name]?.toInt()?.right() ?: MissingInput(name).left()

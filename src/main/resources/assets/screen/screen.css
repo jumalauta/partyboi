@@ -1,0 +1,34 @@
+main {
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    right: 50px;
+    bottom: 50px;
+
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 500ms, transform 500ms;
+}
+
+.shown {
+    transform: translateX(0);
+    opacity: 100%;
+}
+
+.hiding {
+    transform: translateX(30px);
+}
+
+body {
+    background: #223;
+    color: #fff;
+}
+
+h1 {
+    font-size: 80px;
+    color: #fe0;
+}
+
+p {
+    font-size: 40px;
+}
