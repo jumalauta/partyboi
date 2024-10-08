@@ -37,6 +37,11 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     AdminScreenPage.renderAdHoc(screen)
                 }})
             }
+
+            get("/admin/screen/testscheduler") {
+                app.screen.startSlideShow("info")
+                call.respondText("OK")
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package party.jml.partyboi.screen
 
+import arrow.core.Either
 import arrow.core.raise.either
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -7,10 +8,8 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
-import party.jml.partyboi.data.exec
-import party.jml.partyboi.data.one
-import party.jml.partyboi.data.option
 
 class ScreenRepository(private val app: AppServices) {
     private val db = app.db
@@ -34,6 +33,10 @@ class ScreenRepository(private val app: AppServices) {
     fun getAdHoc() = db.use {
         it.option(queryOf("SELECT * FROM screen WHERE collection = ?", "adhoc").map(ScreenRow.fromRow))
             .map { it.map { it.content } }
+    }
+
+    fun getCollection(name: String): Either<AppError, List<ScreenRow<Screen>>> = db.use {
+        it.many(queryOf("SELECT * FROM screen WHERE collection = ?", name).map(ScreenRow.fromRow))
     }
 
     fun addAdHoc(screen: TextScreen) = db.transaction { either {
