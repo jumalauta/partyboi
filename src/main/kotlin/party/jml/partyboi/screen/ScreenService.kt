@@ -1,15 +1,30 @@
 package party.jml.partyboi.screen
 
-import kotlinx.coroutines.flow.*
+import arrow.core.Either
+import arrow.core.raise.either
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
 import kotlinx.html.h1
 import kotlinx.html.p
+import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 
-class ScreenService(private val appServices: AppServices) {
-    private val state = MutableStateFlow<Screen>(TextScreen("November Games", "Welcome, everyone!"))
+class ScreenService(private val app: AppServices) {
+    private val state = MutableStateFlow<Screen>(TextScreen.Empty)
+    private val repository = ScreenRepository(app)
+
+    init {
+        runBlocking {
+            repository.getAdHoc().map { it.map { state.emit(it) } }
+        }
+    }
 
     fun current(): Screen = state.value
 
@@ -18,15 +33,18 @@ class ScreenService(private val appServices: AppServices) {
         return state.filter { it != current }.take(1)
     }
 
-    suspend fun show(screen: Screen) {
+    suspend fun addAdHoc(screen: TextScreen): Either<AppError, Unit> = either {
+        repository.addAdHoc(screen).bind()
         state.emit(screen)
     }
 }
 
-interface Screen {
+@Serializable
+sealed interface Screen {
     fun render(ctx: FlowContent)
 }
 
+@Serializable
 data class TextScreen (
     @property:Field(order = 0, label = "Title")
     val title: String,

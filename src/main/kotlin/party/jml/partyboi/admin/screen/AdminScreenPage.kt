@@ -7,6 +7,10 @@ import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.screen.TextScreen
 
 object AdminScreenPage {
+    fun navigation() {
+
+    }
+
     fun renderAdHoc(form: Form<TextScreen>) =
         Page("Screen admin") {
             form(

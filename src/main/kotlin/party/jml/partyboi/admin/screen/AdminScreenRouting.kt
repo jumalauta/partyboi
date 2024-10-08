@@ -1,18 +1,26 @@
 package party.jml.partyboi.admin.screen
 
+import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.TextScreen
+import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     routing {
         authenticate("admin") {
             get("/admin/screen") {
+                call.respondRedirect("/admin/screen/adhoc")
+            }
+
+            get("/admin/screen/adhoc") {
                 val current = app.screen.current()
                 val adHoc = if (current is TextScreen) current else TextScreen.Empty
                 val form = Form(TextScreen::class, adHoc, initial = true)
@@ -21,10 +29,13 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
             post("/admin/screen/adhoc") {
                 val screenRequest = Form.fromParameters<TextScreen>(call.receiveMultipart())
-                screenRequest.map {
-                    app.screen.show(it.data)
-                    call.respondPage(AdminScreenPage.renderAdHoc(it))
-                }
+                call.respondEither({ either {
+                    val screen = screenRequest.bind()
+                    runBlocking {
+                        app.screen.addAdHoc(screen.data).bind()
+                    }
+                    AdminScreenPage.renderAdHoc(screen)
+                }})
             }
         }
     }
