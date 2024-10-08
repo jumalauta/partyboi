@@ -10,6 +10,7 @@ import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.data.DatabasePool
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
+import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.voting.VoteRepository
 import java.nio.file.Path
 import java.nio.file.Paths

@@ -2,11 +2,10 @@ package party.jml.partyboi.screen
 
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
-import party.jml.partyboi.Screen
 
 object ScreenPage {
     fun renderContent(screen: Screen) =
-        createHTML().article { screenBody(screen) }
+        createHTML().article { screen.render(this) }
 
     fun render(screen: Screen) =
         createHTML().html {
@@ -17,9 +16,7 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article {
-                        screenBody(screen)
-                    }
+                    article { screen.render(this) }
                 }
                 main {
                     attributes["id"] = "screen2"
@@ -27,9 +24,4 @@ object ScreenPage {
                 script(src = "/assets/screen/screen.js") {}
             }
         }
-}
-
-fun FlowContent.screenBody(screen: Screen) {
-    h1 { +screen.title }
-    p { +screen.content }
 }

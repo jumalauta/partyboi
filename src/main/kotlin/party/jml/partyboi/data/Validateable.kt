@@ -3,7 +3,7 @@ package party.jml.partyboi.data
 import arrow.core.*
 
 interface Validateable<T : Validateable<T>> {
-    fun validationErrors(): List<Option<ValidationError.Message>>
+    fun validationErrors(): List<Option<ValidationError.Message>> = emptyList()
 
     fun validate(name: String? = null): Either<ValidationError, T> {
         return validationErrors()
