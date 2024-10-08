@@ -4,10 +4,10 @@ import party.jml.partyboi.templates.Page
 import kotlinx.html.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.screen.AdHocScreen
+import party.jml.partyboi.screen.TextScreen
 
 object AdminScreenPage {
-    fun render(form: Form<AdHocScreen>) =
+    fun renderAdHoc(form: Form<TextScreen>) =
         Page("Screen admin") {
             form(
                 classes = "submitForm appForm",
