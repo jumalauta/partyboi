@@ -1,12 +1,11 @@
 package party.jml.partyboi.screen
 
-import arrow.atomic.update
 import arrow.core.Either
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.Some
 import arrow.core.raise.either
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
 import kotlinx.html.h1
@@ -16,59 +15,89 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.Form
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.schedule
 
 
 class ScreenService(private val app: AppServices) {
-    private val state = MutableStateFlow<Screen>(TextScreen.Empty)
-    private val repository = ScreenRepository(app)
+    private val state = MutableStateFlow(ScreenState.Empty)
+    val repository = ScreenRepository(app)
     private var scheduler: TimerTask? = null
 
     init {
         runBlocking {
-            repository.getAdHoc().map { it.map { state.emit(it) } }
+            repository.getAdHoc().map { it.map { state.emit(ScreenState.fromRow(it)) } }
         }
     }
 
-    fun current(): Screen = state.value
+    fun current(): Screen<*> = state.value.screen
 
-    fun next(): Flow<Screen> {
+    fun waitForNext(): Flow<Screen<*>> {
         val current = state.value
-        return state.filter { it != current }.take(1)
+        return state.filter { it != current }.take(1).map { it.screen }
     }
+
+    fun currentlyRunningCollection(): Option<String> = if (scheduler == null) None else Some(state.value.collection)
 
     suspend fun addAdHoc(screen: TextScreen): Either<AppError, Unit> = either {
-        repository.addAdHoc(screen).bind()
+        val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
         stopSlideShow()
-        state.emit(screen)
+        state.emit(newState)
     }
+
+    fun getCollection(collection: String): Either<AppError, List<ScreenRow<Screen<*>>>> = repository.getCollection(collection)
+
+    inline fun <reified A : Screen<A>> addEmptyToCollection(collection: String, screen: A) = repository.add(collection, screen)
+
+    inline fun <reified A : Screen<A>> update(id: Int, screen: A) = repository.update(id, screen)
 
     fun stopSlideShow() {
         scheduler?.cancel()
         scheduler = null
     }
 
-    fun startSlideShow(collection: String) {
-        repository.getCollection(collection).map { screens ->
-            val enabledScreens = screens.filter { it.enabled }.map { it.content }
-            if (enabledScreens.isNotEmpty()) {
-                stopSlideShow()
-                val i = AtomicInteger(0)
-                scheduler = Timer().schedule(0, 2000) {
-                    val index = i.get()
-                    runBlocking { state.emit(enabledScreens[index]) }
-                    i.update { (it + 1) % enabledScreens.size }
-                }
+    fun startSlideShow(collection: String): Either<AppError, Unit> =
+        repository.getFirst(collection).map { firstScreen ->
+            show(firstScreen)
+            scheduler = Timer().schedule(0, 10000) {
+                repository.getNext(state.value.collection, state.value.id).fold(
+                    { stopSlideShow() },
+                    { show(it) }
+                )
             }
         }
+
+    private fun show(row: ScreenRow<Screen<*>>): Unit =
+        runBlocking {
+            state.emit(ScreenState.fromRow(row))
+        }
+}
+
+data class ScreenState(
+    val collection: String,
+    val id: Int,
+    val screen: Screen<*>,
+) {
+    companion object {
+        val fromRow: (ScreenRow<Screen<*>>) -> ScreenState = { row ->
+            ScreenState(
+                collection = row.collection,
+                id = row.id,
+                screen = row.content
+            )
+        }
+
+        val Empty = ScreenState("adhoc", -1, TextScreen.Empty)
     }
 }
 
 @Serializable
-sealed interface Screen {
+sealed interface Screen<A>
+where A: Screen<A>,
+      A: Validateable<A> {
     fun render(ctx: FlowContent)
+    fun getForm(): Form<A>
 }
 
 @Serializable
@@ -77,13 +106,15 @@ data class TextScreen (
     val title: String,
     @property:Field(order = 1, label = "Content", large = true)
     val content: String,
-) : Screen, Validateable<TextScreen> {
+) : Screen<TextScreen>, Validateable<TextScreen> {
     override fun render(ctx: FlowContent) {
         with(ctx) {
             h1 { +title }
             p { +content }
         }
     }
+
+    override fun getForm(): Form<TextScreen> = Form(TextScreen::class, this, true)
 
     companion object {
         val Empty = TextScreen("Hello, world!", "")

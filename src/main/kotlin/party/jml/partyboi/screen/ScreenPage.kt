@@ -4,10 +4,10 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 
 object ScreenPage {
-    fun renderContent(screen: Screen) =
+    fun renderContent(screen: Screen<*>) =
         createHTML().article { screen.render(this) }
 
-    fun render(screen: Screen) =
+    fun render(screen: Screen<*>) =
         createHTML().html {
             head {
                 title { +"Screen" }

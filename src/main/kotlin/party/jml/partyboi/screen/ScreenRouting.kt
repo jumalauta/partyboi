@@ -13,7 +13,7 @@ fun Application.configureScreenRouting(app: AppServices) {
         }
 
         get("/screen/next") {
-            app.screen.next().collect { screen ->
+            app.screen.waitForNext().collect { screen ->
                 call.respondText(ScreenPage.renderContent(screen), ContentType.Text.Html)
             }
         }

@@ -11,6 +11,7 @@ class Javascript {
     }
     fun goto(url: String) = push(JAssign("location", url))
     fun httpPut(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("PUT"))))
+    fun httpPost(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("POST"))))
     fun httpDelete(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("DELETE"))))
     fun refresh() = push(JCall("location.reload"))
     fun confirm(message: String, onTrue: Javascript.() -> Unit) = push(JIf(JCall("confirm", JStr(message)), scope(onTrue) ))
