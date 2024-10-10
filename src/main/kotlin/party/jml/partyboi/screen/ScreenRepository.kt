@@ -33,28 +33,25 @@ class ScreenRepository(private val app: AppServices) {
         it.one(queryOf("SELECT count(*) FROM screen WHERE collection = 'adhoc'").map(asBoolean))
     }
 
-    fun getAdHoc(): Either<AppError, Option<ScreenRow<Screen<*>>>> = db.use {
+    fun getAdHoc(): Either<AppError, Option<ScreenRow>> = db.use {
         it.option(queryOf("SELECT * FROM screen WHERE collection = ?", "adhoc").map(ScreenRow.fromRow))
     }
 
-    fun getCollection(name: String): Either<AppError, List<ScreenRow<Screen<*>>>> = db.use {
+    fun getCollection(name: String): Either<AppError, List<ScreenRow>> = db.use {
         it.many(queryOf("SELECT * FROM screen WHERE collection = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Screen<A>> setAdHoc(screen: A): Either<AppError, ScreenRow<Screen<*>>> = db.transaction { either {
+    inline fun <reified A : Screen<A>> setAdHoc(screen: A): Either<AppError, ScreenRow> = db.transaction { either {
         val (type, content) = getTypeAndJson(screen)
-        it.one(queryOf(
-            if (adHocExists(it).bind()) {
-                "UPDATE screen SET type = ?, content = ?::jsonb WHERE collection = 'adhoc' RETURNING *"
-            } else {
-                "INSERT INTO screen(collection, type, content) VALUES('adhoc', ?, ?::jsonb)"
-            },
-            type,
-            content,
-        ).map(ScreenRow.fromRow)).bind()
+        val query = if (adHocExists(it).bind()) {
+            "UPDATE screen SET type = ?, content = ?::jsonb WHERE collection = 'adhoc' RETURNING *"
+        } else {
+            "INSERT INTO screen(collection, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+        }
+        it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
     } }
 
-    inline fun <reified A : Screen<A>> add(collection: String, screen: A): Either<AppError, ScreenRow<Screen<*>>> = db.use {
+    inline fun <reified A : Screen<A>> add(collection: String, screen: A): Either<AppError, ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf(
             "INSERT INTO screen(collection, type, content, enabled) VALUES(?, ?, ?::jsonb, false) RETURNING *",
@@ -64,16 +61,16 @@ class ScreenRepository(private val app: AppServices) {
         ).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Screen<A>> update (id: Int, screen: A): Either<AppError, ScreenRow<Screen<*>>> = db.use {
+    inline fun <reified A : Screen<A>> update (id: Int, screen: A): Either<AppError, ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf("UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *", type, content, id).map(ScreenRow.fromRow))
     }
 
-    fun getFirst(collection: String): Either<AppError, ScreenRow<Screen<*>>> = db.use {
+    fun getFirst(collection: String): Either<AppError, ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE collection = ? ORDER BY run_order, id LIMIT 1", collection).map(ScreenRow.fromRow))
     }
 
-    fun getNext(collection: String, currentId: Int): Either<AppError, ScreenRow<Screen<*>>> = either {
+    fun getNext(collection: String, currentId: Int): Either<AppError, ScreenRow> = either {
         val screens = getCollection(collection).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { DatabaseError("$currentId not in collection $collection") }
@@ -88,26 +85,27 @@ class ScreenRepository(private val app: AppServices) {
     )
 }
 
-data class ScreenRow <A: Screen<*>> (
+data class ScreenRow(
     val id: Int,
     val collection: String,
     val type: String,
-    val content: A,
+    val content: String,
     val enabled: Boolean,
     val runOrder: Int,
 ) {
+    fun getScreen(): Screen<*> =
+        when(type) {
+            TextScreen::class.qualifiedName -> Json.decodeFromString<TextScreen>(content)
+            else -> TODO("JSON decoding not implemented for $type")
+        }
+
    companion object {
-       val fromRow: (Row) -> ScreenRow<Screen<*>> = { row ->
-           val type = row.string("type")
-           val content = row.string("content")
+       val fromRow: (Row) -> ScreenRow = { row ->
            ScreenRow(
                id = row.int("id"),
                collection = row.string("collection"),
-               type = type,
-               content = when(type) {
-                   TextScreen::class.qualifiedName -> Json.decodeFromString<TextScreen>(content)
-                   else -> TODO("JSON decoding not implemented for $type")
-               },
+               type = row.string("type"),
+               content = row.string("content"),
                enabled = row.boolean("enabled"),
                runOrder = row.int("run_order"),
            )

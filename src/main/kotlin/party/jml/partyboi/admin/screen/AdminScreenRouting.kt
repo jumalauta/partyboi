@@ -44,7 +44,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.respondEither({ either {
                     val collection = call.parameterString("collection").bind()
                     val screens = app.screen.getCollection(collection).bind()
-                    val forms = screens.map { it.content.getForm() }
+                    val forms = screens.map { it.getScreen().getForm() }
                     val currentlyRunning = app.screen.currentlyRunningCollection()
                     AdminScreenPage.renderCollectionForms(collection, currentlyRunning, forms)
                 }})

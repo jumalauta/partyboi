@@ -63,7 +63,7 @@ class EntryRepository(private val app: AppServices) {
             	WHERE entry_id = entry.id
             	ORDER BY version
             	DESC LIMIT 1
-            ) ON 1=1
+            ) AS file_info ON 1=1
             WHERE user_id = ?
         """.trimIndent(), userId).map(EntryWithLatestFile.fromRow))
     }

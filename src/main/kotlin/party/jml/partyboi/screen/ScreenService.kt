@@ -46,7 +46,7 @@ class ScreenService(private val app: AppServices) {
         state.emit(newState)
     }
 
-    fun getCollection(collection: String): Either<AppError, List<ScreenRow<Screen<*>>>> = repository.getCollection(collection)
+    fun getCollection(collection: String): Either<AppError, List<ScreenRow>> = repository.getCollection(collection)
 
     inline fun <reified A : Screen<A>> addEmptyToCollection(collection: String, screen: A) = repository.add(collection, screen)
 
@@ -68,7 +68,7 @@ class ScreenService(private val app: AppServices) {
             }
         }
 
-    private fun show(row: ScreenRow<Screen<*>>): Unit =
+    private fun show(row: ScreenRow): Unit =
         runBlocking {
             state.emit(ScreenState.fromRow(row))
         }
@@ -80,11 +80,11 @@ data class ScreenState(
     val screen: Screen<*>,
 ) {
     companion object {
-        val fromRow: (ScreenRow<Screen<*>>) -> ScreenState = { row ->
+        val fromRow: (ScreenRow) -> ScreenState = { row ->
             ScreenState(
                 collection = row.collection,
                 id = row.id,
-                screen = row.content
+                screen = row.getScreen(),
             )
         }
 
