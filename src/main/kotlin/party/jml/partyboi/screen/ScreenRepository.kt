@@ -1,7 +1,9 @@
 package party.jml.partyboi.screen
 
-import arrow.core.*
+import arrow.core.Either
+import arrow.core.Option
 import arrow.core.raise.either
+import arrow.core.toNonEmptyListOrNone
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
@@ -11,7 +13,6 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
-import javax.xml.crypto.Data
 
 class ScreenRepository(private val app: AppServices) {
     val db = app.db
