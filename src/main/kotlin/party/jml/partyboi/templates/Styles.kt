@@ -4,9 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.css.CSSBuilder
-import kotlinx.css.Color
-import kotlinx.css.color
+import kotlinx.css.*
 
 fun Application.configureStyles() {
 
@@ -15,6 +13,10 @@ fun Application.configureStyles() {
             call.respondCss {
                 rule(".error") {
                     color = Color("#D93526")
+                }
+                rule(".space-between") {
+                    display = Display.flex
+                    justifyContent = JustifyContent.spaceBetween
                 }
                 // Theme variables here
             }

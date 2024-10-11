@@ -1,7 +1,6 @@
 package party.jml.partyboi.screen
 
-import arrow.core.Either
-import arrow.core.Option
+import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -12,6 +11,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
+import javax.xml.crypto.Data
 
 class ScreenRepository(private val app: AppServices) {
     val db = app.db
@@ -75,14 +75,22 @@ class ScreenRepository(private val app: AppServices) {
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { DatabaseError("$currentId not in collection $collection") }
             .bind()
-        val nextIndex = (index + 1) % screens.size
-        screens[nextIndex]
+        (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
+            .filter { it.enabled }
+            .toNonEmptyListOrNone()
+            .toEither { DatabaseError("No enabled screens in collection $collection") }
+            .map { it.first() }
+            .bind()
     }
 
     inline fun <reified A : Screen<A>> getTypeAndJson(screen: A) = Pair(
         screen.javaClass.name,
         Json.encodeToString(screen)
     )
+
+    fun setVisible(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("UPDATE screen SET enabled = ? WHERE id = ?", visible, id))
+    }
 }
 
 data class ScreenRow(

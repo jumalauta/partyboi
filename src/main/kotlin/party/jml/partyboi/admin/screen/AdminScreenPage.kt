@@ -5,6 +5,9 @@ import arrow.core.Some
 import kotlinx.html.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.switchLink
+import party.jml.partyboi.screen.Screen
+import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 
@@ -35,7 +38,7 @@ object AdminScreenPage {
             }
         }
 
-    fun renderCollectionForms(collection: String, currentlyRunning: Option<String>, forms: List<Form<*>>) =
+    fun renderCollectionForms(collection: String, currentlyRunning: Option<String>, screens: List<ScreenEditData>) =
         Page("Screen admin") {
             screenAdminNavigation()
             article {
@@ -43,13 +46,25 @@ object AdminScreenPage {
                         +"This screen collection is running currently"
                     } else {
                         postButton("Start", "/admin/screen/rotation/start")
-
                     }
             }
-            forms.forEach {
+            screens.forEach {
                 article {
-                    fieldSet {
-                        renderForm(it)
+                    header(classes = "space-between") {
+                        span { +it.screen.getName() }
+                        switchLink(it.enabled, "Visible", "Hidden", "/admin/screen/${it.id}/setVisible")
+                    }
+                    form(
+                        method = FormMethod.post,
+                        action = "/admin/screen/${collection}/${it.id}/${it.screen.javaClass.simpleName.lowercase()}",
+                        encType = FormEncType.multipartFormData
+                    ) {
+                        fieldSet {
+                            renderForm(it.screen.getForm())
+                        }
+                        footer {
+                            submitInput { value = "Save changes" }
+                        }
                     }
                 }
             }
@@ -80,5 +95,31 @@ fun FlowContent.postButton(text: String, url: String) {
             refresh()
         }
         +text
+    }
+}
+
+fun FlowContent.deleteButton(text: String, url: String) {
+    button {
+        onClick = Javascript.build {
+            httpDelete(url)
+            refresh()
+        }
+        +text
+    }
+}
+
+data class ScreenEditData(
+    val id: Int,
+    val enabled: Boolean,
+    val screen: Screen<*>,
+) {
+    companion object {
+        val fromRow: (ScreenRow) -> ScreenEditData = { row ->
+            ScreenEditData(
+                id = row.id,
+                enabled = row.enabled,
+                screen = row.getScreen(),
+            )
+        }
     }
 }

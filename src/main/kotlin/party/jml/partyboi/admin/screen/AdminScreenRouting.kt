@@ -11,9 +11,12 @@ import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
+import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.TextScreen
+import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
@@ -44,9 +47,20 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.respondEither({ either {
                     val collection = call.parameterString("collection").bind()
                     val screens = app.screen.getCollection(collection).bind()
-                    val forms = screens.map { it.getScreen().getForm() }
+                    val forms = screens.map(ScreenEditData.fromRow)
                     val currentlyRunning = app.screen.currentlyRunningCollection()
                     AdminScreenPage.renderCollectionForms(collection, currentlyRunning, forms)
+                }})
+            }
+
+            post("/admin/screen/{collection}/{id}/textscreen") {
+                val screenRequest = Form.fromParameters<TextScreen>(call.receiveMultipart())
+                call.respondEither({ either {
+                    val id = call.parameterInt("id").bind()
+                    val collection = call.parameterString("collection").bind()
+                    val screen = screenRequest.bind().data
+                    runBlocking { app.screen.update(id, screen) }
+                    RedirectPage("/admin/screen/${collection}")
                 }})
             }
         }
@@ -66,6 +80,10 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     val collection = call.parameterString("collection").bind()
                     app.screen.startSlideShow(collection).bind()
                 } }
+            }
+
+            put("/admin/screen/{id}/setVisible/{state}") {
+               call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
             }
         }
     }

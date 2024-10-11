@@ -52,6 +52,8 @@ class ScreenService(private val app: AppServices) {
 
     inline fun <reified A : Screen<A>> update(id: Int, screen: A) = repository.update(id, screen)
 
+    fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
+
     fun stopSlideShow() {
         scheduler?.cancel()
         scheduler = null
@@ -98,6 +100,7 @@ where A: Screen<A>,
       A: Validateable<A> {
     fun render(ctx: FlowContent)
     fun getForm(): Form<A>
+    fun getName(): String
 }
 
 @Serializable
@@ -115,6 +118,7 @@ data class TextScreen (
     }
 
     override fun getForm(): Form<TextScreen> = Form(TextScreen::class, this, true)
+    override fun getName(): String = title
 
     companion object {
         val Empty = TextScreen("Hello, world!", "")

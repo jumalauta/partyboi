@@ -142,15 +142,17 @@ data class DropdownOption(val value: String, val label: String) {
 }
 
 fun FlowContent.switchLink(toggled: Boolean, labelOn: String, labelOff: String, urlPrefix: String, disable: Boolean = false) {
-    input {
-        type = InputType.checkBox
-        role = "switch"
-        checked = toggled
-        onClick = Javascript.build {
-            httpPut("$urlPrefix/${!toggled}")
-            refresh()
+    span {
+        input {
+            type = InputType.checkBox
+            role = "switch"
+            checked = toggled
+            onClick = Javascript.build {
+                httpPut("$urlPrefix/${!toggled}")
+                refresh()
+            }
+            disabled = disable
+            +(if (toggled) labelOn else labelOff)
         }
-        disabled = disable
-        +(if (toggled) labelOn else labelOff)
     }
 }
