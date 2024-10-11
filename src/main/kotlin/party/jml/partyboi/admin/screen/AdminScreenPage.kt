@@ -50,20 +50,24 @@ object AdminScreenPage {
             }
             screens.forEach {
                 article {
-                    header(classes = "space-between") {
-                        span { +it.screen.getName() }
-                        switchLink(it.enabled, "Visible", "Hidden", "/admin/screen/${it.id}/setVisible")
-                    }
-                    form(
-                        method = FormMethod.post,
-                        action = "/admin/screen/${collection}/${it.id}/${it.screen.javaClass.simpleName.lowercase()}",
-                        encType = FormEncType.multipartFormData
-                    ) {
-                        fieldSet {
-                            renderForm(it.screen.getForm())
+                    details {
+                        summary {
+                            header {
+                                span { +it.screen.getName() }
+                                switchLink(it.enabled, "Visible", "Hidden", "/admin/screen/${it.id}/setVisible")
+                            }
                         }
-                        footer {
-                            submitInput { value = "Save changes" }
+                        form(
+                            method = FormMethod.post,
+                            action = "/admin/screen/${collection}/${it.id}/${it.screen.javaClass.simpleName.lowercase()}",
+                            encType = FormEncType.multipartFormData
+                        ) {
+                            fieldSet {
+                                renderForm(it.screen.getForm())
+                            }
+                            footer {
+                                submitInput { value = "Save changes" }
+                            }
                         }
                     }
                 }

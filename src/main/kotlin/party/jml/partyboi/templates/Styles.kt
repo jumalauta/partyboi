@@ -18,6 +18,11 @@ fun Application.configureStyles() {
                     display = Display.flex
                     justifyContent = JustifyContent.spaceBetween
                 }
+                rule("summary > header") {
+                    display = Display.inlineFlex
+                    justifyContent = JustifyContent.spaceBetween
+                    width = LinearDimension("calc(100% - 4ex)")
+                }
                 // Theme variables here
             }
         }
