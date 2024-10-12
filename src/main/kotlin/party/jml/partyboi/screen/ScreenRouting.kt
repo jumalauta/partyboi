@@ -9,7 +9,7 @@ import party.jml.partyboi.AppServices
 fun Application.configureScreenRouting(app: AppServices) {
     routing {
         get("/screen") {
-            call.respondText(ScreenPage.render(app.screen.current()), ContentType.Text.Html)
+            call.respondText(ScreenPage.render(app.screen.currentSlide()), ContentType.Text.Html)
         }
 
         get("/screen/next") {

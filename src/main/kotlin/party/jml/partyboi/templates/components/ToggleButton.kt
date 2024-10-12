@@ -13,7 +13,7 @@ fun FlowContent.icon(icon: Icon) {
 
 fun FlowContent.toggleButton(toggled: Boolean, icons: IconSet, urlPrefix: String) {
     val shownIcon = icons.get(toggled)
-    button(classes = "toggleButton ${if (toggled) "on" else "off"}") {
+    button(classes = "flat-button ${if (toggled) "on" else "off"}") {
         if (shownIcon.tooltip != null) { attributes.put("data-tooltip", shownIcon.tooltip) }
         onClick = Javascript.build {
             httpPut("$urlPrefix/${!toggled}")

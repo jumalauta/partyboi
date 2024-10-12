@@ -2,14 +2,11 @@ package party.jml.partyboi.admin.screen
 
 import arrow.core.Option
 import arrow.core.Some
-import kotlinx.css.th
 import kotlinx.html.*
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.screen.Slide
-import party.jml.partyboi.screen.ScreenRow
-import party.jml.partyboi.screen.TextSlide
+import party.jml.partyboi.screen.*
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.Icon
@@ -44,20 +41,23 @@ object AdminScreenPage {
             }
         }
 
-    fun renderSlideSetForms(slideSet: String, currentlyRunning: Option<String>, slides: List<SlideEditData>) =
+    fun renderSlideSetForms(slideSet: String, screenState: ScreenState, isRunning: Boolean, slides: List<SlideEditData>) =
         Page("Screen admin") {
             screenAdminNavigation()
 
             section {
-                if (currentlyRunning == Some(slideSet)) {
-                    postButton("/admin/screen/${slideSet}/stop") {
-                        icon(Icon("pause"))
-                        +" Pause"
+                fieldSet {
+                    if (screenState.slideSet != slideSet || !isRunning) {
+                        postButton("/admin/screen/${slideSet}/start") {
+                            icon(Icon("play"))
+                            +" Start"
+                        }
                     }
-                } else {
-                    postButton("/admin/screen/${slideSet}/start") {
-                        icon(Icon("play"))
-                        +" Start"
+                    if (screenState.slideSet == slideSet && isRunning) {
+                        postButton("/admin/screen/${slideSet}/stop") {
+                            icon(Icon("pause"))
+                            +" Pause"
+                        }
                     }
                 }
             }
@@ -66,6 +66,7 @@ object AdminScreenPage {
                 table {
                     thead {
                         tr {
+                            th {}
                             th {}
                             th { +"Name" }
                             th { +"Type" }
@@ -80,6 +81,17 @@ object AdminScreenPage {
                             tr {
                                 attributes.put("data-dragid", slide.id.toString())
                                 td(classes = "handle") { icon("arrows-up-down") }
+                                td {
+                                    if (screenState.id == slide.id) {
+                                        icon("tv")
+                                    } else {
+                                        postButton("/admin/screen/${slideSet}/${slide.id}/show") {
+                                            attributes.put("class", "flat-button")
+                                            attributes.put("data-tooltip", "Show on screen")
+                                            icon("play")
+                                        }
+                                    }
+                                }
                                 td { a(href="/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
                                 td { +slide.slide.javaClass.simpleName }
                                 td(classes = "align-right") {
@@ -98,6 +110,10 @@ object AdminScreenPage {
                 }
             }
             script(src = "/assets/draggable.min.js") {}
+            script { unsafe { raw( Javascript.build {
+                httpGet("/screen/next")
+                refresh()
+            })}}
         }
 
     fun renderSlideForm(slideSet: String, slide: SlideEditData) =

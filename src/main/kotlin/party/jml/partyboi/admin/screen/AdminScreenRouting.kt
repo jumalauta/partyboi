@@ -28,10 +28,10 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
 
             get("/admin/screen/adhoc") {
-                val current = app.screen.current()
+                val current = app.screen.currentSlide()
                 val form = current.getForm()
-                val currentlyRunning = app.screen.currentlyRunningSlideSet()
-                call.respondPage(AdminScreenPage.renderAdHocForm(currentlyRunning == Some("adhoc"), form))
+                val currentlyRunning = app.screen.currentState().first.slideSet == "adhoc"
+                call.respondPage(AdminScreenPage.renderAdHocForm(currentlyRunning, form))
             }
 
             post("/admin/screen/adhoc") {
@@ -48,8 +48,8 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     val slideSetName = call.parameterString("slideSet").bind()
                     val slides = app.screen.getSlideSet(slideSetName).bind()
                     val forms = slides.map(SlideEditData.fromRow)
-                    val currentlyRunning = app.screen.currentlyRunningSlideSet()
-                    AdminScreenPage.renderSlideSetForms(slideSetName, currentlyRunning, forms)
+                    val (state, isRunning) = app.screen.currentState()
+                    AdminScreenPage.renderSlideSetForms(slideSetName, state, isRunning, forms)
                 }})
             }
 
@@ -96,6 +96,14 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.apiRespond { either {
                     call.userSession().bind()
                     app.screen.stopSlideSet()
+                } }
+            }
+
+            post("/admin/screen/{slideSet}/{slideId}/show") {
+                call.apiRespond { either {
+                    call.userSession().bind()
+                    val slideId = call.parameterInt("slideId").bind()
+                    app.screen.show(slideId)
                 } }
             }
 

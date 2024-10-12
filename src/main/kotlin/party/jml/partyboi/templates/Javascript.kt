@@ -10,6 +10,7 @@ class Javascript {
         return Statements(js.stack)
     }
     fun goto(url: String) = push(JAssign("location", url))
+    fun httpGet(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("GET"))))
     fun httpPut(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("PUT"))))
     fun httpPost(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("POST"))))
     fun httpDelete(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("DELETE"))))

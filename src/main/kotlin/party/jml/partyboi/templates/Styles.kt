@@ -24,7 +24,7 @@ fun Application.configureStyles() {
                     justifyContent = JustifyContent.spaceBetween
                     width = LinearDimension("calc(100% - 4ex)")
                 }
-                rule("button.toggleButton") {
+                rule("button.flat-button") {
                     color = Color.inherit
                     background = "none"
                     border = "none"
@@ -34,7 +34,7 @@ fun Application.configureStyles() {
                     marginRight = LinearDimension("1ex")
                     minWidth = LinearDimension("2.5ex")
                 }
-                rule("button.toggleButton.off > *") {
+                rule("button.flat-button.off > *") {
                     opacity = 0.25
                 }
                 rule(".align-right") {

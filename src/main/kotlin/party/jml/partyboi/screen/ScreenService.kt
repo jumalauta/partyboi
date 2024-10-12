@@ -1,9 +1,6 @@
 package party.jml.partyboi.screen
 
 import arrow.core.Either
-import arrow.core.None
-import arrow.core.Option
-import arrow.core.Some
 import arrow.core.raise.either
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
@@ -31,14 +28,13 @@ class ScreenService(private val app: AppServices) {
         }
     }
 
-    fun current(): Slide<*> = state.value.slide
+    fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
+    fun currentSlide(): Slide<*> = state.value.slide
 
     fun waitForNext(): Flow<Slide<*>> {
         val current = state.value
         return state.filter { it != current }.take(1).map { it.slide }
     }
-
-    fun currentlyRunningSlideSet(): Option<String> = if (scheduler == null) None else Some(state.value.slideSet)
 
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
@@ -58,6 +54,8 @@ class ScreenService(private val app: AppServices) {
 
     fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
+    fun isRunning(): Boolean = scheduler != null
+
     fun stopSlideSet() {
         scheduler?.cancel()
         scheduler = null
@@ -66,13 +64,17 @@ class ScreenService(private val app: AppServices) {
     fun startSlideSet(slideSetName: String): Either<AppError, Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
-            scheduler = Timer().schedule(0, 10000) {
+            scheduler = Timer().schedule(10000, 10000) {
                 repository.getNext(state.value.slideSet, state.value.id).fold(
                     { stopSlideSet() },
                     { show(it) }
                 )
             }
         }
+
+    fun show(slideId: Int) = either {
+        show(repository.getSlide(slideId).bind())
+    }
 
     private fun show(row: ScreenRow): Unit =
         runBlocking {
