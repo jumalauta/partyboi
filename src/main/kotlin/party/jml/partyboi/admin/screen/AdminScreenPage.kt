@@ -44,19 +44,21 @@ object AdminScreenPage {
     fun renderCollectionForms(collection: String, currentlyRunning: Option<String>, screens: List<ScreenEditData>) =
         Page("Screen admin") {
             screenAdminNavigation()
-            article {
-                    if (currentlyRunning == Some(collection)) {
-                        postButton( "/admin/screen/rotation/stop") {
-                            icon(Icon("pause"))
-                            +" Pause"
-                        }
-                    } else {
-                        postButton( "/admin/screen/rotation/start") {
-                            icon(Icon("play"))
-                            +" Start"
-                        }
+
+            section {
+                if (currentlyRunning == Some(collection)) {
+                    postButton("/admin/screen/rotation/stop") {
+                        icon(Icon("pause"))
+                        +" Pause"
                     }
+                } else {
+                    postButton("/admin/screen/rotation/start") {
+                        icon(Icon("play"))
+                        +" Start"
+                    }
+                }
             }
+
             screens.forEach {
                 article {
                     details {
@@ -81,8 +83,9 @@ object AdminScreenPage {
                     }
                 }
             }
-            article {
-                postButton( "/admin/screen/rotation/text") {
+
+            section {
+                postButton("/admin/screen/rotation/text") {
                     icon(Icon("align-left"))
                     +" Add text screen"
                 }
