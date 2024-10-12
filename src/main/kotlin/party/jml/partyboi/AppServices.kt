@@ -33,7 +33,8 @@ object Config {
             ConfigurationProperties.fromResource("defaults.properties")
 
     private val secretSignKey = Key("sessions.secretSignKey", stringType)
-    private val entryDir = Key("entries.files", stringType)
+    private val entryDir = Key("dir.entries", stringType)
+    private val assetsDir = Key("dir.assets", stringType)
     private val dbHost = Key("db.host", stringType)
     private val dbPort = Key("db.port", intType)
     private val dbUser = Key("db.user", stringType)
@@ -42,6 +43,7 @@ object Config {
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
     fun getEntryDir(): Path = Paths.get(config[entryDir])
+    fun getAssetsDir(): Path = Paths.get(config[assetsDir])
     fun getDbHost() = config.getOrElse(dbHost, "localhost")
     fun getDbPort() = config.getOrElse(dbPort, 5432)
     fun getDbUser() = config.getOrElse(dbUser, "postgres")

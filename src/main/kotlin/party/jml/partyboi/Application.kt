@@ -11,7 +11,7 @@ import party.jml.partyboi.entries.configureEntriesRouting
 import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP
 import party.jml.partyboi.plugins.configureSerialization
-import party.jml.partyboi.plugins.configureStaticContent
+import party.jml.partyboi.assets.configureStaticContent
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.templates.configureStyles
 import party.jml.partyboi.voting.configureVotingRouting
