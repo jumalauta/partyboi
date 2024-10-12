@@ -4,10 +4,10 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 
 object ScreenPage {
-    fun renderContent(screen: Screen<*>) =
-        createHTML().article { screen.render(this) }
+    fun renderContent(slide: Slide<*>) =
+        createHTML().article { slide.render(this) }
 
-    fun render(screen: Screen<*>) =
+    fun render(slide: Slide<*>) =
         createHTML().html {
             head {
                 title { +"Screen" }
@@ -16,7 +16,7 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article { screen.render(this) }
+                    article { slide.render(this) }
                 }
                 main {
                     attributes["id"] = "screen2"

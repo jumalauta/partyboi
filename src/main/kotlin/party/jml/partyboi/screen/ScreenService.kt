@@ -31,40 +31,40 @@ class ScreenService(private val app: AppServices) {
         }
     }
 
-    fun current(): Screen<*> = state.value.screen
+    fun current(): Slide<*> = state.value.slide
 
-    fun waitForNext(): Flow<Screen<*>> {
+    fun waitForNext(): Flow<Slide<*>> {
         val current = state.value
-        return state.filter { it != current }.take(1).map { it.screen }
+        return state.filter { it != current }.take(1).map { it.slide }
     }
 
-    fun currentlyRunningCollection(): Option<String> = if (scheduler == null) None else Some(state.value.collection)
+    fun currentlyRunningSlideSet(): Option<String> = if (scheduler == null) None else Some(state.value.slideSet)
 
-    suspend fun addAdHoc(screen: TextScreen): Either<AppError, Unit> = either {
+    suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
-        stopSlideShow()
+        stopSlideSet()
         state.emit(newState)
     }
 
-    fun getCollection(collection: String): Either<AppError, List<ScreenRow>> = repository.getCollection(collection)
+    fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
 
-    inline fun <reified A : Screen<A>> addEmptyToCollection(collection: String, screen: A) = repository.add(collection, screen)
+    inline fun <reified A : Slide<A>> addEmptySlideToSlideSet(slideSet: String, screen: A) = repository.add(slideSet, screen)
 
-    inline fun <reified A : Screen<A>> update(id: Int, screen: A) = repository.update(id, screen)
+    inline fun <reified A : Slide<A>> update(id: Int, screen: A) = repository.update(id, screen)
 
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
-    fun stopSlideShow() {
+    fun stopSlideSet() {
         scheduler?.cancel()
         scheduler = null
     }
 
-    fun startSlideShow(collection: String): Either<AppError, Unit> =
-        repository.getFirst(collection).map { firstScreen ->
+    fun startSlideSet(slideSetName: String): Either<AppError, Unit> =
+        repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
             scheduler = Timer().schedule(0, 10000) {
-                repository.getNext(state.value.collection, state.value.id).fold(
-                    { stopSlideShow() },
+                repository.getNext(state.value.slideSet, state.value.id).fold(
+                    { stopSlideSet() },
                     { show(it) }
                 )
             }
@@ -77,26 +77,26 @@ class ScreenService(private val app: AppServices) {
 }
 
 data class ScreenState(
-    val collection: String,
+    val slideSet: String,
     val id: Int,
-    val screen: Screen<*>,
+    val slide: Slide<*>,
 ) {
     companion object {
         val fromRow: (ScreenRow) -> ScreenState = { row ->
             ScreenState(
-                collection = row.collection,
+                slideSet = row.slideSet,
                 id = row.id,
-                screen = row.getScreen(),
+                slide = row.getScreen(),
             )
         }
 
-        val Empty = ScreenState("adhoc", -1, TextScreen.Empty)
+        val Empty = ScreenState("adhoc", -1, TextSlide.Empty)
     }
 }
 
 @Serializable
-sealed interface Screen<A>
-where A: Screen<A>,
+sealed interface Slide<A>
+where A: Slide<A>,
       A: Validateable<A> {
     fun render(ctx: FlowContent)
     fun getForm(): Form<A>
@@ -104,12 +104,12 @@ where A: Screen<A>,
 }
 
 @Serializable
-data class TextScreen (
+data class TextSlide (
     @property:Field(order = 0, label = "Title")
     val title: String,
     @property:Field(order = 1, label = "Content", large = true)
     val content: String,
-) : Screen<TextScreen>, Validateable<TextScreen> {
+) : Slide<TextSlide>, Validateable<TextSlide> {
     override fun render(ctx: FlowContent) {
         with(ctx) {
             h1 { +title }
@@ -117,10 +117,10 @@ data class TextScreen (
         }
     }
 
-    override fun getForm(): Form<TextScreen> = Form(TextScreen::class, this, true)
+    override fun getForm(): Form<TextSlide> = Form(TextSlide::class, this, true)
     override fun getName(): String = title
 
     companion object {
-        val Empty = TextScreen("Hello, world!", "")
+        val Empty = TextSlide("", "")
     }
 }

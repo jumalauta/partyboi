@@ -5,7 +5,7 @@ import arrow.core.Some
 import kotlinx.html.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.screen.Screen
+import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
@@ -41,12 +41,12 @@ object AdminScreenPage {
             }
         }
 
-    fun renderCollectionForms(collection: String, currentlyRunning: Option<String>, screens: List<ScreenEditData>) =
+    fun renderSlideSetForms(slideSet: String, currentlyRunning: Option<String>, slides: List<SlideEditData>) =
         Page("Screen admin") {
             screenAdminNavigation()
 
             section {
-                if (currentlyRunning == Some(collection)) {
+                if (currentlyRunning == Some(slideSet)) {
                     postButton("/admin/screen/rotation/stop") {
                         icon(Icon("pause"))
                         +" Pause"
@@ -59,22 +59,22 @@ object AdminScreenPage {
                 }
             }
 
-            screens.forEach {
+            slides.forEach {
                 article {
                     details {
                         summary {
                             header {
-                                span { +it.screen.getName() }
-                                toggleButton(it.enabled, IconSet.visibility, "/admin/screen/${it.id}/setVisible")
+                                span { +it.slide.getName() }
+                                toggleButton(it.visible, IconSet.visibility, "/admin/screen/${it.id}/setVisible")
                             }
                         }
                         form(
                             method = FormMethod.post,
-                            action = "/admin/screen/${collection}/${it.id}/${it.screen.javaClass.simpleName.lowercase()}",
+                            action = "/admin/screen/${slideSet}/${it.id}/${it.slide.javaClass.simpleName.lowercase()}",
                             encType = FormEncType.multipartFormData
                         ) {
                             fieldSet {
-                                renderForm(it.screen.getForm())
+                                renderForm(it.slide.getForm())
                             }
                             footer {
                                 submitInput { value = "Save changes" }
@@ -126,17 +126,17 @@ fun FlowContent.postButton(url: String, block: BUTTON.() -> Unit) {
     }
 }
 
-data class ScreenEditData(
+data class SlideEditData(
     val id: Int,
-    val enabled: Boolean,
-    val screen: Screen<*>,
+    val visible: Boolean,
+    val slide: Slide<*>,
 ) {
     companion object {
-        val fromRow: (ScreenRow) -> ScreenEditData = { row ->
-            ScreenEditData(
+        val fromRow: (ScreenRow) -> SlideEditData = { row ->
+            SlideEditData(
                 id = row.id,
-                enabled = row.enabled,
-                screen = row.getScreen(),
+                visible = row.visible,
+                slide = row.getScreen(),
             )
         }
     }

@@ -15,7 +15,7 @@ import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.screen.TextScreen
+import party.jml.partyboi.screen.TextSlide
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
@@ -30,12 +30,12 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             get("/admin/screen/adhoc") {
                 val current = app.screen.current()
                 val form = current.getForm()
-                val currentlyRunning = app.screen.currentlyRunningCollection()
+                val currentlyRunning = app.screen.currentlyRunningSlideSet()
                 call.respondPage(AdminScreenPage.renderAdHocForm(currentlyRunning == Some("adhoc"), form))
             }
 
             post("/admin/screen/adhoc") {
-                val screenRequest = Form.fromParameters<TextScreen>(call.receiveMultipart())
+                val screenRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
                 call.respondEither({ either {
                     val screen = screenRequest.bind()
                     runBlocking { app.screen.addAdHoc(screen.data).bind() }
@@ -43,49 +43,49 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 }})
             }
 
-            get("/admin/screen/{collection}") {
+            get("/admin/screen/{slideSet}") {
                 call.respondEither({ either {
-                    val collection = call.parameterString("collection").bind()
-                    val screens = app.screen.getCollection(collection).bind()
-                    val forms = screens.map(ScreenEditData.fromRow)
-                    val currentlyRunning = app.screen.currentlyRunningCollection()
-                    AdminScreenPage.renderCollectionForms(collection, currentlyRunning, forms)
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slides = app.screen.getSlideSet(slideSetName).bind()
+                    val forms = slides.map(SlideEditData.fromRow)
+                    val currentlyRunning = app.screen.currentlyRunningSlideSet()
+                    AdminScreenPage.renderSlideSetForms(slideSetName, currentlyRunning, forms)
                 }})
             }
 
-            post("/admin/screen/{collection}/{id}/textscreen") {
-                val screenRequest = Form.fromParameters<TextScreen>(call.receiveMultipart())
+            post("/admin/screen/{slideSet}/{id}/textscreen") {
+                val slideRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
                 call.respondEither({ either {
                     val id = call.parameterInt("id").bind()
-                    val collection = call.parameterString("collection").bind()
-                    val screen = screenRequest.bind().data
-                    runBlocking { app.screen.update(id, screen) }
-                    RedirectPage("/admin/screen/${collection}")
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slide = slideRequest.bind().data
+                    runBlocking { app.screen.update(id, slide) }
+                    RedirectPage("/admin/screen/${slideSetName}")
                 }})
             }
         }
 
         authenticate("admin", optional = true) {
-            post("/admin/screen/{collection}/text") {
+            post("/admin/screen/{slideSet}/text") {
                 call.apiRespond { either {
                     call.userSession().bind()
-                    val collection = call.parameterString("collection").bind()
-                    app.screen.addEmptyToCollection(collection, TextScreen.Empty).bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
                 } }
             }
 
-            post("/admin/screen/{collection}/start") {
+            post("/admin/screen/{slideSet}/start") {
                 call.apiRespond { either {
                     call.userSession().bind()
-                    val collection = call.parameterString("collection").bind()
-                    app.screen.startSlideShow(collection).bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    app.screen.startSlideSet(slideSetName).bind()
                 } }
             }
 
-            post("/admin/screen/{collection}/stop") {
+            post("/admin/screen/{slideSet}/stop") {
                 call.apiRespond { either {
                     call.userSession().bind()
-                    app.screen.stopSlideShow()
+                    app.screen.stopSlideSet()
                 } }
             }
 

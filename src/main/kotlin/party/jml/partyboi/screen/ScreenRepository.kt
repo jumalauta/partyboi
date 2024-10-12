@@ -21,90 +21,90 @@ class ScreenRepository(private val app: AppServices) {
         db.init("""
             CREATE TABLE IF NOT EXISTS screen (
                 id SERIAL PRIMARY KEY,
-                collection text NOT NULL,
+                slide_set text NOT NULL,
                 type text NOT NULL,
                 content jsonb NOT NULL,
-                enabled boolean NOT NULL DEFAULT true,
+                visible boolean NOT NULL DEFAULT true,
                 run_order integer NOT NULL DEFAULT 0
             )
         """)
     }
 
     fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
-        it.one(queryOf("SELECT count(*) FROM screen WHERE collection = 'adhoc'").map(asBoolean))
+        it.one(queryOf("SELECT count(*) FROM screen WHERE slide_set = 'adhoc'").map(asBoolean))
     }
 
     fun getAdHoc(): Either<AppError, Option<ScreenRow>> = db.use {
-        it.option(queryOf("SELECT * FROM screen WHERE collection = ?", "adhoc").map(ScreenRow.fromRow))
+        it.option(queryOf("SELECT * FROM screen WHERE slide_set = ?", "adhoc").map(ScreenRow.fromRow))
     }
 
-    fun getCollection(name: String): Either<AppError, List<ScreenRow>> = db.use {
-        it.many(queryOf("SELECT * FROM screen WHERE collection = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
+    fun getSlideSet(name: String): Either<AppError, List<ScreenRow>> = db.use {
+        it.many(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Screen<A>> setAdHoc(screen: A): Either<AppError, ScreenRow> = db.transaction { either {
-        val (type, content) = getTypeAndJson(screen)
+    inline fun <reified A : Slide<A>> setAdHoc(slide: A): Either<AppError, ScreenRow> = db.transaction { either {
+        val (type, content) = getTypeAndJson(slide)
         val query = if (adHocExists(it).bind()) {
-            "UPDATE screen SET type = ?, content = ?::jsonb WHERE collection = 'adhoc' RETURNING *"
+            "UPDATE screen SET type = ?, content = ?::jsonb WHERE slide_set = 'adhoc' RETURNING *"
         } else {
-            "INSERT INTO screen(collection, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+            "INSERT INTO screen(slide_set, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
         }
         it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
     } }
 
-    inline fun <reified A : Screen<A>> add(collection: String, screen: A): Either<AppError, ScreenRow> = db.use {
+    inline fun <reified A : Slide<A>> add(slideSet: String, screen: A): Either<AppError, ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf(
-            "INSERT INTO screen(collection, type, content, enabled) VALUES(?, ?, ?::jsonb, false) RETURNING *",
-            collection,
+            "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, false) RETURNING *",
+            slideSet,
             type,
             content
         ).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Screen<A>> update (id: Int, screen: A): Either<AppError, ScreenRow> = db.use {
+    inline fun <reified A : Slide<A>> update (id: Int, screen: A): Either<AppError, ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf("UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *", type, content, id).map(ScreenRow.fromRow))
     }
 
-    fun getFirst(collection: String): Either<AppError, ScreenRow> = db.use {
-        it.one(queryOf("SELECT * FROM screen WHERE collection = ? ORDER BY run_order, id LIMIT 1", collection).map(ScreenRow.fromRow))
+    fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
+        it.one(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id LIMIT 1", slideSet).map(ScreenRow.fromRow))
     }
 
-    fun getNext(collection: String, currentId: Int): Either<AppError, ScreenRow> = either {
-        val screens = getCollection(collection).bind()
+    fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
+        val screens = getSlideSet(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
-            .toEither { DatabaseError("$currentId not in collection $collection") }
+            .toEither { DatabaseError("$currentId not in slide set '$slideSet'") }
             .bind()
         (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
-            .filter { it.enabled }
+            .filter { it.visible }
             .toNonEmptyListOrNone()
-            .toEither { DatabaseError("No enabled screens in collection $collection") }
+            .toEither { DatabaseError("No visible screens in slide set '$slideSet'") }
             .map { it.first() }
             .bind()
     }
 
-    inline fun <reified A : Screen<A>> getTypeAndJson(screen: A) = Pair(
+    inline fun <reified A : Slide<A>> getTypeAndJson(screen: A) = Pair(
         screen.javaClass.name,
         Json.encodeToString(screen)
     )
 
     fun setVisible(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("UPDATE screen SET enabled = ? WHERE id = ?", visible, id))
+        it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
     }
 }
 
 data class ScreenRow(
     val id: Int,
-    val collection: String,
+    val slideSet: String,
     val type: String,
     val content: String,
-    val enabled: Boolean,
+    val visible: Boolean,
     val runOrder: Int,
 ) {
-    fun getScreen(): Screen<*> =
+    fun getScreen(): Slide<*> =
         when(type) {
-            TextScreen::class.qualifiedName -> Json.decodeFromString<TextScreen>(content)
+            TextSlide::class.qualifiedName -> Json.decodeFromString<TextSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
 
@@ -112,10 +112,10 @@ data class ScreenRow(
        val fromRow: (Row) -> ScreenRow = { row ->
            ScreenRow(
                id = row.int("id"),
-               collection = row.string("collection"),
+               slideSet = row.string("slide_set"),
                type = row.string("type"),
                content = row.string("content"),
-               enabled = row.boolean("enabled"),
+               visible = row.boolean("visible"),
                runOrder = row.int("run_order"),
            )
        }
