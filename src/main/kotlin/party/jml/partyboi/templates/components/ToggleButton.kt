@@ -13,7 +13,7 @@ fun FlowContent.icon(icon: Icon) {
 
 fun FlowContent.toggleButton(toggled: Boolean, icons: IconSet, urlPrefix: String) {
     val shownIcon = icons.get(toggled)
-    button(classes = "toggleButton") {
+    button(classes = "toggleButton ${if (toggled) "on" else "off"}") {
         if (shownIcon.tooltip != null) { attributes.put("data-tooltip", shownIcon.tooltip) }
         onClick = Javascript.build {
             httpPut("$urlPrefix/${!toggled}")
@@ -31,6 +31,8 @@ data class IconSet(
 
     companion object {
         val visibility = IconSet(Icon.visible, Icon.hidden)
+        val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
+        val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
     }
 }
 

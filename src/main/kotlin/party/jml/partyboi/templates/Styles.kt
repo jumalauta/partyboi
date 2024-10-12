@@ -31,6 +31,14 @@ fun Application.configureStyles() {
                     padding = "0"
                     lineHeight = LineHeight.inherit
                     fontSize = LinearDimension.inherit
+                    marginRight = LinearDimension("1ex")
+                    minWidth = LinearDimension("2.5ex")
+                }
+                rule("button.toggleButton.off > *") {
+                    opacity = 0.5
+                }
+                rule(".align-right") {
+                    textAlign = TextAlign.right
                 }
                 // Theme variables here
             }
