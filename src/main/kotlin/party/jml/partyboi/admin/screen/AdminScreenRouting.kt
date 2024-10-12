@@ -53,10 +53,20 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 }})
             }
 
-            post("/admin/screen/{slideSet}/{id}/textscreen") {
+            get("/admin/screen/{slideSet}/{slideId}") {
+                call.respondEither({ either {
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slideId = call.parameterInt("slideId").bind()
+                    val slide = app.screen.getSlide(slideId).bind()
+                    val form = SlideEditData.fromRow(slide)
+                    AdminScreenPage.renderSlideForm(slideSetName, form)
+                }})
+            }
+
+            post("/admin/screen/{slideSet}/{slideId}/textslide") {
                 val slideRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
                 call.respondEither({ either {
-                    val id = call.parameterInt("id").bind()
+                    val id = call.parameterInt("slideId").bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     val slide = slideRequest.bind().data
                     runBlocking { app.screen.update(id, slide) }
@@ -91,6 +101,12 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
             put("/admin/screen/{id}/setVisible/{state}") {
                call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
+            }
+
+            put("/admin/screen/{slideSet}/runOrder") {
+                call.receive<List<String>>()
+                    .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
+                call.respondText("OK")
             }
         }
     }

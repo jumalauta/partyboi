@@ -46,6 +46,8 @@ class ScreenService(private val app: AppServices) {
         state.emit(newState)
     }
 
+    fun getSlide(slideId: Int): Either<AppError, ScreenRow> = repository.getSlide(slideId)
+
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
 
     inline fun <reified A : Slide<A>> addEmptySlideToSlideSet(slideSet: String, screen: A) = repository.add(slideSet, screen)
@@ -53,6 +55,8 @@ class ScreenService(private val app: AppServices) {
     inline fun <reified A : Slide<A>> update(id: Int, screen: A) = repository.update(id, screen)
 
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
+
+    fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
     fun stopSlideSet() {
         scheduler?.cancel()

@@ -2,11 +2,14 @@ package party.jml.partyboi.admin.screen
 
 import arrow.core.Option
 import arrow.core.Some
+import kotlinx.css.th
 import kotlinx.html.*
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.ScreenRow
+import party.jml.partyboi.screen.TextSlide
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.Icon
@@ -47,37 +50,41 @@ object AdminScreenPage {
 
             section {
                 if (currentlyRunning == Some(slideSet)) {
-                    postButton("/admin/screen/rotation/stop") {
+                    postButton("/admin/screen/${slideSet}/stop") {
                         icon(Icon("pause"))
                         +" Pause"
                     }
                 } else {
-                    postButton("/admin/screen/rotation/start") {
+                    postButton("/admin/screen/${slideSet}/start") {
                         icon(Icon("play"))
                         +" Start"
                     }
                 }
             }
 
-            slides.forEach {
-                article {
-                    details {
-                        summary {
-                            header {
-                                span { +it.slide.getName() }
-                                toggleButton(it.visible, IconSet.visibility, "/admin/screen/${it.id}/setVisible")
-                            }
+            article {
+                table {
+                    thead {
+                        tr {
+                            th {}
+                            th { +"Name" }
+                            th { +"Type" }
+                            th {}
                         }
-                        form(
-                            method = FormMethod.post,
-                            action = "/admin/screen/${slideSet}/${it.id}/${it.slide.javaClass.simpleName.lowercase()}",
-                            encType = FormEncType.multipartFormData
-                        ) {
-                            fieldSet {
-                                renderForm(it.slide.getForm())
-                            }
-                            footer {
-                                submitInput { value = "Save changes" }
+                    }
+                    tbody(classes = "sortable") {
+                        attributes.put("data-draggable", "tr")
+                        attributes.put("data-handle", ".handle")
+                        attributes.put("data-callback", "/admin/screen/${slideSet}/runOrder")
+                        slides.forEach { slide ->
+                            tr {
+                                attributes.put("data-dragid", slide.id.toString())
+                                td(classes = "handle") { icon("arrows-up-down") }
+                                td { a(href="/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
+                                td { +slide.slide.javaClass.simpleName }
+                                td(classes = "align-right") {
+                                    toggleButton(slide.visible, IconSet.visibility, "/admin/screen/${slide.id}/setVisible")
+                                }
                             }
                         }
                     }
@@ -85,9 +92,26 @@ object AdminScreenPage {
             }
 
             section {
-                postButton("/admin/screen/rotation/text") {
+                postButton("/admin/screen/${slideSet}/text") {
                     icon(Icon("align-left"))
-                    +" Add text screen"
+                    +" Add text slide"
+                }
+            }
+            script(src = "/assets/draggable.min.js") {}
+        }
+
+    fun renderSlideForm(slideSet: String, slide: SlideEditData) =
+        Page("Edit slide") {
+            form(
+                method = FormMethod.post,
+                action = "/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}",
+                encType = FormEncType.multipartFormData
+            ) {
+                fieldSet {
+                    renderForm(slide.slide.getForm())
+                }
+                footer {
+                    submitInput { value = "Save changes" }
                 }
             }
         }
@@ -131,6 +155,9 @@ data class SlideEditData(
     val visible: Boolean,
     val slide: Slide<*>,
 ) {
+    fun getName(): String =
+        slide.getName().nonEmptyString() ?: "Untitled slide #${id}"
+
     companion object {
         val fromRow: (ScreenRow) -> SlideEditData = { row ->
             SlideEditData(

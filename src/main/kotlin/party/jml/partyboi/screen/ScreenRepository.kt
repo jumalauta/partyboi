@@ -38,6 +38,10 @@ class ScreenRepository(private val app: AppServices) {
         it.option(queryOf("SELECT * FROM screen WHERE slide_set = ?", "adhoc").map(ScreenRow.fromRow))
     }
 
+    fun getSlide(id: Int): Either<AppError, ScreenRow> = db.use {
+        it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
+    }
+
     fun getSlideSet(name: String): Either<AppError, List<ScreenRow>> = db.use {
         it.many(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
     }
@@ -91,6 +95,10 @@ class ScreenRepository(private val app: AppServices) {
 
     fun setVisible(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
+    }
+
+    fun setRunOrder(id: Int, order: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 }
 
