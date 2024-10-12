@@ -16,6 +16,8 @@ data class Page(
             head {
                 title { +titleText }
                 link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/theme.css", type = "text/css")
             }
             body {

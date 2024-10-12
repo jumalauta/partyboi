@@ -82,6 +82,13 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 } }
             }
 
+            post("/admin/screen/{collection}/stop") {
+                call.apiRespond { either {
+                    call.userSession().bind()
+                    app.screen.stopSlideShow()
+                } }
+            }
+
             put("/admin/screen/{id}/setVisible/{state}") {
                call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
             }

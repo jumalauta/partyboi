@@ -5,6 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.css.*
+import kotlinx.css.properties.LineHeight
 
 fun Application.configureStyles() {
 
@@ -22,6 +23,14 @@ fun Application.configureStyles() {
                     display = Display.inlineFlex
                     justifyContent = JustifyContent.spaceBetween
                     width = LinearDimension("calc(100% - 4ex)")
+                }
+                rule("button.toggleButton") {
+                    color = Color.inherit
+                    background = "none"
+                    border = "none"
+                    padding = "0"
+                    lineHeight = LineHeight.inherit
+                    fontSize = LinearDimension.inherit
                 }
                 // Theme variables here
             }
