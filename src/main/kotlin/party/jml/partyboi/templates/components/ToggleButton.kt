@@ -33,6 +33,7 @@ data class IconSet(
         val visibility = IconSet(Icon.visible, Icon.hidden)
         val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
         val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
+        val qualified = IconSet(Icon("star", "Qualified"), Icon("star", "Unqualified / disqualified"))
     }
 }
 

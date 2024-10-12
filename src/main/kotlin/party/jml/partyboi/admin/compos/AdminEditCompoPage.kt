@@ -7,13 +7,19 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.form.switchLink
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.IconSet
+import party.jml.partyboi.templates.components.icon
+import party.jml.partyboi.templates.components.toggleButton
 
 object AdminEditCompoPage {
     fun render(compo: Form<Compo>, entries: List<Entry>) =
         Page("Edit compo") {
+            val (qualified, nonQualified) = entries.partition { it.qualified }
+
+            h1 { +"${compo.data.name} compo" }
+
             form(method = FormMethod.post, action = "/admin/compos/${compo.data.id}", encType = FormEncType.multipartFormData) {
                 article {
-                    header { +"Edit '${compo.data.name}' compo" }
                     fieldSet {
                         renderForm(compo)
                     }
@@ -21,32 +27,37 @@ object AdminEditCompoPage {
                         submitInput { value = "Save changes" }
                     }
                 }
+            }
 
+            if (qualified.isNotEmpty()) {
                 article {
-                    header { +"Entries" }
+                    header { +"Qualified entries" }
                     table {
                         thead {
                             tr {
+                                th {}
                                 th { +"Title" }
                                 th { +"Author" }
-                                th { +"Qualified" }
+                                th { +"Submitted by" }
+                                th {}
                             }
                         }
                         tbody(classes = "sortable") {
                             attributes.put("data-draggable", "tr")
                             attributes.put("data-handle", ".handle")
                             attributes.put("data-callback", "/admin/compos/${compo.data.id}/runOrder")
-                            entries.forEach { entry ->
+                            qualified.forEach { entry ->
                                 tr {
                                     attributes.put("data-dragid", entry.id.toString())
-                                    td(classes = "handle") { +entry.title }
-                                    td(classes = "handle") { +entry.author }
-                                    td {
-                                        switchLink(
-                                            toggled = entry.qualified,
-                                            labelOn = "Yes",
-                                            labelOff = "No",
-                                            urlPrefix = "/admin/compos/entries/${entry.id}/setQualified"
+                                    td(classes = "handle") { icon("arrows-up-down") }
+                                    td { a(href = "/entries/${entry.id}") { +entry.title } }
+                                    td { +entry.author }
+                                    td { +"userId: ${entry.userId}" }
+                                    td(classes = "align-right") {
+                                        toggleButton(
+                                            entry.qualified,
+                                            IconSet.qualified,
+                                            "/admin/compos/entries/${entry.id}/setQualified"
                                         )
                                     }
                                 }
@@ -61,6 +72,40 @@ object AdminEditCompoPage {
                     }
                 }
             }
+
+            if (nonQualified.isNotEmpty()) {
+                article {
+                    header { +"Non-qualified entries" }
+                    table {
+                        thead {
+                            tr {
+                                th { +"Title" }
+                                th { +"Author" }
+                                th { +"Submitted by" }
+                                th {}
+                            }
+                        }
+                        tbody {
+                            nonQualified.forEach { entry ->
+                                tr {
+                                    attributes.put("data-dragid", entry.id.toString())
+                                    td { a(href = "/entries/${entry.id}") { +entry.title } }
+                                    td { +entry.author }
+                                    td { +"userId: ${entry.userId}" }
+                                    td(classes = "align-right") {
+                                        toggleButton(
+                                            entry.qualified,
+                                            IconSet.qualified,
+                                            "/admin/compos/entries/${entry.id}/setQualified"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             script(src = "/assets/draggable.min.js") {}
         }
 }

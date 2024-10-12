@@ -46,7 +46,18 @@ class EntryRepository(private val app: AppServices) {
     }
 
     fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use{
-        it.one(queryOf("select * from entry where id = ? and user_id = ?", entryId, userId).map(Entry.fromRow))
+        it.one(queryOf("""
+            SELECT *
+            FROM entry
+            WHERE id = ?
+            AND (
+            	user_id = ? OR
+            	(SELECT is_admin FROM appuser WHERE id = ?)
+            )
+        """.trimIndent(),
+            entryId,
+            userId, userId
+        ).map(Entry.fromRow))
     }
 
     fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> = db.use {
@@ -94,16 +105,17 @@ class EntryRepository(private val app: AppServices) {
             update entry set
                 title = ?,
                 author = ?,
-                filename = coalesce(?, filename),
                 compo_id = ?
-            where id = ? and user_id = ?
+            where id = ? and (
+            	user_id = ? OR
+            	(SELECT is_admin FROM appuser WHERE id = ?)
+            )
             """.trimIndent(),
             entry.title,
             entry.author,
-            entry.file.name.nonEmptyString(),
             entry.compoId,
             entry.id,
-            userId
+            userId, userId
         ))
     }
 

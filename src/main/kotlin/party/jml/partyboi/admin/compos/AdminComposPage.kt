@@ -14,8 +14,8 @@ object AdminComposPage {
     fun render(newCompoForm: Form<NewCompo>, compos: List<Compo>, entries: Map<Int, List<Entry>>) =
         Page("Compos") {
             if (compos.isNotEmpty()) {
+                h1 { +"Compos" }
                 article {
-                    header { +"Compos" }
                     table {
                         thead {
                             tr {

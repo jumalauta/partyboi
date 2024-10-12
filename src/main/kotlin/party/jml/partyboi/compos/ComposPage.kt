@@ -1,14 +1,12 @@
 package party.jml.partyboi.compos
 
-import kotlinx.html.a
-import kotlinx.html.article
-import kotlinx.html.header
-import kotlinx.html.p
+import kotlinx.html.*
 import party.jml.partyboi.templates.Page
 
 object ComposPage {
     fun render(compos: List<Compo>) =
         Page("Compos") {
+            h1 { +"Compos" }
             compos.filter { it.visible }.forEach { compo ->
                 article {
                     header { +compo.name }

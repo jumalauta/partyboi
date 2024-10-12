@@ -12,6 +12,7 @@ import party.jml.partyboi.templates.Page
 object EntriesPage {
     fun render(compos: List<Compo>, userEntries: List<EntryWithLatestFile>, formData: Form<NewEntry>) =
         Page("Submit entries") {
+            h1 { +"Entries" }
             submitNewEntryForm("/entries", compos, formData)
             entryList(userEntries, compos)
         }
@@ -20,7 +21,7 @@ object EntriesPage {
 fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<Compo>) {
     if (userEntries.isNotEmpty()) {
         article {
-            header { +"My entries" }
+            header { +"My submitted entries" }
             table {
                 thead {
                     tr {

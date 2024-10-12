@@ -33,16 +33,13 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
 fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<EntryUpdate>) {
     form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
         article {
-            header {
-                +"Edit an entry"
-            }
             fieldSet {
                 renderForm(values, mapOf(
                     "compoId" to compos.map { DropdownOption.fromCompo(it) }
                 ))
             }
             footer {
-                submitInput { value = "Submit" }
+                submitInput { value = "Save changes" }
             }
         }
     }
