@@ -56,7 +56,7 @@ class ScreenRepository(private val app: AppServices) {
         it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
     } }
 
-    inline fun <reified A : Slide<A>> add(slideSet: String, screen: A): Either<AppError, ScreenRow> = db.use {
+    inline fun <reified A : Slide<A>> add(slideSet: String, screen: A, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf(
             "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, false) RETURNING *",
@@ -70,6 +70,13 @@ class ScreenRepository(private val app: AppServices) {
         val (type, content) = getTypeAndJson(screen)
         it.one(queryOf("UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *", type, content, id).map(ScreenRow.fromRow))
     }
+
+    inline fun <reified A : Slide<A>> replaceSlideSet(slideSet: String, slides: List<A>): Either<AppError, List<ScreenRow>> =
+        db.transaction { either {
+            val tx = it
+            it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
+            slides.map { slide -> add(slideSet, slide, tx) }.bindAll()
+        } }
 
     fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id LIMIT 1", slideSet).map(ScreenRow.fromRow))

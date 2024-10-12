@@ -65,9 +65,23 @@ object AdminEditCompoPage {
                         }
                     }
                     footer {
-                        a(href = "/admin/compos/${compo.data.id}/download") {
-                            attributes.put("role", "button")
-                            +"Download files"
+                        nav {
+                            ul {
+                                li {
+                                    a(href = "/admin/compos/${compo.data.id}/download") {
+                                        attributes.put("role", "button")
+                                        icon("download")
+                                        +" Download files"
+                                    }
+                                }
+                                li {
+                                    a(href = "/admin/compos/${compo.data.id}/generate-slides") {
+                                        attributes.put("role", "button")
+                                        icon("tv")
+                                        +" Generate slides"
+                                    }
+                                }
+                            }
                         }
                     }
                 }

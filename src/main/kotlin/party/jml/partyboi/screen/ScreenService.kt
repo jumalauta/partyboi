@@ -54,8 +54,6 @@ class ScreenService(private val app: AppServices) {
 
     fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
-    fun isRunning(): Boolean = scheduler != null
-
     fun stopSlideSet() {
         scheduler?.cancel()
         scheduler = null
@@ -74,6 +72,24 @@ class ScreenService(private val app: AppServices) {
 
     fun show(slideId: Int) = either {
         show(repository.getSlide(slideId).bind())
+    }
+
+    fun generateSlidesForCompo(compoId: Int): Either<AppError, String> = either {
+        val slideSet = "compo-${compoId}"
+        val compo = app.compos.getById(compoId).bind()
+        val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
+
+        val slides = listOf(
+            TextSlide("${compo.name} compo starts soon", "")
+        ) + entries.mapIndexed { index, entry ->
+            TextSlide("#${index + 1} ${entry.title}", entry.author)
+        } + listOf(
+            TextSlide("${compo.name} compo has ended", "")
+        )
+
+        repository.replaceSlideSet(slideSet, slides).bind()
+
+        "/admin/screen/${slideSet}"
     }
 
     private fun show(row: ScreenRow): Unit =

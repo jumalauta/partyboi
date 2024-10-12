@@ -24,45 +24,57 @@ fun Application.configureAdminComposRouting(app: AppServices) {
     routing {
         authenticate("admin") {
             get("/admin/compos") {
-                call.respondEither({ either {
-                    val compos = app.compos.getAllCompos().bind()
-                    val entries = app.entries.getAllEntriesByCompo().bind()
-                    val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
-                    AdminComposPage.render(newCompo, compos, entries)
-                }})
+                call.respondEither({
+                    either {
+                        val compos = app.compos.getAllCompos().bind()
+                        val entries = app.entries.getAllEntriesByCompo().bind()
+                        val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
+                        AdminComposPage.render(newCompo, compos, entries)
+                    }
+                })
             }
 
             post("/admin/compos") {
                 val newCompo = Form.fromParameters<NewCompo>(call.receiveMultipart())
-                call.respondEither({ either {
-                    app.compos.add(newCompo.bind().validated().bind()).bind()
-                    RedirectPage("/admin/compos")
-                }}, { error -> either {
-                    val compos = app.compos.getAllCompos().bind()
-                    val entries = app.entries.getAllEntriesByCompo().bind()
-                    AdminComposPage.render(newCompo.bind().with(error), compos, entries)
-                }})
+                call.respondEither({
+                    either {
+                        app.compos.add(newCompo.bind().validated().bind()).bind()
+                        RedirectPage("/admin/compos")
+                    }
+                }, { error ->
+                    either {
+                        val compos = app.compos.getAllCompos().bind()
+                        val entries = app.entries.getAllEntriesByCompo().bind()
+                        AdminComposPage.render(newCompo.bind().with(error), compos, entries)
+                    }
+                })
             }
 
             get("/admin/compos/{id}") {
-                call.respondEither({ either {
-                    val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
-                    val compo = app.compos.getById(id).bind()
-                    val form = Form(Compo::class, compo, initial = true)
-                    val entries = app.entries.getEntriesForCompo(id).bind()
-                    AdminEditCompoPage.render(form, entries)
-                }})
+                call.respondEither({
+                    either {
+                        val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
+                        val compo = app.compos.getById(id).bind()
+                        val form = Form(Compo::class, compo, initial = true)
+                        val entries = app.entries.getEntriesForCompo(id).bind()
+                        AdminEditCompoPage.render(form, entries)
+                    }
+                })
             }
 
             post("/admin/compos/{id}") {
                 val compo = Form.fromParameters<Compo>(call.receiveMultipart())
-                call.respondEither({ either {
-                    app.compos.update(compo.bind().validated().bind()).bind()
-                    RedirectPage("/admin/compos")
-                } }, { error -> either {
-                    val entries = app.entries.getEntriesForCompo(compo.bind().data.id).bind()
-                    AdminEditCompoPage.render(compo.bind().with(error), entries)
-                } })
+                call.respondEither({
+                    either {
+                        app.compos.update(compo.bind().validated().bind()).bind()
+                        RedirectPage("/admin/compos")
+                    }
+                }, { error ->
+                    either {
+                        val entries = app.entries.getEntriesForCompo(compo.bind().data.id).bind()
+                        AdminEditCompoPage.render(compo.bind().with(error), entries)
+                    }
+                })
             }
 
             get("/admin/compos/{id}/download") {
@@ -85,6 +97,14 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                         ).toString()
                     )
                     call.respondFile(zipFile.toFile())
+                }
+            }
+
+            get("/admin/compos/{id}/generate-slides") {
+                either {
+                    val compoId = call.parameterInt("id").bind()
+                    val slideEditUrl = app.screen.generateSlidesForCompo(compoId).bind()
+                    call.respondRedirect(slideEditUrl)
                 }
             }
         }
