@@ -46,7 +46,7 @@ class ScreenRepository(private val app: AppServices) {
         it.many(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Slide<A>> setAdHoc(slide: A): Either<AppError, ScreenRow> = db.transaction { either {
+    fun setAdHoc(slide: Slide<*>): Either<AppError, ScreenRow> = db.transaction { either {
         val (type, content) = getTypeAndJson(slide)
         val query = if (adHocExists(it).bind()) {
             "UPDATE screen SET type = ?, content = ?::jsonb WHERE slide_set = 'adhoc' RETURNING *"
@@ -56,8 +56,8 @@ class ScreenRepository(private val app: AppServices) {
         it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
     } }
 
-    inline fun <reified A : Slide<A>> add(slideSet: String, screen: A, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
-        val (type, content) = getTypeAndJson(screen)
+    fun add(slideSet: String, slide: Slide<*>, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
+        val (type, content) = getTypeAndJson(slide)
         it.one(queryOf(
             "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, false) RETURNING *",
             slideSet,
@@ -66,12 +66,12 @@ class ScreenRepository(private val app: AppServices) {
         ).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Slide<A>> update (id: Int, screen: A): Either<AppError, ScreenRow> = db.use {
-        val (type, content) = getTypeAndJson(screen)
+    fun update (id: Int, slide: Slide<*>): Either<AppError, ScreenRow> = db.use {
+        val (type, content) = getTypeAndJson(slide)
         it.one(queryOf("UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *", type, content, id).map(ScreenRow.fromRow))
     }
 
-    inline fun <reified A : Slide<A>> replaceSlideSet(slideSet: String, slides: List<A>): Either<AppError, List<ScreenRow>> =
+    fun replaceSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
         db.transaction { either {
             val tx = it
             it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
@@ -90,15 +90,10 @@ class ScreenRepository(private val app: AppServices) {
         (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
             .filter { it.visible }
             .toNonEmptyListOrNone()
-            .toEither { DatabaseError("No visible screens in slide set '$slideSet'") }
+            .toEither { DatabaseError("No visible slides in slide set '$slideSet'") }
             .map { it.first() }
             .bind()
     }
-
-    inline fun <reified A : Slide<A>> getTypeAndJson(screen: A) = Pair(
-        screen.javaClass.name,
-        Json.encodeToString(screen)
-    )
 
     fun setVisible(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
@@ -107,6 +102,8 @@ class ScreenRepository(private val app: AppServices) {
     fun setRunOrder(id: Int, order: Int): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
+
+    private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
 }
 
 data class ScreenRow(

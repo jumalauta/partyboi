@@ -8,6 +8,8 @@ import kotlinx.html.FlowContent
 import kotlinx.html.h1
 import kotlinx.html.p
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
@@ -46,9 +48,9 @@ class ScreenService(private val app: AppServices) {
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
 
-    inline fun <reified A : Slide<A>> addEmptySlideToSlideSet(slideSet: String, screen: A) = repository.add(slideSet, screen)
+    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) = repository.add(slideSet, slide)
 
-    inline fun <reified A : Slide<A>> update(id: Int, screen: A) = repository.update(id, screen)
+    fun update(id: Int, slide: Slide<*>) = repository.update(id, slide)
 
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
@@ -116,12 +118,10 @@ data class ScreenState(
     }
 }
 
-@Serializable
-sealed interface Slide<A>
-where A: Slide<A>,
-      A: Validateable<A> {
+interface Slide<A: Validateable<A>> {
     fun render(ctx: FlowContent)
     fun getForm(): Form<A>
+    fun toJson(): String
     fun getName(): String
 }
 
@@ -140,6 +140,7 @@ data class TextSlide (
     }
 
     override fun getForm(): Form<TextSlide> = Form(TextSlide::class, this, true)
+    override fun toJson(): String = Json.encodeToString(this)
     override fun getName(): String = title
 
     companion object {
