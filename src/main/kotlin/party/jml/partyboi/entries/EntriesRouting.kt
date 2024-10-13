@@ -142,6 +142,23 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     EditEntryPage.render(app, submitRequest.bind().with(error), files, screenshot)
                 }.flatten() })
             }
+
+            post("/entries/{id}/screenshot") {
+                val maybeUser = call.userSession()
+                val screenshotRequest = Form.fromParameters<NewScreenshot>(call.receiveMultipart())
+
+                call.respondEither({ either {
+                    val user = maybeUser.bind()
+                    val form = screenshotRequest.bind().validated().bind()
+                    val entryId = call.parameterInt("id").bind()
+                    val entry = app.entries.get(entryId, user.id).bind()
+
+                    app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                    app.screenshots.store(entry.id, form.file)
+
+                    RedirectPage("/entries/$entryId")
+                }})
+            }
         }
 
         // API routes (we don't want to redirect user to login page)

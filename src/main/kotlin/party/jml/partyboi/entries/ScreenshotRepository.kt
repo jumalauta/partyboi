@@ -1,11 +1,18 @@
 package party.jml.partyboi.entries
 
 import arrow.core.*
+import arrow.core.raise.either
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
+import kotlinx.html.InputType
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FileUpload
 import java.nio.file.Path
 import kotlin.io.path.exists
 
@@ -47,6 +54,12 @@ class ScreenshotRepository(app: AppServices) {
         inputImage.scaleToHeight(400).output(writer, outputImage)
     }
 
+    fun store(entryId: Int, upload: FileUpload): Either<AppError, Unit> = either {
+        val tempFile = kotlin.io.path.createTempFile()
+        upload.write(tempFile).bind()
+        store(entryId, tempFile)
+    }
+
     fun get(entryId: Int): Option<Path> {
         val path = getFile(entryId)
         return if (path.exists()) Some(path) else None
@@ -64,5 +77,18 @@ class ScreenshotRepository(app: AppServices) {
         )
         val lcName = filename.lowercase()
         return magicWords.map { (key, value) -> if (lcName.contains(key)) value else 0 }.sum()
+    }
+}
+
+data class NewScreenshot(
+    @property:Field(label = "Screenshot", type = InputType.file)
+    val file: FileUpload
+) : Validateable<NewScreenshot> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectNotEmpty("file", file.name)
+    )
+
+    companion object {
+        val Empty = NewScreenshot(FileUpload.Empty)
     }
 }

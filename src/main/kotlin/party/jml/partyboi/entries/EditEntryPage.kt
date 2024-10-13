@@ -9,6 +9,7 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.editEntryForm
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.components.icon
@@ -29,9 +30,21 @@ object EditEntryPage {
             article {
                 header { +"Screenshot / preview" }
                 screenshot.fold(
-                    { p { +"No screenshot uploaded" }},
+                    { p { +"No screenshot uploaded" } },
                     { img(src = it) }
                 )
+                form(
+                    method = FormMethod.post,
+                    action = "/entries/${formData.data.id}/screenshot",
+                    encType = FormEncType.multipartFormData
+                ) {
+                    fieldSet {
+                        renderForm(Form(NewScreenshot::class, NewScreenshot.Empty, true))
+                    }
+                    footer {
+                        submitInput { value = "Set screenshot" }
+                    }
+                }
             }
 
             if (files.isNotEmpty()) {
