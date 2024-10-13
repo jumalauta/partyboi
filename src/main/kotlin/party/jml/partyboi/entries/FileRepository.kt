@@ -10,12 +10,10 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asIntOrNull
-import party.jml.partyboi.data.one
-import party.jml.partyboi.data.option
-import party.jml.partyboi.data.toFilenameToken
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -72,7 +70,6 @@ class FileRepository(private val app: AppServices) {
 
     fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, Unit> = either {
         val version = nextVersion(file.entryId, tx).bind()
-        val fileSize = 0 // TODO
         db.use(tx) {
             it.execute(queryOf(
                 "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?)",
@@ -81,13 +78,36 @@ class FileRepository(private val app: AppServices) {
                 file.originalFilename,
                 file.storageFilename.toString(),
                 file.type,
-                fileSize,
+                file.size(),
             ))
         }
     }
 
     fun getLatest(entryId: Int): Either<AppError, FileDesc> = db.use {
         it.one(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1", entryId).map(FileDesc.fromRow))
+    }
+
+    fun getAllVersions(entryId: Int): Either<AppError, List<FileDesc>> = db.use {
+        it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
+    }
+
+    fun getUserVersion(entryId: Int, version: Int, userId: Int) = db.use {
+        it.one(queryOf("""
+                SELECT *
+                FROM file
+                JOIN entry ON entry.id = file.entry_id
+                WHERE entry_id = ?
+                  AND version = ?
+                  AND (
+                    entry.user_id = ? OR
+                    (SELECT is_admin FROM appuser WHERE id = ?)
+                )
+            """,
+            entryId,
+            version,
+            userId,
+            userId,
+        ).map(FileDesc.fromRow))
     }
 
     private fun buildStorageFilename(compoName: String, entryId: Int, version: Int, author: String, title: String, originalFilename: String): Path {
@@ -114,6 +134,8 @@ data class NewFileDesc(
             else -> extension
         }
     }
+
+    fun size(): Long = Files.size(Config.getEntryDir().resolve(storageFilename))
 }
 
 data class FileDesc(

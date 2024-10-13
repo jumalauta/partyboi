@@ -100,8 +100,8 @@ class EntryRepository(private val app: AppServices) {
             app.files.add(fileDesc, it).bind()
         } }
 
-    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("""
+    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = db.use {
+        it.one(queryOf("""
             update entry set
                 title = ?,
                 author = ?,
@@ -110,13 +110,14 @@ class EntryRepository(private val app: AppServices) {
             	user_id = ? OR
             	(SELECT is_admin FROM appuser WHERE id = ?)
             )
+            returning *
             """.trimIndent(),
             entry.title,
             entry.author,
             entry.compoId,
             entry.id,
             userId, userId
-        ))
+        ).map(Entry.fromRow))
     }
 
     fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = db.use {

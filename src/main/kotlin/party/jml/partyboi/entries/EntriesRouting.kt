@@ -4,9 +4,11 @@ package party.jml.partyboi.entries
 
 import arrow.core.flatten
 import arrow.core.raise.either
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
@@ -18,6 +20,7 @@ import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.templates.respondPage
 
 fun Application.configureEntriesRouting(app: AppServices) {
     routing {
@@ -65,13 +68,35 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
             get("/entries/{id}") {
                 call.respondEither({ either {
-                    val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
+                    val id = call.parameterInt("id").bind()
                     val user = call.userSession().bind()
                     val entry = app.entries.get(id, user.id).bind()
                     val form = Form(EntryUpdate::class, EntryUpdate.fromEntry(entry), initial = true)
+                    val files = app.files.getAllVersions(id).bind()
 
-                    EditEntryPage.render(app, form).bind()
+                    EditEntryPage.render(app, form, files).bind()
                 } })
+            }
+
+            get("/entries/{id}/download/{version}") {
+                either {
+                    val id = call.parameterInt("id").bind()
+                    val version = call.parameterInt("version").bind()
+                    val user = call.userSession().bind()
+                    app.files.getUserVersion(id, version, user.id).bind()
+                }.fold(
+                    { call.respondPage(it) },
+                    {
+                        call.response.header(
+                            HttpHeaders.ContentDisposition,
+                            ContentDisposition.Attachment.withParameter(
+                                ContentDisposition.Parameters.FileName,
+                                it.originalFilename
+                            ).toString()
+                        )
+                        call.respondFile(it.getStorageFile())
+                    }
+                )
             }
 
             post("/entries/{id}") {
@@ -79,16 +104,23 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 val submitRequest = Form.fromParameters<EntryUpdate>(call.receiveMultipart())
 
                 call.respondEither({ either {
-                    val userId = maybeUser.bind().id
+                    val user = maybeUser.bind()
                     val form = submitRequest.bind()
                     val entry = form.validated().bind()
-                    app.entries.update(entry, userId).bind()
+
+                    app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+
+                    val newEntry = app.entries.update(entry, user.id).bind()
                     if (entry.file.isDefined) {
-                        runBlocking { entry.file.write(Config.getEntryDir()).bind() }
+                        val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
+                        runBlocking { entry.file.write(storageFilename).bind() }
+                        app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename))
                     }
                     RedirectPage("/entries")
                 } }, { error -> either {
-                    EditEntryPage.render(app, submitRequest.bind().with(error))
+                    val id = call.parameterInt("id").bind()
+                    val files = app.files.getAllVersions(id).bind()
+                    EditEntryPage.render(app, submitRequest.bind().with(error), files)
                 }.flatten() })
             }
         }
