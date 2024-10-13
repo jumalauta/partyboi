@@ -1,9 +1,7 @@
 package party.jml.partyboi.entries
 
-import arrow.core.Either
-import arrow.core.Option
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.toOption
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.InputType
 import kotliquery.Row
@@ -82,11 +80,13 @@ class EntryRepository(private val app: AppServices) {
     fun add(newEntry: NewEntry): Either<AppError, Unit> =
         db.transaction { either {
             val entry = it.one(queryOf(
-            "insert into entry(title, author, compo_id, user_id) values(?, ?, ?, ?) returning *",
+            "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
                 newEntry.title,
                 newEntry.author,
                 newEntry.compoId,
                 newEntry.userId,
+                newEntry.screenComment.nonEmptyString(),
+                newEntry.orgComment.nonEmptyString(),
             ).map(Entry.fromRow)).bind()
 
             val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
@@ -109,7 +109,9 @@ class EntryRepository(private val app: AppServices) {
             update entry set
                 title = ?,
                 author = ?,
-                compo_id = ?
+                compo_id = ?,
+                screen_comment = ?,
+                org_comment = ?
             where id = ? and (
             	user_id = ? OR
             	(SELECT is_admin FROM appuser WHERE id = ?)
@@ -119,6 +121,8 @@ class EntryRepository(private val app: AppServices) {
             entry.title,
             entry.author,
             entry.compoId,
+            entry.screenComment.nonEmptyString(),
+            entry.orgComment.nonEmptyString(),
             entry.id,
             userId, userId
         ).map(Entry.fromRow))
@@ -239,6 +243,10 @@ data class NewEntry(
     val file: FileUpload,
     @property:Field(1, "Compo")
     val compoId: Int,
+    @property:Field(5, "Show message on the screen", large = true)
+    val screenComment: String,
+    @property:Field(6, "Information for organizers", large = true)
+    val orgComment: String,
     val userId: Int,
 ) : Validateable<NewEntry> {
     override fun validationErrors(): List<Option<ValidationError.Message>> {
@@ -253,7 +261,7 @@ data class NewEntry(
     }
 
     companion object {
-        val Empty = NewEntry("", "", FileUpload.Empty, 0, 0)
+        val Empty = NewEntry("", "", FileUpload.Empty, 0, "", "", 0)
     }
 }
 
@@ -270,7 +278,11 @@ data class EntryUpdate(
     val compoId: Int,
     @property:Field(type = InputType.hidden)
     val userId: Int,
-) : Validateable<EntryUpdate> {
+    @property:Field(5, "Show message on the screen", large = true)
+    val screenComment: String,
+    @property:Field(6, "Information for organizers", large = true)
+    val orgComment: String,
+    ) : Validateable<EntryUpdate> {
     override fun validationErrors(): List<Option<ValidationError.Message>> {
         return listOf(
             expectNotEmpty("title", title),
@@ -287,7 +299,9 @@ data class EntryUpdate(
             author = e.author,
             file = FileUpload.Empty,
             compoId = e.compoId,
-            userId = e.userId
+            userId = e.userId,
+            screenComment = e.screenComment.getOrElse { "" },
+            orgComment = e.orgComment.getOrElse { "" },
         )
     }
 }
