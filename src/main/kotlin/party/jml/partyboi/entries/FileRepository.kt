@@ -68,19 +68,19 @@ class FileRepository(private val app: AppServices) {
     fun nextVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Int> =
         latestVersion(entryId, tx).map { it.getOrElse { 0 } + 1 }
 
-    fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, Unit> = either {
+    fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
         db.use(tx) {
-            it.execute(queryOf(
-                "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?)",
+            it.one(queryOf(
+                "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?) RETURNING *",
                 file.entryId,
                 version,
                 file.originalFilename,
                 file.storageFilename.toString(),
                 file.type,
                 file.size(),
-            ))
-        }
+            ).map(FileDesc.fromRow))
+        }.bind()
     }
 
     fun getLatest(entryId: Int): Either<AppError, FileDesc> = db.use {
@@ -126,16 +126,19 @@ data class NewFileDesc(
     val originalFilename: String,
     val storageFilename: Path,
 ) {
-    val type: String by lazy {
-        when (val extension = File(originalFilename).extension.lowercase()) {
-            "png", "jpg", "jpeg", "gif", "webp" -> "image"
-            "mp3", "ogg", "flac", "wav" -> "sound"
-            "zip" -> "zip"
-            else -> extension
-        }
-    }
+    val type: String by lazy { getType(originalFilename) }
 
     fun size(): Long = Files.size(Config.getEntryDir().resolve(storageFilename))
+
+    companion object {
+        fun getType(filename: String): String =
+            when (val extension = File(filename).extension.lowercase()) {
+                "png", "jpg", "jpeg", "gif", "webp" -> "image"
+                "mp3", "ogg", "flac", "wav" -> "sound"
+                "zip" -> "zip"
+                else -> extension
+            }
+    }
 }
 
 data class FileDesc(

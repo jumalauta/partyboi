@@ -10,6 +10,7 @@ import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.data.DatabasePool
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
+import party.jml.partyboi.entries.ScreenshotRepository
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.voting.VoteRepository
 import java.nio.file.Path
@@ -25,6 +26,7 @@ class AppServices(db: DatabasePool) {
     val votes = VoteRepository(db)
     val compoRun = CompoRunService(this)
     val screen = ScreenService(this)
+    val screenshots = ScreenshotRepository(this)
 }
 
 object Config {
@@ -35,6 +37,7 @@ object Config {
     private val secretSignKey = Key("sessions.secretSignKey", stringType)
     private val entryDir = Key("dir.entries", stringType)
     private val assetsDir = Key("dir.assets", stringType)
+    private val screenshotsDir = Key("dir.screenshots", stringType)
     private val dbHost = Key("db.host", stringType)
     private val dbPort = Key("db.port", intType)
     private val dbUser = Key("db.user", stringType)
@@ -44,6 +47,7 @@ object Config {
     fun getSecretSignKey() = hex(config.get(secretSignKey))
     fun getEntryDir(): Path = Paths.get(config[entryDir])
     fun getAssetsDir(): Path = Paths.get(config[assetsDir])
+    fun getScreenshotsDir(): Path = Paths.get(config[screenshotsDir])
     fun getDbHost() = config.getOrElse(dbHost, "localhost")
     fun getDbPort() = config.getOrElse(dbPort, 5432)
     fun getDbUser() = config.getOrElse(dbUser, "postgres")

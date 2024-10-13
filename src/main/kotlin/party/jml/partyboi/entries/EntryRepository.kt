@@ -97,7 +97,11 @@ class EntryRepository(private val app: AppServices) {
                 storageFilename = storageFilename,
             )
             runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
-            app.files.add(fileDesc, it).bind()
+            val storedFile = app.files.add(fileDesc, it).bind()
+
+            app.screenshots.scanForScreenshotSource(storedFile).map { source ->
+                app.screenshots.store(entry.id, source)
+            }
         } }
 
     fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = db.use {

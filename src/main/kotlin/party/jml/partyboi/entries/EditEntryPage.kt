@@ -1,6 +1,7 @@
 package party.jml.partyboi.entries
 
 import arrow.core.Either
+import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.html.*
 import party.jml.partyboi.AppServices
@@ -14,11 +15,24 @@ import party.jml.partyboi.templates.components.icon
 import java.time.format.DateTimeFormatter
 
 object EditEntryPage {
-    fun render(app: AppServices, formData: Form<EntryUpdate>, files: List<FileDesc>): Either<AppError, Renderable> = either {
+    fun render(
+        app: AppServices,
+        formData: Form<EntryUpdate>,
+        files: List<FileDesc>,
+        screenshot: Option<String>,
+    ): Either<AppError, Renderable> = either {
         val compos = app.compos.getAllCompos().bind()
         Page("Edit entry") {
             h1 { +"Edit entry" }
             editEntryForm("/entries/${formData.data.id}", compos.filter { it.allowSubmit }, formData)
+
+            article {
+                header { +"Screenshot / preview" }
+                screenshot.fold(
+                    { p { +"No screenshot uploaded" }},
+                    { img(src = it) }
+                )
+            }
 
             if (files.isNotEmpty()) {
                 article {

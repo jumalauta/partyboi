@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.data.parameterInt
@@ -73,9 +74,22 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val entry = app.entries.get(id, user.id).bind()
                     val form = Form(EntryUpdate::class, EntryUpdate.fromEntry(entry), initial = true)
                     val files = app.files.getAllVersions(id).bind()
+                    val screenshot = app.screenshots.get(id).map { "/entries/$id/screenshot.jpg" }
 
-                    EditEntryPage.render(app, form, files).bind()
+                    EditEntryPage.render(app, form, files, screenshot).bind()
                 } })
+            }
+
+            get("/entries/{id}/screenshot.jpg") {
+                either {
+                    val id = call.parameterInt("id").bind()
+                    app.screenshots.get(id)
+                        .toEither { NotFound("Entry screenshot not found") }
+                        .bind()
+                }.fold(
+                    { call.respondPage(it) },
+                    { call.respondFile(it.toFile()) }
+                )
             }
 
             get("/entries/{id}/download/{version}") {
@@ -114,13 +128,18 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     if (entry.file.isDefined) {
                         val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
                         runBlocking { entry.file.write(storageFilename).bind() }
-                        app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename))
+                        val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
+
+                        app.screenshots.scanForScreenshotSource(file).map { source ->
+                            app.screenshots.store(entry.id, source)
+                        }
                     }
                     RedirectPage("/entries")
                 } }, { error -> either {
                     val id = call.parameterInt("id").bind()
                     val files = app.files.getAllVersions(id).bind()
-                    EditEntryPage.render(app, submitRequest.bind().with(error), files)
+                    val screenshot = app.screenshots.get(id).map { "/entries/{id}/screenshot.jpg" }
+                    EditEntryPage.render(app, submitRequest.bind().with(error), files, screenshot)
                 }.flatten() })
             }
         }

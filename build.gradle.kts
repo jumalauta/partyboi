@@ -55,6 +55,7 @@ dependencies {
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("com.natpryce:konfig:1.6.10.0")
     implementation("org.apache.commons:commons-compress:1.27.1")
+    implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     implementation(kotlin("stdlib-jdk8"))
