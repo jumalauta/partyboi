@@ -2,6 +2,7 @@ package party.jml.partyboi.screen
 
 import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.some
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
@@ -84,7 +85,12 @@ class ScreenService(private val app: AppServices) {
         val slides = listOf(
             TextSlide("${compo.name} compo starts soon", "")
         ) + entries.mapIndexed { index, entry ->
-            TextSlide("#${index + 1} ${entry.title}", entry.author)
+            TextSlide(
+                "#${index + 1} ${entry.title}",
+                listOf(entry.author.some(), entry.screenComment)
+                    .flatMap { it.toList() }
+                    .joinToString(separator = "\n\n") { it }
+            )
         } + listOf(
             TextSlide("${compo.name} compo has ended", "")
         )
@@ -135,7 +141,9 @@ data class TextSlide (
     override fun render(ctx: FlowContent) {
         with(ctx) {
             h1 { +title }
-            p { +content }
+            content.split("\n\n").forEach {
+                p { +it }
+            }
         }
     }
 

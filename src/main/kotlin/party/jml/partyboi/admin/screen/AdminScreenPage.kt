@@ -66,11 +66,11 @@ object AdminScreenPage {
                 table {
                     thead {
                         tr {
-                            th {}
-                            th {}
+                            th(classes = "narrow") {}
+                            th(classes = "narrow") {}
                             th { +"Name" }
                             th { +"Type" }
-                            th {}
+                            th(classes = "narrow") {}
                         }
                     }
                     tbody(classes = "sortable") {

@@ -35,11 +35,11 @@ object AdminEditCompoPage {
                     table {
                         thead {
                             tr {
-                                th {}
+                                th(classes = "narrow") {}
                                 th { +"Title" }
                                 th { +"Author" }
                                 th { +"Submitted by" }
-                                th {}
+                                th(classes = "narrow") {}
                             }
                         }
                         tbody(classes = "sortable") {

@@ -40,6 +40,9 @@ fun Application.configureStyles() {
                 rule(".align-right") {
                     textAlign = TextAlign.right
                 }
+                rule(".narrow") {
+                    width = LinearDimension("20px")
+                }
                 // Theme variables here
             }
         }
