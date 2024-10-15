@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.toNonEmptyListOrNone
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -56,13 +55,14 @@ class ScreenRepository(private val app: AppServices) {
         it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
     } }
 
-    fun add(slideSet: String, slide: Slide<*>, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
+    fun add(slideSet: String, slide: Slide<*>, makeVisible: Boolean, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(slide)
         it.one(queryOf(
-            "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, false) RETURNING *",
+            "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
             slideSet,
             type,
-            content
+            content,
+            makeVisible,
         ).map(ScreenRow.fromRow))
     }
 
@@ -75,7 +75,7 @@ class ScreenRepository(private val app: AppServices) {
         db.transaction { either {
             val tx = it
             it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
-            slides.map { slide -> add(slideSet, slide, tx) }.bindAll()
+            slides.map { slide -> add(slideSet, slide, makeVisible = true, tx) }.bindAll()
         } }
 
     fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
@@ -114,7 +114,7 @@ data class ScreenRow(
     val visible: Boolean,
     val runOrder: Int,
 ) {
-    fun getScreen(): Slide<*> =
+    fun getSlide(): Slide<*> =
         when(type) {
             TextSlide::class.qualifiedName -> Json.decodeFromString<TextSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")

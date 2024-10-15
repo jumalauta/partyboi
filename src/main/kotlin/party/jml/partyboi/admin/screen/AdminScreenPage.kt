@@ -1,7 +1,5 @@
 package party.jml.partyboi.admin.screen
 
-import arrow.core.Option
-import arrow.core.Some
 import kotlinx.html.*
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.Form
@@ -47,17 +45,24 @@ object AdminScreenPage {
 
             section {
                 fieldSet {
+                    attributes.put("role", "group")
+
                     if (screenState.slideSet != slideSet || !isRunning) {
                         postButton("/admin/screen/${slideSet}/start") {
                             icon(Icon("play"))
-                            +" Start"
+                            +" Auto run"
                         }
                     }
                     if (screenState.slideSet == slideSet && isRunning) {
                         postButton("/admin/screen/${slideSet}/stop") {
                             icon(Icon("pause"))
-                            +" Pause"
+                            +" Pause auto run"
                         }
+                    }
+                    a(href="/admin/screen/${slideSet}/presentation") {
+                        attributes.put("role", "button")
+                        icon("person-chalkboard")
+                        +" Presentation mode"
                     }
                 }
             }
@@ -179,7 +184,7 @@ data class SlideEditData(
             SlideEditData(
                 id = row.id,
                 visible = row.visible,
-                slide = row.getScreen(),
+                slide = row.getSlide(),
             )
         }
     }

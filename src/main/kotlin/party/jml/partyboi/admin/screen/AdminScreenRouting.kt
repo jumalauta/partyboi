@@ -53,6 +53,16 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 }})
             }
 
+            get("/admin/screen/{slideSet}/presentation") {
+                call.respondEither({ either {
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slides = app.screen.getSlideSet(slideSetName).bind().filter { it.visible }
+                    val (state, isRunning) = app.screen.currentState()
+
+                    ScreenPresentation.render(slideSetName, slides, state, isRunning)
+                }})
+            }
+
             get("/admin/screen/{slideSet}/{slideId}") {
                 call.respondEither({ either {
                     val slideSetName = call.parameterString("slideSet").bind()
@@ -103,7 +113,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.apiRespond { either {
                     call.userSession().bind()
                     val slideId = call.parameterInt("slideId").bind()
-                    app.screen.show(slideId)
+                    app.screen.show(slideId).bind()
                 } }
             }
 
@@ -116,6 +126,30 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
                 call.respondText("OK")
             }
+
+            post("/admin/screen/{slideSet}/presentation/start") {
+                call.apiRespond { either {
+                    call.userSession().bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slideSet = app.screen.getSlideSet(slideSetName).bind()
+                    if (slideSet.isNotEmpty()) {
+                        app.screen.stopSlideSet()
+                        app.screen.show(slideSet.first().id).bind()
+                    }
+                } }
+            }
+
+            post("/admin/screen/{slideSet}/presentation/next") {
+                call.apiRespond { either {
+                    call.userSession().bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val (state) = app.screen.currentState()
+                    if (state.slideSet == slideSetName) {
+                        app.screen.showNext()
+                    }
+                } }
+            }
+
         }
     }
 }

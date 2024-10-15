@@ -5,7 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.css.*
-import kotlinx.css.properties.LineHeight
+import kotlinx.css.properties.*
 
 fun Application.configureStyles() {
 

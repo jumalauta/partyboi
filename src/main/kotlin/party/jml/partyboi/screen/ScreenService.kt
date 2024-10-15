@@ -49,7 +49,7 @@ class ScreenService(private val app: AppServices) {
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
 
-    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) = repository.add(slideSet, slide)
+    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) = repository.add(slideSet, slide, makeVisible = false)
 
     fun update(id: Int, slide: Slide<*>) = repository.update(id, slide)
 
@@ -66,15 +66,19 @@ class ScreenService(private val app: AppServices) {
         repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
             scheduler = Timer().schedule(10000, 10000) {
-                repository.getNext(state.value.slideSet, state.value.id).fold(
-                    { stopSlideSet() },
-                    { show(it) }
-                )
+                showNext()
             }
         }
 
     fun show(slideId: Int) = either {
         show(repository.getSlide(slideId).bind())
+    }
+
+    fun showNext() {
+        repository.getNext(state.value.slideSet, state.value.id).fold(
+            { stopSlideSet() },
+            { show(it) }
+        )
     }
 
     fun generateSlidesForCompo(compoId: Int): Either<AppError, String> = either {
@@ -116,7 +120,7 @@ data class ScreenState(
             ScreenState(
                 slideSet = row.slideSet,
                 id = row.id,
-                slide = row.getScreen(),
+                slide = row.getSlide(),
             )
         }
 
