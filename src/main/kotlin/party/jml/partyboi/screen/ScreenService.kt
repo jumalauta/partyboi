@@ -1,6 +1,7 @@
 package party.jml.partyboi.screen
 
 import arrow.core.Either
+import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.some
 import kotlinx.coroutines.flow.*
@@ -34,10 +35,17 @@ class ScreenService(private val app: AppServices) {
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
-    fun waitForNext(): Flow<Slide<*>> {
+    fun waitForNext(): Flow<ScreenState> {
         val current = state.value
-        return state.filter { it != current }.take(1).map { it.slide }
+        return state.filter { it != current }.take(1)
     }
+
+    fun waitForNext(currentId: Int?): Flow<ScreenState> =
+        if (currentId == null) {
+            waitForNext()
+        } else {
+            state.filter { it.id != currentId }.take(1)
+        }
 
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())

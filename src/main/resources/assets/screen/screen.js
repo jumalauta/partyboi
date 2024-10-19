@@ -2,16 +2,26 @@ const screens = [
   document.querySelector("#screen1"),
   document.querySelector("#screen2"),
 ];
-let currentScreen = 0;
 
+let currentScreen = 0;
 let retryCount = 0;
+let currentSlideId = null;
+
 function waitForNext() {
-  if (++retryCount === 10) {
+  if (++retryCount === 20) {
+    console.log("20 retries failed, reload page");
     location.reload();
     return;
   }
-  fetch("/screen/next")
-    .then((r) => r.text())
+  console.log("wait for next slide...");
+  fetch(
+    currentSlideId === null ? "/screen/next" : `/screen/next/${currentSlideId}`
+  )
+    .then((r) => {
+      const id = parseInt(r.headers.get("X-SlideId"));
+      currentSlideId = id === NaN ? null : id;
+      return r.text();
+    })
     .then((html) => {
       currentScreen = (currentScreen + 1) % 2;
       screens[currentScreen].innerHTML = html;
@@ -26,6 +36,10 @@ function waitForNext() {
       retryCount = 0;
       waitForNext();
     })
-    .catch(() => setTimeout(waitForNext, 1000 * count));
+    .catch(() => {
+      console.log("fetch failed, retry in", 1000 * retryCount, "ms");
+      setTimeout(waitForNext, 1000 * retryCount);
+    });
 }
+
 waitForNext();
