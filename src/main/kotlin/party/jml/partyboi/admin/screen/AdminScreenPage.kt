@@ -115,10 +115,7 @@ object AdminScreenPage {
                 }
             }
             script(src = "/assets/draggable.min.js") {}
-            script { unsafe { raw( Javascript.build {
-                httpGet("/screen/next")
-                refresh()
-            })}}
+            script(src = "/assets/refreshOnSlideChange.js") {}
         }
 
     fun renderSlideForm(slideSet: String, slide: SlideEditData) =
