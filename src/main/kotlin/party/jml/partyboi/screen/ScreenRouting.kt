@@ -1,6 +1,5 @@
 package party.jml.partyboi.screen
 
-import arrow.core.toOption
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
