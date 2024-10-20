@@ -1,23 +1,19 @@
 package party.jml.partyboi.screen
 
 import arrow.core.Either
-import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.some
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
-import kotlinx.html.h1
-import kotlinx.html.p
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.templates.components.markdown
+import party.jml.partyboi.screen.slides.TextSlide
 import java.util.*
 import kotlin.concurrent.schedule
 
@@ -144,25 +140,3 @@ interface Slide<A: Validateable<A>> {
     fun getName(): String
 }
 
-@Serializable
-data class TextSlide (
-    @property:Field(order = 0, label = "Title")
-    val title: String,
-    @property:Field(order = 1, label = "Content", large = true)
-    val content: String,
-) : Slide<TextSlide>, Validateable<TextSlide> {
-    override fun render(ctx: FlowContent) {
-        with(ctx) {
-            h1 { +title }
-            markdown(content)
-        }
-    }
-
-    override fun getForm(): Form<TextSlide> = Form(TextSlide::class, this, true)
-    override fun toJson(): String = Json.encodeToString(this)
-    override fun getName(): String = title
-
-    companion object {
-        val Empty = TextSlide("", "")
-    }
-}

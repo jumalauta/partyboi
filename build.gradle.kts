@@ -57,6 +57,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
     implementation("org.jetbrains:markdown:0.7.3")
+    implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     implementation(kotlin("stdlib-jdk8"))
