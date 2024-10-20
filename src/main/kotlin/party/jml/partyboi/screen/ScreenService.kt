@@ -17,6 +17,7 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.templates.components.markdown
 import java.util.*
 import kotlin.concurrent.schedule
 
@@ -153,9 +154,7 @@ data class TextSlide (
     override fun render(ctx: FlowContent) {
         with(ctx) {
             h1 { +title }
-            content.split("\n\n").forEach {
-                p { +it }
-            }
+            markdown(content)
         }
     }
 
