@@ -8,6 +8,7 @@ import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
 import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.data.DatabasePool
+import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
@@ -27,6 +28,7 @@ class AppServices(db: DatabasePool) {
     val compoRun = CompoRunService(this)
     val screen = ScreenService(this)
     val screenshots = ScreenshotRepository(this)
+    val properties = PropertyRepository(this)
 }
 
 object Config {
