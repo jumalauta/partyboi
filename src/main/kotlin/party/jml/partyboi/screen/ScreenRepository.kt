@@ -12,6 +12,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 
 class ScreenRepository(private val app: AppServices) {
@@ -118,6 +119,7 @@ data class ScreenRow(
     fun getSlide(): Slide<*> =
         when(type) {
             TextSlide::class.qualifiedName -> Json.decodeFromString<TextSlide>(content)
+            QrCodeSlide::class.qualifiedName -> Json.decodeFromString<QrCodeSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
 

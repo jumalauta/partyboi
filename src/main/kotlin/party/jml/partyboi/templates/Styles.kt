@@ -43,6 +43,9 @@ fun Application.configureStyles() {
                 rule(".narrow") {
                     width = LinearDimension("20px")
                 }
+                rule(".columns") {
+                    display = Display.flex
+                }
                 // Theme variables here
             }
         }

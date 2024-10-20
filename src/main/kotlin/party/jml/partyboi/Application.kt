@@ -12,6 +12,7 @@ import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP
 import party.jml.partyboi.plugins.configureSerialization
 import party.jml.partyboi.assets.configureStaticContent
+import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.templates.configureStyles
 import party.jml.partyboi.voting.configureVotingRouting
@@ -35,6 +36,7 @@ fun Application.module() {
     configureComposRouting(app)
     configureVotingRouting(app)
     configureScreenRouting(app)
+    configureQrCodeRouting()
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)

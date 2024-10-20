@@ -113,6 +113,10 @@ object AdminScreenPage {
                     icon(Icon("align-left"))
                     +" Add text slide"
                 }
+                postButton("/admin/screen/${slideSet}/qrcode") {
+                    icon(Icon("qrcode"))
+                    +" Add QR code"
+                }
             }
             script(src = "/assets/draggable.min.js") {}
             script(src = "/assets/refreshOnSlideChange.js") {}

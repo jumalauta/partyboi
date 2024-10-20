@@ -5,6 +5,8 @@ main {
     right: 50px;
     bottom: 50px;
 
+    font-size: 40px;
+
     opacity: 0;
     transform: translateX(-30px);
     transition: opacity 500ms, transform 500ms;
@@ -29,6 +31,12 @@ h1 {
     color: #fe0;
 }
 
-p {
-    font-size: 40px;
+.columns {
+    display: flex;
+    justify-content: space-evenly;
+    column-gap: 20px;
+}
+
+.columns > * {
+    flex-grow: 1;
 }

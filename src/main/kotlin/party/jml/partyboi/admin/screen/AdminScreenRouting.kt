@@ -1,6 +1,5 @@
 package party.jml.partyboi.admin.screen
 
-import arrow.core.Some
 import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -15,6 +14,7 @@ import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
@@ -83,6 +83,17 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     RedirectPage("/admin/screen/${slideSetName}")
                 }})
             }
+
+            post("/admin/screen/{slideSet}/{slideId}/qrcodeslide") {
+                val slideRequest = Form.fromParameters<QrCodeSlide>(call.receiveMultipart())
+                call.respondEither({ either {
+                    val id = call.parameterInt("slideId").bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    val slide = slideRequest.bind().data
+                    runBlocking { app.screen.update(id, slide) }
+                    RedirectPage("/admin/screen/${slideSetName}")
+                }})
+            }
         }
 
         authenticate("admin", optional = true) {
@@ -91,6 +102,14 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     call.userSession().bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
+                } }
+            }
+
+            post("/admin/screen/{slideSet}/qrcode") {
+                call.apiRespond { either {
+                    call.userSession().bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    app.screen.addEmptySlideToSlideSet(slideSetName, QrCodeSlide.Empty).bind()
                 } }
             }
 
