@@ -26,10 +26,14 @@ data class QrCodeSlide(
         val myTitle = title
         with(ctx) {
             h1 { +myTitle }
-            columns(
-                { img(src = QrCode.imageSrc(qrcode)) },
-                { markdown(description) }
-            )
+            div(classes="columns") {
+                div(classes = "qrcode") {
+                    img(src = QrCode.imageSrc(qrcode))
+                }
+                div(classes = "description") {
+                    markdown(description)
+                }
+            }
         }
     }
 

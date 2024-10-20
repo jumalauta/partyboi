@@ -5,7 +5,9 @@ import kotlinx.html.stream.createHTML
 
 object ScreenPage {
     fun renderContent(slide: Slide<*>) =
-        createHTML().article { slide.render(this) }
+        createHTML().article(classes = slide::class.simpleName) {
+            slide.render(this)
+        }
 
     fun render(slide: Slide<*>) =
         createHTML().html {

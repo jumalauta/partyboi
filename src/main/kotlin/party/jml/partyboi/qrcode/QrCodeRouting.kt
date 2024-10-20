@@ -23,7 +23,7 @@ fun Application.configureQrCodeRouting() {
                 val content = Base64.UrlSafe.decode(base64.toByteArray()).toString(Charsets.UTF_8)
                 val code = QRCode.ofRoundedSquares()
                     .withColor(Colors.WHITE)
-                    .withBackgroundColor(Colors.BLACK)
+                    .withBackgroundColor(Colors.TRANSPARENT)
                     .build(content)
                 val pngBytes = code.render().getBytes()
                 call.respondBytes(pngBytes, contentType = ContentType("image", "png"))
