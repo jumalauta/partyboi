@@ -15,7 +15,7 @@ import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.screen.TextSlide
+import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage

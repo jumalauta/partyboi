@@ -12,6 +12,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.screen.slides.TextSlide
 
 class ScreenRepository(private val app: AppServices) {
     val db = app.db
