@@ -21,7 +21,7 @@ class AppServices(db: DatabasePool) {
     val db: DatabasePool = db
     val users = UserRepository(db)
     val sessions = SessionRepository(db)
-    val compos = CompoRepository(db)
+    val compos = CompoRepository(this)
     val entries = EntryRepository(this)
     val files = FileRepository(this)
     val votes = VoteRepository(db)

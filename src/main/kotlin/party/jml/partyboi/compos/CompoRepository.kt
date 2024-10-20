@@ -5,11 +5,15 @@ import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
 
-class CompoRepository(private val db: DatabasePool) {
+class CompoRepository(private val app: AppServices) {
+    private val db = app.db
+    private val GENERAL_RULES = "CompoRepository.GeneralRules"
+
     init {
         db.init("""
             CREATE TABLE IF NOT EXISTS compo (
@@ -22,6 +26,14 @@ class CompoRepository(private val db: DatabasePool) {
             );
         """)
     }
+
+    fun getGeneralRules(): Either<AppError, GeneralRules> =
+        app.properties.getOrElse(GENERAL_RULES, "")
+            .flatMap { it.string() }
+            .map { GeneralRules(it) }
+
+    fun setGeneralRules(rules: GeneralRules): Either<AppError, Unit> =
+        app.properties.set(GENERAL_RULES, rules.rules)
 
     fun getById(id: Int, tx: TransactionalSession? = null): Either<AppError, Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
@@ -126,3 +138,8 @@ data class NewCompo(
         val Empty = NewCompo("", "")
     }
 }
+
+data class GeneralRules(
+    @property:Field(label = "General compo rules", large = true)
+    val rules: String
+) : Validateable<GeneralRules>

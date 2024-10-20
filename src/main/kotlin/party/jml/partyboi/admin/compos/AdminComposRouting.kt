@@ -9,6 +9,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.data.parameterInt
@@ -29,7 +30,9 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                         val compos = app.compos.getAllCompos().bind()
                         val entries = app.entries.getAllEntriesByCompo().bind()
                         val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
-                        AdminComposPage.render(newCompo, compos, entries)
+                        val generalRules = app.compos.getGeneralRules().bind()
+                        val generalRulesForm = Form(GeneralRules::class, generalRules, initial = true)
+                        AdminComposPage.render(newCompo, compos, entries, generalRulesForm)
                     }
                 })
             }
@@ -45,7 +48,26 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                     either {
                         val compos = app.compos.getAllCompos().bind()
                         val entries = app.entries.getAllEntriesByCompo().bind()
-                        AdminComposPage.render(newCompo.bind().with(error), compos, entries)
+                        val generalRules = app.compos.getGeneralRules().bind()
+                        val generalRulesForm = Form(GeneralRules::class, generalRules, initial = true)
+                        AdminComposPage.render(newCompo.bind().with(error), compos, entries, generalRulesForm)
+                    }
+                })
+            }
+
+            post("/admin/compos/generalRules") {
+                val rules = Form.fromParameters<GeneralRules>(call.receiveMultipart())
+                call.respondEither({
+                    either {
+                        app.compos.setGeneralRules(rules.bind().validated().bind()).bind()
+                        RedirectPage("/admin/compos")
+                    }
+                }, { error ->
+                    either {
+                        val compos = app.compos.getAllCompos().bind()
+                        val entries = app.entries.getAllEntriesByCompo().bind()
+                        val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
+                        AdminComposPage.render(newCompo, compos, entries, rules.bind().with(error))
                     }
                 })
             }

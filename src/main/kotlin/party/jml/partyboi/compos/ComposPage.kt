@@ -4,9 +4,17 @@ import kotlinx.html.*
 import party.jml.partyboi.templates.Page
 
 object ComposPage {
-    fun render(compos: List<Compo>) =
+    fun render(generalRules: GeneralRules, compos: List<Compo>) =
         Page("Compos") {
             h1 { +"Compos" }
+
+            if (generalRules.rules.isNotEmpty()) {
+                article {
+                    header { +"General rules" }
+                    +generalRules.rules
+                }
+            }
+
             compos.filter { it.visible }.forEach { compo ->
                 article {
                     header { +compo.name }

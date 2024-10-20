@@ -2,6 +2,7 @@ package party.jml.partyboi.admin.compos
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.form.Form
@@ -11,10 +12,16 @@ import party.jml.partyboi.templates.components.IconSet
 import party.jml.partyboi.templates.components.toggleButton
 
 object AdminComposPage {
-    fun render(newCompoForm: Form<NewCompo>, compos: List<Compo>, entries: Map<Int, List<Entry>>) =
+    fun render(
+        newCompoForm: Form<NewCompo>,
+        compos: List<Compo>,
+        entries: Map<Int, List<Entry>>,
+        generalRules: Form<GeneralRules>,
+    ) =
         Page("Compos") {
             if (compos.isNotEmpty()) {
                 h1 { +"Compos" }
+
                 article {
                     table {
                         thead {
@@ -41,6 +48,15 @@ object AdminComposPage {
                             }
                         }
                     }
+                }
+            }
+
+            article {
+                form(method = FormMethod.post, action = "/admin/compos/generalRules", encType = FormEncType.multipartFormData) {
+                    fieldSet {
+                        renderForm(generalRules)
+                    }
+                    footer { submitInput { value = "Save changes" } }
                 }
             }
 

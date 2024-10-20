@@ -13,8 +13,9 @@ fun Application.configureComposRouting(app: AppServices) {
             get("/compos") {
                 call.respondEither({
                     either {
+                        val generalRules = app.compos.getGeneralRules().bind()
                         val compos = app.compos.getAllCompos().bind()
-                        ComposPage.render(compos)
+                        ComposPage.render(generalRules, compos)
                     }
                 })
             }
