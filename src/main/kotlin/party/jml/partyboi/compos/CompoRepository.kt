@@ -8,6 +8,7 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.*
+import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
@@ -81,6 +82,10 @@ class CompoRepository(private val app: AppServices) {
                 state
             )
         )
+    }
+
+    fun isVotingOpen(compoId: Int): Either<AppError, Boolean> = db.use {
+        it.one(queryOf("SELECT allow_vote FROM compo WHERE id = ?", compoId).map(asBoolean))
     }
 
     fun assertCanSubmit(compoId: Int, isAdmin: Boolean): Either<AppError, Unit> = db.use {

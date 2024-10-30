@@ -15,7 +15,7 @@ import party.jml.partyboi.entries.ScreenshotRepository
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.triggers.ScheduledTriggerRepository
-import party.jml.partyboi.voting.VoteRepository
+import party.jml.partyboi.voting.VoteService
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -26,7 +26,7 @@ class AppServices(db: DatabasePool) {
     val compos = CompoRepository(this)
     val entries = EntryRepository(this)
     val files = FileRepository(this)
-    val votes = VoteRepository(db)
+    val votes = VoteService(this)
     val compoRun = CompoRunService(this)
     val screen = ScreenService(this)
     val screenshots = ScreenshotRepository(this)

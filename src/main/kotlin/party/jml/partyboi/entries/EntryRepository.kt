@@ -43,7 +43,11 @@ class EntryRepository(private val app: AppServices) {
         it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
     }
 
-    fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use{
+    fun get(entryId: Int): Either<AppError, Entry> = db.use {
+        it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
+    }
+
+    fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use {
         it.one(queryOf("""
             SELECT *
             FROM entry
