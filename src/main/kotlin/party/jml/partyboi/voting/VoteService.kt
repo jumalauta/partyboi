@@ -12,8 +12,6 @@ import party.jml.partyboi.entries.Entry
 
 class VoteService(val app: AppServices) {
     private val repository = VoteRepository(app.db)
-    val MIN_POINTS = 1
-    val MAX_POINTS = 5
 
     fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> =
         either {
@@ -35,4 +33,10 @@ class VoteService(val app: AppServices) {
         } else {
             points.right()
         }
+
+    companion object {
+        const val MIN_POINTS = 1
+        const val MAX_POINTS = 5
+        val POINT_RANGE = MIN_POINTS..MAX_POINTS
+    }
 }

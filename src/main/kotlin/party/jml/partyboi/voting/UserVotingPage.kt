@@ -21,7 +21,7 @@ object UserVotingPage {
                                         td {
                                             fieldSet {
                                                 val entryId = "entry-${it.entryId}"
-                                                for (i in 1..5) {
+                                                for (i in VoteService.POINT_RANGE) {
                                                     val inputId = "$entryId-$i"
                                                     input {
                                                         type = InputType.radio
