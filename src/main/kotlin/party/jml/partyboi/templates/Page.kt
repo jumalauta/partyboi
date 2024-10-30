@@ -34,6 +34,7 @@ data class Page(
                                     +"Register" }
                                 }
                             } else {
+                                li { a(href = "/schedule") { +"Schedule" } }
                                 li { a(href = "/compos") { +"Competitions" } }
                                 li { a(href = "/entries") { +"Entries" } }
                                 li { a(href = "/vote") { +"Vote" } }

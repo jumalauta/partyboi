@@ -39,6 +39,10 @@ class EventRepository(private val app: AppServices) {
         it.many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
     }
 
+    fun getPublic(): Either<AppError, List<Event>> = db.use {
+        it.many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
+    }
+
     fun add(event: NewEvent, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
         it.one(queryOf("""
             INSERT INTO event (name, time, visible) 
