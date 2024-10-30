@@ -44,6 +44,7 @@ data class Page(
                                             ul {
                                                 attributes.put("dir", "rtl")
                                                 li { a(href = "/admin/compos") { +"Compos" } }
+                                                li { a(href = "/admin/schedule") { +"Schedule" } }
                                                 li { a(href = "/admin/screen") { +"Screen" } }
                                             }
                                         }

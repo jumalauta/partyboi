@@ -8,6 +8,8 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.*
+import party.jml.partyboi.form.DropdownOption
+import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
 
 class CompoRepository(private val app: AppServices) {
@@ -101,13 +103,15 @@ data class Compo(
     val visible: Boolean,
     val allowSubmit: Boolean,
     val allowVote: Boolean,
-) : Validateable<Compo> {
+) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
 
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectNotEmpty("name", name),
         expectMaxLength("name", name, 64),
     )
+
+    override fun toDropdownOption() = DropdownOption(id.toString(), name)
 
     companion object {
         val fromRow: (Row) -> Compo = { row ->

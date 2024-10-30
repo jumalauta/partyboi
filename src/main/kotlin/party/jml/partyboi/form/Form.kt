@@ -10,6 +10,9 @@ import party.jml.partyboi.data.*
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Path
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
@@ -51,6 +54,7 @@ class Form<T : Validateable<T>>(
                     .map { when (it) {
                         is String -> it
                         is Int -> it.toString()
+                        is LocalDateTime -> it.format(DateTimeFormatter.ISO_DATE_TIME)
                         else -> ""
                     } }
                     .getOrElse { "" }
@@ -133,6 +137,9 @@ class Form<T : Validateable<T>>(
                         }
                         "party.jml.partyboi.form.FileUpload" -> {
                             fileParams.get(name) ?: throw Error("File parameter '$name' not found")
+                        }
+                        "java.time.LocalDateTime" -> {
+                            LocalDateTime.parse(stringValue)
                         }
                         else -> {
                             throw error("Unsupported data type on property '$name': ${it.type}")

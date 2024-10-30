@@ -6,7 +6,8 @@ import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.dataForm
+import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
 import party.jml.partyboi.templates.components.toggleButton
@@ -52,18 +53,18 @@ object AdminComposPage {
             }
 
             article {
-                form(method = FormMethod.post, action = "/admin/compos/generalRules", encType = FormEncType.multipartFormData) {
+                dataForm("/admin/compos/generalRules") {
                     fieldSet {
-                        renderForm(generalRules)
+                        renderFields(generalRules)
                     }
                     footer { submitInput { value = "Save changes" } }
                 }
             }
 
-            form(method = FormMethod.post, action = "/admin/compos", encType = FormEncType.multipartFormData) {
+            dataForm("/admin/compos") {
                 article {
                     header { +"Add new compo" }
-                    fieldSet { renderForm(newCompoForm) }
+                    fieldSet { renderFields(newCompoForm) }
                     footer { submitInput { value = "Add" } }
                 }
             }

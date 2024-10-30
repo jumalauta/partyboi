@@ -2,17 +2,18 @@ package party.jml.partyboi.auth
 
 import kotlinx.html.*
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.dataForm
+import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 
 object RegistrationPage {
     fun render(formData: Form<NewUser> = Form(NewUser::class, NewUser.Empty, true)) =
         Page("Register") {
-            form(method = FormMethod.post, action = "/register", encType = FormEncType.multipartFormData) {
+            dataForm("/register") {
                 article {
                     header { +"Register a new account" }
                     fieldSet {
-                        renderForm(formData)
+                        renderFields(formData)
                     }
                     footer {
                         submitInput { value = "Register" }

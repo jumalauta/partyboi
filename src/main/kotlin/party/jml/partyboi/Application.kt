@@ -2,6 +2,7 @@ package party.jml.partyboi
 
 import io.ktor.server.application.*
 import party.jml.partyboi.admin.compos.configureAdminComposRouting
+import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
 import party.jml.partyboi.admin.screen.configureAdminScreenRouting
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.auth.configureLoginRouting
@@ -40,5 +41,5 @@ fun Application.module() {
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)
-
+    configureAdminScheduleRouting(app)
 }

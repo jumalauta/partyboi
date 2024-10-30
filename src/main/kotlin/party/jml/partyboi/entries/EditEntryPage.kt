@@ -8,8 +8,9 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.editEntryForm
-import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.components.icon
@@ -33,13 +34,9 @@ object EditEntryPage {
                     { p { +"No screenshot uploaded" } },
                     { img(src = it) }
                 )
-                form(
-                    method = FormMethod.post,
-                    action = "/entries/${formData.data.id}/screenshot",
-                    encType = FormEncType.multipartFormData
-                ) {
+                dataForm("/entries/${formData.data.id}/screenshot") {
                     fieldSet {
-                        renderForm(Form(NewScreenshot::class, NewScreenshot.Empty, true))
+                        renderFields(Form(NewScreenshot::class, NewScreenshot.Empty, true))
                     }
                     footer {
                         submitInput { value = "Set screenshot" }

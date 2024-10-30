@@ -12,7 +12,9 @@ import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
+import party.jml.partyboi.triggers.ScheduledTriggerRepository
 import party.jml.partyboi.voting.VoteRepository
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -29,6 +31,8 @@ class AppServices(db: DatabasePool) {
     val screen = ScreenService(this)
     val screenshots = ScreenshotRepository(this)
     val properties = PropertyRepository(this)
+    val events = EventRepository(this)
+    val triggers = ScheduledTriggerRepository(this)
 }
 
 object Config {

@@ -9,7 +9,7 @@ import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
-    form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
+    dataForm(url) {
         article {
             if (openCompos.isEmpty()) {
                 +"Submitting is closed"
@@ -18,8 +18,8 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
                     +"Submit a new entry"
                 }
                 fieldSet {
-                    renderForm(values, mapOf(
-                        "compoId" to openCompos.map { DropdownOption.fromCompo(it) }
+                    renderFields(values, mapOf(
+                        "compoId" to openCompos.map { it.toDropdownOption() }
                     ))
                 }
                 footer {
@@ -31,12 +31,10 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
 }
 
 fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<EntryUpdate>) {
-    form(classes = "submitForm appForm", method = FormMethod.post, action = url, encType = FormEncType.multipartFormData) {
+    dataForm(url) {
         article {
             fieldSet {
-                renderForm(values, mapOf(
-                    "compoId" to compos.map { DropdownOption.fromCompo(it) }
-                ))
+                renderFields(values, mapOf("compoId" to compos))
             }
             footer {
                 submitInput { value = "Save changes" }
@@ -45,7 +43,13 @@ fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<Ent
     }
 }
 
-fun <T : Validateable<T>> FIELDSET.renderForm(form: Form<T>, options: Map<String, List<DropdownOption>>? = null) {
+fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
+    form(action = url, method = FormMethod.post, encType = FormEncType.multipartFormData) {
+        block()
+    }
+}
+
+fun <T : Validateable<T>> FIELDSET.renderFields(form: Form<T>, options: Map<String, List<DropdownOptionSupport>>? = null) {
     if (form.error != null) {
         section(classes = "error") {
             strong { +"${form.error.javaClass.simpleName}: " }
@@ -113,16 +117,17 @@ fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
     }
 }
 
-fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: List<DropdownOption>) {
+fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: List<DropdownOptionSupport>) {
     label {
         span { +data.label }
         select {
             name = data.key
             options.map { opt ->
+                val ddOpt = opt.toDropdownOption()
                 option {
-                    value = opt.value
-                    selected = opt.value == data.value
-                    +opt.label
+                    value = ddOpt.value
+                    selected = ddOpt.value == data.value
+                    +ddOpt.label
                 }
             }
         }
@@ -130,12 +135,12 @@ fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: L
     }
 }
 
-data class DropdownOption(val value: String, val label: String) {
-    companion object {
-        fun fromCompo(compo: Compo): DropdownOption {
-            return DropdownOption(compo.id.toString(), compo.name)
-        }
-    }
+interface DropdownOptionSupport {
+    fun toDropdownOption(): DropdownOption
+}
+
+data class DropdownOption(val value: String, val label: String) : DropdownOptionSupport {
+    override fun toDropdownOption(): DropdownOption = this
 }
 
 fun FlowContent.switchLink(toggled: Boolean, labelOn: String, labelOff: String, urlPrefix: String, disable: Boolean = false) {

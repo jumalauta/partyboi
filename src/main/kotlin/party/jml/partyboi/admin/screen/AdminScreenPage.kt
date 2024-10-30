@@ -3,14 +3,12 @@ package party.jml.partyboi.admin.screen
 import kotlinx.html.*
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.dataForm
+import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.screen.*
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.Icon
-import party.jml.partyboi.templates.components.IconSet
-import party.jml.partyboi.templates.components.icon
-import party.jml.partyboi.templates.components.toggleButton
+import party.jml.partyboi.templates.components.*
 
 object AdminScreenPage {
     fun renderAdHocForm(currentlyRunning: Boolean, form: Form<*>) =
@@ -21,16 +19,11 @@ object AdminScreenPage {
                     +"Ad hoc screen is being shown currently"
                 }
             }
-            form(
-                classes = "submitForm appForm",
-                method = FormMethod.post,
-                action = "/admin/screen/adhoc",
-                encType = FormEncType.multipartFormData
-            ) {
+            dataForm("/admin/screen/adhoc") {
                 article {
                     header { +"Ad hoc screen" }
                     fieldSet {
-                        renderForm(form)
+                        renderFields(form)
                     }
                     footer {
                         submitInput { value = "Show" }
@@ -92,7 +85,7 @@ object AdminScreenPage {
                                     } else {
                                         postButton("/admin/screen/${slideSet}/${slide.id}/show") {
                                             attributes.put("class", "flat-button")
-                                            attributes.put("data-tooltip", "Show on screen")
+                                            tooltip("Show on screen")
                                             icon("play")
                                         }
                                     }
@@ -124,13 +117,9 @@ object AdminScreenPage {
 
     fun renderSlideForm(slideSet: String, slide: SlideEditData) =
         Page("Edit slide") {
-            form(
-                method = FormMethod.post,
-                action = "/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}",
-                encType = FormEncType.multipartFormData
-            ) {
+            dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
                 fieldSet {
-                    renderForm(slide.slide.getForm())
+                    renderFields(slide.slide.getForm())
                 }
                 footer {
                     submitInput { value = "Save changes" }
@@ -154,7 +143,7 @@ fun FlowContent.screenAdminNavigation() {
             }
             ul {
                 li { a(href="/screen", target = "_blank") {
-                    attributes.put("data-tooltip", "Show current screen")
+                    tooltip("Show current screen")
                     icon("tv")
                 } }
             }

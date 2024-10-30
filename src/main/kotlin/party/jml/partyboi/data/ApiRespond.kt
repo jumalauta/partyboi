@@ -6,8 +6,10 @@ import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.form.Form
 
 suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
     Either.catch {
@@ -19,6 +21,9 @@ suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
         respond(HttpStatusCode.InternalServerError, it.message ?: "Fail")
     }
 }
+
+suspend inline fun <reified T: Validateable<T>> ApplicationCall.receiveForm() =
+    Form.fromParameters<T>(receiveMultipart())
 
 fun ApplicationCall.parameterString(name: String): Either<AppError, String> =
     parameters[name]?.right() ?: MissingInput(name).left()

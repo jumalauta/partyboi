@@ -6,17 +6,18 @@ import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.dataForm
+import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 
 object LoginPage {
     fun render(formData: Form<UserLogin> = Form(UserLogin::class, UserLogin.Empty, true)) =
         Page("Login") {
-            form(method = FormMethod.post, action = "/login", encType = FormEncType.multipartFormData) {
+            dataForm("/login") {
                 article {
                     header { +"Login" }
                     fieldSet {
-                        renderForm(formData)
+                        renderFields(formData)
                     }
                     footer {
                         submitInput { value = "Login" }
