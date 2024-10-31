@@ -80,43 +80,46 @@ object AdminSchedulePage {
     ) =
         Page("Edit event") {
             h1 { +"Edit event" }
-            article {
-                dataForm("/admin/schedule/events/${event.data.id}") {
-                    fieldSet {
-                        renderFields(event)
-                    }
-                    footer { submitInput { value = "Save changes" } }
-                }
-            }
 
-            if (triggers.isNotEmpty()) {
+            columns({
                 article {
-                    header { +"Triggers" }
-                    p { +"These actions will happen at the scheduled start time of the event" }
-                    table {
-                        thead {
-                            tr {
-                                th { +"Action" }
-                                th(classes = "narrow") {}
-                            }
+                    dataForm("/admin/schedule/events/${event.data.id}") {
+                        fieldSet {
+                            renderFields(event)
                         }
-                        tbody {
-                            triggers.forEach { trigger ->
+                        footer { submitInput { value = "Save changes" } }
+                    }
+                }
+            }, {
+                if (triggers.isNotEmpty()) {
+                    article {
+                        header { +"Triggers" }
+                        p { +"These actions will happen at the scheduled start time of the event" }
+                        table {
+                            thead {
                                 tr {
-                                    td { +trigger.description }
-                                    td(classes = "align-right") {
-                                        when (trigger) {
-                                            is SuccessfulTriggerRow -> icon(
-                                                "circle-check",
-                                                "Triggered at ${trigger.executionTime}"
-                                            )
+                                    th { +"Action" }
+                                    th(classes = "narrow") {}
+                                }
+                            }
+                            tbody {
+                                triggers.forEach { trigger ->
+                                    tr {
+                                        td { +trigger.description }
+                                        td(classes = "align-right") {
+                                            when (trigger) {
+                                                is SuccessfulTriggerRow -> icon(
+                                                    "circle-check",
+                                                    "Triggered at ${trigger.executionTime}"
+                                                )
 
-                                            is FailedTriggerRow -> icon("circle-exclamation", trigger.error)
-                                            else -> toggleButton(
-                                                trigger.enabled,
-                                                IconSet.scheduled,
-                                                "/admin/schedule/triggers/${trigger.triggerId}/setEnabled"
-                                            )
+                                                is FailedTriggerRow -> icon("circle-exclamation", trigger.error)
+                                                else -> toggleButton(
+                                                    trigger.enabled,
+                                                    IconSet.scheduled,
+                                                    "/admin/schedule/triggers/${trigger.triggerId}/setEnabled"
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -124,22 +127,22 @@ object AdminSchedulePage {
                         }
                     }
                 }
-            }
 
-            article {
-                header { +"Add new trigger" }
-                dataForm("/admin/schedule/triggers") {
-                    fieldSet {
-                        renderFields(
-                            newTrigger, mapOf(
-                                "action" to NewScheduledTrigger.TriggerOptions,
-                                "compoId" to compos
+                article {
+                    header { +"Add new trigger" }
+                    dataForm("/admin/schedule/triggers") {
+                        fieldSet {
+                            renderFields(
+                                newTrigger, mapOf(
+                                    "action" to NewScheduledTrigger.TriggerOptions,
+                                    "compoId" to compos
+                                )
                             )
-                        )
+                        }
+                        footer { submitInput { value = "Add trigger" } }
                     }
-                    footer { submitInput { value = "Add trigger" } }
                 }
-            }
+            })
         }
 }
 
