@@ -13,6 +13,7 @@ import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.signals.Signal
 import java.time.LocalDateTime
@@ -188,7 +189,7 @@ data class FailedTriggerRow(
 ) : TriggerRow
 
 data class NewScheduledTrigger(
-    @property:Field(type = InputType.hidden)
+    @property:Field(presentation = FieldPresentation.hidden)
     val eventId: Int,
     @property:Field(1, "Action")
     val action: String,

@@ -81,7 +81,7 @@ class ScreenshotRepository(app: AppServices) {
 }
 
 data class NewScreenshot(
-    @property:Field(label = "Screenshot", type = InputType.file)
+    @property:Field(label = "Screenshot")
     val file: FileUpload
 ) : Validateable<NewScreenshot> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

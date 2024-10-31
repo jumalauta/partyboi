@@ -12,6 +12,7 @@ import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 
 class CompoRepository(private val app: AppServices) {
     private val db = app.db
@@ -99,11 +100,11 @@ class CompoRepository(private val app: AppServices) {
 }
 
 data class Compo(
-    @property:Field(type = InputType.hidden)
+    @property:Field(presentation = FieldPresentation.hidden)
     val id: Int,
     @property:Field(order = 0, label = "Name")
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", large = true)
+    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
     val visible: Boolean,
     val allowSubmit: Boolean,
@@ -135,7 +136,7 @@ data class Compo(
 data class NewCompo(
     @property:Field(order = 0, label = "Name")
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", large = true)
+    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
 ) : Validateable<NewCompo> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -149,6 +150,6 @@ data class NewCompo(
 }
 
 data class GeneralRules(
-    @property:Field(label = "General compo rules", large = true)
+    @property:Field(label = "General compo rules", presentation = FieldPresentation.large)
     val rules: String
 ) : Validateable<GeneralRules>

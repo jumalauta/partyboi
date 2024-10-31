@@ -4,10 +4,7 @@ import arrow.core.Option
 import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 
 object LoginPage {
@@ -29,7 +26,7 @@ object LoginPage {
     data class UserLogin(
         @property:Field(1, "User name")
         val name: String,
-        @property:Field(2, "Password", type = InputType.password)
+        @property:Field(2, "Password", presentation = FieldPresentation.secret)
         val password: String
     ) : Validateable<UserLogin> {
         override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

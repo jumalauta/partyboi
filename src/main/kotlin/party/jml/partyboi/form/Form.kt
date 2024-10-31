@@ -49,15 +49,17 @@ class Form<T : Validateable<T>>(
             .forEach { pair ->
                 val (meta, prop) = pair
                 val key = prop.name
-                val value = prop.get(data)
+                val (inputType, value) = prop.get(data)
                     .toOption()
-                    .map { when (it) {
-                        is String -> it
-                        is Int -> it.toString()
-                        is LocalDateTime -> it.format(DateTimeFormatter.ISO_DATE_TIME)
-                        else -> ""
+                    .map { a -> when (a) {
+                        is String -> Pair(InputType.text, a)
+                        is Int -> Pair(InputType.number, a.toString())
+                        is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
+                        is LocalDateTime -> Pair(InputType.dateTimeLocal, a.format(DateTimeFormatter.ISO_DATE_TIME))
+                        is FileUpload -> Pair(InputType.file, "")
+                        else -> TODO("${a.javaClass.name} not supported as Form property")
                     } }
-                    .getOrElse { "" }
+                    .getOrElse { Pair(InputType.text, "") }
                 val error = errors
                     .filter { it.target == key }
                     .toNonEmptyListOrNone()
@@ -67,9 +69,12 @@ class Form<T : Validateable<T>>(
                     key = key,
                     value = value,
                     error = error,
-                    isFileInput = prop.returnType.toString() == "party.jml.partyboi.form.FileUpload",
-                    type = meta.type,
-                    large = meta.large,
+                    type = when(meta.presentation) {
+                        FieldPresentation.hidden -> InputType.hidden
+                        FieldPresentation.secret -> InputType.password
+                        else -> inputType
+                    },
+                    presentation = meta.presentation,
                 ))
             }
     }
@@ -88,9 +93,8 @@ class Form<T : Validateable<T>>(
         val key: String,
         val value: String,
         val error: Option<String>,
-        val isFileInput: Boolean,
         val type: InputType,
-        val large: Boolean,
+        val presentation: FieldPresentation,
     )
 
     companion object {
@@ -133,7 +137,7 @@ class Form<T : Validateable<T>>(
                             } catch (_: NumberFormatException) { -1 }
                         }
                         "kotlin.Boolean" -> {
-                            try { stringValue.toBoolean() } catch (_: NumberFormatException) { false }
+                            stringValue.isNotEmpty()
                         }
                         "party.jml.partyboi.form.FileUpload" -> {
                             fileParams.get(name) ?: throw Error("File parameter '$name' not found")
@@ -158,9 +162,15 @@ class Form<T : Validateable<T>>(
 annotation class Field(
     val order: Int = 0,
     val label: String = "",
-    val type: InputType = InputType.text,
-    val large: Boolean = false,
+    val presentation: FieldPresentation = FieldPresentation.normal,
 )
+
+enum class FieldPresentation {
+    normal,
+    hidden,
+    large,
+    secret,
+}
 
 data class FileUpload(
     val name: String,

@@ -9,6 +9,7 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
 import java.time.LocalDateTime
 
@@ -247,9 +248,9 @@ data class NewEntry(
     val file: FileUpload,
     @property:Field(1, "Compo")
     val compoId: Int,
-    @property:Field(5, "Show message on the screen", large = true)
+    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", large = true)
+    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
     val userId: Int,
 ) : Validateable<NewEntry> {
@@ -270,7 +271,7 @@ data class NewEntry(
 }
 
 data class EntryUpdate(
-    @property:Field(type = InputType.hidden)
+    @property:Field(presentation = FieldPresentation.hidden)
     val id: Int,
     @property:Field(2, "Title")
     val title: String,
@@ -280,11 +281,11 @@ data class EntryUpdate(
     val file: FileUpload,
     @property:Field(1, "Compo")
     val compoId: Int,
-    @property:Field(type = InputType.hidden)
+    @property:Field(presentation = FieldPresentation.hidden)
     val userId: Int,
-    @property:Field(5, "Show message on the screen", large = true)
+    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", large = true)
+    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
     ) : Validateable<EntryUpdate> {
     override fun validationErrors(): List<Option<ValidationError.Message>> {

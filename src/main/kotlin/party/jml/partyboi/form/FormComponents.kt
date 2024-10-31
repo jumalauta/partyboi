@@ -71,14 +71,16 @@ fun <T : Validateable<T>> FIELDSET.renderFields(form: Form<T>, options: Map<Stri
         }
     }
     form.forEach { data ->
-        if (data.isFileInput) {
+        if (data.type == InputType.file) {
             formFileInput(data)
         } else if (data.type == InputType.hidden) {
             formHiddenValue(data)
+        } else if (data.type == InputType.checkBox) {
+            formCheckBox(data)
         } else {
             val opts = options?.get(data.key)
             if (opts == null) {
-                if (data.large) {
+                if (data.presentation == FieldPresentation.large) {
                     formTextArea(data)
                 } else {
                     formTextInput(data)
@@ -128,6 +130,15 @@ fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
         span { +data.label }
         fileInput(name = data.key)
         formError(data.error)
+    }
+}
+
+fun FlowOrInteractiveOrPhrasingContent.formCheckBox(data: Form.FieldData) {
+    input(name = data.key) {
+        type = InputType.checkBox
+        role = "switch"
+        checked = data.value.isNotEmpty()
+        +data.label
     }
 }
 

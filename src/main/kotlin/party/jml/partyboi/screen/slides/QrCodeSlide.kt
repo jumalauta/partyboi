@@ -10,6 +10,7 @@ import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.templates.components.markdown
 import kotlinx.serialization.encodeToString
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.qrcode.QrCode
 
 @Serializable
@@ -18,7 +19,7 @@ data class QrCodeSlide(
     val title: String,
     @property:Field(order = 1, label = "QR Code URI")
     val qrcode: String,
-    @property:Field(order = 2, label = "Description", large = true)
+    @property:Field(order = 2, label = "Description", presentation = FieldPresentation.large)
     val description: String,
 ) : Slide<QrCodeSlide>, Validateable<QrCodeSlide> {
     override fun render(ctx: FlowContent) {

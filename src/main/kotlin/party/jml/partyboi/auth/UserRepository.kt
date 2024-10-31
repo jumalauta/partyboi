@@ -11,6 +11,7 @@ import kotliquery.queryOf
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 
 class UserRepository(private val db: DatabasePool) {
     init {
@@ -68,9 +69,9 @@ data class User(
 data class NewUser(
     @property:Field(1, "User name")
     val name: String,
-    @property:Field(2, "Password", type = InputType.password)
+    @property:Field(2, "Password", presentation = FieldPresentation.secret)
     val password: String,
-    @property:Field(3, "Password again", type = InputType.password)
+    @property:Field(3, "Password again", presentation = FieldPresentation.secret)
     val password2: String,
 ) : Validateable<NewUser> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

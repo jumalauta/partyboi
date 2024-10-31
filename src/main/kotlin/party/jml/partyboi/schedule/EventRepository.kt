@@ -10,6 +10,7 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.triggers.TriggerRow
@@ -94,9 +95,9 @@ class EventRepository(private val app: AppServices) {
 data class NewEvent(
     @property:Field(order = 0, label = "Event name")
     val name: String,
-    @property:Field(order = 1, label = "Time and date", type = InputType.dateTimeLocal)
+    @property:Field(order = 1, label = "Time and date")
     val time: LocalDateTime,
-    @property:Field(order = 2, label = "Show in public schedule", type = InputType.checkBox)
+    @property:Field(order = 2, label = "Show in public schedule")
     val visible: Boolean,
 ) : Validateable<NewEvent> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -117,13 +118,13 @@ data class NewEvent(
 }
 
 data class Event(
-    @property:Field(type = InputType.hidden)
+    @property:Field(presentation = FieldPresentation.hidden)
     val id: Int,
     @property:Field(order = 0, label = "Event name")
     val name: String,
-    @property:Field(order = 1, label = "Time and date", type = InputType.dateTimeLocal)
+    @property:Field(order = 1, label = "Time and date")
     val time: LocalDateTime,
-    @property:Field(order = 2, label = "Show in public schedule", type = InputType.checkBox)
+    @property:Field(order = 2, label = "Show in public schedule")
     val visible: Boolean,
 ) : Validateable<Event> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
