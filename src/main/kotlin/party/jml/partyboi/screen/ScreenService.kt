@@ -112,17 +112,17 @@ class ScreenService(private val app: AppServices) {
         val dbRows = repository.replaceSlideSet(slideSet, allSlides).bind()
 
         val firstShown = dbRows.first().whenShown()
-        app.triggers.onSignal(firstShown, OpenCloseSubmitting(compoId, false))
-        app.triggers.onSignal(firstShown, OpenLiveVoting(compoId))
+        app.triggers.add(firstShown, OpenCloseSubmitting(compoId, false))
+        app.triggers.add(firstShown, OpenLiveVoting(compoId))
 
         val entrySlideDbRows = dbRows.subList(hypeSlides.size, hypeSlides.size + entrySlides.size)
         entries.zip(entrySlideDbRows) { entry, slide ->
-            app.triggers.onSignal(slide.whenShown(), EnableLiveVotingForEntry(entry.id))
+            app.triggers.add(slide.whenShown(), EnableLiveVotingForEntry(entry.id))
         }
 
         val lastShown = dbRows.last().whenShown()
-        app.triggers.onSignal(lastShown, CloseLiveVoting)
-        app.triggers.onSignal(lastShown, OpenCloseVoting(compoId, true))
+        app.triggers.add(lastShown, CloseLiveVoting)
+        app.triggers.add(lastShown, OpenCloseVoting(compoId, true))
 
         "/admin/screen/${slideSet}"
     }

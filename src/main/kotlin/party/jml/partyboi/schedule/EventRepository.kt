@@ -10,6 +10,8 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
+import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.triggers.Action
 import java.sql.Timestamp
@@ -18,6 +20,7 @@ import java.time.LocalDateTime
 
 class EventRepository(private val app: AppServices) {
     private val db = app.db
+    private val signalEmitter = EventSignalEmitter(app)
 
     init {
         db.init("""
@@ -32,6 +35,10 @@ class EventRepository(private val app: AppServices) {
 
     fun get(eventId: Int): Either<AppError, Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
+    }
+
+    fun getBetween(since: LocalDateTime, until: LocalDateTime): Either<AppError, List<Event>> = db.use {
+        it.many(queryOf("SELECT * FROM event WHERE time > ? AND time <= ?", since, until).map(Event.fromRow))
     }
 
     fun getAll(): Either<AppError, List<Event>> = db.use {
@@ -57,13 +64,13 @@ class EventRepository(private val app: AppServices) {
         db.transaction { tx -> either {
             val createdEvent = add(event, tx).bind()
             val createdTriggers = actions
-                .map { app.triggers.onEventStart(createdEvent.id, it, tx) }
+                .map { app.triggers.add(createdEvent.signal(), it, tx) }
                 .bindAll()
             Pair(createdEvent, createdTriggers)
         } }
 
     fun update(event: Event, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
-        app.triggers.rescheduleEvent(event.id)
+        app.triggers.reset(event.signal(), tx)
         it.one(queryOf("""
             UPDATE event
             SET
@@ -123,7 +130,11 @@ data class Event(
         expectNotEmpty("name", name)
     )
 
+    fun signal(): Signal = signal(id)
+
     companion object {
+        fun signal(eventId: Int): Signal = Signal(SignalType.event, eventId.toString())
+
         val fromRow: (Row) -> Event = { row -> Event(
             id = row.int("id"),
             name = row.string("name"),

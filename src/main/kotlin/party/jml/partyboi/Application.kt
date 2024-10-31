@@ -27,7 +27,7 @@ fun Application.module() {
     val db = getDatabasePool()
     val app = AppServices(db)
 
-    launch { app.triggers.subscribeToSignals() }
+    launch { app.triggers.start() }
 
     configureSerialization()
     configureHTTP()

@@ -34,7 +34,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                     val eventId = call.parameterInt("id").bind()
                     val event = app.events.get(eventId).bind()
                     val eventForm = Form(Event::class, event, true)
-                    val triggers = app.triggers.getTriggersForEvent(eventId).bind()
+                    val triggers = app.triggers.getTriggersForSignal(event.signal()).bind()
                     val compos = app.compos.getAllCompos().bind()
                     val newTriggerForm = Form(NewScheduledTrigger::class, NewScheduledTrigger.empty(eventId), initial = true)
                     AdminSchedulePage.renderEdit(eventForm, triggers, compos, newTriggerForm)
@@ -71,13 +71,13 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val newTriggerReq = call.receiveForm<NewScheduledTrigger>()
                 call.respondEither({ either {
                     val newTrigger = newTriggerReq.bind().validated().bind()
-                    app.triggers.onEventStart(newTrigger.eventId, newTrigger.toAction()).bind()
+                    app.triggers.add(newTrigger.signal(), newTrigger.toAction()).bind()
                     RedirectPage("/admin/schedule/events/${newTrigger.eventId}")
                 } }, { error -> either {
                     val eventId = newTriggerReq.bind().data.eventId
                     val event = app.events.get(eventId).bind()
                     val eventForm = Form(Event::class, event, true)
-                    val triggers = app.triggers.getTriggersForEvent(eventId).bind()
+                    val triggers = app.triggers.getTriggersForSignal(event.signal()).bind()
                     val compos = app.compos.getAllCompos().bind()
                     AdminSchedulePage.renderEdit(eventForm, triggers, compos, newTriggerReq.bind().with(error))
                 } })

@@ -1,12 +1,18 @@
 package party.jml.partyboi.signals
 
 import kotlinx.coroutines.flow.MutableSharedFlow
+import party.jml.partyboi.Logging
 
-class SignalService {
+class SignalService : Logging() {
     val flow = MutableSharedFlow<Signal>()
 
     suspend fun emit(type: SignalType, target: String? = null) {
-        flow.emit(Signal(type, target))
+        emit(Signal(type, target))
+    }
+
+    suspend fun emit(signal: Signal) {
+        log.info("Emit signal: {}", signal)
+        flow.emit(signal)
     }
 }
 
@@ -18,5 +24,6 @@ data class Signal(
 }
 
 enum class SignalType {
-    slideShown
+    slideShown,
+    event,
 }

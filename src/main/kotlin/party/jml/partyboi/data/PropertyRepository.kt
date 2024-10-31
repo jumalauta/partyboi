@@ -7,6 +7,8 @@ import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class PropertyRepository(app: AppServices) {
     private val db = app.db
@@ -23,6 +25,7 @@ class PropertyRepository(app: AppServices) {
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))
+    fun set(key: String, value: LocalDateTime) = store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
 
     fun get(key: String): Either<AppError, Option<PropertyRow>> =
         db.use {
@@ -53,6 +56,7 @@ data class PropertyRow(
     fun string(): Either<AppError, String> = decode<String>()
     fun long(): Either<AppError, Long> = decode<Long>()
     fun boolean(): Either<AppError, Boolean> = decode<Boolean>()
+    fun localDateTime(): Either<AppError, LocalDateTime> = string().map { LocalDateTime.parse(it) }
 
     private inline fun <reified A> decode() =
         Either.catch { Json.decodeFromString<A>(json) }

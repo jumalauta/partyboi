@@ -23,7 +23,7 @@ data class OpenCloseVoting(
 ) : Action {
     override fun description(app: AppServices): Either<AppError, String> = either {
         val compo = app.compos.getById(compoId).bind()
-        "${if (open) "Open" else "Close"} voting for ${compo.name} compo"
+        "${if (open) "Open" else "Close"} voting in ${compo.name} compo"
     }
     override fun apply(app: AppServices): Either<AppError, Unit> = app.compos.allowVoting(compoId, open)
     override fun toJson(): String = Json.encodeToString(this)
@@ -36,7 +36,7 @@ data class OpenCloseSubmitting(
 ) : Action {
     override fun description(app: AppServices): Either<AppError, String> = either {
         val compo = app.compos.getById(compoId).bind()
-        "${if (open) "Open" else "Close"} submitting entries for ${compo.name} compo"
+        "${if (open) "Open" else "Close"} submitting entries to ${compo.name} compo"
     }
     override fun apply(app: AppServices): Either<AppError, Unit> = app.compos.allowSubmit(compoId, open)
     override fun toJson(): String = Json.encodeToString(this)
