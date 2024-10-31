@@ -83,7 +83,7 @@ class ScreenRepository(private val app: AppServices) {
         } }
 
     fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
-        it.one(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id LIMIT 1", slideSet).map(ScreenRow.fromRow))
+        it.one(queryOf("SELECT * FROM screen WHERE slide_set = ? AND visible ORDER BY run_order, id LIMIT 1", slideSet).map(ScreenRow.fromRow))
     }
 
     fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
