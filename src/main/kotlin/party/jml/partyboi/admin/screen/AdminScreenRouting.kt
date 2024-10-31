@@ -69,7 +69,8 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     val slideId = call.parameterInt("slideId").bind()
                     val slide = app.screen.getSlide(slideId).bind()
                     val form = SlideEditData.fromRow(slide)
-                    AdminScreenPage.renderSlideForm(slideSetName, form)
+                    val actions = app.triggers.getTriggersForSignal(slide.whenShown()).bind()
+                    AdminScreenPage.renderSlideForm(slideSetName, form, actions)
                 }})
             }
 

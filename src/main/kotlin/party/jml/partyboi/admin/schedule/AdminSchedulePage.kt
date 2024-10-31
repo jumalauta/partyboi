@@ -11,7 +11,7 @@ import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.FailedTriggerRow
 import party.jml.partyboi.triggers.NewScheduledTrigger
-import party.jml.partyboi.triggers.ScheduledTriggerRow
+import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.triggers.SuccessfulTriggerRow
 
 object AdminSchedulePage {
@@ -69,7 +69,7 @@ object AdminSchedulePage {
 
     fun renderEdit(
         event: Form<Event>,
-        triggers: List<ScheduledTriggerRow>,
+        triggers: List<TriggerRow>,
         compos: List<Compo>,
         newTrigger: Form<NewScheduledTrigger>,
     ) =

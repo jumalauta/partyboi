@@ -14,7 +14,6 @@ import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
-import party.jml.partyboi.templates.EmptyPage
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.triggers.NewScheduledTrigger
@@ -72,7 +71,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val newTriggerReq = call.receiveForm<NewScheduledTrigger>()
                 call.respondEither({ either {
                     val newTrigger = newTriggerReq.bind().validated().bind()
-                    app.triggers.schedule(newTrigger.eventId, newTrigger.toTrigger()).bind()
+                    app.triggers.onEventStart(newTrigger.eventId, newTrigger.toAction()).bind()
                     RedirectPage("/admin/schedule/events/${newTrigger.eventId}")
                 } }, { error -> either {
                     val eventId = newTriggerReq.bind().data.eventId

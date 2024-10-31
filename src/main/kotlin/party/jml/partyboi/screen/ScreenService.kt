@@ -14,6 +14,8 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.signals.SignalType
+import party.jml.partyboi.triggers.*
 import java.util.*
 import kotlin.concurrent.schedule
 
@@ -91,20 +93,36 @@ class ScreenService(private val app: AppServices) {
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
 
-        val slides = listOf(
+        val hypeSlides = listOf(
             TextSlide("${compo.name} compo starts soon", "")
-        ) + entries.mapIndexed { index, entry ->
+        )
+        val entrySlides = entries.mapIndexed { index, entry ->
             TextSlide(
                 "#${index + 1} ${entry.title}",
                 listOf(entry.author.some(), entry.screenComment)
                     .flatMap { it.toList() }
                     .joinToString(separator = "\n\n") { it }
             )
-        } + listOf(
+        }
+        val endingSlides = listOf(
             TextSlide("${compo.name} compo has ended", "")
         )
 
-        repository.replaceSlideSet(slideSet, slides).bind()
+        val allSlides = hypeSlides + entrySlides + endingSlides
+        val dbRows = repository.replaceSlideSet(slideSet, allSlides).bind()
+
+        val firstShown = dbRows.first().whenShown()
+        app.triggers.onSignal(firstShown, OpenCloseSubmitting(compoId, false))
+        app.triggers.onSignal(firstShown, OpenLiveVoting(compoId))
+
+        val entrySlideDbRows = dbRows.subList(hypeSlides.size, hypeSlides.size + entrySlides.size)
+        entries.zip(entrySlideDbRows) { entry, slide ->
+            app.triggers.onSignal(slide.whenShown(), EnableLiveVotingForEntry(entry.id))
+        }
+
+        val lastShown = dbRows.last().whenShown()
+        app.triggers.onSignal(lastShown, CloseLiveVoting)
+        app.triggers.onSignal(lastShown, OpenCloseVoting(compoId, true))
 
         "/admin/screen/${slideSet}"
     }
@@ -112,6 +130,7 @@ class ScreenService(private val app: AppServices) {
     private fun show(row: ScreenRow): Unit =
         runBlocking {
             state.emit(ScreenState.fromRow(row))
+            app.signals.emit(SignalType.slideShown, row.id.toString())
         }
 }
 

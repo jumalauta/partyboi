@@ -1,6 +1,7 @@
 package party.jml.partyboi
 
 import io.ktor.server.application.*
+import kotlinx.coroutines.launch
 import party.jml.partyboi.admin.compos.configureAdminComposRouting
 import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
 import party.jml.partyboi.admin.screen.configureAdminScreenRouting
@@ -25,6 +26,8 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val db = getDatabasePool()
     val app = AppServices(db)
+
+    launch { app.triggers.subscribeToSignals() }
 
     configureSerialization()
     configureHTTP()

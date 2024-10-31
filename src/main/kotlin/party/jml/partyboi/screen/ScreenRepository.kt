@@ -14,6 +14,8 @@ import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.signals.SignalType
 
 class ScreenRepository(private val app: AppServices) {
     val db = app.db
@@ -122,6 +124,8 @@ data class ScreenRow(
             QrCodeSlide::class.qualifiedName -> Json.decodeFromString<QrCodeSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
+
+    fun whenShown(): Signal = Signal(SignalType.slideShown, id.toString())
 
    companion object {
        val fromRow: (Row) -> ScreenRow = { row ->

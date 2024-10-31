@@ -2,7 +2,6 @@ package party.jml.partyboi.schedule
 
 import arrow.core.Either
 import arrow.core.Option
-import arrow.core.flatMap
 import arrow.core.raise.either
 import kotlinx.html.InputType
 import kotliquery.Row
@@ -11,8 +10,8 @@ import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
-import party.jml.partyboi.triggers.ScheduledTriggerRow
-import party.jml.partyboi.triggers.Trigger
+import party.jml.partyboi.triggers.TriggerRow
+import party.jml.partyboi.triggers.Action
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -20,10 +19,10 @@ import java.time.LocalDateTime
 class EventRepository(private val app: AppServices) {
     private val db = app.db
 
-    fun init() {
+    init {
         db.init("""
-           CREATE TABLE event (
-                id integer DEFAULT nextval('schedule_id_seq'::regclass) PRIMARY KEY,
+           CREATE TABLE IF NOT EXISTS event (
+                id SERIAL PRIMARY KEY,
                 name text NOT NULL,
                 time timestamp with time zone NOT NULL,
                 visible boolean NOT NULL DEFAULT true
@@ -54,11 +53,11 @@ class EventRepository(private val app: AppServices) {
         ).map(Event.fromRow))
     }
 
-    fun add(event: NewEvent, triggers: List<Trigger>): Either<AppError, Pair<Event, List<ScheduledTriggerRow>>> =
+    fun add(event: NewEvent, actions: List<Action>): Either<AppError, Pair<Event, List<TriggerRow>>> =
         db.transaction { tx -> either {
             val createdEvent = add(event, tx).bind()
-            val createdTriggers = triggers
-                .map { app.triggers.schedule(createdEvent.id, it, tx) }
+            val createdTriggers = actions
+                .map { app.triggers.onEventStart(createdEvent.id, it, tx) }
                 .bindAll()
             Pair(createdEvent, createdTriggers)
         } }

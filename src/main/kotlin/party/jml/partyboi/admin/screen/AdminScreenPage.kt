@@ -9,6 +9,8 @@ import party.jml.partyboi.screen.*
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
+import party.jml.partyboi.triggers.Action
+import party.jml.partyboi.triggers.TriggerRow
 
 object AdminScreenPage {
     fun renderAdHocForm(currentlyRunning: Boolean, form: Form<*>) =
@@ -115,14 +117,23 @@ object AdminScreenPage {
             script(src = "/assets/refreshOnSlideChange.js") {}
         }
 
-    fun renderSlideForm(slideSet: String, slide: SlideEditData) =
+    fun renderSlideForm(slideSet: String, slide: SlideEditData, triggers: List<TriggerRow>) =
         Page("Edit slide") {
-            dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
-                fieldSet {
-                    renderFields(slide.slide.getForm())
+            article {
+                dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
+                    fieldSet {
+                        renderFields(slide.slide.getForm())
+                    }
+                    footer {
+                        submitInput { value = "Save changes" }
+                    }
                 }
-                footer {
-                    submitInput { value = "Save changes" }
+            }
+
+            if (triggers.isNotEmpty()) {
+                article {
+                    header { +"When this slide is shown the following actions are executed automatically" }
+                    ul { triggers.forEach { li { +it.description } } }
                 }
             }
         }

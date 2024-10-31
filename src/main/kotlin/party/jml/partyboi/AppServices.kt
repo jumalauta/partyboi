@@ -3,6 +3,7 @@ package party.jml.partyboi
 import com.natpryce.konfig.*
 import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
 import io.ktor.util.*
+import io.ktor.util.logging.*
 import party.jml.partyboi.admin.compos.CompoRunService
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
@@ -14,7 +15,8 @@ import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
-import party.jml.partyboi.triggers.ScheduledTriggerRepository
+import party.jml.partyboi.signals.SignalService
+import party.jml.partyboi.triggers.TriggerRepository
 import party.jml.partyboi.voting.VoteService
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -32,7 +34,8 @@ class AppServices(db: DatabasePool) {
     val screenshots = ScreenshotRepository(this)
     val properties = PropertyRepository(this)
     val events = EventRepository(this)
-    val triggers = ScheduledTriggerRepository(this)
+    val triggers = TriggerRepository(this)
+    val signals = SignalService()
 }
 
 object Config {
@@ -59,4 +62,8 @@ object Config {
     fun getDbUser() = config.getOrElse(dbUser, "postgres")
     fun getDbPassword() = config.get(dbPassword)
     fun getDbDatabase() = config.getOrElse(dbDatabase, "default")
+}
+
+abstract class Logging {
+    val log = KtorSimpleLogger(this.javaClass.name)
 }
