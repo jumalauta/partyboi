@@ -21,7 +21,7 @@ private fun safely(block: () -> Either<AppError, Renderable>) =
     try {
         block()
     } catch (err: Error) {
-        Either.Left(InternalServerError(err.message ?: err.toString()))
+        Either.Left(InternalServerError(err))
     }
 
 suspend fun ApplicationCall.respondEither(

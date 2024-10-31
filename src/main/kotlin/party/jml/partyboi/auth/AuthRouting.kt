@@ -7,6 +7,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.data.Notice
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.RedirectPage
 import party.jml.partyboi.templates.respondEither
@@ -29,7 +31,10 @@ fun Application.configureLoginRouting(app: AppServices) {
                 call.sessions.set(session)
                 RedirectPage("/entries")
             } }, { error -> either {
-                LoginPage.render(loginRequest.bind().with(error))
+                LoginPage.render(loginRequest.bind().with(when(error) {
+                    is NotFound -> Notice("Invalid user name or password")
+                    else -> error
+                }))
             } })
         }
 

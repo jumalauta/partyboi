@@ -46,7 +46,7 @@ class CompoRunService(val app: AppServices) {
                 compressDirectoryToZipfile(sourceDir, sourceDir, zipFile)
             }
             outputFile
-        }.mapLeft { InternalServerError(it.toString()) }
+        }.mapLeft { InternalServerError(it) }
 
     @Throws(IOException::class, FileNotFoundException::class)
     private fun compressDirectoryToZipfile(rootDir: Path, sourceDir: Path, out: ZipOutputStream) {

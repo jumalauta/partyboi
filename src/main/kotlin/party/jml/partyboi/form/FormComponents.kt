@@ -1,12 +1,16 @@
 package party.jml.partyboi.form
 
 import arrow.core.Option
+import io.ktor.util.logging.*
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.entries.EntryUpdate
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
+import party.jml.partyboi.templates.components.tooltip
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     dataForm(url) {
@@ -52,8 +56,18 @@ fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
 fun <T : Validateable<T>> FIELDSET.renderFields(form: Form<T>, options: Map<String, List<DropdownOptionSupport>>? = null) {
     if (form.error != null) {
         section(classes = "error") {
-            strong { +"${form.error.javaClass.simpleName}: " }
-            +form.error.message
+            if (form.error is UserError) {
+                +form.error.message
+            } else {
+                val id = randomShortId()
+                KtorSimpleLogger("renderFields").error("Error {}: {} {}", id, form.error.javaClass.simpleName, form.error.message)
+                +"Something went wrong"
+                span {
+                    tooltip("Error id for debugging: $id")
+                    +"..."
+                }
+            }
+
         }
     }
     form.forEach { data ->

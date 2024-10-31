@@ -28,25 +28,25 @@ class DatabasePool(private val dataSource: HikariDataSource) {
 }
 
 fun Session.runSafely(query: ExecuteQueryAction): Either<AppError, Boolean> =
-    Either.catch { run(query) }.mapLeft { DatabaseError(it.toString()) }
+    Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
 fun Session.runSafely(query: UpdateQueryAction): Either<AppError, Int> =
-    Either.catch { run(query) }.mapLeft { DatabaseError(it.toString()) }
+    Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
 fun Session.runSafely(query: UpdateAndReturnGeneratedKeyQueryAction): Either<AppError, Option<Long>> =
-    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it.toString()) }
+    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
 
 fun <A> Session.runSafely(query: ListResultQueryAction<A>): Either<AppError, List<A>> =
-    Either.catch { run(query) }.mapLeft { DatabaseError(it.toString()) }
+    Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
 fun <A> Session.runSafely(query: NullableResultQueryAction<A>): Either<AppError, Option<A>> =
-    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it.toString()) }
+    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
 
 fun <A> Session.option(query: ResultQueryActionBuilder<A>): Either<AppError, Option<A>> =
     runSafely(query.asSingle)
 
 fun <A> Session.one(query: ResultQueryActionBuilder<A>): Either<AppError, A> =
-    option(query).flatMap { it.toEither { NotFound("Not found by $query") } }
+    option(query).flatMap { it.toEither { NotFound("Not found") } }
 
 fun <A> Session.many(query: ResultQueryActionBuilder<A>): Either<AppError, List<A>> =
     runSafely(query.asList)
@@ -58,7 +58,7 @@ fun Session.updateAny(query: Query): Either<AppError, Int> =
     runSafely(query.asUpdate)
 
 fun Session.updateOne(query: Query): Either<AppError, Unit> =
-    updateAny(query).flatMap { if (it != 1) NotFound("Not found by $query").left() else Unit.right() }
+    updateAny(query).flatMap { if (it != 1) NotFound("Not found").left() else Unit.right() }
 
 object DbBasicMappers {
     val asBoolean: (Row) -> Boolean = { it.boolean(1) }

@@ -89,12 +89,12 @@ class ScreenRepository(private val app: AppServices) {
     fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
         val screens = getSlideSet(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
-            .toEither { DatabaseError("$currentId not in slide set '$slideSet'") }
+            .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
             .bind()
         (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
             .filter { it.visible }
             .toNonEmptyListOrNone()
-            .toEither { DatabaseError("No visible slides in slide set '$slideSet'") }
+            .toEither { InvalidInput("No visible slides in slide set '$slideSet'") }
             .map { it.first() }
             .bind()
     }

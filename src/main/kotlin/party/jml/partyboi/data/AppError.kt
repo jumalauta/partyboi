@@ -14,6 +14,7 @@ import party.jml.partyboi.templates.Renderable
 interface AppError : Renderable {
     val message: String
     val statusCode: HttpStatusCode
+    val throwable: Throwable?
 
     override fun getHTML(user: User?): String {
         val className = this::class.simpleName ?: "AppError"
@@ -28,24 +29,30 @@ interface AppError : Renderable {
 
 }
 
-interface SoftAppError : AppError
-
-class InternalServerError(override val message: String) : AppError {
-    override val statusCode: HttpStatusCode
-        get() = HttpStatusCode.InternalServerError
+interface UserError : AppError {
+    override val throwable: Throwable?
+        get() = null
 }
 
-class DatabaseError(override val message: String) : AppError {
-    override val statusCode: HttpStatusCode
-        get() = HttpStatusCode.InternalServerError
+class Notice(override val message: String) : UserError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
 }
 
-class FormError(override val message: String) : SoftAppError {
-    override val statusCode: HttpStatusCode
-        get() = HttpStatusCode.BadRequest
+class InternalServerError(override val throwable: Throwable) : AppError {
+    override val message: String = throwable.message ?: throwable.toString()
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
 }
 
-class ValidationError(val errors: NonEmptyList<Message>) : SoftAppError {
+class DatabaseError(override val throwable: Throwable) : AppError {
+    override val message: String = throwable.message ?: throwable.toString()
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
+}
+
+class FormError(override val message: String) : UserError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
+}
+
+class ValidationError(val errors: NonEmptyList<Message>) : UserError {
     constructor(target: String, message: String, value: String) : this(nonEmptyListOf(Message(target, message, value)))
     constructor(message: String, value: String) : this(nonEmptyListOf(Message(null, message, value)))
 
@@ -58,7 +65,7 @@ class ValidationError(val errors: NonEmptyList<Message>) : SoftAppError {
     data class Message(val target: String?, val message: String, val value: String)
 }
 
-class RedirectInterruption(val location: String) : AppError {
+class RedirectInterruption(val location: String) : UserError {
     override val statusCode: HttpStatusCode
         get() = HttpStatusCode.Found
 
@@ -71,29 +78,29 @@ class RedirectInterruption(val location: String) : AppError {
         mapOf("Location" to location)
 }
 
-class Unauthorized : AppError {
+class Unauthorized : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.Unauthorized
     override val message: String = "Unauthorized"
 }
 
-class NotFound(override val message: String) : AppError {
+class NotFound(override val message: String) : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.NotFound
 }
 
-class InvalidInput(name: String) : AppError {
+class InvalidInput(name: String) : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
     override val message: String = "Invalid input: $name"
 }
 
-class MissingInput(name: String) : AppError {
+class MissingInput(name: String) : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
     override val message: String = "Missing input: $name"
 }
 
-class Forbidden : AppError {
+class Forbidden : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.Forbidden
     override val message: String = "Forbidden"
 }
 
 fun <A> catchError(f: () -> A): Either<AppError, A> =
-    Either.catch { f() }.mapLeft { InternalServerError(it.message ?: it.toString()) }
+    Either.catch { f() }.mapLeft { InternalServerError(it) }

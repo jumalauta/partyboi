@@ -182,7 +182,7 @@ data class FileUpload(
             fileItem.dispose()
             Unit.right()
         } catch (err: Error) {
-            InternalServerError(err.message ?: err.toString()).left()
+            InternalServerError(err).left()
         }
     }
 

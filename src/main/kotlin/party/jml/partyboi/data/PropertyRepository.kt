@@ -60,7 +60,7 @@ data class PropertyRow(
 
     private inline fun <reified A> decode() =
         Either.catch { Json.decodeFromString<A>(json) }
-            .mapLeft { InternalServerError(it.message ?: it.toString()) }
+            .mapLeft { InternalServerError(it) }
 
     companion object {
         val fromRow: (Row) -> PropertyRow = { row ->
