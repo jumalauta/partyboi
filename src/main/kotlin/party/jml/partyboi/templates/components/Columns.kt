@@ -1,11 +1,21 @@
 package party.jml.partyboi.templates.components
 
-import kotlinx.html.*
+import kotlinx.html.DIV
+import kotlinx.html.FlowContent
+import kotlinx.html.div
+import kotlinx.html.section
 
-fun FlowContent.columns(vararg blocks: DIV.() -> Unit) {
-    section(classes = "columns") {
-        blocks.forEach { block ->
-            div { block() }
+fun FlowContent.columns(left: (DIV.() -> Unit)?, right: (DIV.() -> Unit)? = null) {
+    if (left != null) {
+        if (right != null) {
+            section(classes = "two-columns") {
+                div(classes = "two-columns-left") { left() }
+                div(classes = "two-columns-right") { right() }
+            }
+        } else {
+            div { left() }
         }
+    } else if (right != null) {
+        div { right() }
     }
 }

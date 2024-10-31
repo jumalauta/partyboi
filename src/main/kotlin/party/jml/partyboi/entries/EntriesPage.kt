@@ -8,27 +8,29 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.submitNewEntryForm
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.columns
 
 object EntriesPage {
     fun render(compos: List<Compo>, userEntries: List<EntryWithLatestFile>, formData: Form<NewEntry>) =
         Page("Submit entries") {
             h1 { +"Entries" }
-            submitNewEntryForm("/entries", compos, formData)
-            entryList(userEntries, compos)
+            columns(
+                { submitNewEntryForm("/entries", compos, formData) },
+                if (userEntries.isNotEmpty()) {{ entryList(userEntries, compos) }} else null
+            )
         }
 }
 
 fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<Compo>) {
     if (userEntries.isNotEmpty()) {
         article {
-            header { +"My submitted entries" }
+            header { +"My entries" }
             table {
                 thead {
                     tr {
                         th { +"Title" }
                         th { +"Author" }
                         th { +"Compo" }
-                        th { +"File" }
                         th {}
                     }
                 }
@@ -43,12 +45,6 @@ fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<C
                             }
                             td { +entry.author }
                             td { +(compo?.name ?: "Invalid compo") }
-                            td {
-                                entry.originalFilename
-                                    .map { +it }
-                                    .getOrElse { span(classes = "error") { +"File not uploaded" } }
-                                +entry.fileSize.map { " (${Filesize.humanFriendly(it)})" }.getOrElse{ "" }
-                            }
                             td {
                                 if (compo?.allowSubmit == true) {
                                     a {

@@ -43,8 +43,23 @@ fun Application.configureStyles() {
                 rule(".narrow") {
                     width = LinearDimension("20px")
                 }
-                rule(".columns") {
-                    display = Display.flex
+                rule(".no-margin") {
+                    margin = "0"
+                }
+                media("(min-width: 1280px)") {
+                    rule(".two-columns") {
+                        display = Display.flex
+                        gap = Gap("20px")
+                        width = LinearDimension("100%")
+                    }
+                    rule(".two-columns-left") {
+                        flexGrow = 1.0
+                        maxWidth = LinearDimension("50%")
+                    }
+                    rule(".two-columns-right") {
+                        flexGrow = 1.0
+                        maxWidth = LinearDimension("50%")
+                    }
                 }
                 // Theme variables here
             }

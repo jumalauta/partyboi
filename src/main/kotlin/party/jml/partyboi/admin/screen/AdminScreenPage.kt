@@ -38,30 +38,6 @@ object AdminScreenPage {
         Page("Screen admin") {
             screenAdminNavigation()
 
-            section {
-                fieldSet {
-                    attributes.put("role", "group")
-
-                    if (screenState.slideSet != slideSet || !isRunning) {
-                        postButton("/admin/screen/${slideSet}/start") {
-                            icon(Icon("play"))
-                            +" Auto run"
-                        }
-                    }
-                    if (screenState.slideSet == slideSet && isRunning) {
-                        postButton("/admin/screen/${slideSet}/stop") {
-                            icon(Icon("pause"))
-                            +" Pause auto run"
-                        }
-                    }
-                    a(href="/admin/screen/${slideSet}/presentation") {
-                        attributes.put("role", "button")
-                        icon("person-chalkboard")
-                        +" Presentation mode"
-                    }
-                }
-            }
-
             article {
                 table {
                     thead {
@@ -103,14 +79,48 @@ object AdminScreenPage {
                 }
             }
 
-            section {
-                postButton("/admin/screen/${slideSet}/text") {
-                    icon(Icon("align-left"))
-                    +" Add text slide"
-                }
-                postButton("/admin/screen/${slideSet}/qrcode") {
-                    icon(Icon("qrcode"))
-                    +" Add QR code"
+            footer {
+                nav {
+                    ul {
+                        if (screenState.slideSet != slideSet || !isRunning) {
+                            li {
+                                postButton("/admin/screen/${slideSet}/start") {
+                                    icon(Icon("play"))
+                                    +" Auto run"
+                                }
+                            }
+                        }
+                        if (screenState.slideSet == slideSet && isRunning) {
+                            li {
+                                postButton("/admin/screen/${slideSet}/stop") {
+                                    icon(Icon("pause"))
+                                    +" Pause auto run"
+                                }
+                            }
+                        }
+                        li {
+                            a(href = "/admin/screen/${slideSet}/presentation", classes = "no-margin") {
+                                attributes.put("role", "button")
+                                icon("person-chalkboard")
+                                +" Presentation mode"
+                            }
+                        }
+                    }
+                    ul {
+                        li {
+                            postButton("/admin/screen/${slideSet}/text") {
+                                icon(Icon("align-left"))
+                                +" Add text slide"
+                            }
+                        }
+                        li {
+                            postButton("/admin/screen/${slideSet}/qrcode") {
+                                icon(Icon("qrcode"))
+                                +" Add QR code"
+                            }
+
+                        }
+                    }
                 }
             }
             script(src = "/assets/draggable.min.js") {}

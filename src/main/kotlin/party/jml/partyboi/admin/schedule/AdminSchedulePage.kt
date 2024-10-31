@@ -22,49 +22,54 @@ object AdminSchedulePage {
         Page("Schedule") {
             h1 { +"Schedule" }
 
-            if (events.isNotEmpty()) {
-                events
-                    .groupBy { it.time.toLocalDate() }
-                    .forEach { (date, events) ->
-                        article {
-                            header { +"Schedule – ${date.dayOfWeek.name} $date" }
-                            table {
-                                thead {
-                                    tr {
-                                        th(classes = "narrow") { +"Time" }
-                                        th { +"Name" }
-                                        th(classes = "narrow") {}
-                                    }
-                                }
-                                tbody {
-                                    events.forEach { event ->
-                                        tr {
-                                            td { +event.time.toLocalTime().toString() }
-                                            td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
-                                            td(classes = "align-right") {
-                                                deleteButton(
-                                                    url = "/admin/schedule/events/${event.id}",
-                                                    tooltipText = "Delete event",
-                                                    confirmation = "Are you sure you want to delete event '${event.name}'?"
-                                                )
+            columns(
+                if (events.isNotEmpty()) {
+                    {
+                        events
+                            .groupBy { it.time.toLocalDate() }
+                            .forEach { (date, events) ->
+                                article {
+                                    header { +"Schedule – ${date.dayOfWeek.name} $date" }
+                                    table {
+                                        thead {
+                                            tr {
+                                                th(classes = "narrow") { +"Time" }
+                                                th { +"Name" }
+                                                th(classes = "narrow") {}
+                                            }
+                                        }
+                                        tbody {
+                                            events.forEach { event ->
+                                                tr {
+                                                    td { +event.time.toLocalTime().toString() }
+                                                    td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
+                                                    td(classes = "align-right") {
+                                                        deleteButton(
+                                                            url = "/admin/schedule/events/${event.id}",
+                                                            tooltipText = "Delete event",
+                                                            confirmation = "Are you sure you want to delete event '${event.name}'?"
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                    }
+                } else null,
+                {
+                    article {
+                        header { +"New event" }
+                        dataForm("/admin/schedule/events") {
+                            fieldSet {
+                                renderFields(newEvent)
+                            }
+                            footer { submitInput { value = "Add event" } }
                         }
                     }
-            }
-
-            article {
-                header { +"New event" }
-                dataForm("/admin/schedule/events") {
-                    fieldSet {
-                        renderFields(newEvent)
-                    }
-                    footer { submitInput { value = "Add event" } }
                 }
-            }
+            )
         }
 
     fun renderEdit(
@@ -101,7 +106,11 @@ object AdminSchedulePage {
                                     td { +trigger.description }
                                     td(classes = "align-right") {
                                         when (trigger) {
-                                            is SuccessfulTriggerRow -> icon("circle-check", "Triggered at ${trigger.executionTime}")
+                                            is SuccessfulTriggerRow -> icon(
+                                                "circle-check",
+                                                "Triggered at ${trigger.executionTime}"
+                                            )
+
                                             is FailedTriggerRow -> icon("circle-exclamation", trigger.error)
                                             else -> toggleButton(
                                                 trigger.enabled,

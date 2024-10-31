@@ -4,60 +4,64 @@ import party.jml.partyboi.templates.Page
 import kotlinx.html.*
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.ScreenState
+import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
 import party.jml.partyboi.templates.components.reloadSection
 
 object ScreenPresentation {
     fun render(slideSet: String, slides: List<ScreenRow>, state: ScreenState, isRunning: Boolean) =
         Page("Screen presentation mode") {
-            article {
-                header { +"Preview" }
-                div(classes = "screen-preview-container") {
-                    iframe(classes = "screen-preview") {
-                        attributes.put("src", "/screen")
-                        attributes.put("width", "1920")
-                        attributes.put("height", "1080")
-                    }
-                }
-            }
-
-            reloadSection {
-                fieldSet {
-                    attributes.put("role", "group")
-                    if (state.slideSet == slideSet) {
-                        postButton("/admin/screen/${slideSet}/presentation/next") {
-                            icon("forward-step")
-                            +" Next"
-                        }
-                    } else {
-                        postButton("/admin/screen/${slideSet}/presentation/start") {
-                            icon("play")
-                            +" Start"
+            columns(
+                { article {
+                    header { +"Preview" }
+                    div(classes = "screen-preview-container") {
+                        iframe(classes = "screen-preview") {
+                            attributes.put("src", "/screen")
+                            attributes.put("width", "1920")
+                            attributes.put("height", "1080")
                         }
                     }
-                }
-
-                article {
-                    header { +"Slides" }
-                    table {
-                        thead {
-                            tr {
-                                th(classes = "narrow") { +"#" }
-                                th { +"Name" }
+                } },
+                { reloadSection {
+                    fieldSet {
+                        attributes.put("role", "group")
+                        if (state.slideSet == slideSet) {
+                            postButton("/admin/screen/${slideSet}/presentation/next") {
+                                icon("forward-step")
+                                +" Next"
+                            }
+                        } else {
+                            postButton("/admin/screen/${slideSet}/presentation/start") {
+                                icon("play")
+                                +" Start"
                             }
                         }
-                        tbody {
-                            slides.forEachIndexed { index, slideRow ->
-                                val slide = slideRow.getSlide()
+                    }
+
+                    article {
+                        header { +"Slides" }
+                        table {
+                            thead {
                                 tr {
-                                    td { +(index + 1).toString() }
-                                    td { +slide.getName() }
+                                    th(classes = "narrow") { +"#" }
+                                    th { +"Name" }
+                                }
+                            }
+                            tbody {
+                                slides.forEachIndexed { index, slideRow ->
+                                    val slide = slideRow.getSlide()
+                                    tr {
+                                        td { +(index + 1).toString() }
+                                        td { +slide.getName() }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
+                } }
+            )
+
+
             script {
                 unsafe { raw("""
                     const resizePreview = () => {

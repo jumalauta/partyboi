@@ -8,7 +8,6 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.Slide
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
-import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.markdown
 import kotlinx.serialization.encodeToString
 import party.jml.partyboi.qrcode.QrCode
