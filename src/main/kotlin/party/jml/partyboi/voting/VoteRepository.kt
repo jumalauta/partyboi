@@ -1,6 +1,7 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import arrow.core.raise.result
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.AppError
@@ -10,43 +11,53 @@ import party.jml.partyboi.data.many
 
 class VoteRepository(private val db: DatabasePool) {
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS vote (
                 user_id integer REFERENCES appuser(id),
                 entry_id integer REFERENCES entry(id),
                 points integer NOT NULL,
                 CONSTRAINT vote_pkey PRIMARY KEY (user_id, entry_id)
             )
-        """)
+        """
+        )
     }
 
     fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> = db.use {
-        it.exec(queryOf("""
+        it.exec(
+            queryOf(
+                """
                 INSERT INTO vote (user_id, entry_id, points)
                 VALUES (?, ?, ?)
                 ON CONFLICT (user_id, entry_id) DO UPDATE SET
                     points = EXCLUDED.points
             """.trimIndent(),
-            userId,
-            entryId,
-            points,
-        ))
+                userId,
+                entryId,
+                points,
+            )
+        )
     }
 
     fun getUserVotes(userId: Int): Either<AppError, List<UserVote>> = db.use {
-        it.many(queryOf("""
+        it.many(
+            queryOf(
+                """
                 SELECT
                     entry_id,
                     points
                 FROM vote
                 WHERE vote.user_id = ?
             """.trimIndent(),
-            userId,
-        ).map(UserVote.fromRow))
+                userId,
+            ).map(UserVote.fromRow)
+        )
     }
 
     fun getResults(onlyPublic: Boolean): Either<AppError, List<CompoResult>> = db.use {
-        it.many(queryOf("""
+        it.many(
+            queryOf(
+                """
             SELECT
                 compo_id,
                 compo.name as compo_name,
@@ -61,7 +72,9 @@ class VoteRepository(private val db: DatabasePool) {
             ${if (onlyPublic) "AND public_results" else ""}
             GROUP BY compo_id, compo.name, entry.id, title, author
             ORDER BY compo_id, points DESC
-        """.trimIndent()).map(CompoResult.fromRow))
+        """.trimIndent()
+            ).map(CompoResult.fromRow)
+        )
     }
 }
 
@@ -84,6 +97,27 @@ data class CompoResult(
                 author = row.string("author"),
             )
         }
+
+        fun groupResults(results: List<CompoResult>): Map<CompoGroup, List<GroupedCompoResult>> = results
+            .groupBy { CompoGroup(it.compoId, it.compoName) }
+            .mapValues { (_, compoResults) ->
+                val grouped = compoResults
+                    .sortedBy { -it.points }
+                    .groupBy { it.points }
+                    .map { it.value }
+                val places = grouped.scan(1) { place, rs -> place + rs.size }
+                places.zip(grouped).map { (place, rs) -> GroupedCompoResult(place, rs) }
+            }
+
+        data class CompoGroup(
+            val id: Int,
+            val name: String,
+        )
+
+        data class GroupedCompoResult(
+            val place: Int,
+            val results: List<CompoResult>,
+        )
     }
 }
 
