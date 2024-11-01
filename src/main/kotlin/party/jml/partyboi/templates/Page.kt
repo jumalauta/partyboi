@@ -24,14 +24,16 @@ data class Page(
                 main(classes = "container") {
                     nav {
                         ul {
-                            li { strong { a(href="/") { +"PartyBoi" } } }
+                            li { strong { a(href = "/") { +"PartyBoi" } } }
                         }
                         ul {
                             if (user == null) {
                                 li { a(href = "/login") { +"Login" } }
-                                li { a(href = "/register") {
-                                    role = "button"
-                                    +"Register" }
+                                li {
+                                    a(href = "/register") {
+                                        role = "button"
+                                        +"Register"
+                                    }
                                 }
                             } else {
                                 li { a(href = "/schedule") { +"Schedule" } }
@@ -48,6 +50,7 @@ data class Page(
                                                 li { a(href = "/admin/compos") { +"Compos" } }
                                                 li { a(href = "/admin/schedule") { +"Schedule" } }
                                                 li { a(href = "/admin/screen") { +"Screen" } }
+                                                li { a(href = "/admin/assets") { +"Assets" } }
                                             }
                                         }
                                     }

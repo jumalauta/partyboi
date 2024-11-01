@@ -2,6 +2,7 @@ package party.jml.partyboi
 
 import io.ktor.server.application.*
 import kotlinx.coroutines.launch
+import party.jml.partyboi.admin.assets.configureAdminAssetsRouting
 import party.jml.partyboi.admin.compos.configureAdminComposRouting
 import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
 import party.jml.partyboi.admin.screen.configureAdminScreenRouting
@@ -43,6 +44,7 @@ fun Application.module() {
     configureScreenRouting(app)
     configureQrCodeRouting()
     configureScheduleRouting(app)
+    configureAdminAssetsRouting(app)
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)

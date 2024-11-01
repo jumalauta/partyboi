@@ -7,7 +7,7 @@ import party.jml.partyboi.Config
 
 fun Application.configureStaticContent() {
     routing {
+        staticFiles("/assets/uploaded", Config.getAssetsDir().toFile())
         staticResources("/assets", "assets")
-        staticFiles("/files", Config.getAssetsDir().toFile())
     }
 }

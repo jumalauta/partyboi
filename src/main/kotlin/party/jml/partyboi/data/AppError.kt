@@ -103,4 +103,6 @@ class Forbidden : UserError {
 }
 
 fun <A> catchError(f: () -> A): Either<AppError, A> =
-    Either.catch { f() }.mapLeft { InternalServerError(it) }
+    Either.catch { f() }.mapLeft {
+        InternalServerError(it)
+    }
