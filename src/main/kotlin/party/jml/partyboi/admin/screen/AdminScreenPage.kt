@@ -69,7 +69,11 @@ object AdminScreenPage {
                                     }
                                 }
                                 td { a(href="/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
-                                td { +slide.slide.javaClass.simpleName }
+                                td {
+                                    val type = slide.slide.getType()
+                                    icon(type.icon)
+                                    +" ${type.description}"
+                                }
                                 td(classes = "align-right") {
                                     toggleButton(slide.visible, IconSet.visibility, "/admin/screen/${slide.id}/setVisible")
                                 }

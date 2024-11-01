@@ -10,6 +10,7 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.Slide
+import party.jml.partyboi.screen.SlideType
 import party.jml.partyboi.templates.components.markdown
 
 @Serializable
@@ -29,6 +30,7 @@ data class TextSlide (
     override fun getForm(): Form<TextSlide> = Form(TextSlide::class, this, true)
     override fun toJson(): String = Json.encodeToString(this)
     override fun getName(): String = title
+    override fun getType(): SlideType = SlideType("list-ul", "Text")
 
     companion object {
         val Empty = TextSlide("", "")

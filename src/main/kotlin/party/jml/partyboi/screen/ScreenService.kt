@@ -157,5 +157,10 @@ interface Slide<A: Validateable<A>> {
     fun getForm(): Form<A>
     fun toJson(): String
     fun getName(): String
+    fun getType(): SlideType
 }
 
+data class SlideType(
+    val icon: String,
+    val description: String,
+)

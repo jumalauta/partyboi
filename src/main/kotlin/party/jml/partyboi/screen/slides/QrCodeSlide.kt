@@ -12,6 +12,7 @@ import party.jml.partyboi.templates.components.markdown
 import kotlinx.serialization.encodeToString
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.qrcode.QrCode
+import party.jml.partyboi.screen.SlideType
 
 @Serializable
 data class QrCodeSlide(
@@ -40,6 +41,7 @@ data class QrCodeSlide(
     override fun getForm(): Form<QrCodeSlide> = Form(QrCodeSlide::class, this, initial = true)
     override fun toJson(): String = Json.encodeToString(this)
     override fun getName(): String = title
+    override fun getType(): SlideType = SlideType("qrcode", "QR Code")
 
     companion object {
         val Empty = QrCodeSlide(
