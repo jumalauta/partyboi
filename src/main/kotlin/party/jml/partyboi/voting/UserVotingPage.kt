@@ -14,22 +14,22 @@ object UserVotingPage {
                     section {
                         table {
                             tbody {
-                                it.value.forEach {
+                                it.value.forEachIndexed { index, entry ->
                                     tr {
-                                        td { +"${it.runOrder}." }
-                                        th { +"${it.author} – ${it.title}" }
+                                        td { +"${index + 1}." }
+                                        th { +"${entry.author} – ${entry.title}" }
                                         td {
                                             fieldSet {
-                                                val entryId = "entry-${it.entryId}"
+                                                val entryId = "entry-${entry.entryId}"
                                                 for (i in VoteService.POINT_RANGE) {
                                                     val inputId = "$entryId-$i"
                                                     input {
                                                         type = InputType.radio
                                                         id = inputId
-                                                        name = "entry-${it.entryId}"
-                                                        checked = it.points.getOrNull() == i
+                                                        name = "entry-${entry.entryId}"
+                                                        checked = entry.points.getOrNull() == i
                                                         onClick = Javascript.build {
-                                                            httpPut("/vote/${it.entryId}/$i")
+                                                            httpPut("/vote/${entry.entryId}/$i")
                                                         }
                                                     }
                                                     label {
