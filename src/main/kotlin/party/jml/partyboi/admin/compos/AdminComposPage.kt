@@ -59,6 +59,11 @@ object AdminComposPage {
                                                     IconSet.voting,
                                                     "/admin/compos/${compo.id}/setVoting"
                                                 )
+                                                toggleButton(
+                                                    compo.publicResults,
+                                                    IconSet.resultsPublic,
+                                                    "/admin/compos/${compo.id}/publishResults"
+                                                )
                                             }
                                         }
                                     }

@@ -45,19 +45,21 @@ class VoteRepository(private val db: DatabasePool) {
         ).map(UserVote.fromRow))
     }
 
-    fun getAllResults(): Either<AppError, List<CompoResult>> = db.use {
+    fun getResults(onlyPublic: Boolean): Either<AppError, List<CompoResult>> = db.use {
         it.many(queryOf("""
             SELECT
                 compo_id,
                 compo.name as compo_name,
-                sum(points) AS points,
-                entry_id,
+                coalesce(sum(points), 0) AS points,
+                entry.id AS entry_id,
                 title,
                 author
-            FROM vote
-            JOIN entry ON entry.id = vote.entry_id
+            FROM entry
+            LEFT JOIN vote ON entry.id = vote.entry_id
             JOIN compo ON compo.id = entry.compo_id
-            GROUP BY compo_id, compo.name, entry_id, title, author
+            WHERE qualified
+            ${if (onlyPublic) "AND public_results" else ""}
+            GROUP BY compo_id, compo.name, entry.id, title, author
             ORDER BY compo_id, points DESC
         """.trimIndent()).map(CompoResult.fromRow))
     }

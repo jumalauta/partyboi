@@ -20,14 +20,30 @@ object ComposPage {
                 article {
                     header { +compo.name }
                     markdown(compo.rules)
-                    if (compo.allowSubmit) {
-                        a(href = "/entries/submit/${compo.id}") {
-                            +"Submit an entry"
-                        }
-                    }
-                    if (compo.allowVote) {
-                        a(href = "/vote") {
-                            +"Vote"
+
+                    nav {
+                        ul {
+                            if (compo.allowSubmit) {
+                                li {
+                                    a(href = "/entries/submit/${compo.id}") {
+                                        +"Submit an entry"
+                                    }
+                                }
+                            }
+                            if (compo.allowVote) {
+                                li {
+                                    a(href = "/vote") {
+                                        +"Vote"
+                                    }
+                                }
+                            }
+                            if (compo.publicResults) {
+                                li {
+                                    a(href = "/results#${compo.id}") {
+                                        +"Results"
+                                    }
+                                }
+                            }
                         }
                     }
                 }

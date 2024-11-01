@@ -26,7 +26,8 @@ class CompoRepository(private val app: AppServices) {
                 rules text NOT NULL DEFAULT '',
                 visible boolean NOT NULL DEFAULT true,
                 allow_submit boolean NOT NULL DEFAULT true,
-                allow_vote boolean NOT NULL DEFAULT false
+                allow_vote boolean NOT NULL DEFAULT false,
+                public_results boolean NOT NULL DEFAULT false
             );
         """)
     }
@@ -85,6 +86,16 @@ class CompoRepository(private val app: AppServices) {
         )
     }
 
+    fun publishResults(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(
+            queryOf(
+                "update compo set public_results = ? where id = ?",
+                state,
+                compoId,
+            )
+        )
+    }
+
     fun isVotingOpen(compoId: Int): Either<AppError, Boolean> = db.use {
         it.one(queryOf("SELECT allow_vote FROM compo WHERE id = ?", compoId).map(asBoolean))
     }
@@ -109,6 +120,7 @@ data class Compo(
     val visible: Boolean,
     val allowSubmit: Boolean,
     val allowVote: Boolean,
+    val publicResults: Boolean,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
 
@@ -128,6 +140,7 @@ data class Compo(
                 visible = row.boolean("visible"),
                 allowSubmit = row.boolean("allow_submit"),
                 allowVote = row.boolean("allow_vote"),
+                publicResults = row.boolean("public_results"),
             )
         }
     }

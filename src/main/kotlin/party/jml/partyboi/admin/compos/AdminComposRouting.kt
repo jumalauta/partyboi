@@ -145,6 +145,10 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 call.switchApi { id, state -> app.compos.allowVoting(id, state) }
             }
 
+            put("/admin/compos/{id}/publishResults/{state}") {
+                call.switchApi { id, state -> app.compos.publishResults(id, state) }
+            }
+
             put("/admin/compos/entries/{id}/setQualified/{state}") {
                 call.switchApi { id, state -> app.entries.setQualified(id, state) }
             }

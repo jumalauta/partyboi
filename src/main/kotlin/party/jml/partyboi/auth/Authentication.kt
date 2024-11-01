@@ -1,6 +1,7 @@
 package party.jml.partyboi.auth
 
 import arrow.core.Either
+import arrow.core.Option
 import arrow.core.toOption
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -34,7 +35,8 @@ fun Application.configureAuthentication(app: AppServices) {
     }
 }
 
+fun ApplicationCall.optionalUserSession(): Option<User> =
+    principal<User>().toOption()
+
 fun ApplicationCall.userSession(): Either<AppError, User> =
-    principal<User>()
-        .toOption()
-        .toEither { RedirectInterruption("/login") }
+    optionalUserSession().toEither { RedirectInterruption("/login") }

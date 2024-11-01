@@ -38,6 +38,7 @@ data class Page(
                                 li { a(href = "/compos") { +"Competitions" } }
                                 li { a(href = "/entries") { +"Entries" } }
                                 li { a(href = "/vote") { +"Vote" } }
+                                li { a(href = "/results") { +"Results" } }
                                 if (user.isAdmin) {
                                     li {
                                         details(classes = "dropdown") {

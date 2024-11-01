@@ -1,6 +1,7 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import arrow.core.Option
 import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.entries.Entry
@@ -36,6 +38,9 @@ class VoteService(val app: AppServices) {
         val current = live.value
         return live.filter { it != current }.take(1)
     }
+    
+    fun getResults(user: Option<User>): Either<AppError, List<CompoResult>> =
+        repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
     private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =
         if (!entry.qualified) {
