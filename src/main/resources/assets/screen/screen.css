@@ -126,3 +126,15 @@ h1 {
 ul:first-child {
     margin-top: 0;
 }
+
+.ImageSlide .image {
+    background-color: black;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: absolute;
+    left: -10vw;
+    right: -10vw;
+    top: -10vh;
+    bottom: -10vh;
+}

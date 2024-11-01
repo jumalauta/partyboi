@@ -4,7 +4,6 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
-import kotlinx.html.InputType
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
@@ -18,16 +17,16 @@ import kotlin.io.path.exists
 
 class ScreenshotRepository(app: AppServices) {
     fun scanForScreenshotSource(file: FileDesc): Option<Path> {
-        if (file.type == "image") {
+        if (file.type == FileDesc.IMAGE) {
             return file.getStorageFile().toPath().some()
         }
-        if (file.type == "zip") {
+        if (file.type == FileDesc.ZIP_ARCHIVE) {
             return ZipFile.builder()
                 .setFile(file.getStorageFile())
                 .get()
                 .use { zip ->
                     zip.entries.iterator().asSequence()
-                        .filter { NewFileDesc.getType(it.name) == "image" }
+                        .filter { FileDesc.getType(it.name) == FileDesc.IMAGE }
                         .map { it to heuristicsScore(it.name) }
                         .sortedBy { -it.second }
                         .firstOrNull()

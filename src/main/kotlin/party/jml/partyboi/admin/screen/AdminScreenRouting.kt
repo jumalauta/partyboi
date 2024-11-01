@@ -13,7 +13,9 @@ import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.templates.RedirectPage
@@ -36,109 +38,155 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
             post("/admin/screen/adhoc") {
                 val screenRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
-                call.respondEither({ either {
-                    val screen = screenRequest.bind()
-                    runBlocking { app.screen.addAdHoc(screen.data).bind() }
-                    AdminScreenPage.renderAdHocForm(true, screen)
-                }})
+                call.respondEither({
+                    either {
+                        val screen = screenRequest.bind()
+                        runBlocking { app.screen.addAdHoc(screen.data).bind() }
+                        AdminScreenPage.renderAdHocForm(true, screen)
+                    }
+                })
             }
 
             get("/admin/screen/{slideSet}") {
-                call.respondEither({ either {
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slides = app.screen.getSlideSet(slideSetName).bind()
-                    val forms = slides.map(SlideEditData.fromRow)
-                    val (state, isRunning) = app.screen.currentState()
-                    AdminScreenPage.renderSlideSetForms(slideSetName, state, isRunning, forms)
-                }})
+                call.respondEither({
+                    either {
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slides = app.screen.getSlideSet(slideSetName).bind()
+                        val forms = slides.map(SlideEditData.fromRow)
+                        val (state, isRunning) = app.screen.currentState()
+                        AdminScreenPage.renderSlideSetForms(slideSetName, state, isRunning, forms)
+                    }
+                })
             }
 
             get("/admin/screen/{slideSet}/presentation") {
-                call.respondEither({ either {
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slides = app.screen.getSlideSet(slideSetName).bind().filter { it.visible }
-                    val (state, isRunning) = app.screen.currentState()
+                call.respondEither({
+                    either {
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slides = app.screen.getSlideSet(slideSetName).bind().filter { it.visible }
+                        val (state, isRunning) = app.screen.currentState()
 
-                    ScreenPresentation.render(slideSetName, slides, state, isRunning)
-                }})
+                        ScreenPresentation.render(slideSetName, slides, state, isRunning)
+                    }
+                })
             }
 
             get("/admin/screen/{slideSet}/{slideId}") {
-                call.respondEither({ either {
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slideId = call.parameterInt("slideId").bind()
-                    val slide = app.screen.getSlide(slideId).bind()
-                    val form = SlideEditData.fromRow(slide)
-                    val actions = app.triggers.getTriggersForSignal(slide.whenShown()).bind()
-                    AdminScreenPage.renderSlideForm(slideSetName, form, actions)
-                }})
+                call.respondEither({
+                    either {
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slideId = call.parameterInt("slideId").bind()
+                        val slide = app.screen.getSlide(slideId).bind()
+                        val form = SlideEditData.fromRow(slide)
+                        val actions = app.triggers.getTriggersForSignal(slide.whenShown()).bind()
+                        val assetImages = app.assets.getList(FileDesc.IMAGE)
+                        AdminScreenPage.renderSlideForm(slideSetName, form, actions, assetImages)
+                    }
+                })
             }
 
             post("/admin/screen/{slideSet}/{slideId}/textslide") {
                 val slideRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
-                call.respondEither({ either {
-                    val id = call.parameterInt("slideId").bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slide = slideRequest.bind().data
-                    runBlocking { app.screen.update(id, slide) }
-                    RedirectPage("/admin/screen/${slideSetName}")
-                }})
+                call.respondEither({
+                    either {
+                        val id = call.parameterInt("slideId").bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slide = slideRequest.bind().data
+                        runBlocking { app.screen.update(id, slide) }
+                        RedirectPage("/admin/screen/${slideSetName}")
+                    }
+                })
             }
 
             post("/admin/screen/{slideSet}/{slideId}/qrcodeslide") {
                 val slideRequest = Form.fromParameters<QrCodeSlide>(call.receiveMultipart())
-                call.respondEither({ either {
-                    val id = call.parameterInt("slideId").bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slide = slideRequest.bind().data
-                    runBlocking { app.screen.update(id, slide) }
-                    RedirectPage("/admin/screen/${slideSetName}")
-                }})
+                call.respondEither({
+                    either {
+                        val id = call.parameterInt("slideId").bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slide = slideRequest.bind().data
+                        runBlocking { app.screen.update(id, slide) }
+                        RedirectPage("/admin/screen/${slideSetName}")
+                    }
+                })
+            }
+
+            post("/admin/screen/{slideSet}/{slideId}/imageslide") {
+                val slideRequest = Form.fromParameters<ImageSlide>(call.receiveMultipart())
+                call.respondEither({
+                    either {
+                        val id = call.parameterInt("slideId").bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slide = slideRequest.bind().data
+                        runBlocking { app.screen.update(id, slide) }
+                        RedirectPage("/admin/screen/${slideSetName}")
+                    }
+                })
             }
         }
 
         authenticate("admin", optional = true) {
             post("/admin/screen/{slideSet}/text") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
-                } }
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
+                    }
+                }
             }
 
             post("/admin/screen/{slideSet}/qrcode") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addEmptySlideToSlideSet(slideSetName, QrCodeSlide.Empty).bind()
-                } }
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        app.screen.addEmptySlideToSlideSet(slideSetName, QrCodeSlide.Empty).bind()
+                    }
+                }
+            }
+
+            post("/admin/screen/{slideSet}/image") {
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        app.screen.addEmptySlideToSlideSet(slideSetName, ImageSlide.Empty).bind()
+                    }
+                }
             }
 
             post("/admin/screen/{slideSet}/start") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.startSlideSet(slideSetName).bind()
-                } }
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        app.screen.startSlideSet(slideSetName).bind()
+                    }
+                }
             }
 
             post("/admin/screen/{slideSet}/stop") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    app.screen.stopSlideSet()
-                } }
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        app.screen.stopSlideSet()
+                    }
+                }
             }
 
             post("/admin/screen/{slideSet}/{slideId}/show") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideId = call.parameterInt("slideId").bind()
-                    app.screen.show(slideId).bind()
-                } }
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideId = call.parameterInt("slideId").bind()
+                        app.screen.show(slideId).bind()
+                    }
+                }
             }
 
             put("/admin/screen/{id}/setVisible/{state}") {
-               call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
+                call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
             }
 
             put("/admin/screen/{slideSet}/runOrder") {
@@ -148,26 +196,30 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
 
             post("/admin/screen/{slideSet}/presentation/start") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slideSet = app.screen.getSlideSet(slideSetName).bind()
-                    if (slideSet.isNotEmpty()) {
-                        app.screen.stopSlideSet()
-                        app.screen.show(slideSet.first().id).bind()
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val slideSet = app.screen.getSlideSet(slideSetName).bind()
+                        if (slideSet.isNotEmpty()) {
+                            app.screen.stopSlideSet()
+                            app.screen.show(slideSet.first().id).bind()
+                        }
                     }
-                } }
+                }
             }
 
             post("/admin/screen/{slideSet}/presentation/next") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val (state) = app.screen.currentState()
-                    if (state.slideSet == slideSetName) {
-                        app.screen.showNext()
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideSetName = call.parameterString("slideSet").bind()
+                        val (state) = app.screen.currentState()
+                        if (state.slideSet == slideSetName) {
+                            app.screen.showNext()
+                        }
                     }
-                } }
+                }
             }
 
         }

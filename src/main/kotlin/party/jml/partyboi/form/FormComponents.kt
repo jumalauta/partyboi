@@ -53,14 +53,22 @@ fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
     }
 }
 
-fun <T : Validateable<T>> FIELDSET.renderFields(form: Form<T>, options: Map<String, List<DropdownOptionSupport>>? = null) {
+fun <T : Validateable<T>> FIELDSET.renderFields(
+    form: Form<T>,
+    options: Map<String, List<DropdownOptionSupport>>? = null
+) {
     if (form.error != null) {
         section(classes = "error") {
             if (form.error is UserError) {
                 +form.error.message
             } else {
                 val id = randomShortId()
-                KtorSimpleLogger("renderFields").error("Error {}: {} {}", id, form.error.javaClass.simpleName, form.error.message)
+                KtorSimpleLogger("renderFields").error(
+                    "Error {}: {} {}",
+                    id,
+                    form.error.javaClass.simpleName,
+                    form.error.message
+                )
                 +"Something went wrong"
                 span {
                     tooltip("Error id for debugging: $id")
@@ -96,7 +104,10 @@ fun FlowContent.formError(error: Option<String>) {
     error.map { small(classes = "error") { +it } }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(data: Form.FieldData, crossinline block : INPUT.() -> Unit = {}) {
+inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(
+    data: Form.FieldData,
+    crossinline block: INPUT.() -> Unit = {}
+) {
     label {
         span { +data.label }
         textInput(name = data.key) {
@@ -166,9 +177,19 @@ interface DropdownOptionSupport {
 
 data class DropdownOption(val value: String, val label: String) : DropdownOptionSupport {
     override fun toDropdownOption(): DropdownOption = this
+
+    companion object {
+        val fromString: (String) -> DropdownOption = { DropdownOption(it, it) }
+    }
 }
 
-fun FlowContent.switchLink(toggled: Boolean, labelOn: String, labelOff: String, urlPrefix: String, disable: Boolean = false) {
+fun FlowContent.switchLink(
+    toggled: Boolean,
+    labelOn: String,
+    labelOff: String,
+    urlPrefix: String,
+    disable: Boolean = false
+) {
     span {
         input {
             type = InputType.checkBox

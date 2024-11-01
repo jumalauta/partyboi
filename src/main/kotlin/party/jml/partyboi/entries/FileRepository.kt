@@ -23,7 +23,8 @@ class FileRepository(private val app: AppServices) {
     private val db = app.db
 
     init {
-        db.init("""
+        db.init(
+            """
            CREATE TABLE IF NOT EXISTS file (
                 entry_id integer REFERENCES entry(id) ON DELETE CASCADE,
                 version integer,
@@ -34,10 +35,15 @@ class FileRepository(private val app: AppServices) {
                 uploaded_at timestamp with time zone NOT NULL DEFAULT now(),
                 CONSTRAINT file_pkey PRIMARY KEY (entry_id, version)
             ) 
-        """)
+        """
+        )
     }
 
-    fun makeStorageFilename(entry: Entry, originalFilename: String, tx: TransactionalSession? = null): Either<AppError, Path> = either {
+    fun makeStorageFilename(
+        entry: Entry,
+        originalFilename: String,
+        tx: TransactionalSession? = null
+    ): Either<AppError, Path> = either {
         val version = nextVersion(entry.id, tx).bind()
         val compo = app.compos.getById(entry.compoId, tx).bind()
         buildStorageFilename(
@@ -71,20 +77,27 @@ class FileRepository(private val app: AppServices) {
     fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
         db.use(tx) {
-            it.one(queryOf(
-                "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?) RETURNING *",
-                file.entryId,
-                version,
-                file.originalFilename,
-                file.storageFilename.toString(),
-                file.type,
-                file.size(),
-            ).map(FileDesc.fromRow))
+            it.one(
+                queryOf(
+                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?) RETURNING *",
+                    file.entryId,
+                    version,
+                    file.originalFilename,
+                    file.storageFilename.toString(),
+                    file.type,
+                    file.size(),
+                ).map(FileDesc.fromRow)
+            )
         }.bind()
     }
 
     fun getLatest(entryId: Int): Either<AppError, FileDesc> = db.use {
-        it.one(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1", entryId).map(FileDesc.fromRow))
+        it.one(
+            queryOf(
+                "SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1",
+                entryId
+            ).map(FileDesc.fromRow)
+        )
     }
 
     fun getAllVersions(entryId: Int): Either<AppError, List<FileDesc>> = db.use {
@@ -92,7 +105,9 @@ class FileRepository(private val app: AppServices) {
     }
 
     fun getUserVersion(entryId: Int, version: Int, userId: Int) = db.use {
-        it.one(queryOf("""
+        it.one(
+            queryOf(
+                """
                 SELECT *
                 FROM file
                 JOIN entry ON entry.id = file.entry_id
@@ -103,14 +118,22 @@ class FileRepository(private val app: AppServices) {
                     (SELECT is_admin FROM appuser WHERE id = ?)
                 )
             """,
-            entryId,
-            version,
-            userId,
-            userId,
-        ).map(FileDesc.fromRow))
+                entryId,
+                version,
+                userId,
+                userId,
+            ).map(FileDesc.fromRow)
+        )
     }
 
-    private fun buildStorageFilename(compoName: String, entryId: Int, version: Int, author: String, title: String, originalFilename: String): Path {
+    private fun buildStorageFilename(
+        compoName: String,
+        entryId: Int,
+        version: Int,
+        author: String,
+        title: String,
+        originalFilename: String
+    ): Path {
         val compo = compoName.toFilenameToken(true) ?: "compo"
         val id = "${entryId}-v${version.toString().padStart(2, '0')}"
         val authorClean = author.toFilenameToken(false)
@@ -126,19 +149,9 @@ data class NewFileDesc(
     val originalFilename: String,
     val storageFilename: Path,
 ) {
-    val type: String by lazy { getType(originalFilename) }
+    val type: String by lazy { FileDesc.getType(originalFilename) }
 
     fun size(): Long = Files.size(Config.getEntryDir().resolve(storageFilename))
-
-    companion object {
-        fun getType(filename: String): String =
-            when (val extension = File(filename).extension.lowercase()) {
-                "png", "jpg", "jpeg", "gif", "webp" -> "image"
-                "mp3", "ogg", "flac", "wav" -> "sound"
-                "zip" -> "zip"
-                else -> extension
-            }
-    }
 }
 
 data class FileDesc(
@@ -150,7 +163,7 @@ data class FileDesc(
     val size: Long,
     val uploadedAt: LocalDateTime,
 ) {
-    val isArchive = type == "zip"
+    val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
 
     fun getStorageFile(): File = Config.getEntryDir().resolve(storageFilename).toFile()
@@ -167,5 +180,17 @@ data class FileDesc(
                 uploadedAt = row.localDateTime("uploaded_at"),
             )
         }
+
+        fun getType(filename: String): String =
+            when (val extension = File(filename).extension.lowercase()) {
+                "png", "jpg", "jpeg", "gif", "webp" -> IMAGE
+                "mp3", "ogg", "flac", "wav" -> SOUND
+                "zip" -> ZIP_ARCHIVE
+                else -> extension
+            }
+
+        const val IMAGE = ":image"
+        const val SOUND = ":sound"
+        const val ZIP_ARCHIVE = ":zip"
     }
 }

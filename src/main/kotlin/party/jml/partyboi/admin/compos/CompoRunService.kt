@@ -30,7 +30,7 @@ class CompoRunService(val app: AppServices) {
         entries.forEach { entry ->
             val fileDesc = getLatestFileDesc(entry).bind()
             val targetFilename = app.files.makeCompoRunFileOrDirName(fileDesc, entry, compo, tempDir)
-            if (fileDesc.type == "zip") {
+            if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
                 extractZip(fileDesc, targetFilename)
             } else {
                 copyFile(fileDesc, targetFilename)
@@ -52,7 +52,7 @@ class CompoRunService(val app: AppServices) {
     private fun compressDirectoryToZipfile(rootDir: Path, sourceDir: Path, out: ZipOutputStream) {
         for (file in sourceDir.toFile().listFiles()!!) {
             if (file.isDirectory) {
-                compressDirectoryToZipfile(rootDir,sourceDir.resolve(file.name), out)
+                compressDirectoryToZipfile(rootDir, sourceDir.resolve(file.name), out)
             } else {
                 val sourceFile = sourceDir.resolve(file.name)
                 val entryName = rootDir.relativize(sourceFile).toString()
@@ -67,10 +67,12 @@ class CompoRunService(val app: AppServices) {
 
     private fun getLatestFileDesc(entry: Entry) =
         app.files.getLatest(entry.id)
-            .mapLeft { when(it) {
-                is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' does not have file. Disqualify it first.")
-                else -> it
-            }}
+            .mapLeft {
+                when (it) {
+                    is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' does not have file. Disqualify it first.")
+                    else -> it
+                }
+            }
 
     private fun copyFile(source: FileDesc, target: Path) {
         source.getStorageFile().copyTo(target.toFile())

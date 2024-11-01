@@ -12,6 +12,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
@@ -21,7 +22,8 @@ class ScreenRepository(private val app: AppServices) {
     val db = app.db
 
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS screen (
                 id SERIAL PRIMARY KEY,
                 slide_set text NOT NULL,
@@ -30,7 +32,8 @@ class ScreenRepository(private val app: AppServices) {
                 visible boolean NOT NULL DEFAULT true,
                 run_order integer NOT NULL DEFAULT 0
             )
-        """)
+        """
+        )
     }
 
     fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
@@ -49,41 +52,64 @@ class ScreenRepository(private val app: AppServices) {
         it.many(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
     }
 
-    fun setAdHoc(slide: Slide<*>): Either<AppError, ScreenRow> = db.transaction { either {
-        val (type, content) = getTypeAndJson(slide)
-        val query = if (adHocExists(it).bind()) {
-            "UPDATE screen SET type = ?, content = ?::jsonb WHERE slide_set = 'adhoc' RETURNING *"
-        } else {
-            "INSERT INTO screen(slide_set, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+    fun setAdHoc(slide: Slide<*>): Either<AppError, ScreenRow> = db.transaction {
+        either {
+            val (type, content) = getTypeAndJson(slide)
+            val query = if (adHocExists(it).bind()) {
+                "UPDATE screen SET type = ?, content = ?::jsonb WHERE slide_set = 'adhoc' RETURNING *"
+            } else {
+                "INSERT INTO screen(slide_set, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+            }
+            it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
         }
-        it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
-    } }
-
-    fun add(slideSet: String, slide: Slide<*>, makeVisible: Boolean, tx: TransactionalSession? = null): Either<AppError, ScreenRow> = db.use(tx) {
-        val (type, content) = getTypeAndJson(slide)
-        it.one(queryOf(
-            "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
-            slideSet,
-            type,
-            content,
-            makeVisible,
-        ).map(ScreenRow.fromRow))
     }
 
-    fun update (id: Int, slide: Slide<*>): Either<AppError, ScreenRow> = db.use {
+    fun add(
+        slideSet: String,
+        slide: Slide<*>,
+        makeVisible: Boolean,
+        tx: TransactionalSession? = null
+    ): Either<AppError, ScreenRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(slide)
-        it.one(queryOf("UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *", type, content, id).map(ScreenRow.fromRow))
+        it.one(
+            queryOf(
+                "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
+                slideSet,
+                type,
+                content,
+                makeVisible,
+            ).map(ScreenRow.fromRow)
+        )
+    }
+
+    fun update(id: Int, slide: Slide<*>): Either<AppError, ScreenRow> = db.use {
+        val (type, content) = getTypeAndJson(slide)
+        it.one(
+            queryOf(
+                "UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *",
+                type,
+                content,
+                id
+            ).map(ScreenRow.fromRow)
+        )
     }
 
     fun replaceSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
-        db.transaction { either {
-            val tx = it
-            it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
-            slides.map { slide -> add(slideSet, slide, makeVisible = true, tx) }.bindAll()
-        } }
+        db.transaction {
+            either {
+                val tx = it
+                it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
+                slides.map { slide -> add(slideSet, slide, makeVisible = true, tx) }.bindAll()
+            }
+        }
 
     fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
-        it.one(queryOf("SELECT * FROM screen WHERE slide_set = ? AND visible ORDER BY run_order, id LIMIT 1", slideSet).map(ScreenRow.fromRow))
+        it.one(
+            queryOf(
+                "SELECT * FROM screen WHERE slide_set = ? AND visible ORDER BY run_order, id LIMIT 1",
+                slideSet
+            ).map(ScreenRow.fromRow)
+        )
     }
 
     fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
@@ -119,24 +145,25 @@ data class ScreenRow(
     val runOrder: Int,
 ) {
     fun getSlide(): Slide<*> =
-        when(type) {
+        when (type) {
             TextSlide::class.qualifiedName -> Json.decodeFromString<TextSlide>(content)
             QrCodeSlide::class.qualifiedName -> Json.decodeFromString<QrCodeSlide>(content)
+            ImageSlide::class.qualifiedName -> Json.decodeFromString<ImageSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
 
     fun whenShown(): Signal = Signal(SignalType.slideShown, id.toString())
 
-   companion object {
-       val fromRow: (Row) -> ScreenRow = { row ->
-           ScreenRow(
-               id = row.int("id"),
-               slideSet = row.string("slide_set"),
-               type = row.string("type"),
-               content = row.string("content"),
-               visible = row.boolean("visible"),
-               runOrder = row.int("run_order"),
-           )
-       }
-   }
+    companion object {
+        val fromRow: (Row) -> ScreenRow = { row ->
+            ScreenRow(
+                id = row.int("id"),
+                slideSet = row.string("slide_set"),
+                type = row.string("type"),
+                content = row.string("content"),
+                visible = row.boolean("visible"),
+                runOrder = row.int("run_order"),
+            )
+        }
+    }
 }

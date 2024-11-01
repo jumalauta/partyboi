@@ -2,6 +2,7 @@ package party.jml.partyboi.admin.screen
 
 import kotlinx.html.*
 import party.jml.partyboi.data.nonEmptyString
+import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
@@ -34,7 +35,12 @@ object AdminScreenPage {
             }
         }
 
-    fun renderSlideSetForms(slideSet: String, screenState: ScreenState, isRunning: Boolean, slides: List<SlideEditData>) =
+    fun renderSlideSetForms(
+        slideSet: String,
+        screenState: ScreenState,
+        isRunning: Boolean,
+        slides: List<SlideEditData>
+    ) =
         Page("Screen admin") {
             screenAdminNavigation()
 
@@ -68,14 +74,18 @@ object AdminScreenPage {
                                         }
                                     }
                                 }
-                                td { a(href="/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
+                                td { a(href = "/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
                                 td {
                                     val type = slide.slide.getType()
                                     icon(type.icon)
                                     +" ${type.description}"
                                 }
                                 td(classes = "align-right") {
-                                    toggleButton(slide.visible, IconSet.visibility, "/admin/screen/${slide.id}/setVisible")
+                                    toggleButton(
+                                        slide.visible,
+                                        IconSet.visibility,
+                                        "/admin/screen/${slide.id}/setVisible"
+                                    )
                                 }
                             }
                         }
@@ -113,7 +123,7 @@ object AdminScreenPage {
                     ul {
                         li {
                             postButton("/admin/screen/${slideSet}/text") {
-                                icon(Icon("align-left"))
+                                icon(Icon("list-ul"))
                                 +" Add text slide"
                             }
                         }
@@ -122,7 +132,12 @@ object AdminScreenPage {
                                 icon(Icon("qrcode"))
                                 +" Add QR code"
                             }
-
+                        }
+                        li {
+                            postButton("/admin/screen/${slideSet}/image") {
+                                icon(Icon("image"))
+                                +" Add image"
+                            }
                         }
                     }
                 }
@@ -131,12 +146,15 @@ object AdminScreenPage {
             script(src = "/assets/refreshOnSlideChange.js") {}
         }
 
-    fun renderSlideForm(slideSet: String, slide: SlideEditData, triggers: List<TriggerRow>) =
+    fun renderSlideForm(slideSet: String, slide: SlideEditData, triggers: List<TriggerRow>, assetImages: List<String>) =
         Page("Edit slide") {
             article {
                 dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
                     fieldSet {
-                        renderFields(slide.slide.getForm())
+                        renderFields(
+                            slide.slide.getForm(),
+                            mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
+                        )
                     }
                     footer {
                         submitInput { value = "Save changes" }
@@ -157,20 +175,26 @@ fun FlowContent.screenAdminNavigation() {
     article {
         nav {
             ul {
-                li { a(href="/admin/screen/adhoc") {
-                    icon("bolt-lightning")
-                    +" Ad hoc"
-                } }
-                li { a(href="/admin/screen/rotation") {
-                    icon("circle-info")
-                    +" Rotation"
-                } }
+                li {
+                    a(href = "/admin/screen/adhoc") {
+                        icon("bolt-lightning")
+                        +" Ad hoc"
+                    }
+                }
+                li {
+                    a(href = "/admin/screen/rotation") {
+                        icon("circle-info")
+                        +" Rotation"
+                    }
+                }
             }
             ul {
-                li { a(href="/screen", target = "_blank") {
-                    tooltip("Show current screen")
-                    icon("tv")
-                } }
+                li {
+                    a(href = "/screen", target = "_blank") {
+                        tooltip("Show current screen")
+                        icon("tv")
+                    }
+                }
             }
         }
     }

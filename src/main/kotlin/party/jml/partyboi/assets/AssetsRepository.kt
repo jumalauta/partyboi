@@ -6,6 +6,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.catchError
+import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.FileUpload
 import java.nio.file.Files
 import kotlin.io.path.name
@@ -25,9 +26,12 @@ class AssetsRepository(app: AppServices) {
     fun getList(): List<String> =
         try {
             Files.list(assetsDir).map { it.name }.toList()
-        } catch(_: Throwable) {
+        } catch (_: Throwable) {
             emptyList()
         }
+
+    fun getList(type: String): List<String> =
+        getList().filter { FileDesc.getType(it) == type }
 
     fun delete(name: String): Either<AppError, Unit> = catchError {
         Files.delete(assetsDir.resolve(name))
