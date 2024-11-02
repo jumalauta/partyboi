@@ -1,0 +1,21 @@
+name: Build and publish Docker image
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and publish
+      run: |
+        docker login -u ilkkahanninen -p ${{ secrets.DOCKER_PASSWORD }}
+        docker build . --tag ilkkahanninen/partyboi:latest
+        docker push ilkkahanninen/partyboi
