@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 data/
 caddy/**/
+.env
 
 ### STS ###
 .apt_generated
