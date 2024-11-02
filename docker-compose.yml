@@ -1,7 +1,24 @@
 services:
-  web:
+  proxy:
+    image: caddy:2.8.4
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      HOST_ADDRESS: "${HOST_ADDRESS}"
+    networks:
+      - frontend
+    volumes:
+      - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - $PWD/caddy/data:/data"
+      - $PWD/caddy/config:/config"
+
+  appserver:
     build: .
-    restart: always
+    restart: unless-stopped
     ports:
       - "8123:8123"
     environment:
@@ -26,7 +43,7 @@ services:
         condition: service_healthy
   db:
     image: postgres
-    restart: always
+    restart: unless-stopped
     volumes:
       - "${DIR_DB}:/var/lib/postgresql/data"
     environment:

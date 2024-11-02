@@ -1,0 +1,3 @@
+{$HOST_ADDRESS} {
+	reverse_proxy appserver:8123
+}
