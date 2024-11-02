@@ -1,0 +1,49 @@
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8123:8123"
+    environment:
+      ADMIN_USERNAME: "${ADMIN_USERNAME}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_USER: postgres
+      DB_DATABASE: partyboi
+      DB_HOST: db
+      DIR_ASSETS: /assets
+      DIR_ENTRIES: /entries
+      DIR_SCREENSHOTS: /screenshots
+    volumes:
+      - "${DIR_ASSETS}:/assets"
+      - "${DIR_ENTRIES}:/entries"
+      - "${DIR_SCREENSHOTS}:/screenshots"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - "${DIR_DB}:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_USER: postgres
+      POSTGRES_DB: partyboi
+      # POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+
+networks:
+  frontend:
+    name: frontend
+  backend:
+    name: backend

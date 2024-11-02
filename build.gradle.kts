@@ -1,4 +1,3 @@
-
 val kotlin_version: String by project
 val logback_version: String by project
 val postgres_version: String by project
@@ -64,5 +63,5 @@ dependencies {
     implementation(kotlin("reflect"))
 }
 kotlin {
-    jvmToolchain(20)
+    jvmToolchain(21)
 }

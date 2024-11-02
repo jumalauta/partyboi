@@ -5,24 +5,27 @@ import arrow.core.Option
 import arrow.core.left
 import arrow.core.right
 import io.ktor.server.auth.*
-import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
 import org.mindrot.jbcrypt.BCrypt
+import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 
 class UserRepository(private val db: DatabasePool) {
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS appuser (
                 id SERIAL PRIMARY KEY,
                 name text NOT NULL UNIQUE,
                 password text NOT NULL,
                 is_admin boolean DEFAULT false
             );
-        """)
+        """
+        )
+        createAdminUser()
     }
 
     fun getUser(name: String): Either<AppError, User> = db.use {
@@ -30,11 +33,25 @@ class UserRepository(private val db: DatabasePool) {
     }
 
     fun addUser(user: NewUser): Either<AppError, User> = db.use {
-        it.one(queryOf(
-            "insert into appuser(name, password) values (?, ?) returning *",
-            user.name,
-            user.hashedPassword(),
-        ).map(User.fromRow))
+        it.one(
+            queryOf(
+                "insert into appuser(name, password) values (?, ?) returning *",
+                user.name,
+                user.hashedPassword(),
+            ).map(User.fromRow)
+        )
+    }
+
+    private fun createAdminUser() = db.use {
+        val password = Config.getAdminPassword()
+        val admin = NewUser(Config.getAdminUserName(), password, password)
+        it.exec(
+            queryOf(
+                "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",
+                admin.name,
+                admin.hashedPassword()
+            )
+        )
     }
 }
 

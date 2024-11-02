@@ -54,6 +54,8 @@ object Config {
     private val dbUser = Key("db.user", stringType)
     private val dbPassword = Key("db.password", stringType)
     private val dbDatabase = Key("db.database", stringType)
+    private val adminUserName = Key("admin.username", stringType)
+    private val adminPassword = Key("admin.password", stringType)
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
     fun getEntryDir(): Path = Paths.get(config[entryDir])
@@ -64,6 +66,8 @@ object Config {
     fun getDbUser() = config.getOrElse(dbUser, "postgres")
     fun getDbPassword() = config.get(dbPassword)
     fun getDbDatabase() = config.getOrElse(dbDatabase, "default")
+    fun getAdminUserName() = config.get(adminUserName)
+    fun getAdminPassword() = config.get(adminPassword)
 }
 
 abstract class Logging {
