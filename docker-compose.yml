@@ -1,6 +1,7 @@
 services:
   proxy:
     image: caddy:2.8.4
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
     ports:
@@ -17,7 +18,7 @@ services:
       - $PWD/caddy/config:/config"
 
   appserver:
-    build: .
+    image: ilkkahanninen/partyboi:latest
     restart: unless-stopped
     ports:
       - "8123:8123"
@@ -42,7 +43,7 @@ services:
       db:
         condition: service_healthy
   db:
-    image: postgres
+    image: postgres:17.0
     restart: unless-stopped
     volumes:
       - "${DIR_DB}:/var/lib/postgresql/data"
