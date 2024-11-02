@@ -38,8 +38,11 @@ class VoteService(val app: AppServices) {
         val current = live.value
         return live.filter { it != current }.take(1)
     }
-    
-    fun getResults(user: Option<User>): Either<AppError, List<CompoResult>> =
+
+    fun getResults(): Either<AppError, List<CompoResult>> =
+        repository.getResults(onlyPublic = false)
+
+    fun getResultsForUser(user: Option<User>): Either<AppError, List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
     private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =

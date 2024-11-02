@@ -16,6 +16,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.triggers.*
+import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
 
@@ -56,7 +57,8 @@ class ScreenService(private val app: AppServices) {
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
 
-    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) = repository.add(slideSet, slide, makeVisible = false)
+    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) =
+        repository.add(slideSet, slide, makeVisible = false)
 
     fun update(id: Int, slide: Slide<*>) = repository.update(id, slide)
 
@@ -127,6 +129,42 @@ class ScreenService(private val app: AppServices) {
         "/admin/screen/${slideSet}"
     }
 
+    fun generateResultSlidesForCompo(compoId: Int): Either<AppError, String> = either {
+        val slideSet = "results-${compoId}"
+        val compo = app.compos.getById(compoId).bind()
+        val results = app.votes.getResults().bind().filter { it.compoId == compoId }
+        val resultsByPlace = CompoResult.groupResults(results).values.first()
+        val resultsBySlide =
+            resultsByPlace.fold(emptyList<List<CompoResult.Companion.GroupedCompoResult>>()) { acc, placeAndResult ->
+                when (placeAndResult.place) {
+                    in 1..4 -> acc + listOf(listOf(placeAndResult))
+                    else -> {
+                        val last = acc.last()
+                        val entriesCollected = last.sumOf { it.results.size }
+                        if (entriesCollected + placeAndResult.results.size > 5) {
+                            acc + listOf(listOf(placeAndResult))
+                        } else {
+                            acc.take(acc.size - 1) + listOf(last + placeAndResult)
+                        }
+                    }
+                }
+            }.reversed()
+
+        val hypeSlides = listOf(
+            TextSlide("${compo.name} results", "")
+        )
+        val resultSlides = resultsBySlide.map { placeAndResults ->
+            val rows = placeAndResults.flatMap { pr ->
+                pr.results.map { "* ${pr.place}. ${it.author} – ${it.title}" }
+            }
+            TextSlide("${compo.name} results", rows.joinToString(separator = "\n"))
+        }
+
+        repository.replaceSlideSet(slideSet, hypeSlides + resultSlides).bind()
+
+        "/admin/screen/${slideSet}"
+    }
+
     private fun show(row: ScreenRow): Unit =
         runBlocking {
             state.emit(ScreenState.fromRow(row))
@@ -152,7 +190,7 @@ data class ScreenState(
     }
 }
 
-interface Slide<A: Validateable<A>> {
+interface Slide<A : Validateable<A>> {
     fun render(ctx: FlowContent)
     fun getForm(): Form<A>
     fun toJson(): String

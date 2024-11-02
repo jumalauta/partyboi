@@ -6,7 +6,6 @@ import io.ktor.server.auth.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.optionalUserSession
-import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureComposRouting(app: AppServices) {
@@ -26,7 +25,7 @@ fun Application.configureComposRouting(app: AppServices) {
                 call.respondEither({
                     either {
                         val user = call.optionalUserSession()
-                        val results = app.votes.getResults(user).bind()
+                        val results = app.votes.getResultsForUser(user).bind()
                         ResultsPage.render(results)
                     }
                 })

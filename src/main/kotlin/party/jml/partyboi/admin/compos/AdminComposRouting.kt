@@ -129,6 +129,14 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                     call.respondRedirect(slideEditUrl)
                 }
             }
+
+            get("/admin/compos/{id}/generate-result-slides") {
+                either {
+                    val compoId = call.parameterInt("id").bind()
+                    val slideEditUrl = app.screen.generateResultSlidesForCompo(compoId).bind()
+                    call.respondRedirect(slideEditUrl)
+                }
+            }
         }
 
         // API routes (we don't want to redirect user to login page)

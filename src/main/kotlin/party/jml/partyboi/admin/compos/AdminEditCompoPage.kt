@@ -83,6 +83,13 @@ object AdminEditCompoPage {
                                             +" Generate slides"
                                         }
                                     }
+                                    li {
+                                        a(href = "/admin/compos/${compo.data.id}/generate-result-slides") {
+                                            attributes.put("role", "button")
+                                            icon("square-poll-horizontal")
+                                            +" Generate result slides"
+                                        }
+                                    }
                                 }
                             }
                         }
