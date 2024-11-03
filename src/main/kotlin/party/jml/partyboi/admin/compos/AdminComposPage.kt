@@ -16,9 +16,9 @@ import party.jml.partyboi.templates.components.toggleButton
 object AdminComposPage {
     fun render(
         newCompoForm: Form<NewCompo>,
+        generalRulesForm: Form<GeneralRules>,
         compos: List<Compo>,
         entries: Map<Int, List<Entry>>,
-        generalRules: Form<GeneralRules>,
     ) =
         Page("Compos") {
             h1 { +"Compos" }
@@ -81,7 +81,7 @@ object AdminComposPage {
                 article {
                     dataForm("/admin/compos/generalRules") {
                         fieldSet {
-                            renderFields(generalRules)
+                            renderFields(generalRulesForm)
                         }
                         footer { submitInput { value = "Save changes" } }
                     }

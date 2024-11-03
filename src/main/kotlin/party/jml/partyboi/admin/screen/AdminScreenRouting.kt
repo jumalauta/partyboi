@@ -1,6 +1,8 @@
 package party.jml.partyboi.admin.screen
 
+import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -9,57 +11,73 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.data.parameterString
-import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
-import party.jml.partyboi.templates.RedirectPage
-import party.jml.partyboi.templates.respondEither
-import party.jml.partyboi.templates.respondPage
+import party.jml.partyboi.templates.*
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     routing {
+        fun renderAdHocEdit(form: Form<*>? = null): Page {
+            val current = app.screen.currentSlide()
+            return AdminScreenPage.renderAdHocForm(
+                form = form ?: current.getForm(),
+                currentlyRunning = app.screen.currentState().first.slideSet == "adhoc"
+            )
+        }
+
+        fun renderSlideSetPage(slideSetName: Either<AppError, String>) = either {
+            val slides = app.screen.getSlideSet(slideSetName.bind()).bind()
+            val forms = slides.map(SlideEditData.fromRow)
+            val (state, isRunning) = app.screen.currentState()
+            AdminScreenPage.renderSlideSetForms(slideSetName.bind(), state, isRunning, forms)
+        }
+
+        fun renderSlideEdit(
+            slideSetName: Either<AppError, String>,
+            slideId: Either<AppError, Int>,
+            errors: AppError? = null
+        ) = either {
+            val slide = app.screen.getSlide(slideId.bind()).bind()
+            AdminScreenPage.renderSlideForm(
+                slideSet = slideSetName.bind(),
+                slide = SlideEditData.fromRow(slide),
+                triggers = app.triggers.getTriggersForSignal(slide.whenShown()).bind(),
+                assetImages = app.assets.getList(FileDesc.IMAGE),
+                errors = errors,
+            )
+        }
+
         authenticate("admin") {
+            fun redirectionToSet(name: String) = Redirection("/admin/screen/$name")
+
             get("/admin/screen") {
                 call.respondRedirect("/admin/screen/adhoc")
             }
 
             get("/admin/screen/adhoc") {
-                val current = app.screen.currentSlide()
-                val form = current.getForm()
-                val currentlyRunning = app.screen.currentState().first.slideSet == "adhoc"
-                call.respondPage(AdminScreenPage.renderAdHocForm(currentlyRunning, form))
+                call.respondPage(renderAdHocEdit())
             }
 
             post("/admin/screen/adhoc") {
-                val screenRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        val screen = screenRequest.bind()
-                        runBlocking { app.screen.addAdHoc(screen.data).bind() }
-                        AdminScreenPage.renderAdHocForm(true, screen)
-                    }
-                })
+                call.processForm<TextSlide>(
+                    { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") } },
+                    { renderAdHocEdit(it).right() }
+                )
             }
 
             get("/admin/screen/{slideSet}") {
                 call.respondEither({
-                    either {
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slides = app.screen.getSlideSet(slideSetName).bind()
-                        val forms = slides.map(SlideEditData.fromRow)
-                        val (state, isRunning) = app.screen.currentState()
-                        AdminScreenPage.renderSlideSetForms(slideSetName, state, isRunning, forms)
-                    }
+                    renderSlideSetPage(call.parameterString("slideSet"))
                 })
             }
 
             get("/admin/screen/{slideSet}/presentation") {
+                // TODO: Presentation mode will be removed
                 call.respondEither({
                     either {
                         val slideSetName = call.parameterString("slideSet").bind()
@@ -73,55 +91,23 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
             get("/admin/screen/{slideSet}/{slideId}") {
                 call.respondEither({
-                    either {
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slideId = call.parameterInt("slideId").bind()
-                        val slide = app.screen.getSlide(slideId).bind()
-                        val form = SlideEditData.fromRow(slide)
-                        val actions = app.triggers.getTriggersForSignal(slide.whenShown()).bind()
-                        val assetImages = app.assets.getList(FileDesc.IMAGE)
-                        AdminScreenPage.renderSlideForm(slideSetName, form, actions, assetImages)
-                    }
+                    renderSlideEdit(
+                        call.parameterString("slideSet"),
+                        call.parameterInt("slideId"),
+                    )
                 })
             }
 
             post("/admin/screen/{slideSet}/{slideId}/textslide") {
-                val slideRequest = Form.fromParameters<TextSlide>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        val id = call.parameterInt("slideId").bind()
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slide = slideRequest.bind().data
-                        runBlocking { app.screen.update(id, slide) }
-                        RedirectPage("/admin/screen/${slideSetName}")
-                    }
-                })
+                call.updateSlide<TextSlide>(app) { s, i, e -> renderSlideEdit(s, i, e) }
             }
 
             post("/admin/screen/{slideSet}/{slideId}/qrcodeslide") {
-                val slideRequest = Form.fromParameters<QrCodeSlide>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        val id = call.parameterInt("slideId").bind()
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slide = slideRequest.bind().data
-                        runBlocking { app.screen.update(id, slide) }
-                        RedirectPage("/admin/screen/${slideSetName}")
-                    }
-                })
+                call.updateSlide<QrCodeSlide>(app) { s, i, e -> renderSlideEdit(s, i, e) }
             }
 
             post("/admin/screen/{slideSet}/{slideId}/imageslide") {
-                val slideRequest = Form.fromParameters<ImageSlide>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        val id = call.parameterInt("slideId").bind()
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slide = slideRequest.bind().data
-                        runBlocking { app.screen.update(id, slide) }
-                        RedirectPage("/admin/screen/${slideSetName}")
-                    }
-                })
+                call.updateSlide<ImageSlide>(app) { s, i, e -> renderSlideEdit(s, i, e) }
             }
         }
 
@@ -224,4 +210,29 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
         }
     }
+}
+
+suspend inline fun <reified T> ApplicationCall.updateSlide(
+    app: AppServices,
+    onError: (Either<AppError, String>, Either<AppError, Int>, AppError?) -> Either<AppError, Renderable>
+) where
+        T : Slide<T>,
+        T : Validateable<T> {
+    processForm<T>(
+        { slide ->
+            either {
+                val id = parameterInt("slideId").bind()
+                val slideSetName = parameterString("slideSet").bind()
+                app.screen.update(id, slide).bind()
+                Redirection("/admin/screen/$slideSetName")
+            }
+        },
+        { form ->
+            onError(
+                parameterString("slideSet"),
+                parameterInt("slideId"),
+                form.error,
+            )
+        }
+    )
 }

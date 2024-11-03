@@ -1,6 +1,9 @@
 package party.jml.partyboi.admin.compos
 
+import arrow.core.Either
+import arrow.core.flatMap
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -11,92 +14,75 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.data.catchError
-import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.data.switchApi
-import party.jml.partyboi.data.toFilenameToken
+import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.templates.RedirectPage
+import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 fun Application.configureAdminComposRouting(app: AppServices) {
+
+    fun renderAdminComposPage(
+        newCompoForm: Form<NewCompo>? = null,
+        generalRulesForm: Form<GeneralRules>? = null,
+    ) = either {
+        AdminComposPage.render(
+            newCompoForm = newCompoForm ?: Form(NewCompo::class, NewCompo.Empty, initial = true),
+            generalRulesForm = generalRulesForm ?: Form(
+                GeneralRules::class,
+                app.compos.getGeneralRules().bind(),
+                initial = true
+            ),
+            compos = app.compos.getAllCompos().bind(),
+            entries = app.entries.getAllEntriesByCompo().bind(),
+        )
+    }
+
+    fun renderAdminEditCompoPage(
+        compoId: Either<AppError, Int>,
+        compoForm: Form<Compo>? = null,
+    ) = either {
+        val id = compoId.bind()
+        AdminEditCompoPage.render(
+            compoForm = compoForm ?: Form(Compo::class, app.compos.getById(id).bind(), initial = true),
+            entries = app.entries.getEntriesForCompo(id).bind(),
+        )
+    }
+
     routing {
         authenticate("admin") {
+            val redirectionToCompos = Redirection("/admin/compos")
+
             get("/admin/compos") {
-                call.respondEither({
-                    either {
-                        val compos = app.compos.getAllCompos().bind()
-                        val entries = app.entries.getAllEntriesByCompo().bind()
-                        val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
-                        val generalRules = app.compos.getGeneralRules().bind()
-                        val generalRulesForm = Form(GeneralRules::class, generalRules, initial = true)
-                        AdminComposPage.render(newCompo, compos, entries, generalRulesForm)
-                    }
-                })
+                call.respondEither({ renderAdminComposPage() })
             }
 
             post("/admin/compos") {
-                val newCompo = Form.fromParameters<NewCompo>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        app.compos.add(newCompo.bind().validated().bind()).bind()
-                        RedirectPage("/admin/compos")
-                    }
-                }, { error ->
-                    either {
-                        val compos = app.compos.getAllCompos().bind()
-                        val entries = app.entries.getAllEntriesByCompo().bind()
-                        val generalRules = app.compos.getGeneralRules().bind()
-                        val generalRulesForm = Form(GeneralRules::class, generalRules, initial = true)
-                        AdminComposPage.render(newCompo.bind().with(error), compos, entries, generalRulesForm)
-                    }
-                })
+                call.processForm<NewCompo>(
+                    { app.compos.add(it).map { redirectionToCompos } },
+                    { renderAdminComposPage(newCompoForm = it) }
+                )
             }
 
             post("/admin/compos/generalRules") {
-                val rules = Form.fromParameters<GeneralRules>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        app.compos.setGeneralRules(rules.bind().validated().bind()).bind()
-                        RedirectPage("/admin/compos")
-                    }
-                }, { error ->
-                    either {
-                        val compos = app.compos.getAllCompos().bind()
-                        val entries = app.entries.getAllEntriesByCompo().bind()
-                        val newCompo = Form(NewCompo::class, NewCompo.Empty, initial = true)
-                        AdminComposPage.render(newCompo, compos, entries, rules.bind().with(error))
-                    }
-                })
+                call.processForm<GeneralRules>(
+                    { app.compos.setGeneralRules(it).map { redirectionToCompos } },
+                    { renderAdminComposPage(generalRulesForm = it) }
+                )
             }
 
             get("/admin/compos/{id}") {
                 call.respondEither({
-                    either {
-                        val id = catchError { call.parameters["id"]?.toInt() ?: -1 }.bind()
-                        val compo = app.compos.getById(id).bind()
-                        val form = Form(Compo::class, compo, initial = true)
-                        val entries = app.entries.getEntriesForCompo(id).bind()
-                        AdminEditCompoPage.render(form, entries)
-                    }
+                    renderAdminEditCompoPage(call.parameterInt("id"))
                 })
             }
 
             post("/admin/compos/{id}") {
-                val compo = Form.fromParameters<Compo>(call.receiveMultipart())
-                call.respondEither({
-                    either {
-                        app.compos.update(compo.bind().validated().bind()).bind()
-                        RedirectPage("/admin/compos")
-                    }
-                }, { error ->
-                    either {
-                        val entries = app.entries.getEntriesForCompo(compo.bind().data.id).bind()
-                        AdminEditCompoPage.render(compo.bind().with(error), entries)
-                    }
-                })
+                call.processForm<Compo>(
+                    { app.compos.update(it).map { redirectionToCompos } },
+                    { renderAdminEditCompoPage(call.parameterInt("id"), it) }
+                )
             }
 
             get("/admin/compos/{id}/download") {

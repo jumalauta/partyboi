@@ -16,8 +16,8 @@ import party.jml.partyboi.triggers.SuccessfulTriggerRow
 
 object AdminSchedulePage {
     fun render(
+        newEventForm: Form<NewEvent>,
         events: List<Event>,
-        newEvent: Form<NewEvent>,
     ) =
         Page("Schedule") {
             h1 { +"Schedule" }
@@ -63,7 +63,7 @@ object AdminSchedulePage {
                         header { +"New event" }
                         dataForm("/admin/schedule/events") {
                             fieldSet {
-                                renderFields(newEvent)
+                                renderFields(newEventForm)
                             }
                             footer { submitInput { value = "Add event" } }
                         }
@@ -73,19 +73,19 @@ object AdminSchedulePage {
         }
 
     fun renderEdit(
-        event: Form<Event>,
+        eventForm: Form<Event>,
+        newTriggerForm: Form<NewScheduledTrigger>,
         triggers: List<TriggerRow>,
         compos: List<Compo>,
-        newTrigger: Form<NewScheduledTrigger>,
     ) =
         Page("Edit event") {
             h1 { +"Edit event" }
 
             columns({
                 article {
-                    dataForm("/admin/schedule/events/${event.data.id}") {
+                    dataForm("/admin/schedule/events/${eventForm.data.id}") {
                         fieldSet {
-                            renderFields(event)
+                            renderFields(eventForm)
                         }
                         footer { submitInput { value = "Save changes" } }
                     }
@@ -133,7 +133,7 @@ object AdminSchedulePage {
                     dataForm("/admin/schedule/triggers") {
                         fieldSet {
                             renderFields(
-                                newTrigger, mapOf(
+                                newTriggerForm, mapOf(
                                     "action" to NewScheduledTrigger.TriggerOptions,
                                     "compoId" to compos
                                 )

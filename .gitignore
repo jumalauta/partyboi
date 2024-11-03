@@ -6,6 +6,7 @@ build/
 data/
 caddy/**/
 .env
+.kotlin/
 
 ### STS ###
 .apt_generated

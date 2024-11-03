@@ -1,6 +1,7 @@
 package party.jml.partyboi.admin.assets
 
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
@@ -8,36 +9,37 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterString
+import party.jml.partyboi.data.processForm
 import party.jml.partyboi.data.receiveForm
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.templates.RedirectPage
+import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureAdminAssetsRouting(app: AppServices) {
+    fun renderAdminAssetsPage(addAssetForm: Form<AdminAssetsPage.AddAsset>? = null) =
+        AdminAssetsPage.render(
+            addAssetForm = addAssetForm ?: Form(
+                AdminAssetsPage.AddAsset::class,
+                AdminAssetsPage.AddAsset.Empty,
+                initial = true
+            ),
+            assets = app.assets.getList(),
+        )
+
     routing {
         authenticate("admin") {
+            val redirectionToAssets = Redirection("/admin/assets")
+
             get("/admin/assets") {
-                val assets = app.assets.getList()
-                val addAsset = Form(AdminAssetsPage.AddAsset::class, AdminAssetsPage.AddAsset.Empty, initial = true)
-                call.respondPage(AdminAssetsPage.render(assets, addAsset))
+                call.respondPage(renderAdminAssetsPage())
             }
 
             post("/admin/assets") {
-                val upload = call.receiveForm<AdminAssetsPage.AddAsset>()
-                call.respondEither({
-                    either {
-                        val validated = upload.bind().validated().bind()
-                        app.assets.write(validated.file).bind()
-                        RedirectPage("/admin/assets")
-                    }
-
-                }, { error ->
-                    either {
-                        val assets = app.assets.getList()
-                        AdminAssetsPage.render(assets, upload.bind().with(error))
-                    }
-                })
+                call.processForm<AdminAssetsPage.AddAsset>(
+                    { app.assets.write(it.file).map { redirectionToAssets } },
+                    { renderAdminAssetsPage(addAssetForm = it).right() }
+                )
             }
         }
 

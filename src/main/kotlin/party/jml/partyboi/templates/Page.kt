@@ -83,7 +83,7 @@ data class Page(
     }
 }
 
-class RedirectPage(val location: String) : Renderable {
+class Redirection(val location: String) : Renderable {
     override fun getHTML(user: User?): String {
         return ""
     }

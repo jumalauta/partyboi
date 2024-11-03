@@ -1,96 +1,95 @@
 package party.jml.partyboi.admin.schedule
 
+import arrow.core.Either
+import arrow.core.flatMap
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.receiveForm
-import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
-import party.jml.partyboi.templates.RedirectPage
+import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.triggers.NewScheduledTrigger
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
+
+    fun renderSchedulesPage(newEventForm: Form<NewEvent>? = null) = either {
+        val events = app.events.getAll().bind()
+        AdminSchedulePage.render(
+            newEventForm = newEventForm ?: Form(NewEvent::class, NewEvent.make(events), true),
+            events = events
+        )
+    }
+
+    fun renderEditSchedulePage(
+        eventId: Either<AppError, Int>,
+        eventForm: Form<Event>? = null,
+        newTriggerForm: Form<NewScheduledTrigger>? = null,
+    ) = either {
+        val event = app.events.get(eventId.bind()).bind()
+        AdminSchedulePage.renderEdit(
+            eventForm = eventForm ?: Form(Event::class, event, true),
+            newTriggerForm = newTriggerForm ?: Form(
+                NewScheduledTrigger::class,
+                NewScheduledTrigger.empty(eventId.bind()),
+                initial = true
+            ),
+            triggers = app.triggers.getTriggersForSignal(event.signal()).bind(),
+            compos = app.compos.getAllCompos().bind(),
+        )
+    }
+
     routing {
         authenticate("admin") {
-            get("/admin/schedule") {
-                call.respondEither({ either {
-                    val events = app.events.getAll().bind()
-                    val newEvent = Form(NewEvent::class, NewEvent.make(events), true)
-                    AdminSchedulePage.render(events, newEvent)
-                } })
-            }
+            val redirectionToSchedules = Redirection("/admin/schedule")
+            fun redirectionToEvent(id: Int) = Redirection("/admin/schedule/events/$id")
 
-            get("/admin/schedule/events/{id}") {
-                call.respondEither({ either {
-                    val eventId = call.parameterInt("id").bind()
-                    val event = app.events.get(eventId).bind()
-                    val eventForm = Form(Event::class, event, true)
-                    val triggers = app.triggers.getTriggersForSignal(event.signal()).bind()
-                    val compos = app.compos.getAllCompos().bind()
-                    val newTriggerForm = Form(NewScheduledTrigger::class, NewScheduledTrigger.empty(eventId), initial = true)
-                    AdminSchedulePage.renderEdit(eventForm, triggers, compos, newTriggerForm)
-                } })
+            get("/admin/schedule") {
+                call.respondEither({ renderSchedulesPage() })
             }
 
             post("/admin/schedule/events") {
-                val newEvent = Form.fromParameters<NewEvent>(call.receiveMultipart())
-                call.respondEither({ either {
-                    val event = newEvent.bind().validated().bind()
-                    app.events.add(event).bind()
-                    RedirectPage("/admin/schedule")
-                }}, { error -> either {
-                    val events = app.events.getAll().bind()
-                    AdminSchedulePage.render(events, newEvent.bind().with(error))
-                } })
+                call.processForm<NewEvent>(
+                    { app.events.add(it).map { redirectionToSchedules } },
+                    { renderSchedulesPage(newEventForm = it) }
+                )
+            }
+
+            get("/admin/schedule/events/{id}") {
+                call.respondEither({ renderEditSchedulePage(call.parameterInt("id")) })
             }
 
             post("/admin/schedule/events/{id}") {
-                val eventReq = Form.fromParameters<Event>(call.receiveMultipart())
-                call.respondEither({ either {
-                    val event = eventReq.bind().validated().bind()
-                    app.events.update(event).bind()
-                    RedirectPage("/admin/schedule")
-                }}, { error -> either {
-                    val event = eventReq.bind().with(error)
-                    val compos = app.compos.getAllCompos().bind()
-                    val newTriggerForm = Form(NewScheduledTrigger::class, NewScheduledTrigger.empty(event.data.id), initial = true)
-                    AdminSchedulePage.renderEdit(event, emptyList(), compos, newTriggerForm)
-                } })
+                call.processForm<Event>(
+                    { app.events.update(it).map { redirectionToSchedules } },
+                    { renderEditSchedulePage(call.parameterInt("id"), eventForm = it) }
+                )
             }
 
             post("/admin/schedule/triggers") {
-                val newTriggerReq = call.receiveForm<NewScheduledTrigger>()
-                call.respondEither({ either {
-                    val newTrigger = newTriggerReq.bind().validated().bind()
-                    app.triggers.add(newTrigger.signal(), newTrigger.toAction()).bind()
-                    RedirectPage("/admin/schedule/events/${newTrigger.eventId}")
-                } }, { error -> either {
-                    val eventId = newTriggerReq.bind().data.eventId
-                    val event = app.events.get(eventId).bind()
-                    val eventForm = Form(Event::class, event, true)
-                    val triggers = app.triggers.getTriggersForSignal(event.signal()).bind()
-                    val compos = app.compos.getAllCompos().bind()
-                    AdminSchedulePage.renderEdit(eventForm, triggers, compos, newTriggerReq.bind().with(error))
-                } })
+                call.processForm<NewScheduledTrigger>(
+                    { t -> app.triggers.add(t.signal(), t.toAction()).map { redirectionToEvent(t.eventId) } },
+                    { renderEditSchedulePage(it.data.eventId.right(), newTriggerForm = it) }
+                )
             }
         }
 
         authenticate("admin", optional = true) {
             delete("/admin/schedule/events/{id}") {
-                call.apiRespond { either {
-                    call.userSession().bind()
-                    val eventId = call.parameterInt("id").bind()
-                    app.events.delete(eventId).bind()
-                }}
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val eventId = call.parameterInt("id").bind()
+                        app.events.delete(eventId).bind()
+                    }
+                }
             }
 
             put("/admin/schedule/triggers/{id}/setEnabled/{state}") {

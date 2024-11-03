@@ -1,6 +1,7 @@
 package party.jml.partyboi.admin.screen
 
 import kotlinx.html.*
+import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Form
@@ -14,7 +15,7 @@ import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
 
 object AdminScreenPage {
-    fun renderAdHocForm(currentlyRunning: Boolean, form: Form<*>) =
+    fun renderAdHocForm(form: Form<*>, currentlyRunning: Boolean) =
         Page("Screen admin") {
             screenAdminNavigation()
             if (currentlyRunning) {
@@ -146,13 +147,20 @@ object AdminScreenPage {
             script(src = "/assets/refreshOnSlideChange.js") {}
         }
 
-    fun renderSlideForm(slideSet: String, slide: SlideEditData, triggers: List<TriggerRow>, assetImages: List<String>) =
+    fun renderSlideForm(
+        slideSet: String,
+        slide: SlideEditData,
+        triggers: List<TriggerRow>,
+        assetImages: List<String>,
+        errors: AppError? = null,
+    ) =
         Page("Edit slide") {
+            val form = slide.slide.getForm()
             article {
                 dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
                     fieldSet {
                         renderFields(
-                            slide.slide.getForm(),
+                            if (errors == null) form else form.with(errors),
                             mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
                         )
                     }

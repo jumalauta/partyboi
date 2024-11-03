@@ -10,7 +10,7 @@ import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.deleteButton
 
 object AdminAssetsPage {
-    fun render(assets: List<String>, addAssetForm: Form<AddAsset>) =
+    fun render(addAssetForm: Form<AddAsset>, assets: List<String>) =
         Page("Assets") {
             h1 { +"Assets" }
 

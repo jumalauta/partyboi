@@ -13,16 +13,16 @@ import party.jml.partyboi.templates.components.icon
 import party.jml.partyboi.templates.components.toggleButton
 
 object AdminEditCompoPage {
-    fun render(compo: Form<Compo>, entries: List<Entry>) = Page("Edit compo") {
+    fun render(compoForm: Form<Compo>, entries: List<Entry>) = Page("Edit compo") {
         val (qualified, nonQualified) = entries.partition { it.qualified }
 
-        h1 { +"${compo.data.name} compo" }
+        h1 { +"${compoForm.data.name} compo" }
 
         columns({
-            dataForm("/admin/compos/${compo.data.id}") {
+            dataForm("/admin/compos/${compoForm.data.id}") {
                 article {
                     fieldSet {
-                        renderFields(compo)
+                        renderFields(compoForm)
                     }
                     footer {
                         submitInput { value = "Save changes" }
@@ -47,7 +47,7 @@ object AdminEditCompoPage {
                             tbody(classes = "sortable") {
                                 attributes.put("data-draggable", "tr")
                                 attributes.put("data-handle", ".handle")
-                                attributes.put("data-callback", "/admin/compos/${compo.data.id}/runOrder")
+                                attributes.put("data-callback", "/admin/compos/${compoForm.data.id}/runOrder")
                                 qualified.forEach { entry ->
                                     tr {
                                         attributes.put("data-dragid", entry.id.toString())
@@ -70,21 +70,21 @@ object AdminEditCompoPage {
                             nav {
                                 ul {
                                     li {
-                                        a(href = "/admin/compos/${compo.data.id}/download") {
+                                        a(href = "/admin/compos/${compoForm.data.id}/download") {
                                             attributes.put("role", "button")
                                             icon("download")
                                             +" Download files"
                                         }
                                     }
                                     li {
-                                        a(href = "/admin/compos/${compo.data.id}/generate-slides") {
+                                        a(href = "/admin/compos/${compoForm.data.id}/generate-slides") {
                                             attributes.put("role", "button")
                                             icon("tv")
                                             +" Generate slides"
                                         }
                                     }
                                     li {
-                                        a(href = "/admin/compos/${compo.data.id}/generate-result-slides") {
+                                        a(href = "/admin/compos/${compoForm.data.id}/generate-result-slides") {
                                             attributes.put("role", "button")
                                             icon("square-poll-horizontal")
                                             +" Generate result slides"
