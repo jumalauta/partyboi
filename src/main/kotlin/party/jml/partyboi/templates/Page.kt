@@ -3,6 +3,7 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 
 data class Page(
@@ -14,7 +15,7 @@ data class Page(
         return createHTML().html {
             attributes.put("data-theme", "light")
             head {
-                title { +titleText }
+                title { +"$titleText - ${Config.getInstanceName()}" }
                 link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
