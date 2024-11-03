@@ -19,14 +19,15 @@ import java.time.format.DateTimeFormatter
 object EditEntryPage {
     fun render(
         app: AppServices,
-        formData: Form<EntryUpdate>,
+        entryUpdateForm: Form<EntryUpdate>,
+        screenshotForm: Form<NewScreenshot>,
         files: List<FileDesc>,
         screenshot: Option<String>,
     ): Either<AppError, Renderable> = either {
         val compos = app.compos.getAllCompos().bind()
         Page("Edit entry") {
             h1 { +"Edit entry" }
-            editEntryForm("/entries/${formData.data.id}", compos.filter { it.allowSubmit }, formData)
+            editEntryForm("/entries/${entryUpdateForm.data.id}", compos.filter { it.allowSubmit }, entryUpdateForm)
 
             article {
                 header { +"Screenshot / preview" }
@@ -34,9 +35,9 @@ object EditEntryPage {
                     { p { +"No screenshot uploaded" } },
                     { img(src = it) }
                 )
-                dataForm("/entries/${formData.data.id}/screenshot") {
+                dataForm("/entries/${entryUpdateForm.data.id}/screenshot") {
                     fieldSet {
-                        renderFields(Form(NewScreenshot::class, NewScreenshot.Empty, true))
+                        renderFields(screenshotForm)
                     }
                     footer {
                         submitInput { value = "Set screenshot" }
@@ -65,7 +66,7 @@ object EditEntryPage {
                                     td { +Filesize.humanFriendly(file.size) }
                                     td { +file.uploadedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
                                     td {
-                                        a(href="/entries/${file.entryId}/download/${file.version}") {
+                                        a(href = "/entries/${file.entryId}/download/${file.version}") {
                                             icon("download")
                                         }
                                     }

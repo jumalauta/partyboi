@@ -2,6 +2,7 @@
 
 package party.jml.partyboi.entries
 
+import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
 import io.ktor.http.*
@@ -12,79 +13,85 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.NotFound
-import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.parameterInt
+import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureEntriesRouting(app: AppServices) {
+    fun renderEntriesPage(
+        userSession: Either<AppError, User>,
+        newEntryForm: Form<NewEntry>? = null,
+    ) = either {
+        val user = userSession.bind()
+        EntriesPage.render(
+            newEntryForm = newEntryForm ?: Form(NewEntry::class, NewEntry.Empty, initial = true),
+            compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) },
+            userEntries = app.entries.getUserEntries(user.id).bind(),
+        )
+    }
+
+    fun renderEditEntryPage(
+        entryId: Either<AppError, Int>,
+        user: Either<AppError, User>,
+        entryUpdateForm: Form<EntryUpdate>? = null,
+        screenshotForm: Form<NewScreenshot>? = null,
+    ) = either {
+        val files = app.files.getAllVersions(entryId.bind()).bind()
+        val screenshot = app.screenshots.get(entryId.bind()).map { "/entries/${entryId.bind()}/screenshot.jpg" }
+
+        EditEntryPage.render(
+            app = app,
+            entryUpdateForm = entryUpdateForm ?: Form(
+                EntryUpdate::class,
+                EntryUpdate.fromEntry(app.entries.get(entryId.bind(), user.bind().id).bind()),
+                initial = true
+            ),
+            screenshotForm = screenshotForm ?: Form(NewScreenshot::class, NewScreenshot.Empty, true),
+            files = files,
+            screenshot = screenshot,
+        ).bind()
+    }
+
     routing {
         authenticate("user") {
             get("/entries") {
-                call.respondEither({
-                    either {
-                        val user = call.userSession().bind()
-                        val form = Form(NewEntry::class, NewEntry.Empty, initial = true)
-                        val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) }
-                        val userEntries = app.entries.getUserEntries(user.id).bind()
-                        EntriesPage.render(compos, userEntries, form)
-                    }
-                })
+                call.respondEither({ renderEntriesPage(call.userSession()) })
             }
 
             get("/entries/submit/{compoId}") {
                 call.respondEither({
                     either {
                         val compoId = call.parameterInt("compoId").bind()
-                        val user = call.userSession().bind()
                         val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
-                        val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) }
-                        val userEntries = app.entries.getUserEntries(user.id).bind()
-                        EntriesPage.render(compos, userEntries, form)
+                        renderEntriesPage(call.userSession(), form).bind()
                     }
                 })
             }
 
             post("/entries") {
-                val user = call.userSession()
-                val submitRequest = Form.fromParameters<NewEntry>(call.receiveMultipart())
-
-                call.respondEither({
-                    either {
-                        val userId = user.bind().id
-                        val form = submitRequest.bind()
-                        val newEntry = form.validated().bind().copy(userId = userId)
-
-                        app.compos.assertCanSubmit(newEntry.compoId, user.bind().isAdmin).bind()
-                        app.entries.add(newEntry).bind()
-
-                        Redirection("/entries")
+                call.processForm<NewEntry>(
+                    { newEntry ->
+                        either {
+                            val user = call.userSession().bind()
+                            val entry = newEntry.copy(userId = user.id)
+                            app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                            app.entries.add(entry).bind()
+                            Redirection("/entries")
+                        }
+                    },
+                    {
+                        renderEntriesPage(call.userSession(), newEntryForm = it)
                     }
-                }, { error ->
-                    either {
-                        val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) }
-                        val userEntries = app.entries.getUserEntries(user.bind().id).bind()
-                        EntriesPage.render(compos, userEntries, submitRequest.bind().with(error))
-                    }
-                })
+                )
             }
 
             get("/entries/{id}") {
                 call.respondEither({
-                    either {
-                        val id = call.parameterInt("id").bind()
-                        val user = call.userSession().bind()
-                        val entry = app.entries.get(id, user.id).bind()
-                        val form = Form(EntryUpdate::class, EntryUpdate.fromEntry(entry), initial = true)
-                        val files = app.files.getAllVersions(id).bind()
-                        val screenshot = app.screenshots.get(id).map { "/entries/$id/screenshot.jpg" }
-
-                        EditEntryPage.render(app, form, files, screenshot).bind()
-                    }
+                    renderEditEntryPage(call.parameterInt("id"), call.userSession())
                 })
             }
 
@@ -122,56 +129,49 @@ fun Application.configureEntriesRouting(app: AppServices) {
             }
 
             post("/entries/{id}") {
-                val maybeUser = call.userSession()
-                val submitRequest = Form.fromParameters<EntryUpdate>(call.receiveMultipart())
+                call.processForm<EntryUpdate>(
+                    { entry ->
+                        either {
+                            val user = call.userSession().bind()
 
-                call.respondEither({
-                    either {
-                        val user = maybeUser.bind()
-                        val form = submitRequest.bind()
-                        val entry = form.validated().bind()
+                            app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                            val newEntry = app.entries.update(entry, user.id).bind()
 
-                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                            if (entry.file.isDefined) {
+                                val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
+                                runBlocking { entry.file.write(storageFilename).bind() }
+                                val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
 
-                        val newEntry = app.entries.update(entry, user.id).bind()
-                        if (entry.file.isDefined) {
-                            val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
-                            runBlocking { entry.file.write(storageFilename).bind() }
-                            val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
-
-                            app.screenshots.scanForScreenshotSource(file).map { source ->
-                                app.screenshots.store(entry.id, source)
+                                app.screenshots.scanForScreenshotSource(file).map { source ->
+                                    app.screenshots.store(entry.id, source)
+                                }
                             }
+
+                            Redirection("/entries")
                         }
-                        Redirection("/entries")
+                    },
+                    {
+                        renderEditEntryPage(call.parameterInt("id"), call.userSession(), entryUpdateForm = it)
                     }
-                }, { error ->
-                    either {
-                        val id = call.parameterInt("id").bind()
-                        val files = app.files.getAllVersions(id).bind()
-                        val screenshot = app.screenshots.get(id).map { "/entries/{id}/screenshot.jpg" }
-                        EditEntryPage.render(app, submitRequest.bind().with(error), files, screenshot)
-                    }.flatten()
-                })
+                )
             }
 
             post("/entries/{id}/screenshot") {
-                val maybeUser = call.userSession()
-                val screenshotRequest = Form.fromParameters<NewScreenshot>(call.receiveMultipart())
+                call.processForm<NewScreenshot>(
+                    { screenshot ->
+                        either {
+                            val user = call.userSession().bind()
+                            val entryId = call.parameterInt("id").bind()
+                            val entry = app.entries.get(entryId, user.id).bind()
 
-                call.respondEither({
-                    either {
-                        val user = maybeUser.bind()
-                        val form = screenshotRequest.bind().validated().bind()
-                        val entryId = call.parameterInt("id").bind()
-                        val entry = app.entries.get(entryId, user.id).bind()
+                            app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                            app.screenshots.store(entry.id, screenshot.file)
 
-                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
-                        app.screenshots.store(entry.id, form.file)
-
-                        Redirection("/entries/$entryId")
-                    }
-                })
+                            Redirection("/entries/$entryId")
+                        }
+                    },
+                    { renderEditEntryPage(call.parameterInt("id"), call.userSession(), screenshotForm = it) }
+                )
             }
         }
 

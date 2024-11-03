@@ -1,9 +1,7 @@
 package party.jml.partyboi.entries
 
-import arrow.core.getOrElse
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.submitNewEntryForm
 import party.jml.partyboi.templates.Javascript
@@ -11,12 +9,18 @@ import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
 
 object EntriesPage {
-    fun render(compos: List<Compo>, userEntries: List<EntryWithLatestFile>, formData: Form<NewEntry>) =
+    fun render(
+        newEntryForm: Form<NewEntry>,
+        compos: List<Compo>,
+        userEntries: List<EntryWithLatestFile>,
+    ) =
         Page("Submit entries") {
             h1 { +"Entries" }
             columns(
-                { submitNewEntryForm("/entries", compos, formData) },
-                if (userEntries.isNotEmpty()) {{ entryList(userEntries, compos) }} else null
+                { submitNewEntryForm("/entries", compos, newEntryForm) },
+                if (userEntries.isNotEmpty()) {
+                    { entryList(userEntries, compos) }
+                } else null
             )
         }
 }
@@ -39,7 +43,7 @@ fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<C
                         val compo = compos.find { it.id == entry.compoId }
                         tr {
                             td {
-                                a(href="/entries/${entry.id}") {
+                                a(href = "/entries/${entry.id}") {
                                     +entry.title
                                 }
                             }
@@ -48,7 +52,7 @@ fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<C
                             td {
                                 if (compo?.allowSubmit == true) {
                                     a {
-                                        href="#"
+                                        href = "#"
                                         role = "button"
                                         onClick = Javascript.build {
                                             confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
