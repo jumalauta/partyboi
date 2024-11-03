@@ -13,6 +13,7 @@ import party.jml.partyboi.form.editEntryForm
 import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
+import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
 import java.time.format.DateTimeFormatter
 
@@ -27,23 +28,31 @@ object EditEntryPage {
         val compos = app.compos.getAllCompos().bind()
         Page("Edit entry") {
             h1 { +"Edit entry" }
-            editEntryForm("/entries/${entryUpdateForm.data.id}", compos.filter { it.allowSubmit }, entryUpdateForm)
 
-            article {
-                header { +"Screenshot / preview" }
-                screenshot.fold(
-                    { p { +"No screenshot uploaded" } },
-                    { img(src = it) }
-                )
-                dataForm("/entries/${entryUpdateForm.data.id}/screenshot") {
-                    fieldSet {
-                        renderFields(screenshotForm)
-                    }
-                    footer {
-                        submitInput { value = "Set screenshot" }
+            columns(
+                {
+                    editEntryForm(
+                        "/entries/${entryUpdateForm.data.id}",
+                        compos.filter { it.allowSubmit },
+                        entryUpdateForm
+                    )
+
+                },
+                {
+                    screenshot.map { img(src = it, classes = "full-width") }
+                    article {
+                        header { +"Screenshot / preview" }
+                        dataForm("/entries/${entryUpdateForm.data.id}/screenshot") {
+                            fieldSet {
+                                renderFields(screenshotForm)
+                            }
+                            footer {
+                                submitInput { value = "Set screenshot" }
+                            }
+                        }
                     }
                 }
-            }
+            )
 
             if (files.isNotEmpty()) {
                 article {
@@ -78,5 +87,4 @@ object EditEntryPage {
             }
         }
     }
-
 }

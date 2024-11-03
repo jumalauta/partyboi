@@ -46,6 +46,9 @@ fun Application.configureStyles() {
                 rule(".no-margin") {
                     margin = "0"
                 }
+                rule("img.full-width") {
+                    width = LinearDimension("100%")
+                }
                 media("(min-width: 1280px)") {
                     rule(".two-columns") {
                         display = Display.flex
