@@ -39,7 +39,7 @@ object Navigation {
 fun UL.renderItems(path: String, items: List<NavItem>) {
     items.forEach {
         li {
-            a(href = it.url, classes = if (it.url.startsWith(path)) "active" else "") {
+            a(href = it.url, classes = if (path != "/" && it.url.startsWith(path)) "active" else "") {
                 if (it.button) {
                     role = "button"
                 }
