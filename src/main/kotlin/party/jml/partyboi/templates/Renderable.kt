@@ -4,6 +4,7 @@ import arrow.core.Either
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.userSession
@@ -12,7 +13,7 @@ import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.getAny
 
 interface Renderable {
-    fun getHTML(user: User?): String
+    fun getHTML(user: User?, path: String): String
     fun statusCode(): HttpStatusCode = HttpStatusCode.OK
     fun headers(): Map<String, String> = mapOf()
 }
@@ -38,7 +39,7 @@ suspend fun ApplicationCall.respondEither(
 
 suspend fun ApplicationCall.respondPage(renderable: Renderable) {
     val user = userSession().getOrNull()
-    val text = "<!DOCTYPE html>\n" + renderable.getHTML(user)
+    val text = "<!DOCTYPE html>\n" + renderable.getHTML(user, request.path())
     val status = renderable.statusCode()
     renderable.headers().map { (k, v) ->
         response.headers.append(k, v)

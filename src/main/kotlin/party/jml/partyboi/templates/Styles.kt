@@ -49,6 +49,9 @@ fun Application.configureStyles() {
                 rule("img.full-width") {
                     width = LinearDimension("100%")
                 }
+                rule("nav a.active") {
+                    fontWeight = FontWeight.bold
+                }
                 media("(min-width: 1280px)") {
                     rule(".two-columns") {
                         display = Display.flex

@@ -3,14 +3,13 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
-import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 
 data class Page(
     val title: String,
     val children: MAIN.() -> Unit,
 ) : Renderable {
-    override fun getHTML(user: User?): String {
+    override fun getHTML(user: User?, path: String): String {
         val titleText = title
         return createHTML().html {
             attributes.put("data-theme", "light")
@@ -23,60 +22,8 @@ data class Page(
             }
             body {
                 main(classes = "container") {
-                    nav {
-                        ul {
-                            li { strong { a(href = "/") { +Config.getInstanceName() } } }
-                        }
-                        ul {
-                            if (user == null) {
-                                li { a(href = "/login") { +"Login" } }
-                                li {
-                                    a(href = "/register") {
-                                        role = "button"
-                                        +"Register"
-                                    }
-                                }
-                            } else {
-                                li { a(href = "/schedule") { +"Schedule" } }
-                                li { a(href = "/compos") { +"Competitions" } }
-                                li { a(href = "/entries") { +"Entries" } }
-                                li { a(href = "/vote") { +"Vote" } }
-                                li { a(href = "/results") { +"Results" } }
-                                if (user.isAdmin) {
-                                    li {
-                                        details(classes = "dropdown") {
-                                            summary { +"Admin" }
-                                            ul {
-                                                attributes.put("dir", "rtl")
-                                                li { a(href = "/admin/compos") { +"Compos" } }
-                                                li { a(href = "/admin/schedule") { +"Schedule" } }
-                                                li { a(href = "/admin/screen") { +"Screen" } }
-                                                li { a(href = "/admin/assets") { +"Assets" } }
-                                            }
-                                        }
-                                    }
-                                }
-                                li {
-                                    details(classes = "dropdown") {
-                                        summary { +user.name }
-                                        ul {
-                                            attributes.put("dir", "rtl")
-                                            li { a(href = "/logout") { +"Log out" } }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+                    navigation(user, path)
                     children()
-
-                    footer {
-                        small {
-                            strong { +"PartyBoi" }
-                            +" v.0.1 by Naetti tyttoe/jML"
-                        }
-                    }
                 }
                 script(src = "/assets/partyboi.js") {}
             }
@@ -85,7 +32,7 @@ data class Page(
 }
 
 class Redirection(val location: String) : Renderable {
-    override fun getHTML(user: User?): String {
+    override fun getHTML(user: User?, path: String): String {
         return ""
     }
 
@@ -99,7 +46,7 @@ class Redirection(val location: String) : Renderable {
 }
 
 class EmptyPage() : Renderable {
-    override fun getHTML(user: User?): String {
+    override fun getHTML(user: User?, path: String): String {
         return ""
     }
 
