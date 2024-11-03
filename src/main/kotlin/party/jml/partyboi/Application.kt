@@ -24,6 +24,7 @@ import party.jml.partyboi.voting.configureVotingRouting
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
 }
+
 fun Application.module() {
     val db = getDatabasePool()
     val app = AppServices(db)
@@ -34,7 +35,6 @@ fun Application.module() {
     configureHTTP()
     configureAuthentication(app)
     configureStyles()
-    configureStaticContent()
 
     configureDefaultRouting()
     configureLoginRouting(app)
@@ -45,6 +45,8 @@ fun Application.module() {
     configureQrCodeRouting()
     configureScheduleRouting(app)
     configureAdminAssetsRouting(app)
+
+    configureStaticContent()
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)

@@ -9,5 +9,6 @@ fun Application.configureStaticContent() {
     routing {
         staticFiles("/assets/uploaded", Config.getAssetsDir().toFile())
         staticResources("/assets", "assets")
+        staticResources("/", "favicon")
     }
 }
