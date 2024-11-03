@@ -23,6 +23,7 @@ services:
     ports:
       - "8123:8123"
     environment:
+      INSTANCE_NAME: "${INSTANCE_NAME}"
       ADMIN_USERNAME: "${ADMIN_USERNAME}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
       DB_PASSWORD: "${DB_PASSWORD}"

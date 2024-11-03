@@ -56,6 +56,7 @@ object Config {
     private val dbDatabase = Key("db.database", stringType)
     private val adminUserName = Key("admin.username", stringType)
     private val adminPassword = Key("admin.password", stringType)
+    private val instanceName = Key("instance.name", stringType)
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
     fun getEntryDir(): Path = Paths.get(config[entryDir])
@@ -68,6 +69,7 @@ object Config {
     fun getDbDatabase() = config.getOrElse(dbDatabase, "default")
     fun getAdminUserName() = config.get(adminUserName)
     fun getAdminPassword() = config.get(adminPassword)
+    fun getInstanceName() = config.getOrElse(instanceName, "Partyboi")
 }
 
 abstract class Logging {

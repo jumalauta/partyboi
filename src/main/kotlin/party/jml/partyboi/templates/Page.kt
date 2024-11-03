@@ -3,6 +3,7 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 
 data class Page(
@@ -24,7 +25,7 @@ data class Page(
                 main(classes = "container") {
                     nav {
                         ul {
-                            li { strong { a(href = "/") { +"PartyBoi" } } }
+                            li { strong { a(href = "/") { +Config.getInstanceName() } } }
                         }
                         ul {
                             if (user == null) {
