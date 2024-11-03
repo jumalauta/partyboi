@@ -31,7 +31,7 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm() =
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
     handleForm: (data: T) -> Either<AppError, Renderable>,
-    handleError: (formWithErrors: Form<T>) -> Either<AppError, Renderable>
+    crossinline handleError: (formWithErrors: Form<T>) -> Either<AppError, Renderable>
 ) {
     receiveForm<T>().fold(
         { respondPage(it) },
@@ -40,7 +40,7 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
                 { handleError(form.with(it)) },
                 { handleForm(it) }
             )
-            respondEither({ result })
+            respondEither({ result }, { handleError(form.with(it)) })
         }
     )
 }

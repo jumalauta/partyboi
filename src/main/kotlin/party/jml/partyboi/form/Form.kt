@@ -51,41 +51,50 @@ class Form<T : Validateable<T>>(
                 val key = prop.name
                 val (inputType, value) = prop.get(data)
                     .toOption()
-                    .map { a -> when (a) {
-                        is String -> Pair(InputType.text, a)
-                        is Int -> Pair(InputType.number, a.toString())
-                        is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
-                        is LocalDateTime -> Pair(InputType.dateTimeLocal, a.format(DateTimeFormatter.ISO_DATE_TIME))
-                        is FileUpload -> Pair(InputType.file, "")
-                        else -> TODO("${a.javaClass.name} not supported as Form property")
-                    } }
+                    .map { a ->
+                        when (a) {
+                            is String -> Pair(InputType.text, a)
+                            is Int -> Pair(InputType.number, a.toString())
+                            is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
+                            is LocalDateTime -> Pair(InputType.dateTimeLocal, a.format(DateTimeFormatter.ISO_DATE_TIME))
+                            is FileUpload -> Pair(InputType.file, "")
+                            else -> TODO("${a.javaClass.name} not supported as Form property")
+                        }
+                    }
                     .getOrElse { Pair(InputType.text, "") }
                 val error = errors
                     .filter { it.target == key }
                     .toNonEmptyListOrNone()
                     .map { it.joinToString { it.message } }
-                block(FieldData(
-                    label = meta.label,
-                    key = key,
-                    value = value,
-                    error = error,
-                    type = when(meta.presentation) {
-                        FieldPresentation.hidden -> InputType.hidden
-                        FieldPresentation.secret -> InputType.password
-                        else -> inputType
-                    },
-                    presentation = meta.presentation,
-                ))
+                block(
+                    FieldData(
+                        label = meta.label,
+                        key = key,
+                        value = value,
+                        error = error,
+                        type = when (meta.presentation) {
+                            FieldPresentation.hidden -> InputType.hidden
+                            FieldPresentation.secret -> InputType.password
+                            else -> inputType
+                        },
+                        presentation = meta.presentation,
+                    )
+                )
             }
     }
 
     fun with(error: AppError): Form<T> {
-        val errors = accumulatedValidationErrors + when(error) {
+        val errors = accumulatedValidationErrors + when (error) {
             is ValidationError -> error.errors
             else -> emptyList()
         }
         val uniqueErrors = errors.distinct()
         return Form(kclass, data, initial, uniqueErrors, if (error is ValidationError) null else error)
+    }
+
+    fun mapError(f: (AppError) -> AppError) = when (error) {
+        null -> this
+        else -> Form(kclass, data, initial, accumulatedValidationErrors, f(error))
     }
 
     data class FieldData(
@@ -98,7 +107,7 @@ class Form<T : Validateable<T>>(
     )
 
     companion object {
-        suspend inline fun <reified T: Validateable<T>> fromParameters(parameters: MultiPartData): Either<AppError, Form<T>> {
+        suspend inline fun <reified T : Validateable<T>> fromParameters(parameters: MultiPartData): Either<AppError, Form<T>> {
             return try {
                 val ctor = T::class.primaryConstructor ?: throw NotImplementedError("Primary constructor missing")
 
@@ -112,12 +121,14 @@ class Form<T : Validateable<T>>(
                             stringParams[name] = part.value
                             part.dispose()
                         }
+
                         is PartData.FileItem -> {
                             fileParams[name] = FileUpload(
                                 name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
                                 fileItem = part,
                             )
                         }
+
                         else -> part.dispose()
                     }
                 }
@@ -131,20 +142,27 @@ class Form<T : Validateable<T>>(
                         "kotlin.String" -> {
                             stringValue
                         }
+
                         "kotlin.Int" -> {
                             try {
                                 stringValue.toInt()
-                            } catch (_: NumberFormatException) { -1 }
+                            } catch (_: NumberFormatException) {
+                                -1
+                            }
                         }
+
                         "kotlin.Boolean" -> {
                             stringValue.isNotEmpty()
                         }
+
                         "party.jml.partyboi.form.FileUpload" -> {
                             fileParams.get(name) ?: throw Error("File parameter '$name' not found")
                         }
+
                         "java.time.LocalDateTime" -> {
                             LocalDateTime.parse(stringValue)
                         }
+
                         else -> {
                             throw error("Unsupported data type on property '$name': ${it.type}")
                         }
@@ -199,10 +217,12 @@ data class FileUpload(
     val isDefined = name.isNotEmpty()
 
     companion object {
-        val Empty = FileUpload("", PartData.FileItem(
-            { throw Error("Empty file") },
-            { },
-            Headers.Empty
-        ))
+        val Empty = FileUpload(
+            "", PartData.FileItem(
+                { throw Error("Empty file") },
+                { },
+                Headers.Empty
+            )
+        )
     }
 }

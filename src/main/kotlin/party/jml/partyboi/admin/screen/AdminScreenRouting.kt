@@ -214,7 +214,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
 suspend inline fun <reified T> ApplicationCall.updateSlide(
     app: AppServices,
-    onError: (Either<AppError, String>, Either<AppError, Int>, AppError?) -> Either<AppError, Renderable>
+    crossinline onError: (Either<AppError, String>, Either<AppError, Int>, AppError?) -> Either<AppError, Renderable>
 ) where
         T : Slide<T>,
         T : Validateable<T> {
