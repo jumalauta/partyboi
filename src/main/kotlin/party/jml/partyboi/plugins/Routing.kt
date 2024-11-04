@@ -20,14 +20,4 @@ fun Application.configureDefaultRouting() {
         }
     }
     install(AutoHeadResponse)
-
-    routing {
-        authenticate("user", optional = true) {
-            get("/") {
-                call.respondPage(Page("Home") {
-                    h1 { +"Hello, world!" }
-                })
-            }
-        }
-    }
 }

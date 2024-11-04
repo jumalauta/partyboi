@@ -15,6 +15,7 @@ import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP
 import party.jml.partyboi.plugins.configureSerialization
 import party.jml.partyboi.assets.configureStaticContent
+import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
@@ -37,6 +38,7 @@ fun Application.module() {
     configureStyles()
 
     configureDefaultRouting()
+    configureFrontPageRouting(app)
     configureLoginRouting(app)
     configureEntriesRouting(app)
     configureComposRouting(app)

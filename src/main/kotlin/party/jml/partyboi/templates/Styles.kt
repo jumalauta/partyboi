@@ -52,6 +52,9 @@ fun Application.configureStyles() {
                 rule("nav a.active") {
                     fontWeight = FontWeight.bold
                 }
+                rule(".info-qr-code") {
+                    maxHeight = LinearDimension("30vh")
+                }
                 media("(min-width: 1280px)") {
                     rule(".two-columns") {
                         display = Display.flex

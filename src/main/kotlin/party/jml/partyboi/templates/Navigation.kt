@@ -17,7 +17,7 @@ object Navigation {
     )
 
     val userItems = listOf(
-        NavItem("/schedule", "Schedule"),
+        // NavItem("/schedule", "Schedule"),
         NavItem("/compos", "Compos"),
         NavItem("/entries", "Entries"),
         NavItem("/vote", "Voting"),
@@ -27,7 +27,7 @@ object Navigation {
     val adminItems = listOf(
         NavItem("/admin/compos", "Compos"),
         NavItem("/admin/schedule", "Schedule"),
-        NavItem("/admin/screen", "Screen"),
+        NavItem("/admin/screen", "Info screen"),
         NavItem("/admin/assets", "Assets"),
     )
 

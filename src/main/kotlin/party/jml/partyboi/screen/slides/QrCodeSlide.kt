@@ -27,9 +27,9 @@ data class QrCodeSlide(
         val myTitle = title
         with(ctx) {
             h1 { +myTitle }
-            div(classes="columns") {
+            div(classes = "columns") {
                 div(classes = "qrcode") {
-                    img(src = QrCode.imageSrc(qrcode))
+                    img(src = qrCodeSrc())
                 }
                 div(classes = "description") {
                     markdown(description)
@@ -42,6 +42,8 @@ data class QrCodeSlide(
     override fun toJson(): String = Json.encodeToString(this)
     override fun getName(): String = title
     override fun getType(): SlideType = SlideType("qrcode", "QR Code")
+
+    fun qrCodeSrc(): String = QrCode.imageSrc(qrcode)
 
     companion object {
         val Empty = QrCodeSlide(

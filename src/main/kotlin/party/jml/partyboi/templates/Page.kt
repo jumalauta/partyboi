@@ -15,6 +15,11 @@ data class Page(
         return createHTML().html {
             attributes.put("data-theme", "light")
             head {
+                meta { charset = "utf-8" }
+                meta {
+                    name = "viewport"
+                    content = "width=device-width, initial-scale=1"
+                }
                 title { +"$titleText - ${Config.getInstanceName()}" }
                 link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
