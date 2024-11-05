@@ -21,16 +21,20 @@ object FrontPage {
                         val slide = it.getSlide()
                         when (slide) {
                             is TextSlide -> {
-                                h3 { +slide.title }
-                                markdown(slide.content)
+                                article {
+                                    h3 { +slide.title }
+                                    markdown(slide.content)
+                                }
                             }
 
                             is QrCodeSlide -> {
-                                h3 { +slide.title }
-                                markdown(slide.description)
-                                p {
-                                    a(href = slide.qrcode) {
-                                        +slide.qrcode
+                                article {
+                                    h3 { +slide.title }
+                                    markdown(slide.description)
+                                    p {
+                                        a(href = slide.qrcode) {
+                                            +slide.qrcode
+                                        }
                                     }
                                 }
                             }
