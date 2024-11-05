@@ -9,7 +9,6 @@ import party.jml.partyboi.templates.components.icon
 data class NavItem(
     val url: String,
     val label: String,
-    val getSubLinks: (app: AppServices) -> List<NavItem> = { emptyList() },
     val button: Boolean = false,
 )
 
@@ -42,7 +41,7 @@ object Navigation {
     )
 }
 
-fun UL.renderItems(app: AppServices, path: String, items: List<NavItem>) {
+fun UL.renderItems(path: String, items: List<NavItem>) {
     items.forEach {
         val isMatch = it.url == path || (path != "/" && path.startsWith(it.url))
         li {
@@ -57,31 +56,24 @@ fun UL.renderItems(app: AppServices, path: String, items: List<NavItem>) {
                     role = "button"
                 }
                 +it.label
-
-                val subLinks = it.getSubLinks(app)
-                if (subLinks.isNotEmpty()) {
-                    ul {
-                        renderItems(app, path, subLinks)
-                    }
-                }
             }
         }
     }
 }
 
-fun UL.navigationDropdown(app: AppServices, path: String, label: String, items: List<NavItem>) {
+fun UL.navigationDropdown(path: String, label: String, items: List<NavItem>) {
     li {
         details(classes = "dropdown") {
             summary { +label }
             ul {
                 attributes.put("dir", "rtl")
-                renderItems(app, path, items)
+                renderItems(path, items)
             }
         }
     }
 }
 
-fun SECTION.navigation(app: AppServices, user: User?, path: String) {
+fun SECTION.navigation(user: User?, path: String) {
     aside(classes = "main-nav") {
         header(classes = "mobile-only") {
             nav {
@@ -107,9 +99,9 @@ fun SECTION.navigation(app: AppServices, user: User?, path: String) {
                 attributes["open"] = ""
                 summary { +"Navigation" }
                 ul {
-                    renderItems(app, path, Navigation.publicItems)
+                    renderItems(path, Navigation.publicItems)
                     if (user != null) {
-                        renderItems(app, path, Navigation.userItems)
+                        renderItems(path, Navigation.userItems)
                     }
                 }
             }
@@ -117,7 +109,7 @@ fun SECTION.navigation(app: AppServices, user: User?, path: String) {
                 details {
                     attributes["open"] = ""
                     summary { +"Admin" }
-                    ul { renderItems(app, path, Navigation.adminItems) }
+                    ul { renderItems(path, Navigation.adminItems) }
                 }
             }
         }
