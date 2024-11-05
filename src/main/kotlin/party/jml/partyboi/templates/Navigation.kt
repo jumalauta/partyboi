@@ -43,7 +43,7 @@ object Navigation {
 
 fun UL.renderItems(path: String, items: List<NavItem>) {
     items.forEach {
-        val isMatch = it.url == path || (path != "/" && path.startsWith(it.url))
+        val isMatch = it.url == path || (it.url != "/" && path.startsWith(it.url))
         li {
             a(
                 href = it.url,
