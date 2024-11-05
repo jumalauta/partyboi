@@ -1,6 +1,7 @@
 package party.jml.partyboi.templates
 
 import kotlinx.html.*
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.templates.components.icon
@@ -8,6 +9,7 @@ import party.jml.partyboi.templates.components.icon
 data class NavItem(
     val url: String,
     val label: String,
+    val getSubLinks: (app: AppServices) -> List<NavItem> = { emptyList() },
     val button: Boolean = false,
 )
 
@@ -17,12 +19,15 @@ object Navigation {
         NavItem("/register", "Register", button = true),
     )
 
-    val userItems = listOf(
+    val publicItems = listOf(
         NavItem("/", "Info"),
         NavItem("/compos", "Compos"),
+        NavItem("/results", "Results"),
+    )
+
+    val userItems = listOf(
         NavItem("/entries", "Entries"),
         NavItem("/vote", "Voting"),
-        NavItem("/results", "Results"),
     )
 
     val adminItems = listOf(
@@ -37,9 +42,9 @@ object Navigation {
     )
 }
 
-fun UL.renderItems(path: String, items: List<NavItem>) {
+fun UL.renderItems(app: AppServices, path: String, items: List<NavItem>) {
     items.forEach {
-        val isMatch = it.url == path || (path != "/" && it.url.startsWith(path))
+        val isMatch = it.url == path || (path != "/" && path.startsWith(it.url))
         li {
             a(
                 href = it.url,
@@ -52,24 +57,31 @@ fun UL.renderItems(path: String, items: List<NavItem>) {
                     role = "button"
                 }
                 +it.label
+
+                val subLinks = it.getSubLinks(app)
+                if (subLinks.isNotEmpty()) {
+                    ul {
+                        renderItems(app, path, subLinks)
+                    }
+                }
             }
         }
     }
 }
 
-fun UL.navigationDropdown(path: String, label: String, items: List<NavItem>) {
+fun UL.navigationDropdown(app: AppServices, path: String, label: String, items: List<NavItem>) {
     li {
         details(classes = "dropdown") {
             summary { +label }
             ul {
                 attributes.put("dir", "rtl")
-                renderItems(path, items)
+                renderItems(app, path, items)
             }
         }
     }
 }
 
-fun SECTION.navigation(user: User?, path: String) {
+fun SECTION.navigation(app: AppServices, user: User?, path: String) {
     aside(classes = "main-nav") {
         header(classes = "mobile-only") {
             nav {
@@ -94,12 +106,19 @@ fun SECTION.navigation(user: User?, path: String) {
             details {
                 attributes["open"] = ""
                 summary { +"Navigation" }
-                ul { renderItems(path, Navigation.userItems) }
+                ul {
+                    renderItems(app, path, Navigation.publicItems)
+                    if (user != null) {
+                        renderItems(app, path, Navigation.userItems)
+                    }
+                }
             }
-            details {
-                attributes["open"] = ""
-                summary { +"Admin" }
-                ul { renderItems(path, Navigation.adminItems) }
+            if (user?.isAdmin == true) {
+                details {
+                    attributes["open"] = ""
+                    summary { +"Admin" }
+                    ul { renderItems(app, path, Navigation.adminItems) }
+                }
             }
         }
     }
