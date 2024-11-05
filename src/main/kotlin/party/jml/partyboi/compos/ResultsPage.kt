@@ -7,6 +7,13 @@ import kotlinx.html.*
 object ResultsPage {
     fun render(results: List<CompoResult>) = Page("Results") {
         h1 { +"Results" }
+
+        if (results.isEmpty()) {
+            article {
+                +"No results available yet!"
+            }
+        }
+
         CompoResult.groupResults(results).forEach { (compo, results) ->
             article {
                 a { attributes["name"] = compo.id.toString() }

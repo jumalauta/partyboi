@@ -11,7 +11,7 @@ object UserVotingPage {
             h1 { +"Voting" }
 
             if (entries.isEmpty()) {
-                p { +"Nothing to at the moment. :-(" }
+                article { +"Nothing to vote at the moment." }
             }
 
             entries.groupBy { it.compoId }.forEach {

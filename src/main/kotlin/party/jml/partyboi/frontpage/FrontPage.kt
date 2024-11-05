@@ -39,7 +39,7 @@ object FrontPage {
                         }
                     }
                 } else {
-                    p { +"No information to share yet." }
+                    article { +"Nothing to share yet..." }
                 }
             },
             {
@@ -47,7 +47,7 @@ object FrontPage {
                 if (events.isNotEmpty()) {
                     schedule(events)
                 } else {
-                    p { +"Schedule will be released soon!" }
+                    article { +"Schedule will be released soon!" }
                 }
             }
 
