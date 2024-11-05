@@ -3,6 +3,7 @@ package party.jml.partyboi.templates
 import kotlinx.html.*
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.templates.components.icon
 
 data class NavItem(
     val url: String,
@@ -17,7 +18,7 @@ object Navigation {
     )
 
     val userItems = listOf(
-        // NavItem("/schedule", "Schedule"),
+        NavItem("/", "Info"),
         NavItem("/compos", "Compos"),
         NavItem("/entries", "Entries"),
         NavItem("/vote", "Voting"),
@@ -38,8 +39,15 @@ object Navigation {
 
 fun UL.renderItems(path: String, items: List<NavItem>) {
     items.forEach {
+        val isMatch = it.url == path || (path != "/" && it.url.startsWith(path))
         li {
-            a(href = it.url, classes = if (path != "/" && it.url.startsWith(path)) "active" else "") {
+            a(
+                href = it.url,
+                classes = "secondary"
+            ) {
+                if (isMatch) {
+                    attributes["aria-current"] = "page"
+                }
                 if (it.button) {
                     role = "button"
                 }
@@ -61,22 +69,38 @@ fun UL.navigationDropdown(path: String, label: String, items: List<NavItem>) {
     }
 }
 
-fun MAIN.navigation(user: User?, path: String) {
-    nav {
-        ul {
-            li { strong { a(href = "/") { +Config.getInstanceName() } } }
-        }
-        ul {
-            if (user == null) {
-                renderItems(path, Navigation.guestItems)
-            } else {
-                renderItems(path, Navigation.userItems)
-                if (user.isAdmin) {
-                    navigationDropdown(path, "Admin", Navigation.adminItems)
+fun SECTION.navigation(user: User?, path: String) {
+    aside(classes = "main-nav") {
+        header(classes = "mobile-only") {
+            nav {
+                ul {
+                    li {
+                        strong { a(href = "/") { +Config.getInstanceName() } }
+                    }
                 }
-                navigationDropdown(path, user.name, Navigation.accountItems)
+                ul {
+                    li {
+                        button(classes = "mobile-nav-button flat-button") {
+                            span {
+                                icon("xmark")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        nav(classes = "page-nav") {
+            details {
+                attributes["open"] = ""
+                summary { +"Navigation" }
+                ul { renderItems(path, Navigation.userItems) }
+            }
+            details {
+                attributes["open"] = ""
+                summary { +"Admin" }
+                ul { renderItems(path, Navigation.adminItems) }
             }
         }
     }
 }
-

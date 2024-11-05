@@ -19,7 +19,6 @@ import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
-import party.jml.partyboi.templates.configureStyles
 import party.jml.partyboi.voting.configureVotingRouting
 
 fun main(args: Array<String>) {
@@ -35,7 +34,6 @@ fun Application.module() {
     configureSerialization()
     configureHTTP()
     configureAuthentication(app)
-    configureStyles()
 
     configureDefaultRouting()
     configureFrontPageRouting(app)

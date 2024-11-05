@@ -8,6 +8,12 @@ import party.jml.partyboi.templates.Page
 object UserVotingPage {
     fun render(entries: List<VoteableEntry>) =
         Page("Voting") {
+            h1 { +"Voting" }
+
+            if (entries.isEmpty()) {
+                p { +"Nothing to at the moment. :-(" }
+            }
+
             entries.groupBy { it.compoId }.forEach {
                 article {
                     header { +it.value.first().compoName }

@@ -39,7 +39,9 @@ object EditEntryPage {
 
                 },
                 {
-                    screenshot.map { img(src = it, classes = "full-width") }
+                    screenshot.map {
+                        figure { img(src = it) }
+                    }
                     article {
                         header { +"Screenshot / preview" }
                         dataForm("/entries/${entryUpdateForm.data.id}/screenshot") {

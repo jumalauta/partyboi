@@ -33,11 +33,6 @@ object FrontPage {
                                         +slide.qrcode
                                     }
                                 }
-                                p {
-                                    a(href = slide.qrcode, classes = "info-qr-code") {
-                                        img(src = slide.qrCodeSrc(), classes = "full-width")
-                                    }
-                                }
                             }
 
                             else -> {}

@@ -5,10 +5,11 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.templates.components.icon
 
 data class Page(
     val title: String,
-    val children: MAIN.() -> Unit,
+    val children: DIV.() -> Unit,
 ) : Renderable {
     override fun getHTML(user: User?, path: String): String {
         val titleText = title
@@ -24,12 +25,38 @@ data class Page(
                 link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
-                link(rel = "stylesheet", href = "/theme.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/partyboi.css", type = "text/css")
             }
             body {
                 main(classes = "container") {
-                    navigation(user, path)
-                    children()
+                    header {
+                        nav {
+                            ul {
+                                li {
+                                    button(classes = "mobile-nav-button flat-button") {
+                                        span {
+                                            icon("bars")
+                                        }
+                                    }
+                                    strong { a(href = "/") { +Config.getInstanceName() } }
+                                }
+                            }
+                            ul {
+                                if (user == null) {
+                                    renderItems(path, Navigation.guestItems)
+                                } else {
+                                    navigationDropdown(path, user.name, Navigation.accountItems)
+                                }
+                            }
+                        }
+                    }
+
+                    section(classes = "nav-and-content") {
+                        navigation(user, path)
+                        div(classes = "content") {
+                            children()
+                        }
+                    }
                 }
                 script(src = "/assets/partyboi.js") {}
             }

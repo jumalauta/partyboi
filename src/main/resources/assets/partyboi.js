@@ -44,6 +44,15 @@ function initInteractions(target) {
       });
     });
   }
+
+  // Mobile menu button
+  target.querySelectorAll(".mobile-nav-button").forEach((button) => {
+    button.onclick = () => {
+      document.body
+        .querySelector(".nav-and-content > aside")
+        .classList.toggle("open");
+    };
+  });
 }
 
 // Smooth page reload
