@@ -10,6 +10,7 @@ import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.entries.EntryUpdate
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
@@ -18,9 +19,7 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
             if (openCompos.isEmpty()) {
                 +"Submitting is closed"
             } else {
-                header {
-                    +"Submit a new entry"
-                }
+                cardHeader("Submit a new entry")
                 fieldSet {
                     renderFields(values, mapOf(
                         "compoId" to openCompos.map { it.toDropdownOption() }

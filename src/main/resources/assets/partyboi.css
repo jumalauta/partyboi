@@ -32,6 +32,10 @@ h5 {
   font-weight: 100;
 }
 
+article header h3 {
+  margin-bottom: 0;
+}
+
 .container > header {
   border-bottom: var(--pico-border-width) solid var(--pico-primary-border);
   margin-bottom: var(--pico-spacing);

@@ -7,6 +7,7 @@ import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.markdown
 
@@ -22,14 +23,14 @@ object FrontPage {
                         when (slide) {
                             is TextSlide -> {
                                 article {
-                                    h3 { +slide.title }
+                                    cardHeader(slide.title)
                                     markdown(slide.content)
                                 }
                             }
 
                             is QrCodeSlide -> {
                                 article {
-                                    h3 { +slide.title }
+                                    cardHeader(slide.title)
                                     markdown(slide.description)
                                     p {
                                         a(href = slide.qrcode) {

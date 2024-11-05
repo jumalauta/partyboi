@@ -3,6 +3,7 @@ package party.jml.partyboi.compos
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.voting.CompoResult
 import kotlinx.html.*
+import party.jml.partyboi.templates.components.cardHeader
 
 object ResultsPage {
     fun render(results: List<CompoResult>) = Page("Results") {
@@ -17,7 +18,7 @@ object ResultsPage {
         CompoResult.groupResults(results).forEach { (compo, results) ->
             article {
                 a { attributes["name"] = compo.id.toString() }
-                header { +"${compo.name} compo" }
+                cardHeader("${compo.name} compo")
                 table {
                     thead {
                         tr {

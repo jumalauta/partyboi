@@ -6,6 +6,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.submitNewEntryForm
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
 
 object EntriesPage {
@@ -35,7 +36,7 @@ object EntriesPage {
 fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<Compo>) {
     if (userEntries.isNotEmpty()) {
         article {
-            header { +"My entries" }
+            cardHeader("My entries")
             table {
                 thead {
                     tr {

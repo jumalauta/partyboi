@@ -4,6 +4,7 @@ import kotlinx.html.*
 import party.jml.partyboi.entries.VoteableEntry
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 
 object UserVotingPage {
     fun render(entries: List<VoteableEntry>) =
@@ -16,7 +17,7 @@ object UserVotingPage {
 
             entries.groupBy { it.compoId }.forEach {
                 article {
-                    header { +it.value.first().compoName }
+                    cardHeader(it.value.first().compoName)
                     section {
                         table {
                             tbody {

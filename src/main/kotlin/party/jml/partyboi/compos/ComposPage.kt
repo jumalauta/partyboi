@@ -2,6 +2,7 @@ package party.jml.partyboi.compos
 
 import kotlinx.html.*
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.markdown
 
 object ComposPage {
@@ -11,14 +12,14 @@ object ComposPage {
 
             if (generalRules.rules.isNotEmpty()) {
                 article {
-                    header { +"General rules" }
+                    cardHeader("General rules")
                     markdown(generalRules.rules)
                 }
             }
 
             compos.filter { it.visible }.forEach { compo ->
                 article {
-                    header { +compo.name }
+                    cardHeader(compo.name)
                     markdown(compo.rules)
 
                     nav {

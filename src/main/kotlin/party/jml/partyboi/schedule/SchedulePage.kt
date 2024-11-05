@@ -2,6 +2,7 @@ package party.jml.partyboi.schedule
 
 import kotlinx.html.*
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 
 object SchedulePage {
     fun render(events: List<Event>) = Page("Schedule") {
@@ -15,7 +16,7 @@ fun FlowContent.schedule(events: List<Event>) {
         .groupBy { it.time.toLocalDate() }
         .forEach { (date, events) ->
             article {
-                header { +"${date.dayOfWeek.name} $date" }
+                cardHeader("${date.dayOfWeek.name.lowercase().capitalize()} $date")
                 table {
                     tbody {
                         events.forEach { event ->
