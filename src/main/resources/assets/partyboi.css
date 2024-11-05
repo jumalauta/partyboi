@@ -1,3 +1,37 @@
+@media (min-width: 576px) {
+  :root {
+    --pico-font-size: 103%;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --pico-font-size: 106%;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --pico-font-size: 109%;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --pico-font-size: 112%;
+  }
+}
+@media (min-width: 1536px) {
+  :root {
+    --pico-font-size: 115%;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-weight: 100;
+}
+
 .container > header {
   border-bottom: var(--pico-border-width) solid var(--pico-primary-border);
   margin-bottom: var(--pico-spacing);
