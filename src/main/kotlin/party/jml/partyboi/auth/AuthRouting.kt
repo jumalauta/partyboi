@@ -8,6 +8,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.data.Notice
 import party.jml.partyboi.data.processForm
@@ -61,7 +62,17 @@ fun Application.configureLoginRouting(app: AppServices) {
                         Redirection("/entries")
                     }
                 },
-                { RegistrationPage.render(it).right() }
+                { form ->
+                    RegistrationPage.render(
+                        form.mapError {
+                            if (it.message.contains("duplicate key value")) {
+                                Notice("The user name has already been registered")
+                            } else {
+                                it
+                            }
+                        }
+                    ).right()
+                }
             )
         }
 
