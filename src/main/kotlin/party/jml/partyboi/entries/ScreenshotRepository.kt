@@ -15,7 +15,7 @@ import party.jml.partyboi.form.FileUpload
 import java.nio.file.Path
 import kotlin.io.path.exists
 
-class ScreenshotRepository(app: AppServices) {
+class ScreenshotRepository(val app: AppServices) {
     fun scanForScreenshotSource(file: FileDesc): Option<Path> {
         if (file.type == FileDesc.IMAGE) {
             return file.getStorageFile().toPath().some()
@@ -63,6 +63,11 @@ class ScreenshotRepository(app: AppServices) {
         val path = getFile(entryId)
         return if (path.exists()) Some(Screenshot(entryId, path)) else None
     }
+
+    fun getForEntries(entries: List<EntryBase>): List<Screenshot> =
+        entries
+            .map { app.screenshots.get(it.id) }
+            .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
 
     private fun getFile(entryId: Int): Path =
         Config.getScreenshotsDir().resolve("screenshot-$entryId.jpg")

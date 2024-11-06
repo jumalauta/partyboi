@@ -2,12 +2,12 @@ package party.jml.partyboi.templates.components
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.entries.EntryWithLatestFile
+import party.jml.partyboi.entries.EntryBase
 import party.jml.partyboi.entries.Screenshot
 import party.jml.partyboi.form.readonlyField
 
 fun FlowContent.entryCard(
-    entry: EntryWithLatestFile,
+    entry: EntryBase,
     screenshot: Screenshot?,
     compos: List<Compo>,
     block: SECTION.() -> Unit = {}

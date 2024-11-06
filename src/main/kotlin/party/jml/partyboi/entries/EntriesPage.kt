@@ -10,10 +10,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.submitNewEntryForm
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.cardHeader
-import party.jml.partyboi.templates.components.columns
-import party.jml.partyboi.templates.components.entryCard
-import party.jml.partyboi.templates.components.icon
+import party.jml.partyboi.templates.components.*
 import java.nio.file.Path
 
 object EntriesPage {
@@ -54,30 +51,32 @@ fun FlowContent.entryList(
                 val compo = compos.find { it.id == entry.compoId }
                 val allowSubmit = compo?.allowSubmit == true
 
-                a {
-                    href = "/entries/${entry.id}"
-                    role = "button"
-                    if (allowSubmit) {
-                        icon("pen-to-square")
-                        +" Edit"
-                    } else {
-                        icon("eye")
-                        +" View"
-                    }
-                }
-
-                if (compo?.allowSubmit == true) {
+                buttonGroup {
                     a {
-                        href = "#"
+                        href = "/entries/${entry.id}"
                         role = "button"
-                        onClick = Javascript.build {
-                            confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
-                                httpDelete("/entries/${entry.id}")
-                                refresh()
-                            }
+                        if (allowSubmit) {
+                            icon("pen-to-square")
+                            +" Edit"
+                        } else {
+                            icon("eye")
+                            +" View"
                         }
-                        icon("trash")
-                        +" Delete"
+                    }
+
+                    if (compo?.allowSubmit == true) {
+                        a {
+                            href = "#"
+                            role = "button"
+                            onClick = Javascript.build {
+                                confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
+                                    httpDelete("/entries/${entry.id}")
+                                    refresh()
+                                }
+                            }
+                            icon("trash")
+                            +" Delete"
+                        }
                     }
                 }
             }

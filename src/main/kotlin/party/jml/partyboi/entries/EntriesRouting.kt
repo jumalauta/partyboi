@@ -28,9 +28,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
     ) = either {
         val user = userSession.bind()
         val userEntries = app.entries.getUserEntries(user.id).bind()
-        val screenshots = userEntries
-            .map { app.screenshots.get(it.id) }
-            .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
+        val screenshots = app.screenshots.getForEntries(userEntries)
 
         EntriesPage.render(
             newEntryForm = newEntryForm ?: Form(NewEntry::class, NewEntry.Empty, initial = true),

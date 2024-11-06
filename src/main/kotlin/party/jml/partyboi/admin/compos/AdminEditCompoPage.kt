@@ -3,134 +3,128 @@ package party.jml.partyboi.admin.compos
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.entries.Entry
+import party.jml.partyboi.entries.Screenshot
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.IconSet
-import party.jml.partyboi.templates.components.columns
-import party.jml.partyboi.templates.components.icon
-import party.jml.partyboi.templates.components.toggleButton
+import party.jml.partyboi.templates.components.*
 
 object AdminEditCompoPage {
-    fun render(compoForm: Form<Compo>, entries: List<Entry>) = Page("Edit compo") {
-        val (qualified, nonQualified) = entries.partition { it.qualified }
+    fun render(compoForm: Form<Compo>, entries: List<Entry>) =
+        Page("Edit compo") {
+            val (qualified, nonQualified) = entries.partition { it.qualified }
 
-        h1 { +"${compoForm.data.name} compo" }
+            h1 { +"${compoForm.data.name} compo" }
 
-        columns({
-            dataForm("/admin/compos/${compoForm.data.id}") {
-                article {
-                    fieldSet {
-                        renderFields(compoForm)
-                    }
-                    footer {
-                        submitInput { value = "Save changes" }
-                    }
-                }
-            }
-        }, if (qualified.isNotEmpty() || nonQualified.isNotEmpty()) {
-            {
-                if (qualified.isNotEmpty()) {
+            columns({
+                dataForm("/admin/compos/${compoForm.data.id}") {
                     article {
-                        header { +"Qualified entries" }
-                        table {
-                            thead {
-                                tr {
-                                    th(classes = "narrow") {}
-                                    th { +"Title" }
-                                    th { +"Author" }
-                                    th { +"Submitted by" }
-                                    th(classes = "narrow") {}
-                                }
-                            }
-                            tbody(classes = "sortable") {
-                                attributes.put("data-draggable", "tr")
-                                attributes.put("data-handle", ".handle")
-                                attributes.put("data-callback", "/admin/compos/${compoForm.data.id}/runOrder")
-                                qualified.forEach { entry ->
-                                    tr {
-                                        attributes.put("data-dragid", entry.id.toString())
-                                        td(classes = "handle") { icon("arrows-up-down") }
-                                        td { a(href = "/entries/${entry.id}") { +entry.title } }
-                                        td { +entry.author }
-                                        td { +"userId: ${entry.userId}" }
-                                        td(classes = "align-right") {
-                                            toggleButton(
-                                                entry.qualified,
-                                                IconSet.qualified,
-                                                "/admin/compos/entries/${entry.id}/setQualified"
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                        fieldSet {
+                            renderFields(compoForm)
                         }
                         footer {
-                            nav {
-                                ul {
-                                    li {
-                                        a(href = "/admin/compos/${compoForm.data.id}/download") {
-                                            attributes.put("role", "button")
-                                            icon("download")
-                                            +" Download files"
-                                        }
-                                    }
-                                    li {
-                                        a(href = "/admin/compos/${compoForm.data.id}/generate-slides") {
-                                            attributes.put("role", "button")
-                                            icon("tv")
-                                            +" Generate slides"
-                                        }
-                                    }
-                                    li {
-                                        a(href = "/admin/compos/${compoForm.data.id}/generate-result-slides") {
-                                            attributes.put("role", "button")
-                                            icon("square-poll-horizontal")
-                                            +" Generate result slides"
-                                        }
-                                    }
-                                }
-                            }
+                            submitInput { value = "Save changes" }
                         }
                     }
                 }
+            }, if (qualified.isNotEmpty() || nonQualified.isNotEmpty()) {
+                {
+                    if (qualified.isNotEmpty()) {
+                        article {
+                            header { +"Qualified entries" }
 
-                if (nonQualified.isNotEmpty()) {
-                    article {
-                        header { +"Non-qualified entries" }
-                        table {
-                            thead {
-                                tr {
-                                    th { +"Title" }
-                                    th { +"Author" }
-                                    th { +"Submitted by" }
-                                    th {}
-                                }
-                            }
-                            tbody {
-                                nonQualified.forEach { entry ->
+                            table {
+                                thead {
                                     tr {
-                                        attributes.put("data-dragid", entry.id.toString())
-                                        td { a(href = "/entries/${entry.id}") { +entry.title } }
-                                        td { +entry.author }
-                                        td { +"userId: ${entry.userId}" }
-                                        td(classes = "align-right") {
-                                            toggleButton(
-                                                entry.qualified,
-                                                IconSet.qualified,
-                                                "/admin/compos/entries/${entry.id}/setQualified"
-                                            )
+                                        th(classes = "narrow") {}
+                                        th { +"Title" }
+                                        th { +"Author" }
+                                        th(classes = "narrow") { +"Q." }
+                                    }
+                                }
+                                tbody(classes = "sortable") {
+                                    attributes.put("data-draggable", "tr")
+                                    attributes.put("data-handle", ".handle")
+                                    attributes.put("data-callback", "/admin/compos/${compoForm.data.id}/runOrder")
+                                    qualified.forEach { entry ->
+                                        tr {
+                                            attributes.put("data-dragid", entry.id.toString())
+                                            td(classes = "handle") { icon("arrows-up-down") }
+                                            td { a(href = "/entries/${entry.id}") { +entry.title } }
+                                            td { +entry.author }
+                                            td(classes = "align-right") {
+                                                toggleButton(
+                                                    entry.qualified,
+                                                    IconSet.qualified,
+                                                    "/admin/compos/entries/${entry.id}/setQualified"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            small {
+                                +"Set run order by dragging entries by "
+                                icon("arrows-up-down")
+                            }
+                        }
+                    }
+
+                    if (nonQualified.isNotEmpty()) {
+                        article {
+                            header { +"Non-qualified entries" }
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"Title" }
+                                        th { +"Author" }
+                                        th(classes = "narrow") { +"Q." }
+                                    }
+                                }
+                                tbody {
+                                    nonQualified.forEach { entry ->
+                                        tr {
+                                            attributes.put("data-dragid", entry.id.toString())
+                                            td { a(href = "/entries/${entry.id}") { +entry.title } }
+                                            td { +entry.author }
+                                            td(classes = "align-right") {
+                                                toggleButton(
+                                                    entry.qualified,
+                                                    IconSet.qualified,
+                                                    "/admin/compos/entries/${entry.id}/setQualified"
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-            }
-        } else null)
-        script(src = "/assets/draggable.min.js") {}
-    }
+                    buttonGroup {
+                        a(href = "/admin/compos/${compoForm.data.id}/download") {
+                            attributes.put("role", "button")
+                            icon("download")
+                            br {}
+                            +"Download files"
+                        }
+                        a(href = "/admin/compos/${compoForm.data.id}/generate-slides") {
+                            attributes.put("role", "button")
+                            icon("tv")
+                            br {}
+                            +"Compo slides"
+                        }
+                        a(href = "/admin/compos/${compoForm.data.id}/generate-result-slides") {
+                            attributes.put("role", "button")
+                            icon("square-poll-horizontal")
+                            br {}
+                            +"Result slides"
+                        }
+                    }
+                }
+            } else null)
+            script(src = "/assets/draggable.min.js") {}
+        }
 }

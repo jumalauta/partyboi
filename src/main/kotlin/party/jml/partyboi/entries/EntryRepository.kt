@@ -17,7 +17,8 @@ class EntryRepository(private val app: AppServices) {
     private val db = app.db
 
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS entry (
                 id SERIAL PRIMARY KEY,
                 title text NOT NULL,
@@ -30,7 +31,8 @@ class EntryRepository(private val app: AppServices) {
                 run_order integer NOT NULL DEFAULT 0,
                 timestamp timestamp with time zone DEFAULT now()
             );
-        """)
+        """
+        )
     }
 
     fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
@@ -49,7 +51,9 @@ class EntryRepository(private val app: AppServices) {
     }
 
     fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use {
-        it.one(queryOf("""
+        it.one(
+            queryOf(
+                """
             SELECT *
             FROM entry
             WHERE id = ?
@@ -58,13 +62,16 @@ class EntryRepository(private val app: AppServices) {
             	(SELECT is_admin FROM appuser WHERE id = ?)
             )
         """.trimIndent(),
-            entryId,
-            userId, userId
-        ).map(Entry.fromRow))
+                entryId,
+                userId, userId
+            ).map(Entry.fromRow)
+        )
     }
 
     fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> = db.use {
-        it.many(query = queryOf("""
+        it.many(
+            query = queryOf(
+                """
             SELECT *
             FROM entry
             LEFT JOIN LATERAL(
@@ -79,38 +86,46 @@ class EntryRepository(private val app: AppServices) {
             	DESC LIMIT 1
             ) AS file_info ON 1=1
             WHERE user_id = ?
-        """.trimIndent(), userId).map(EntryWithLatestFile.fromRow))
+        """.trimIndent(), userId
+            ).map(EntryWithLatestFile.fromRow)
+        )
     }
 
     fun add(newEntry: NewEntry): Either<AppError, Unit> =
-        db.transaction { either {
-            val entry = it.one(queryOf(
-            "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
-                newEntry.title,
-                newEntry.author,
-                newEntry.compoId,
-                newEntry.userId,
-                newEntry.screenComment.nonEmptyString(),
-                newEntry.orgComment.nonEmptyString(),
-            ).map(Entry.fromRow)).bind()
+        db.transaction {
+            either {
+                val entry = it.one(
+                    queryOf(
+                        "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
+                        newEntry.title,
+                        newEntry.author,
+                        newEntry.compoId,
+                        newEntry.userId,
+                        newEntry.screenComment.nonEmptyString(),
+                        newEntry.orgComment.nonEmptyString(),
+                    ).map(Entry.fromRow)
+                ).bind()
 
-            val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
+                val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
 
-            val fileDesc = NewFileDesc(
-                entryId = entry.id,
-                originalFilename = newEntry.file.name,
-                storageFilename = storageFilename,
-            )
-            runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
-            val storedFile = app.files.add(fileDesc, it).bind()
+                val fileDesc = NewFileDesc(
+                    entryId = entry.id,
+                    originalFilename = newEntry.file.name,
+                    storageFilename = storageFilename,
+                )
+                runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
+                val storedFile = app.files.add(fileDesc, it).bind()
 
-            app.screenshots.scanForScreenshotSource(storedFile).map { source ->
-                app.screenshots.store(entry.id, source)
+                app.screenshots.scanForScreenshotSource(storedFile).map { source ->
+                    app.screenshots.store(entry.id, source)
+                }
             }
-        } }
+        }
 
     fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = db.use {
-        it.one(queryOf("""
+        it.one(
+            queryOf(
+                """
             update entry set
                 title = ?,
                 author = ?,
@@ -123,14 +138,15 @@ class EntryRepository(private val app: AppServices) {
             )
             returning *
             """.trimIndent(),
-            entry.title,
-            entry.author,
-            entry.compoId,
-            entry.screenComment.nonEmptyString(),
-            entry.orgComment.nonEmptyString(),
-            entry.id,
-            userId, userId
-        ).map(Entry.fromRow))
+                entry.title,
+                entry.author,
+                entry.compoId,
+                entry.screenComment.nonEmptyString(),
+                entry.orgComment.nonEmptyString(),
+                entry.id,
+                userId, userId
+            ).map(Entry.fromRow)
+        )
     }
 
     fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = db.use {
@@ -150,7 +166,9 @@ class EntryRepository(private val app: AppServices) {
     }
 
     fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> = db.use {
-        it.many(queryOf("""
+        it.many(
+            queryOf(
+                """
                 SELECT
                     compo_id,
                     compo.name AS compo_name,
@@ -165,24 +183,32 @@ class EntryRepository(private val app: AppServices) {
                 WHERE qualified AND allow_vote
                 ORDER BY compo_id, run_order
             """.trimIndent(),
-            userId)
-            .map(VoteableEntry.fromRow)
+                userId
+            )
+                .map(VoteableEntry.fromRow)
         )
     }
 }
 
+interface EntryBase {
+    val id: Int
+    val title: String
+    val author: String
+    val compoId: Int
+}
+
 data class Entry(
-    val id: Int,
-    val title: String,
-    val author: String,
+    override val id: Int,
+    override val title: String,
+    override val author: String,
     val screenComment: Option<String>,
     val orgComment: Option<String>,
-    val compoId: Int,
+    override val compoId: Int,
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: LocalDateTime,
-) {
+) : EntryBase {
     companion object {
         val fromRow: (Row) -> Entry = { row ->
             Entry(
@@ -202,12 +228,12 @@ data class Entry(
 }
 
 data class EntryWithLatestFile(
-    val id: Int,
-    val title: String,
-    val author: String,
+    override val id: Int,
+    override val title: String,
+    override val author: String,
     val screenComment: Option<String>,
     val orgComment: Option<String>,
-    val compoId: Int,
+    override val compoId: Int,
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
@@ -216,7 +242,7 @@ data class EntryWithLatestFile(
     val fileVersion: Option<Int>,
     val uploadedAt: Option<LocalDateTime>,
     val fileSize: Option<Long>,
-) {
+) : EntryBase {
     companion object {
         val fromRow: (Row) -> EntryWithLatestFile = { row ->
             EntryWithLatestFile(
@@ -287,7 +313,7 @@ data class EntryUpdate(
     val screenComment: String,
     @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
-    ) : Validateable<EntryUpdate> {
+) : Validateable<EntryUpdate> {
     override fun validationErrors(): List<Option<ValidationError.Message>> {
         return listOf(
             expectNotEmpty("title", title),
@@ -312,13 +338,13 @@ data class EntryUpdate(
 }
 
 data class VoteableEntry(
-        val compoId: Int,
-        val compoName: String,
-        val entryId: Int,
-        val runOrder: Int,
-        val title: String,
-        val author: String,
-        val points: Option<Int>,
+    val compoId: Int,
+    val compoName: String,
+    val entryId: Int,
+    val runOrder: Int,
+    val title: String,
+    val author: String,
+    val points: Option<Int>,
 ) {
     companion object {
         val fromRow: (Row) -> VoteableEntry = { row ->
