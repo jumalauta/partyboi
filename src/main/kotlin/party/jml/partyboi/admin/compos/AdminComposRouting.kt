@@ -47,6 +47,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         AdminEditCompoPage.render(
             compoForm = compoForm ?: Form(Compo::class, app.compos.getById(id).bind(), initial = true),
             entries = app.entries.getEntriesForCompo(id).bind(),
+            compos = app.compos.getAllCompos().bind(),
         )
     }
 

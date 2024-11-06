@@ -109,6 +109,12 @@ article header h3 {
   font-weight: 600;
 }
 
+.page-nav ul li ul {
+  margin-left: var(--pico-spacing);
+  margin-top: calc(var(--pico-spacing) * 0.5);
+  margin-bottom: calc(var(--pico-spacing) * -0.5);
+}
+
 .nav-and-content > .content {
   flex-grow: 1;
 }

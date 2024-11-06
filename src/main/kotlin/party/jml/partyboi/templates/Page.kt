@@ -9,6 +9,7 @@ import party.jml.partyboi.templates.components.icon
 
 data class Page(
     val title: String,
+    val subLinks: List<NavItem> = emptyList(),
     val children: DIV.() -> Unit,
 ) : Renderable {
     override fun getHTML(user: User?, path: String): String {
@@ -43,7 +44,7 @@ data class Page(
                             }
                             ul {
                                 if (user == null) {
-                                    renderItems(path, Navigation.guestItems)
+                                    renderItems(path, Navigation.guestItems, emptyList())
                                 } else {
                                     navigationDropdown(path, user.name, Navigation.accountItems)
                                 }
@@ -52,7 +53,7 @@ data class Page(
                     }
 
                     section(classes = "nav-and-content") {
-                        navigation(user, path)
+                        navigation(user, path, subLinks)
                         div(classes = "content") {
                             children()
                         }

@@ -13,13 +13,15 @@ import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.templates.NavItem
 
 class CompoRepository(private val app: AppServices) {
     private val db = app.db
     private val GENERAL_RULES = "CompoRepository.GeneralRules"
 
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS compo (
                 id SERIAL PRIMARY KEY,
                 name text NOT NULL,
@@ -29,7 +31,8 @@ class CompoRepository(private val app: AppServices) {
                 allow_vote boolean NOT NULL DEFAULT false,
                 public_results boolean NOT NULL DEFAULT false
             );
-        """)
+        """
+        )
     }
 
     fun getGeneralRules(): Either<AppError, GeneralRules> =
@@ -60,7 +63,7 @@ class CompoRepository(private val app: AppServices) {
         it.updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
     }
 
-    fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use{
+    fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
     }
 
@@ -130,6 +133,8 @@ data class Compo(
     )
 
     override fun toDropdownOption() = DropdownOption(id.toString(), name)
+
+    fun toNavItem() = NavItem("/admin/compos/${id}", name)
 
     companion object {
         val fromRow: (Row) -> Compo = { row ->

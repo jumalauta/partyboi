@@ -41,21 +41,27 @@ object Navigation {
     )
 }
 
-fun UL.renderItems(path: String, items: List<NavItem>) {
+fun UL.renderItems(path: String, items: List<NavItem>, subLinks: List<NavItem>) {
     items.forEach {
-        val isMatch = it.url == path || (it.url != "/" && path.startsWith(it.url))
+        val isExactMatch = it.url == path
+        val isPartialMatch = it.url != "/" && path.startsWith(it.url)
         li {
             a(
                 href = it.url,
                 classes = "secondary"
             ) {
-                if (isMatch) {
+                if (isExactMatch || (isPartialMatch && subLinks.isEmpty())) {
                     attributes["aria-current"] = "page"
                 }
                 if (it.button) {
                     role = "button"
                 }
                 +it.label
+            }
+            if (isPartialMatch && subLinks.isNotEmpty()) {
+                ul {
+                    renderItems(path, subLinks, emptyList())
+                }
             }
         }
     }
@@ -67,13 +73,13 @@ fun UL.navigationDropdown(path: String, label: String, items: List<NavItem>) {
             summary { +label }
             ul {
                 attributes.put("dir", "rtl")
-                renderItems(path, items)
+                renderItems(path, items, emptyList())
             }
         }
     }
 }
 
-fun SECTION.navigation(user: User?, path: String) {
+fun SECTION.navigation(user: User?, path: String, subLinks: List<NavItem>) {
     aside(classes = "main-nav") {
         header(classes = "mobile-only") {
             nav {
@@ -99,9 +105,9 @@ fun SECTION.navigation(user: User?, path: String) {
                 attributes["open"] = ""
                 summary { +"Navigation" }
                 ul {
-                    renderItems(path, Navigation.publicItems)
+                    renderItems(path, Navigation.publicItems, subLinks)
                     if (user != null) {
-                        renderItems(path, Navigation.userItems)
+                        renderItems(path, Navigation.userItems, subLinks)
                     }
                 }
             }
@@ -109,7 +115,7 @@ fun SECTION.navigation(user: User?, path: String) {
                 details {
                     attributes["open"] = ""
                     summary { +"Admin" }
-                    ul { renderItems(path, Navigation.adminItems) }
+                    ul { renderItems(path, Navigation.adminItems, subLinks) }
                 }
             }
         }
