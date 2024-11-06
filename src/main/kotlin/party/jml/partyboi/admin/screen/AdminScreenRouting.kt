@@ -15,6 +15,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.Slide
+import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
@@ -22,25 +23,31 @@ import party.jml.partyboi.templates.*
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     routing {
-        fun renderAdHocEdit(form: Form<*>? = null): Page {
+        fun renderAdHocEdit(form: Form<*>? = null): Either<AppError, Page> = either {
             val current = app.screen.currentSlide()
-            return AdminScreenPage.renderAdHocForm(
+            AdminScreenPage.renderAdHocForm(
                 form = form ?: current.getForm(),
-                currentlyRunning = app.screen.currentState().first.slideSet == "adhoc"
+                currentlyRunning = app.screen.currentState().first.slideSet == SlideSetRow.ADHOC,
+                slideSets = app.screen.getSlideSets().bind(),
             )
         }
 
         fun renderSlideSetPage(slideSetName: Either<AppError, String>) = either {
             val slides = app.screen.getSlideSet(slideSetName.bind()).bind()
-            val forms = slides.map(SlideEditData.fromRow)
             val (state, isRunning) = app.screen.currentState()
-            AdminScreenPage.renderSlideSetForms(slideSetName.bind(), state, isRunning, forms)
+            AdminScreenPage.renderSlideSetForms(
+                slideSet = slideSetName.bind(),
+                screenState = state,
+                isRunning = isRunning,
+                slides = slides.map(SlideEditData.fromRow),
+                slideSets = app.screen.getSlideSets().bind(),
+            )
         }
 
         fun renderSlideEdit(
             slideSetName: Either<AppError, String>,
             slideId: Either<AppError, Int>,
-            errors: AppError? = null
+            errors: AppError? = null,
         ) = either {
             val slide = app.screen.getSlide(slideId.bind()).bind()
             AdminScreenPage.renderSlideForm(
@@ -49,6 +56,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 triggers = app.triggers.getTriggersForSignal(slide.whenShown()).bind(),
                 assetImages = app.assets.getList(FileDesc.IMAGE),
                 errors = errors,
+                slideSets = app.screen.getSlideSets().bind(),
             )
         }
 
@@ -56,17 +64,17 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             fun redirectionToSet(name: String) = Redirection("/admin/screen/$name")
 
             get("/admin/screen") {
-                call.respondRedirect("/admin/screen/adhoc")
+                call.respondRedirect("/admin/screen/${SlideSetRow.DEFAULT}")
             }
 
             get("/admin/screen/adhoc") {
-                call.respondPage(renderAdHocEdit())
+                call.respondEither({ renderAdHocEdit() })
             }
 
             post("/admin/screen/adhoc") {
                 call.processForm<TextSlide>(
                     { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") } },
-                    { renderAdHocEdit(it).right() }
+                    { renderAdHocEdit(it) }
                 )
             }
 

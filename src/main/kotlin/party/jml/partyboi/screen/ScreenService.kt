@@ -32,6 +32,10 @@ class ScreenService(private val app: AppServices) {
         }
     }
 
+    fun getSlideSets(): Either<AppError, List<SlideSetRow>> = repository.getSlideSets()
+    fun upsertSlideSet(id: String, name: String, icon: String): Either<AppError, Unit> =
+        repository.upsertSlideSet(id, name, icon)
+
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
@@ -55,7 +59,7 @@ class ScreenService(private val app: AppServices) {
 
     fun getSlide(slideId: Int): Either<AppError, ScreenRow> = repository.getSlide(slideId)
 
-    fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSet(slideSet)
+    fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
     fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false)
@@ -93,6 +97,7 @@ class ScreenService(private val app: AppServices) {
     fun generateSlidesForCompo(compoId: Int): Either<AppError, String> = either {
         val slideSet = "compo-${compoId}"
         val compo = app.compos.getById(compoId).bind()
+        upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
         val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
 
         val hypeSlides = listOf(
@@ -132,6 +137,7 @@ class ScreenService(private val app: AppServices) {
     fun generateResultSlidesForCompo(compoId: Int): Either<AppError, String> = either {
         val slideSet = "results-${compoId}"
         val compo = app.compos.getById(compoId).bind()
+        upsertSlideSet(slideSet, "Results: ${compo.name}", "square-poll-horizontal")
         val results = app.votes.getResults().bind().filter { it.compoId == compoId }
         val resultsByPlace = CompoResult.groupResults(results).values.first()
         val resultsBySlide =
@@ -151,13 +157,19 @@ class ScreenService(private val app: AppServices) {
             }.reversed()
 
         val hypeSlides = listOf(
-            TextSlide("${compo.name} results", "")
+            TextSlide("Next: ${compo.name} compo results", "")
         )
         val resultSlides = resultsBySlide.map { placeAndResults ->
+            val places = placeAndResults.map { it.place }
+            val minPlace = places.min()
+            val maxPlace = places.max()
             val rows = placeAndResults.flatMap { pr ->
-                pr.results.map { "* ${pr.place}. ${it.author} – ${it.title}" }
+                pr.results.map { "* ${pr.place}. ${it.author} – ${it.title} (${it.points} pts.)" }
             }
-            TextSlide("${compo.name} results", rows.joinToString(separator = "\n"))
+            TextSlide(
+                title = if (minPlace == 1) "Winner" else if (minPlace == maxPlace) "Place $minPlace" else "Places $minPlace-$maxPlace",
+                rows.joinToString(separator = "\n")
+            )
         }
 
         repository.replaceSlideSet(slideSet, hypeSlides + resultSlides).bind()

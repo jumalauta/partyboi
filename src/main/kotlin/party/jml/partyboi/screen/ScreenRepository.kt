@@ -17,6 +17,7 @@ import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
+import party.jml.partyboi.templates.NavItem
 
 class ScreenRepository(private val app: AppServices) {
     val db = app.db
@@ -24,9 +25,19 @@ class ScreenRepository(private val app: AppServices) {
     init {
         db.init(
             """
+            CREATE TABLE IF NOT EXISTS slideset (
+                id text PRIMARY KEY,
+                name text NOT NULL,
+                icon text NOT NULL DEFAULT 'tv'::text
+            )
+        """
+        )
+
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS screen (
                 id SERIAL PRIMARY KEY,
-                slide_set text NOT NULL,
+                slideset_id text NOT NULL REFERENCES slideset(id) ON DELETE CASCADE,
                 type text NOT NULL,
                 content jsonb NOT NULL,
                 visible boolean NOT NULL DEFAULT true,
@@ -34,31 +45,60 @@ class ScreenRepository(private val app: AppServices) {
             )
         """
         )
+
+        upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt")
+        upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info")
+    }
+
+    fun upsertSlideSet(id: String, name: String, icon: String) = db.use {
+        it.exec(
+            queryOf(
+                """
+                INSERT INTO slideset (id, name, icon)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        icon = EXCLUDED.icon
+                """,
+                id,
+                name,
+                icon,
+            )
+        )
+    }
+
+    fun getSlideSets(): Either<AppError, List<SlideSetRow>> = db.use {
+        it.many(queryOf("SELECT * FROM slideset ORDER BY name").map(SlideSetRow.fromRow))
     }
 
     fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
-        it.one(queryOf("SELECT count(*) FROM screen WHERE slide_set = 'adhoc'").map(asBoolean))
+        it.one(queryOf("SELECT count(*) FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
     }
 
     fun getAdHoc(): Either<AppError, Option<ScreenRow>> = db.use {
-        it.option(queryOf("SELECT * FROM screen WHERE slide_set = ?", "adhoc").map(ScreenRow.fromRow))
+        it.option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
     }
 
     fun getSlide(id: Int): Either<AppError, ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
     }
 
-    fun getSlideSet(name: String): Either<AppError, List<ScreenRow>> = db.use {
-        it.many(queryOf("SELECT * FROM screen WHERE slide_set = ? ORDER BY run_order, id", name).map(ScreenRow.fromRow))
+    fun getSlideSetSlides(name: String): Either<AppError, List<ScreenRow>> = db.use {
+        it.many(
+            queryOf(
+                "SELECT * FROM screen WHERE slideset_id = ? ORDER BY run_order, id",
+                name
+            ).map(ScreenRow.fromRow)
+        )
     }
 
     fun setAdHoc(slide: Slide<*>): Either<AppError, ScreenRow> = db.transaction {
         either {
             val (type, content) = getTypeAndJson(slide)
             val query = if (adHocExists(it).bind()) {
-                "UPDATE screen SET type = ?, content = ?::jsonb WHERE slide_set = 'adhoc' RETURNING *"
+                "UPDATE screen SET type = ?, content = ?::jsonb WHERE slideset_id = '${SlideSetRow.ADHOC}' RETURNING *"
             } else {
-                "INSERT INTO screen(slide_set, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+                "INSERT INTO screen(slideset_id, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
             }
             it.one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
         }
@@ -73,7 +113,7 @@ class ScreenRepository(private val app: AppServices) {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
-                "INSERT INTO screen(slide_set, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
+                "INSERT INTO screen(slideset_id, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
                 slideSet,
                 type,
                 content,
@@ -98,7 +138,7 @@ class ScreenRepository(private val app: AppServices) {
         db.transaction {
             either {
                 val tx = it
-                it.exec(queryOf("DELETE FROM screen WHERE slide_set = ?", slideSet)).bind()
+                it.exec(queryOf("DELETE FROM screen WHERE slideset_id = ?", slideSet)).bind()
                 slides.map { slide -> add(slideSet, slide, makeVisible = true, tx) }.bindAll()
             }
         }
@@ -106,14 +146,14 @@ class ScreenRepository(private val app: AppServices) {
     fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
         it.one(
             queryOf(
-                "SELECT * FROM screen WHERE slide_set = ? AND visible ORDER BY run_order, id LIMIT 1",
+                "SELECT * FROM screen WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
                 slideSet
             ).map(ScreenRow.fromRow)
         )
     }
 
     fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
-        val screens = getSlideSet(slideSet).bind()
+        val screens = getSlideSetSlides(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
             .bind()
@@ -134,6 +174,27 @@ class ScreenRepository(private val app: AppServices) {
     }
 
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
+}
+
+data class SlideSetRow(
+    val id: String,
+    val name: String,
+    val icon: String,
+) {
+    fun toNavItem() = NavItem("/admin/screen/$id", name)
+
+    companion object {
+        val ADHOC = "adhoc"
+        val DEFAULT = "default"
+
+        val fromRow: (Row) -> SlideSetRow = { row ->
+            SlideSetRow(
+                id = row.string("id"),
+                name = row.string("name"),
+                icon = row.string("icon"),
+            )
+        }
+    }
 }
 
 data class ScreenRow(
@@ -158,7 +219,7 @@ data class ScreenRow(
         val fromRow: (Row) -> ScreenRow = { row ->
             ScreenRow(
                 id = row.int("id"),
-                slideSet = row.string("slide_set"),
+                slideSet = row.string("slideset_id"),
                 type = row.string("type"),
                 content = row.string("content"),
                 visible = row.boolean("visible"),
