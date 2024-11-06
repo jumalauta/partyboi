@@ -192,6 +192,10 @@ button.flat-button.off > * {
   width: 20px;
 }
 
+.center {
+  text-align: center;
+}
+
 .no-margin {
   margin: 0;
 }

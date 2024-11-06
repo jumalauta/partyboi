@@ -7,6 +7,7 @@ import party.jml.partyboi.entries.Screenshot
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.switchLink
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 
@@ -28,6 +29,62 @@ object AdminEditCompoPage {
                         }
                     }
                 }
+
+                article {
+                    header { +"State" }
+
+                    table {
+                        tbody {
+                            tr {
+                                td(classes = "narrow center") { icon("eye") }
+                                td {
+                                    switchLink(
+                                        compoForm.data.visible,
+                                        "Everyone can see this compo",
+                                        "This compo is hidden",
+                                        "/admin/compos/${compoForm.data.id}/setVisible"
+                                    )
+                                }
+                            }
+                            tr {
+                                td(classes = "narrow center") { icon("file-arrow-up") }
+                                td {
+                                    switchLink(
+                                        compoForm.data.allowSubmit,
+                                        "Users can submit and update entries",
+                                        "Users cannot submit and update entries",
+                                        "/admin/compos/${compoForm.data.id}/setSubmit",
+                                        compoForm.data.allowVote
+                                    )
+                                }
+                            }
+                            tr {
+                                td(classes = "narrow center") { icon("check-to-slot") }
+                                td {
+                                    switchLink(
+                                        compoForm.data.allowVote,
+                                        "Users can vote the entries of this compo",
+                                        "Users cannot vote the entries of this compo",
+                                        "/admin/compos/${compoForm.data.id}/setVoting",
+                                        compoForm.data.allowSubmit
+                                    )
+                                }
+                            }
+                            tr {
+                                td(classes = "narrow center") { icon("square-poll-horizontal") }
+                                td {
+                                    switchLink(
+                                        compoForm.data.publicResults,
+                                        "Everyone can see the results of this compo",
+                                        "The results of this compo are hidden",
+                                        "/admin/compos/${compoForm.data.id}/publishResults"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
             }, if (qualified.isNotEmpty() || nonQualified.isNotEmpty()) {
                 {
                     if (qualified.isNotEmpty()) {
