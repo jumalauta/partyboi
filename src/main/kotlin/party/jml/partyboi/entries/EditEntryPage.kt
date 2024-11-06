@@ -5,12 +5,10 @@ import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.html.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Filesize
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.editEntryForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.components.columns
@@ -19,24 +17,29 @@ import java.time.format.DateTimeFormatter
 
 object EditEntryPage {
     fun render(
-        app: AppServices,
         entryUpdateForm: Form<EntryUpdate>,
         screenshotForm: Form<NewScreenshot>,
+        compos: List<Compo>,
         files: List<FileDesc>,
         screenshot: Option<String>,
-    ): Either<AppError, Renderable> = either {
-        val compos = app.compos.getAllCompos().bind()
-        Page("Edit entry") {
-            h1 { +"Edit entry" }
+    ): Page {
+        val isFrozen = compos.find { it.id == entryUpdateForm.data.compoId }?.allowSubmit != true
+        val title = if (isFrozen) "Entry" else "Edit entry"
+
+        return Page(title) {
+            h1 { +title }
 
             columns(
                 {
-                    editEntryForm(
-                        "/entries/${entryUpdateForm.data.id}",
-                        compos.filter { it.allowSubmit },
-                        entryUpdateForm
-                    )
-
+                    if (isFrozen) {
+                        entryDetails(compos, entryUpdateForm)
+                    } else {
+                        editEntryForm(
+                            "/entries/${entryUpdateForm.data.id}",
+                            compos,
+                            entryUpdateForm
+                        )
+                    }
                 },
                 {
                     screenshot.map {

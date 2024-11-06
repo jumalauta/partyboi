@@ -42,18 +42,20 @@ fun Application.configureEntriesRouting(app: AppServices) {
     ) = either {
         val files = app.files.getAllVersions(entryId.bind()).bind()
         val screenshot = app.screenshots.get(entryId.bind()).map { "/entries/${entryId.bind()}/screenshot.jpg" }
+        val entry = app.entries.get(entryId.bind(), user.bind().id).bind()
+        val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
         EditEntryPage.render(
-            app = app,
             entryUpdateForm = entryUpdateForm ?: Form(
                 EntryUpdate::class,
-                EntryUpdate.fromEntry(app.entries.get(entryId.bind(), user.bind().id).bind()),
+                EntryUpdate.fromEntry(entry),
                 initial = true
             ),
             screenshotForm = screenshotForm ?: Form(NewScreenshot::class, NewScreenshot.Empty, true),
+            compos = compos,
             files = files,
             screenshot = screenshot,
-        ).bind()
+        )
     }
 
     routing {

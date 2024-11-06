@@ -46,9 +46,66 @@ fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<Ent
     }
 }
 
+fun FlowContent.entryDetails(compos: List<Compo>, values: Form<EntryUpdate>) {
+    article {
+        renderReadonlyFields(values, mapOf("compoId" to compos))
+    }
+}
+
 fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
     form(action = url, method = FormMethod.post, encType = FormEncType.multipartFormData) {
         block()
+    }
+}
+
+fun TABLE.readonlyField(label: String, value: String) {
+    tr {
+        th { small { +label } }
+        td { +if (value.isNotEmpty()) value else "–" }
+    }
+}
+
+fun <T : Validateable<T>> FlowContent.renderReadonlyFields(
+    form: Form<T>,
+    options: Map<String, List<DropdownOptionSupport>>? = null
+) {
+    table {
+        form.forEach { data ->
+            if (data.type == InputType.file) {
+                // Render nothing
+            } else if (data.type == InputType.hidden) {
+                // Render nothing
+            } else if (data.type == InputType.checkBox) {
+                readonlyField(data.label, if (data.value.isNotEmpty()) "True" else "False")
+            } else {
+                val opts = options?.get(data.key)
+                if (opts == null) {
+                    if (data.presentation == FieldPresentation.large) {
+                        if (data.value.isNotEmpty()) {
+                            tr {
+                                th {
+                                    colSpan = "2"
+                                    small { +data.label }
+                                }
+                            }
+                            tr {
+                                td {
+                                    colSpan = "2"
+                                    +data.value
+                                }
+                            }
+                        }
+                    } else {
+                        readonlyField(data.label, data.value)
+                    }
+                } else {
+                    val opt = opts
+                        .map { it.toDropdownOption() }
+                        .find { it.value == data.value }
+                    readonlyField(data.label, opt?.label ?: data.value)
+                }
+            }
+        }
     }
 }
 
