@@ -27,10 +27,16 @@ fun Application.configureEntriesRouting(app: AppServices) {
         newEntryForm: Form<NewEntry>? = null,
     ) = either {
         val user = userSession.bind()
+        val userEntries = app.entries.getUserEntries(user.id).bind()
+        val screenshots = userEntries
+            .map { app.screenshots.get(it.id) }
+            .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
+
         EntriesPage.render(
             newEntryForm = newEntryForm ?: Form(NewEntry::class, NewEntry.Empty, initial = true),
             compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) },
-            userEntries = app.entries.getUserEntries(user.id).bind(),
+            userEntries = userEntries,
+            screenshots = screenshots,
         )
     }
 
@@ -41,7 +47,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
         screenshotForm: Form<NewScreenshot>? = null,
     ) = either {
         val files = app.files.getAllVersions(entryId.bind()).bind()
-        val screenshot = app.screenshots.get(entryId.bind()).map { "/entries/${entryId.bind()}/screenshot.jpg" }
+        val screenshotUrl = app.screenshots.get(entryId.bind()).map { it.externalUrl() }
         val entry = app.entries.get(entryId.bind(), user.bind().id).bind()
         val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
@@ -54,7 +60,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             screenshotForm = screenshotForm ?: Form(NewScreenshot::class, NewScreenshot.Empty, true),
             compos = compos,
             files = files,
-            screenshot = screenshot,
+            screenshot = screenshotUrl,
         )
     }
 
@@ -105,7 +111,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         .bind()
                 }.fold(
                     { call.respondPage(it) },
-                    { call.respondFile(it.toFile()) }
+                    { call.respondFile(it.systemPath.toFile()) }
                 )
             }
 

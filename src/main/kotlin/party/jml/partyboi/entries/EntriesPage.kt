@@ -1,5 +1,9 @@
 package party.jml.partyboi.entries
 
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.flatten
+import arrow.core.toOption
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.form.Form
@@ -8,12 +12,16 @@ import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
+import party.jml.partyboi.templates.components.entryCard
+import party.jml.partyboi.templates.components.icon
+import java.nio.file.Path
 
 object EntriesPage {
     fun render(
         newEntryForm: Form<NewEntry>,
         compos: List<Compo>,
         userEntries: List<EntryWithLatestFile>,
+        screenshots: List<Screenshot>,
     ) =
         Page("Submit entries") {
             h1 { +"Entries" }
@@ -27,52 +35,49 @@ object EntriesPage {
                     { submitNewEntryForm("/entries", compos, newEntryForm) }
                 } else null,
                 if (userEntries.isNotEmpty()) {
-                    { entryList(userEntries, compos) }
+                    { entryList(userEntries, compos, screenshots) }
                 } else null
             )
         }
 }
 
-fun FlowContent.entryList(userEntries: List<EntryWithLatestFile>, compos: List<Compo>) {
+fun FlowContent.entryList(
+    userEntries: List<EntryWithLatestFile>,
+    compos: List<Compo>,
+    screenshots: List<Screenshot>,
+) {
     if (userEntries.isNotEmpty()) {
-        article {
-            cardHeader("My entries")
-            table {
-                thead {
-                    tr {
-                        th { +"Title" }
-                        th { +"Author" }
-                        th { +"Compo" }
-                        th {}
+        h1 { +"My entries" }
+
+        userEntries.forEach { entry ->
+            entryCard(entry, screenshots.find { it.entryId == entry.id }, compos) {
+                val compo = compos.find { it.id == entry.compoId }
+                val allowSubmit = compo?.allowSubmit == true
+
+                a {
+                    href = "/entries/${entry.id}"
+                    role = "button"
+                    if (allowSubmit) {
+                        icon("pen-to-square")
+                        +" Edit"
+                    } else {
+                        icon("eye")
+                        +" View"
                     }
                 }
-                tbody {
-                    userEntries.map { entry ->
-                        val compo = compos.find { it.id == entry.compoId }
-                        tr {
-                            td {
-                                a(href = "/entries/${entry.id}") {
-                                    +entry.title
-                                }
-                            }
-                            td { +entry.author }
-                            td { +(compo?.name ?: "Invalid compo") }
-                            td {
-                                if (compo?.allowSubmit == true) {
-                                    a {
-                                        href = "#"
-                                        role = "button"
-                                        onClick = Javascript.build {
-                                            confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
-                                                httpDelete("/entries/${entry.id}")
-                                                refresh()
-                                            }
-                                        }
-                                        +"Delete"
-                                    }
-                                }
+
+                if (compo?.allowSubmit == true) {
+                    a {
+                        href = "#"
+                        role = "button"
+                        onClick = Javascript.build {
+                            confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
+                                httpDelete("/entries/${entry.id}")
+                                refresh()
                             }
                         }
+                        icon("trash")
+                        +" Delete"
                     }
                 }
             }

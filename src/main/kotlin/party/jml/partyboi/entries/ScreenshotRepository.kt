@@ -59,9 +59,9 @@ class ScreenshotRepository(app: AppServices) {
         store(entryId, tempFile)
     }
 
-    fun get(entryId: Int): Option<Path> {
+    fun get(entryId: Int): Option<Screenshot> {
         val path = getFile(entryId)
-        return if (path.exists()) Some(path) else None
+        return if (path.exists()) Some(Screenshot(entryId, path)) else None
     }
 
     private fun getFile(entryId: Int): Path =
@@ -77,6 +77,13 @@ class ScreenshotRepository(app: AppServices) {
         val lcName = filename.lowercase()
         return magicWords.map { (key, value) -> if (lcName.contains(key)) value else 0 }.sum()
     }
+}
+
+data class Screenshot(
+    val entryId: Int,
+    val systemPath: Path,
+) {
+    fun externalUrl() = "/entries/$entryId/screenshot.jpg"
 }
 
 data class NewScreenshot(

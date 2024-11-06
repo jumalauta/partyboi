@@ -200,6 +200,32 @@ button.flat-button.off > * {
   max-height: 30vh;
 }
 
+article.entry {
+  display: flex;
+  gap: var(--pico-spacing);
+  padding-bottom: 0;
+}
+
+article.entry figure {
+  width: 25%;
+  margin: calc(var(--pico-spacing) * -1);
+  margin-right: 0;
+  margin-bottom: 0;
+  border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
+  background-color: var(--pico-primary-background);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+article.entry section {
+  flex-grow: 1;
+}
+
+article.entry table td {
+  width: 90%;
+}
+
 @media (min-width: 1280px) {
   .two-columns {
     display: flex;
