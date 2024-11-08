@@ -3,7 +3,6 @@ package party.jml.partyboi.entries
 import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
@@ -165,7 +164,7 @@ class EntryRepository(private val app: AppServices) {
         it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
     }
 
-    fun getVotableEntries(userId: Int): Either<AppError, List<VoteableEntry>> = db.use {
+    fun getVotableEntries(userId: Int): Either<AppError, List<VotableEntry>> = db.use {
         it.many(
             queryOf(
                 """
@@ -185,7 +184,7 @@ class EntryRepository(private val app: AppServices) {
             """.trimIndent(),
                 userId
             )
-                .map(VoteableEntry.fromRow)
+                .map(VotableEntry.fromRow)
         )
     }
 }
@@ -337,18 +336,20 @@ data class EntryUpdate(
     }
 }
 
-data class VoteableEntry(
-    val compoId: Int,
+data class VotableEntry(
+    override val compoId: Int,
     val compoName: String,
     val entryId: Int,
     val runOrder: Int,
-    val title: String,
-    val author: String,
+    override val title: String,
+    override val author: String,
     val points: Option<Int>,
-) {
+) : EntryBase {
+    override val id = entryId
+
     companion object {
-        val fromRow: (Row) -> VoteableEntry = { row ->
-            VoteableEntry(
+        val fromRow: (Row) -> VotableEntry = { row ->
+            VotableEntry(
                 compoId = row.int("compo_id"),
                 compoName = row.string("compo_name"),
                 entryId = row.int("entry_id"),

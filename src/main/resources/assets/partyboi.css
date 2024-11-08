@@ -198,6 +198,23 @@ button.flat-button.off > * {
   width: 20px;
 }
 
+td.wide,
+th.wide {
+  width: 99%;
+}
+
+td.tight,
+th.tight {
+  width: 20px;
+  padding-left: calc(var(--pico-spacing) * 0.125);
+  padding-right: calc(var(--pico-spacing) * 0.125);
+}
+
+td.tight > *,
+th.tight > * {
+  margin: 0;
+}
+
 .center {
   text-align: center;
 }
@@ -222,6 +239,17 @@ article.entry figure {
   margin-right: 0;
   margin-bottom: 0;
   border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
+  background-color: var(--pico-primary-background);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+td.screenshot figure {
+  width: 120px;
+  height: 80px;
+  margin-top: calc(var(--pico-spacing) * -0.5);
+  margin-bottom: calc(var(--pico-spacing) * -0.5);
   background-color: var(--pico-primary-background);
   background-size: cover;
   background-position: center;

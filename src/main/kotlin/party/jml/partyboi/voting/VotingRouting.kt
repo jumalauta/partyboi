@@ -15,23 +15,30 @@ fun Application.configureVotingRouting(app: AppServices) {
         authenticate("user") {
             get("/vote") {
                 val user = call.userSession()
-                call.respondEither({ either {
-                    val entries = app.entries.getVotableEntries(user.bind().id)
-                    UserVotingPage.render(entries.bind())
-                }})
+                call.respondEither({
+                    either {
+                        val entries = app.entries.getVotableEntries(user.bind().id).bind()
+                        UserVotingPage.render(
+                            entries = entries,
+                            screenshots = app.screenshots.getForEntries(entries),
+                        )
+                    }
+                })
             }
         }
 
         // API routes (we don't want to redirect user to login page)
         authenticate("user", optional = true) {
             put("/vote/{entry}/{points}") {
-                call.apiRespond { either {
-                    val user = call.userSession().bind()
-                    val entryId = call.parameterInt("entry").bind()
-                    val points = call.parameterInt("points").bind()
+                call.apiRespond {
+                    either {
+                        val user = call.userSession().bind()
+                        val entryId = call.parameterInt("entry").bind()
+                        val points = call.parameterInt("points").bind()
 
-                    app.votes.castVote(user.id, entryId, points).bind()
-                } }
+                        app.votes.castVote(user.id, entryId, points).bind()
+                    }
+                }
             }
         }
     }
