@@ -66,6 +66,8 @@ class ScreenService(private val app: AppServices) {
 
     fun update(id: Int, slide: Slide<*>) = repository.update(id, slide)
 
+    fun delete(id: Int) = repository.delete(id)
+
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
     fun showOnInfo(id: Int, visible: Boolean) = repository.showOnInfo(id, visible)

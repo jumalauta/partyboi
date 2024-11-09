@@ -73,15 +73,6 @@ object AdminScreenPage {
         renderWithScreenMonitoring {
             article {
                 table {
-                    thead {
-                        tr {
-                            th(classes = "narrow") {}
-                            th(classes = "narrow") {}
-                            th { +"Name" }
-                            th { +"Type" }
-                            th {}
-                        }
-                    }
                     tbody(classes = "sortable") {
                         attributes.put("data-draggable", "tr")
                         attributes.put("data-handle", ".handle")
@@ -89,8 +80,8 @@ object AdminScreenPage {
                         slides.forEach { slide ->
                             tr {
                                 attributes.put("data-dragid", slide.id.toString())
-                                td(classes = "handle") { icon("arrows-up-down") }
-                                td {
+                                td(classes = "handle tight") { icon("arrows-up-down") }
+                                td(classes = "tight") {
                                     if (screenState.id == slide.id) {
                                         icon("tv")
                                     } else {
@@ -101,11 +92,13 @@ object AdminScreenPage {
                                         }
                                     }
                                 }
-                                td { a(href = "/admin/screen/${slideSet}/${slide.id}") { +slide.getName() } }
-                                td {
-                                    val type = slide.slide.getType()
-                                    icon(type.icon)
-                                    +" ${type.description}"
+                                td(classes = "wide") {
+                                    a(href = "/admin/screen/${slideSet}/${slide.id}") {
+                                        val type = slide.slide.getType()
+                                        icon(type.icon, type.description)
+                                        +" "
+                                        +slide.getName()
+                                    }
                                 }
                                 td(classes = "settings") {
                                     toggleButton(
@@ -117,6 +110,11 @@ object AdminScreenPage {
                                         slide.showOnInfoPage,
                                         IconSet.showOnInfoPage,
                                         "/admin/screen/${slide.id}/showOnInfo"
+                                    )
+                                    deleteButton(
+                                        url = "/admin/screen/${slide.id}",
+                                        tooltipText = "Delete ${slide.getName()}",
+                                        confirmation = "Do you really want to delete slide ${slide.getName()}?"
                                     )
                                 }
                             }

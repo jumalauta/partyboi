@@ -83,7 +83,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     renderSlideSetPage(call.parameterString("slideSet"))
                 })
             }
-            
+
             get("/admin/screen/{slideSet}/{slideId}") {
                 call.respondEither({
                     renderSlideEdit(
@@ -207,6 +207,15 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 }
             }
 
+            delete("/admin/screen/{slideId}") {
+                call.apiRespond {
+                    either {
+                        call.userSession().bind()
+                        val slideId = call.parameterInt("slideId").bind()
+                        app.screen.delete(slideId).bind()
+                    }
+                }
+            }
         }
     }
 }

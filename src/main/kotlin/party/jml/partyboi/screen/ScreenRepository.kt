@@ -135,6 +135,10 @@ class ScreenRepository(private val app: AppServices) {
         )
     }
 
+    fun delete(id: Int): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
+    }
+
     fun replaceSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
         db.transaction {
             either {
