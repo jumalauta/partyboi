@@ -68,6 +68,8 @@ class ScreenService(private val app: AppServices) {
 
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
+    fun showOnInfo(id: Int, visible: Boolean) = repository.showOnInfo(id, visible)
+
     fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
     fun stopSlideSet() {

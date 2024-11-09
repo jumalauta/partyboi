@@ -190,8 +190,9 @@ button.flat-button.off > * {
   opacity: 0.25;
 }
 
-.align-right {
+td.settings {
   text-align: right;
+  white-space: nowrap;
 }
 
 .narrow {

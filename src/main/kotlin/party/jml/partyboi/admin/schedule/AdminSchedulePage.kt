@@ -43,7 +43,7 @@ object AdminSchedulePage {
                                                 tr {
                                                     td { +event.time.toLocalTime().toString() }
                                                     td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
-                                                    td(classes = "align-right") {
+                                                    td(classes = "settings") {
                                                         deleteButton(
                                                             url = "/admin/schedule/events/${event.id}",
                                                             tooltipText = "Delete event",
@@ -106,7 +106,7 @@ object AdminSchedulePage {
                                 triggers.forEach { trigger ->
                                     tr {
                                         td { +trigger.description }
-                                        td(classes = "align-right") {
+                                        td(classes = "settings") {
                                             when (trigger) {
                                                 is SuccessfulTriggerRow -> icon(
                                                     "circle-check",

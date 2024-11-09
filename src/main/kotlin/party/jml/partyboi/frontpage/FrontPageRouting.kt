@@ -15,7 +15,9 @@ fun Application.configureFrontPageRouting(app: AppServices) {
                 call.respondEither({
                     either {
                         val events = app.events.getAll().bind().filter { it.visible }
-                        val infoScreen = app.screen.getSlideSet(SlideSetRow.DEFAULT).bind().filter { it.visible }
+                        val infoScreen = app.screen
+                            .getSlideSet(SlideSetRow.DEFAULT).bind()
+                            .filter { it.showOnInfoPage }
                         FrontPage.render(events, infoScreen)
                     }
                 })

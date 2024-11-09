@@ -116,7 +116,7 @@ object AdminEditCompoPage {
                                         td(classes = "handle") { icon("arrows-up-down") }
                                         td { a(href = "/entries/${entry.id}") { +entry.title } }
                                         td { +entry.author }
-                                        td(classes = "align-right") {
+                                        td(classes = "settings") {
                                             toggleButton(
                                                 entry.qualified,
                                                 IconSet.qualified,
@@ -152,7 +152,7 @@ object AdminEditCompoPage {
                                         attributes.put("data-dragid", entry.id.toString())
                                         td { a(href = "/entries/${entry.id}") { +entry.title } }
                                         td { +entry.author }
-                                        td(classes = "align-right") {
+                                        td(classes = "settings") {
                                             toggleButton(
                                                 entry.qualified,
                                                 IconSet.qualified,

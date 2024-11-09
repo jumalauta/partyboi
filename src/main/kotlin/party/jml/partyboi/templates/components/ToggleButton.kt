@@ -39,9 +39,14 @@ data class IconSet(
         val visibility = IconSet(Icon.visible, Icon.hidden)
         val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
         val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
-        val resultsPublic = IconSet(Icon("square-poll-horizontal", "Results are public"), Icon("square-poll-horizontal", "Results are secret"))
+        val resultsPublic = IconSet(
+            Icon("square-poll-horizontal", "Results are public"),
+            Icon("square-poll-horizontal", "Results are secret")
+        )
         val qualified = IconSet(Icon("star", "Qualified"), Icon("star", "Unqualified / disqualified"))
         val scheduled = IconSet(Icon("clock", "Pending"), Icon("ban", "Disabled"))
+        val showOnInfoPage =
+            IconSet(Icon("circle-info", "Show on info page"), Icon("circle-info", "Do not show on info page"))
     }
 }
 

@@ -44,7 +44,7 @@ object AdminComposPage {
                                         val count = entries.get(compo.id)?.size ?: 0
                                         +count.toString()
                                     }
-                                    td(classes = "align-right") {
+                                    td(classes = "settings") {
                                         toggleButton(
                                             compo.visible,
                                             IconSet.visibility,

@@ -60,7 +60,7 @@ object AdminScreenPage {
                         th(classes = "narrow") {}
                         th { +"Name" }
                         th { +"Type" }
-                        th(classes = "narrow") {}
+                        th {}
                     }
                 }
                 tbody(classes = "sortable") {
@@ -88,11 +88,16 @@ object AdminScreenPage {
                                 icon(type.icon)
                                 +" ${type.description}"
                             }
-                            td(classes = "align-right") {
+                            td(classes = "settings") {
                                 toggleButton(
                                     slide.visible,
                                     IconSet.visibility,
                                     "/admin/screen/${slide.id}/setVisible"
+                                )
+                                toggleButton(
+                                    slide.showOnInfoPage,
+                                    IconSet.showOnInfoPage,
+                                    "/admin/screen/${slide.id}/showOnInfo"
                                 )
                             }
                         }
@@ -203,6 +208,7 @@ fun FlowContent.postButton(url: String, block: BUTTON.() -> Unit) {
 data class SlideEditData(
     val id: Int,
     val visible: Boolean,
+    val showOnInfoPage: Boolean,
     val slide: Slide<*>,
 ) {
     fun getName(): String =
@@ -213,6 +219,7 @@ data class SlideEditData(
             SlideEditData(
                 id = row.id,
                 visible = row.visible,
+                showOnInfoPage = row.showOnInfoPage,
                 slide = row.getSlide(),
             )
         }

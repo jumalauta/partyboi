@@ -41,7 +41,8 @@ class ScreenRepository(private val app: AppServices) {
                 type text NOT NULL,
                 content jsonb NOT NULL,
                 visible boolean NOT NULL DEFAULT true,
-                run_order integer NOT NULL DEFAULT 0
+                run_order integer NOT NULL DEFAULT 0,
+                show_on_info boolean NOT NULL DEFAULT false
             )
         """
         )
@@ -169,6 +170,10 @@ class ScreenRepository(private val app: AppServices) {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
     }
 
+    fun showOnInfo(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
+        it.updateOne(queryOf("UPDATE screen SET show_on_info = ? WHERE id = ?", visible, id))
+    }
+
     fun setRunOrder(id: Int, order: Int): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
@@ -204,6 +209,7 @@ data class ScreenRow(
     val content: String,
     val visible: Boolean,
     val runOrder: Int,
+    val showOnInfoPage: Boolean,
 ) {
     fun getSlide(): Slide<*> =
         when (type) {
@@ -224,6 +230,7 @@ data class ScreenRow(
                 content = row.string("content"),
                 visible = row.boolean("visible"),
                 runOrder = row.int("run_order"),
+                showOnInfoPage = row.boolean("show_on_info"),
             )
         }
     }
