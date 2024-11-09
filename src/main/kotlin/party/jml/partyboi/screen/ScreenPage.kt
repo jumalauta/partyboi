@@ -18,7 +18,7 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article { slide.render(this) }
+                    article(classes = slide::class.simpleName) { slide.render(this) }
                 }
                 main {
                     attributes["id"] = "screen2"
