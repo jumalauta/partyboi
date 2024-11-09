@@ -2,13 +2,11 @@ package party.jml.partyboi.admin.screen
 
 import arrow.core.Either
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.*
@@ -19,7 +17,10 @@ import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
-import party.jml.partyboi.templates.*
+import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.Redirection
+import party.jml.partyboi.templates.Renderable
+import party.jml.partyboi.templates.respondEither
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     routing {
@@ -27,7 +28,6 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             val current = app.screen.currentSlide()
             AdminScreenPage.renderAdHocForm(
                 form = form ?: current.getForm(),
-                currentlyRunning = app.screen.currentState().first.slideSet == SlideSetRow.ADHOC,
                 slideSets = app.screen.getSlideSets().bind(),
             )
         }
@@ -83,20 +83,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     renderSlideSetPage(call.parameterString("slideSet"))
                 })
             }
-
-            get("/admin/screen/{slideSet}/presentation") {
-                // TODO: Presentation mode will be removed
-                call.respondEither({
-                    either {
-                        val slideSetName = call.parameterString("slideSet").bind()
-                        val slides = app.screen.getSlideSet(slideSetName).bind().filter { it.visible }
-                        val (state, isRunning) = app.screen.currentState()
-
-                        ScreenPresentation.render(slideSetName, slides, state, isRunning)
-                    }
-                })
-            }
-
+            
             get("/admin/screen/{slideSet}/{slideId}") {
                 call.respondEither({
                     renderSlideEdit(

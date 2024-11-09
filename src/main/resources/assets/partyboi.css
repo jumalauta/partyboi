@@ -280,3 +280,13 @@ article.entry table td {
     max-width: 50%;
   }
 }
+
+.screen-preview-container {
+  position: relative;
+}
+
+iframe.screen-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
