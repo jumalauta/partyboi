@@ -163,6 +163,9 @@ object AdminScreenPage {
                     attributes.put("height", "1080")
                 }
             }
+            a(href = "/screen", target = "_blank") {
+                +"Open in new tab"
+            }
         })
         script(src = "/assets/refreshOnSlideChange.js") {}
     }
