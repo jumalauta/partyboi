@@ -1,19 +1,16 @@
 package party.jml.partyboi.voting
 
-import arrow.core.Either
-import arrow.core.Option
-import arrow.core.left
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.right
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.entries.Entry
+import party.jml.partyboi.entries.VotableEntry
+import party.jml.partyboi.signals.Signal
 
 class VoteService(val app: AppServices) {
     private val repository = VoteRepository(app.db)
@@ -30,14 +27,42 @@ class VoteService(val app: AppServices) {
             }
         }
 
-    suspend fun startLiveVoting(compoId: Int) = live.emit(LiveVoteState(true, compoId, emptyList()))
-    suspend fun addEntryToLiveVoting(entry: Entry) = live.emit(live.value.with(entry))
-    suspend fun closeLiveVoting() = live.emit(LiveVoteState.Empty)
-
-    fun waitForLiveVoteUpdate(): Flow<LiveVoteState> {
-        val current = live.value
-        return live.filter { it != current }.take(1)
+    suspend fun startLiveVoting(compoId: Int) {
+        either {
+            val compo = app.compos.getById(compoId).bind()
+            live.emit(LiveVoteState(true, compo, emptyList()))
+            app.signals.emit(Signal.liveVotingOpened(compoId))
+        }
     }
+
+    suspend fun addEntryToLiveVoting(entry: Entry) {
+        live.emit(live.value.with(entry))
+        app.signals.emit(Signal.liveVotingEntry(entry.id))
+    }
+
+    suspend fun closeLiveVoting() {
+        live.emit(LiveVoteState.Empty)
+        app.signals.emit(Signal.liveVotingClosed())
+    }
+
+    fun getLiveVoteState(): Option<LiveVoteState> = if (live.value.open) live.value.some() else none()
+
+    fun getVotableEntries(userId: Int): Either<AppError, List<VotableEntry>> =
+        either {
+            val normalVoting = app.entries.getVotableEntries(userId).bind()
+            val liveVoting = if (live.value.open) {
+                val userVotes = repository.getUserVotes(userId).bind()
+                live.value.entries.map { entry ->
+                    VotableEntry.apply(
+                        entry,
+                        "Live: ${live.value.compo.name}",
+                        userVotes.find { it.entryId == entry.id }?.points
+                    )
+                }
+            } else emptyList()
+
+            liveVoting + normalVoting
+        }
 
     fun getResults(): Either<AppError, List<CompoResult>> =
         repository.getResults(onlyPublic = false)
@@ -70,15 +95,15 @@ class VoteService(val app: AppServices) {
 
 data class LiveVoteState(
     val open: Boolean,
-    val compoId: Int,
+    val compo: Compo,
     val entries: List<Entry>,
 ) {
     fun openFor(entry: Entry): Boolean =
-        open && compoId == entry.compoId && entries.find { it.id == entry.id } != null
+        open && compo.id == entry.compoId && entries.find { it.id == entry.id } != null
 
     fun with(entry: Entry) = copy(entries = entries + entry)
 
     companion object {
-        val Empty = LiveVoteState(false, -1, emptyList())
+        val Empty = LiveVoteState(false, Compo.Empty, emptyList())
     }
 }

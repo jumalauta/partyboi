@@ -86,7 +86,7 @@ function setContent(target, html) {
 }
 
 // Resize screen monitoring
-const resizePreview = () => {
+function resizePreview() {
   const container = document.querySelector(".screen-preview-container");
   const frame = document.querySelector(".screen-preview");
   const ratio = container.offsetWidth / frame.offsetWidth;
@@ -97,10 +97,36 @@ const resizePreview = () => {
   container.style.transformOrigin = "top left";
   container.style.width = width + "px";
   container.style.height = height + "px";
-};
+}
 
 resizePreview();
 window.addEventListener("resize", resizePreview);
+
+// Update screen on signals
+function refreshOnSignal(signalType) {
+  let retryCount = 0;
+
+  function wait() {
+    if (++retryCount === 20) {
+      console.log("20 retries failed, reload page");
+      location.reload();
+      return;
+    }
+    console.log("Waiting for signal", signalType);
+    fetch(`/signals/${signalType}`)
+      .then(() => {
+        smoothReload();
+        wait();
+      })
+      .catch(() => {
+        const sleep = 1000 * retryCount;
+        console.log(`Fetch failed, retry in ${sleep} ms`);
+        setTimeout(wait, sleep);
+      });
+  }
+
+  wait();
+}
 
 // Init
 initInteractions(document);

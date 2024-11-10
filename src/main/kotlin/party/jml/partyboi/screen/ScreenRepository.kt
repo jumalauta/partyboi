@@ -223,7 +223,7 @@ data class ScreenRow(
             else -> TODO("JSON decoding not implemented for $type")
         }
 
-    fun whenShown(): Signal = Signal(SignalType.slideShown, id.toString())
+    fun whenShown(): Signal = Signal.slideShown(id)
 
     companion object {
         val fromRow: (Row) -> ScreenRow = { row ->

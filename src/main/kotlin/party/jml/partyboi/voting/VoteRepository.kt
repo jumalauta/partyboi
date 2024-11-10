@@ -1,7 +1,6 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
-import arrow.core.raise.result
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.AppError

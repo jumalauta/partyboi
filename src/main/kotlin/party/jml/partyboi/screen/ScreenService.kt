@@ -14,6 +14,7 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.triggers.*
 import party.jml.partyboi.voting.CompoResult
@@ -184,7 +185,7 @@ class ScreenService(private val app: AppServices) {
     private fun show(row: ScreenRow): Unit =
         runBlocking {
             state.emit(ScreenState.fromRow(row))
-            app.signals.emit(SignalType.slideShown, row.id.toString())
+            app.signals.emit(Signal.slideShown(row.id))
         }
 }
 

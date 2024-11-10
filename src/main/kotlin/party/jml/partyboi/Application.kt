@@ -19,6 +19,7 @@ import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
+import party.jml.partyboi.signals.configureSignalRouting
 import party.jml.partyboi.voting.configureVotingRouting
 
 fun main(args: Array<String>) {
@@ -45,6 +46,7 @@ fun Application.module() {
     configureQrCodeRouting()
     configureScheduleRouting(app)
     configureAdminAssetsRouting(app)
+    configureSignalRouting(app)
 
     configureStaticContent()
 

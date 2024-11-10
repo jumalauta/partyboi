@@ -1,64 +1,68 @@
 package party.jml.partyboi.voting
 
+import arrow.core.Option
 import kotlinx.html.*
 import party.jml.partyboi.entries.Screenshot
 import party.jml.partyboi.entries.VotableEntry
+import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
+import party.jml.partyboi.templates.refreshOnSignal
 
 object UserVotingPage {
-    fun render(entries: List<VotableEntry>, screenshots: List<Screenshot>) =
-        Page("Voting") {
-            h1 { +"Voting" }
+    fun render(
+        entries: List<VotableEntry>,
+        screenshots: List<Screenshot>,
+        liveVote: Option<LiveVoteState>,
+    ) = Page("Voting") {
+        refreshOnSignal(SignalType.vote)
+        refreshOnSignal(SignalType.liveVote)
 
-            if (entries.isEmpty()) {
-                article { +"Nothing to vote at the moment." }
+        h1 { +"Voting" }
+
+        if (entries.isEmpty() && liveVote.isNone()) {
+            article { +"Nothing to vote at the moment." }
+        }
+
+        liveVote.map { live ->
+            if (live.entries.isEmpty()) {
+                article { +"Live voting begins when the compo starts..." }
             }
+        }
 
-            entries.groupBy { it.compoId }.forEach { compo ->
-                article {
-                    cardHeader(compo.value.first().compoName)
-                    section {
-                        table {
-                            thead {
-                                tr {
-                                    th(classes = "tight") { +"#" }
-                                    th {}
-                                    th(classes = "wide") { +"Author – Entry" }
-                                    for (i in VoteService.POINT_RANGE) {
-                                        th(classes = "tight center") { +i.toString() }
-                                    }
+        entries.groupBy { it.compoId }.forEach { compo ->
+            article {
+                cardHeader(compo.value.first().compoName)
+                section {
+                    table {
+                        thead {
+                            tr {
+                                th(classes = "tight") { +"#" }
+                                th {}
+                                th(classes = "wide") { +"Author – Entry" }
+                                for (i in VoteService.POINT_RANGE) {
+                                    th(classes = "tight center") { +i.toString() }
                                 }
                             }
-                            tbody {
-                                compo.value.forEachIndexed { index, entry ->
-                                    val screenshot = screenshots.find { it.entryId == entry.entryId }
-                                    tr {
-                                        td(classes = "tight") { +"${index + 1}." }
-                                        td(classes = "screenshot") {
-                                            figure {
-                                                if (screenshot != null) {
-                                                    attributes["style"] =
-                                                        "background-image: url(${screenshot.externalUrl()})"
-                                                }
+                        }
+                        tbody {
+                            compo.value.forEachIndexed { index, entry ->
+                                val screenshot = screenshots.find { it.entryId == entry.entryId }
+                                tr {
+                                    td(classes = "tight") { +"${index + 1}." }
+                                    td(classes = "screenshot") {
+                                        figure {
+                                            if (screenshot != null) {
+                                                attributes["style"] =
+                                                    "background-image: url(${screenshot.externalUrl()})"
                                             }
                                         }
-                                        th(classes = "wide") { +"${entry.author} – ${entry.title}" }
-                                        val entryId = "entry-${entry.entryId}"
-                                        for (i in VoteService.POINT_RANGE) {
-                                            val inputId = "$entryId-$i"
-                                            td(classes = "tight center") {
-                                                input {
-                                                    type = InputType.radio
-                                                    id = inputId
-                                                    name = "entry-${entry.entryId}"
-                                                    checked = entry.points.getOrNull() == i
-                                                    onClick = Javascript.build {
-                                                        httpPut("/vote/${entry.entryId}/$i")
-                                                    }
-                                                }
-                                            }
+                                    }
+                                    th(classes = "wide") { +"${entry.author} – ${entry.title}" }
+                                    for (points in VoteService.POINT_RANGE) {
+                                        td(classes = "tight center") {
+                                            voteButton(entry.id, points, entry.points.getOrNull() == points)
                                         }
                                     }
                                 }
@@ -68,4 +72,17 @@ object UserVotingPage {
                 }
             }
         }
+    }
+}
+
+fun FlowContent.voteButton(entryId: Int, points: Int, selected: Boolean) {
+    input {
+        type = InputType.radio
+        id = "entry-$entryId-$points"
+        name = "entry-${entryId}"
+        checked = selected
+        onClick = Javascript.build {
+            httpPut("/vote/${entryId}/$points")
+        }
+    }
 }

@@ -3,7 +3,6 @@ package party.jml.partyboi.triggers
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
-import kotlinx.html.InputType
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -14,7 +13,6 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
-import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.signals.Signal
 import java.time.LocalDateTime
 
@@ -22,7 +20,8 @@ class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
 
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS trigger (
                 id SERIAL PRIMARY KEY,
                 type text NOT NULL,
@@ -33,28 +32,32 @@ class TriggerRepository(val app: AppServices) : Logging() {
                 executed_at timestamp with time zone,
                 error text
             ) 
-        """)
+        """
+        )
     }
 
     suspend fun start() {
         app.signals.flow.collect { execute(it) }
     }
 
-    fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): Either<AppError, TriggerRow> = db.use(tx) {
-        either {
-            it.one(
-                queryOf("""
+    fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): Either<AppError, TriggerRow> =
+        db.use(tx) {
+            either {
+                it.one(
+                    queryOf(
+                        """
                 INSERT INTO trigger (signal, type, action, description)
                 VALUES (?, ?, ?::jsonb, ?)
                 RETURNING *
             """,
-                    signal.toString(),
-                    action.javaClass.name,
-                    action.toJson(),
-                    action.description(app).bind(),
-                ).map(TriggerRow.fromRow))
-        }.flatten()
-    }
+                        signal.toString(),
+                        action.javaClass.name,
+                        action.toJson(),
+                        action.description(app).bind(),
+                    ).map(TriggerRow.fromRow)
+                )
+            }.flatten()
+        }
 
     fun setEnabled(triggerId: Int, enabled: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET enabled = ? WHERE id = ?", enabled, triggerId))
@@ -62,22 +65,28 @@ class TriggerRepository(val app: AppServices) : Logging() {
 
     fun getTriggersForSignal(signal: Signal) = db.use {
         it.many(
-            queryOf("""
+            queryOf(
+                """
                 SELECT *
                 FROM trigger
                 WHERE signal = ?
                 ORDER BY description
-            """, signal.toString())
+            """, signal.toString()
+            )
                 .map(TriggerRow.fromRow)
         )
     }
 
     fun reset(signal: Signal, tx: TransactionalSession? = null): Either<AppError, Unit> = db.use(tx) {
-        it.exec(queryOf("""
+        it.exec(
+            queryOf(
+                """
             UPDATE trigger
             SET executed_at = NULL
             WHERE signal = ?
-        """, signal.toString()))
+        """, signal.toString()
+            )
+        )
     }
 
     private fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {
@@ -91,19 +100,26 @@ class TriggerRepository(val app: AppServices) : Logging() {
     private fun execute(signal: Signal): Either<AppError, Unit> = either {
         getTriggers(signal.toString()).bind().forEach {
             val result = executeTrigger(it, LocalDateTime.now())
-            log.info("Executed trigger {} -> {} -> {}", signal, it.description, result.fold({ "failed: ${it.message}" }, { "ok" }))
+            log.info(
+                "Executed trigger {} -> {} -> {}",
+                signal,
+                it.description,
+                result.fold({ "failed: ${it.message}" }, { "ok" })
+            )
         }
     }
 
-    private fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): Either<AppError, Unit> =
-        trigger.getAction().apply(app).fold(
+    private fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): Either<AppError, Unit> {
+        return trigger.getAction().apply(app).fold(
             { error -> setFailed(trigger.triggerId, logTime, error.message) },
             { _ -> setSuccessful(trigger.triggerId, logTime) }
         )
+    }
 
     private fun getTriggers(signal: String) = db.use {
         it.many(
-            queryOf("""
+            queryOf(
+                """
                 SELECT *
                 FROM trigger
                 WHERE executed_at IS NULL
@@ -197,7 +213,7 @@ data class NewScheduledTrigger(
     val compoId: Int,
 ) : Validateable<NewScheduledTrigger> {
 
-    fun signal(): Signal = Event.signal(eventId)
+    fun signal(): Signal = Signal.eventStarted(eventId)
     fun toAction() = Action.valueOf(action).getAction(this)
 
     companion object {

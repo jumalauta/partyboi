@@ -17,10 +17,11 @@ fun Application.configureVotingRouting(app: AppServices) {
                 val user = call.userSession()
                 call.respondEither({
                     either {
-                        val entries = app.entries.getVotableEntries(user.bind().id).bind()
+                        val entries = app.votes.getVotableEntries(user.bind().id).bind()
                         UserVotingPage.render(
                             entries = entries,
                             screenshots = app.screenshots.getForEntries(entries),
+                            liveVote = app.votes.getLiveVoteState(),
                         )
                     }
                 })

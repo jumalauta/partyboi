@@ -24,14 +24,16 @@ class EventRepository(private val app: AppServices) {
     private val signalEmitter = EventSignalEmitter(app)
 
     init {
-        db.init("""
+        db.init(
+            """
            CREATE TABLE IF NOT EXISTS event (
                 id SERIAL PRIMARY KEY,
                 name text NOT NULL,
                 time timestamp with time zone NOT NULL,
                 visible boolean NOT NULL DEFAULT true
             ) 
-        """)
+        """
+        )
     }
 
     fun get(eventId: Int): Either<AppError, Event> = db.use {
@@ -51,28 +53,35 @@ class EventRepository(private val app: AppServices) {
     }
 
     fun add(event: NewEvent, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
-        it.one(queryOf("""
+        it.one(
+            queryOf(
+                """
             INSERT INTO event (name, time, visible) 
             VALUES (?, ?, ?) 
             RETURNING *""",
-            event.name,
-            Timestamp.valueOf(event.time),
-            event.visible,
-        ).map(Event.fromRow))
+                event.name,
+                Timestamp.valueOf(event.time),
+                event.visible,
+            ).map(Event.fromRow)
+        )
     }
 
     fun add(event: NewEvent, actions: List<Action>): Either<AppError, Pair<Event, List<TriggerRow>>> =
-        db.transaction { tx -> either {
-            val createdEvent = add(event, tx).bind()
-            val createdTriggers = actions
-                .map { app.triggers.add(createdEvent.signal(), it, tx) }
-                .bindAll()
-            Pair(createdEvent, createdTriggers)
-        } }
+        db.transaction { tx ->
+            either {
+                val createdEvent = add(event, tx).bind()
+                val createdTriggers = actions
+                    .map { app.triggers.add(createdEvent.signal(), it, tx) }
+                    .bindAll()
+                Pair(createdEvent, createdTriggers)
+            }
+        }
 
     fun update(event: Event, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
         app.triggers.reset(event.signal(), tx)
-        it.one(queryOf("""
+        it.one(
+            queryOf(
+                """
             UPDATE event
             SET
                 name = ?,
@@ -80,11 +89,12 @@ class EventRepository(private val app: AppServices) {
                 visible = ?
             WHERE id = ?
             RETURNING *""",
-            event.name,
-            Timestamp.valueOf(event.time),
-            event.visible,
-            event.id,
-        ).map(Event.fromRow))
+                event.name,
+                Timestamp.valueOf(event.time),
+                event.visible,
+                event.id,
+            ).map(Event.fromRow)
+        )
     }
 
     fun delete(eventId: Int): Either<AppError, Unit> = db.use {
@@ -106,9 +116,7 @@ data class NewEvent(
 
     companion object {
         fun make(today: LocalDate, preferredDates: List<LocalDate>): NewEvent {
-            val date = preferredDates.find { it == today } ?:
-                preferredDates.sorted().lastOrNull() ?:
-                today
+            val date = preferredDates.find { it == today } ?: preferredDates.sorted().lastOrNull() ?: today
             return NewEvent("", date.atTime(12, 0, 0), true)
         }
 
@@ -131,16 +139,16 @@ data class Event(
         expectNotEmpty("name", name)
     )
 
-    fun signal(): Signal = signal(id)
+    fun signal(): Signal = Signal.eventStarted(id)
 
     companion object {
-        fun signal(eventId: Int): Signal = Signal(SignalType.event, eventId.toString())
-
-        val fromRow: (Row) -> Event = { row -> Event(
-            id = row.int("id"),
-            name = row.string("name"),
-            time = row.localDateTime("time"),
-            visible = row.boolean("visible"),
-        ) }
+        val fromRow: (Row) -> Event = { row ->
+            Event(
+                id = row.int("id"),
+                name = row.string("name"),
+                time = row.localDateTime("time"),
+                visible = row.boolean("visible"),
+            )
+        }
     }
 }

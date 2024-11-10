@@ -359,5 +359,15 @@ data class VotableEntry(
                 points = Option.fromNullable(row.intOrNull("points")),
             )
         }
+
+        fun apply(entry: Entry, compoName: String, points: Int?) = VotableEntry(
+            compoId = entry.compoId,
+            compoName = compoName,
+            entryId = entry.id,
+            runOrder = entry.runOrder,
+            title = entry.title,
+            author = entry.author,
+            points = Option.fromNullable(points),
+        )
     }
 }

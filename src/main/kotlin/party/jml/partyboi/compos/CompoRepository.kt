@@ -1,6 +1,7 @@
 package party.jml.partyboi.compos
 
 import arrow.core.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -13,6 +14,7 @@ import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.NavItem
 
 class CompoRepository(private val app: AppServices) {
@@ -86,7 +88,11 @@ class CompoRepository(private val app: AppServices) {
                 compoId,
                 state
             )
-        )
+        ).onRight {
+            runBlocking {
+                app.signals.emit(if (state) Signal.votingOpened(compoId) else Signal.votingClosed(compoId))
+            }
+        }
     }
 
     fun publishResults(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
@@ -148,6 +154,16 @@ data class Compo(
                 publicResults = row.boolean("public_results"),
             )
         }
+
+        val Empty = Compo(
+            id = -1,
+            name = "",
+            rules = "",
+            visible = false,
+            allowSubmit = false,
+            allowVote = false,
+            publicResults = false,
+        )
     }
 }
 

@@ -1,7 +1,11 @@
 package party.jml.partyboi.templates
 
+import kotlinx.html.FlowContent
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import party.jml.partyboi.signals.SignalType
+import kotlinx.html.script
+import kotlinx.html.unsafe
 
 class Javascript {
     fun scope(block: Javascript.() -> Unit): Statement {
@@ -9,13 +13,15 @@ class Javascript {
         with(js) { block() }
         return Statements(js.stack)
     }
+
     fun goto(url: String) = push(JAssign("location", url))
     fun httpGet(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("GET"))))
     fun httpPut(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("PUT"))))
     fun httpPost(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("POST"))))
     fun httpDelete(url: String) = push(JCall("await fetch", JStr(url), JObj("method" to JStr("DELETE"))))
     fun refresh() = push(JCall("smoothReload"))
-    fun confirm(message: String, onTrue: Javascript.() -> Unit) = push(JIf(JCall("confirm", JStr(message)), scope(onTrue) ))
+    fun confirm(message: String, onTrue: Javascript.() -> Unit) =
+        push(JIf(JCall("confirm", JStr(message)), scope(onTrue)))
 
     interface Statement {
         fun toJS(): String
@@ -27,6 +33,7 @@ class Javascript {
 
     data class JObj(val props: Map<String, Statement> = emptyMap()) : Statement {
         constructor(vararg pairs: Pair<String, Statement>) : this(mapOf(*pairs))
+
         override fun toJS(): String =
             props
                 .toList()
@@ -39,11 +46,13 @@ class Javascript {
 
     data class JAssign(val varName: String, val value: Statement) : Statement {
         constructor(varName: String, value: String) : this(varName, JStr(value))
+
         override fun toJS(): String = "$varName=${value.toJS()}"
     }
 
     data class JCall(val name: String, val args: List<Statement> = emptyList()) : Statement {
         constructor(name: String, vararg args: Statement) : this(name, listOf(*args))
+
         override fun toJS(): String = "$name(${args.joinToString(separator = ", ") { it.toJS() }})"
     }
 
@@ -56,7 +65,9 @@ class Javascript {
     }
 
     private val stack = mutableListOf<Statement>()
-    private fun push(s: Statement) { stack.add(s) }
+    private fun push(s: Statement) {
+        stack.add(s)
+    }
 
     companion object {
         fun build(block: Javascript.() -> Unit): String {
@@ -64,5 +75,11 @@ class Javascript {
             val code = js.scope(block).toJS()
             return "(async ()=>{$code})()"
         }
+    }
+}
+
+fun FlowContent.refreshOnSignal(signalType: SignalType) {
+    script {
+        unsafe { raw("""setTimeout(() => refreshOnSignal("$signalType"), 0)""") }
     }
 }
