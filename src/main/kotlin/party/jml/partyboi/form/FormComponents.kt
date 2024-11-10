@@ -175,7 +175,7 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(
     }
 }
 
-inline fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData) {
+fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData) {
     label {
         span { +data.label }
         textArea {
