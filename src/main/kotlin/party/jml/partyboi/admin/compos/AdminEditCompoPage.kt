@@ -3,7 +3,8 @@ package party.jml.partyboi.admin.compos
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.entries.Entry
-import party.jml.partyboi.entries.Screenshot
+import party.jml.partyboi.entries.FileFormat
+import party.jml.partyboi.entries.FileFormatCategory
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
@@ -29,6 +30,35 @@ object AdminEditCompoPage {
                 article {
                     fieldSet {
                         renderFields(compoForm)
+                        label {
+                            p { +"Accepted file formats to upload" }
+                            FileFormatCategory.entries.forEach { cat ->
+                                details {
+                                    val formats = FileFormat.entries.filter { it.category == cat }
+                                    if (formats
+                                            .map { it.name }
+                                            .intersect(compoForm.data.fileFormats.map { it.name })
+                                            .isNotEmpty()
+                                    ) {
+                                        attributes["open"] = ""
+                                    }
+                                    summary { +cat.description }
+                                    ul {
+                                        formats.forEach { format ->
+                                            li {
+                                                input(name = "fileFormats") {
+                                                    type = InputType.checkBox
+                                                    value = format.name
+                                                    checked =
+                                                        compoForm.data.fileFormats.find { it.name == format.name } != null
+                                                    +format.description
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     footer {
                         submitInput { value = "Save changes" }

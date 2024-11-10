@@ -7,10 +7,9 @@ import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
+import party.jml.partyboi.entries.FileFormat
 import java.io.File
-import java.io.InputStream
 import java.nio.file.Path
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
@@ -48,38 +47,44 @@ class Form<T : Validateable<T>>(
             .sortedBy { it.first.order }
             .forEach { pair ->
                 val (meta, prop) = pair
-                val key = prop.name
-                val (inputType, value) = prop.get(data)
-                    .toOption()
-                    .map { a ->
-                        when (a) {
-                            is String -> Pair(InputType.text, a)
-                            is Int -> Pair(InputType.number, a.toString())
-                            is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
-                            is LocalDateTime -> Pair(InputType.dateTimeLocal, a.format(DateTimeFormatter.ISO_DATE_TIME))
-                            is FileUpload -> Pair(InputType.file, "")
-                            else -> TODO("${a.javaClass.name} not supported as Form property")
-                        }
-                    }
-                    .getOrElse { Pair(InputType.text, "") }
-                val error = errors
-                    .filter { it.target == key }
-                    .toNonEmptyListOrNone()
-                    .map { it.joinToString { it.message } }
-                block(
-                    FieldData(
-                        label = meta.label,
-                        key = key,
-                        value = value,
-                        error = error,
-                        type = when (meta.presentation) {
-                            FieldPresentation.hidden -> InputType.hidden
-                            FieldPresentation.secret -> InputType.password
-                            else -> inputType
-                        },
-                        presentation = meta.presentation,
+                if (meta.presentation != FieldPresentation.custom) {
+                    val key = prop.name
+                    val (inputType, value) =
+                        prop.get(data).toOption()
+                            .map { a ->
+                                when (a) {
+                                    is String -> Pair(InputType.text, a)
+                                    is Int -> Pair(InputType.number, a.toString())
+                                    is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
+                                    is LocalDateTime -> Pair(
+                                        InputType.dateTimeLocal,
+                                        a.format(DateTimeFormatter.ISO_DATE_TIME)
+                                    )
+
+                                    is FileUpload -> Pair(InputType.file, "")
+                                    else -> TODO("${a.javaClass.name} not supported as Form property")
+                                }
+                            }
+                            .getOrElse { Pair(InputType.text, "") }
+                    val error = errors
+                        .filter { it.target == key }
+                        .toNonEmptyListOrNone()
+                        .map { it.joinToString { it.message } }
+                    block(
+                        FieldData(
+                            label = meta.label,
+                            key = key,
+                            value = value,
+                            error = error,
+                            type = when (meta.presentation) {
+                                FieldPresentation.hidden -> InputType.hidden
+                                FieldPresentation.secret -> InputType.password
+                                else -> inputType
+                            },
+                            presentation = meta.presentation,
+                        )
                     )
-                )
+                }
             }
     }
 
@@ -111,14 +116,14 @@ class Form<T : Validateable<T>>(
             return try {
                 val ctor = T::class.primaryConstructor ?: throw NotImplementedError("Primary constructor missing")
 
-                var stringParams: MutableMap<String, String> = mutableMapOf()
+                val stringParams = MapCollector<String, String>()
                 val fileParams: MutableMap<String, FileUpload> = mutableMapOf()
 
                 parameters.forEachPart { part ->
                     val name = part.name ?: throw Error("Anonymous parameters not supported")
                     when (part) {
                         is PartData.FormItem -> {
-                            stringParams[name] = part.value
+                            stringParams.add(name, part.value)
                             part.dispose()
                         }
 
@@ -136,7 +141,7 @@ class Form<T : Validateable<T>>(
                 val args: List<Any> = ctor.valueParameters.map {
                     val name = it.name ?: throw Error("Anonymous parameters not supported")
 
-                    val stringValue by lazy { stringParams.get(name) ?: "" }
+                    val stringValue by lazy { stringParams.first(name) ?: "" }
 
                     when (it.type.toString()) {
                         "kotlin.String" -> {
@@ -161,6 +166,11 @@ class Form<T : Validateable<T>>(
 
                         "java.time.LocalDateTime" -> {
                             LocalDateTime.parse(stringValue)
+                        }
+
+                        // TODO: Generic implementation
+                        "kotlin.collections.List<party.jml.partyboi.entries.FileFormat>" -> {
+                            stringParams.all(name).map { FileFormat.valueOf(it) }
                         }
 
                         else -> {
@@ -188,6 +198,7 @@ enum class FieldPresentation {
     hidden,
     large,
     secret,
+    custom,
 }
 
 data class FileUpload(

@@ -2,7 +2,6 @@ package party.jml.partyboi.compos
 
 import arrow.core.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.InputType
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
@@ -10,6 +9,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.*
 import party.jml.partyboi.data.DbBasicMappers.asBoolean
+import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
@@ -31,7 +31,8 @@ class CompoRepository(private val app: AppServices) {
                 visible boolean NOT NULL DEFAULT true,
                 allow_submit boolean NOT NULL DEFAULT true,
                 allow_vote boolean NOT NULL DEFAULT false,
-                public_results boolean NOT NULL DEFAULT false
+                public_results boolean NOT NULL DEFAULT false,
+                formats text[]
             );
         """
         )
@@ -58,11 +59,26 @@ class CompoRepository(private val app: AppServices) {
     }
 
     fun add(compo: NewCompo): Either<AppError, Unit> = db.use {
-        it.exec(queryOf("insert into compo(name, rules) values(?, ?)", compo.name, compo.rules))
+        it.exec(queryOf("insert into compo(name, rules, visible) values(?, ?, false)", compo.name, compo.rules))
     }
 
     fun update(compo: Compo): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("update compo set name = ?, rules = ? where id = ?", compo.name, compo.rules, compo.id))
+        it.updateOne(
+            queryOf(
+                """
+                UPDATE compo
+                SET
+                    name = ?, 
+                    rules = ?,
+                    formats = ?
+                WHERE id = ?
+                """,
+                compo.name,
+                compo.rules,
+                compo.fileFormats.map { it.name }.toTypedArray(),
+                compo.id,
+            )
+        )
     }
 
     fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
@@ -130,6 +146,8 @@ data class Compo(
     val allowSubmit: Boolean,
     val allowVote: Boolean,
     val publicResults: Boolean,
+    @property:Field(presentation = FieldPresentation.custom)
+    val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
 
@@ -152,6 +170,7 @@ data class Compo(
                 allowSubmit = row.boolean("allow_submit"),
                 allowVote = row.boolean("allow_vote"),
                 publicResults = row.boolean("public_results"),
+                fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
             )
         }
 
@@ -163,6 +182,7 @@ data class Compo(
             allowSubmit = false,
             allowVote = false,
             publicResults = false,
+            fileFormats = emptyList(),
         )
     }
 }

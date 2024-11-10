@@ -194,3 +194,184 @@ data class FileDesc(
         const val ZIP_ARCHIVE = ":zip"
     }
 }
+
+enum class FileFormatCategory(val description: String) {
+    archive("Archive"),
+    image("Image"),
+    streamingAudio("Streaming audio"),
+    tracker("Tracker module"),
+    midi("MIDI"),
+    video("Video"),
+}
+
+enum class FileFormat(
+    val description: String,
+    val extensions: List<String>,
+    val mimeTypes: List<String>,
+    val category: FileFormatCategory,
+) {
+    // Archive formats
+    zip(
+        description = "ZIP archive",
+        extensions = listOf("zip"),
+        mimeTypes = listOf("application/zip", "application/x-zip-compressed"),
+        category = FileFormatCategory.archive
+    ),
+
+    // Image formats
+    jpeg(
+        description = "JPEG image",
+        extensions = listOf("jpg", "jpeg"),
+        mimeTypes = listOf("image/jpeg"),
+        category = FileFormatCategory.image
+    ),
+    gif(
+        description = "GIF image (Graphics Interchange Format)",
+        extensions = listOf("gif"),
+        mimeTypes = listOf("image/gif"),
+        category = FileFormatCategory.image
+    ),
+    png(
+        description = "PNG image (Portable Network Graphics)",
+        extensions = listOf("png"),
+        mimeTypes = listOf("image/png"),
+        category = FileFormatCategory.image
+    ),
+    svg(
+        description = "Scalable Vector Graphics (SVG)",
+        extensions = listOf("svg"),
+        mimeTypes = listOf("image/svg+xml"),
+        category = FileFormatCategory.image
+    ),
+    tiff(
+        description = "TIFF image (Tagged Image File Format)",
+        extensions = listOf("tif", "tiff"),
+        mimeTypes = listOf("image/tiff"),
+        category = FileFormatCategory.image
+    ),
+    webp(
+        description = "WEBP image",
+        extensions = listOf("webp"),
+        mimeTypes = listOf("image/webp"),
+        category = FileFormatCategory.image
+    ),
+
+    // Audio formats
+    aac(
+        description = "AAC (Advanced Audio Coding)",
+        extensions = listOf("aac"),
+        mimeTypes = listOf("audio/aac"),
+        category = FileFormatCategory.streamingAudio
+    ),
+    aiff(
+        description = "AIFF (Audio Interchange File Format)",
+        extensions = listOf("aiff", "aif", "ief"),
+        mimeTypes = listOf(
+            "audio/rmf",
+            "audio/aiff",
+            "sound/aiff",
+            "audio/x-aiff"
+        ),
+        category = FileFormatCategory.streamingAudio
+    ),
+    flac(
+        description = "FLAC",
+        extensions = listOf("flac"),
+        mimeTypes = listOf("audio/flac", "audio/x-flac"),
+        category = FileFormatCategory.streamingAudio,
+    ),
+    mp3(
+        description = "MP3",
+        extensions = listOf("mp3"),
+        mimeTypes = listOf("audio/mpeg"),
+        category = FileFormatCategory.streamingAudio
+    ),
+    ogg(
+        description = "Ogg Vorbis",
+        extensions = listOf("ogg", "oga"),
+        mimeTypes = listOf("audio/ogg"),
+        category = FileFormatCategory.streamingAudio
+    ),
+    opus(
+        description = "Opus audio in Ogg container",
+        extensions = listOf("opus"),
+        mimeTypes = listOf("audio/ogg"),
+        category = FileFormatCategory.streamingAudio
+    ),
+    wav(
+        description = "Waveform Audio Format",
+        extensions = listOf("wav"),
+        mimeTypes = listOf("audio/wav"),
+        category = FileFormatCategory.streamingAudio
+    ),
+    weba(
+        description = "WEBM audio",
+        extensions = listOf("weba"),
+        mimeTypes = listOf("audio/webm"),
+        category = FileFormatCategory.streamingAudio
+    ),
+
+    // Music formats
+    mod(
+        description = "ProTracker MOD",
+        extensions = listOf("mod"),
+        mimeTypes = emptyList(),
+        category = FileFormatCategory.tracker
+    ),
+    s3m(
+        description = "Scream Tracker 3",
+        extensions = listOf("s3m"),
+        mimeTypes = emptyList(),
+        category = FileFormatCategory.tracker
+    ),
+    xm(
+        description = "FastTracker 2",
+        extensions = listOf("xm"),
+        mimeTypes = emptyList(),
+        category = FileFormatCategory.tracker
+    ),
+    it(
+        description = "Impulse Tracker",
+        extensions = listOf("it"),
+        mimeTypes = emptyList(),
+        category = FileFormatCategory.tracker
+    ),
+    openMpt(
+        description = "OpenMPT",
+        extensions = listOf("mptm"),
+        mimeTypes = emptyList(),
+        category = FileFormatCategory.tracker
+    ),
+    midi(
+        description = "Musical Instrument Digital Interface (MIDI)",
+        extensions = listOf("mid", "midi"),
+        mimeTypes = listOf("audio/midi", "audio/x-midi"),
+        category = FileFormatCategory.midi
+    ),
+
+    // Video formats
+    mp4(
+        description = "MP4 video",
+        extensions = listOf("mp4"),
+        mimeTypes = listOf("video/mp4"),
+        category = FileFormatCategory.video
+    ),
+    mpeg(
+        description = "MPEG Video",
+        extensions = listOf("mpeg"),
+        mimeTypes = listOf("video/mpeg"),
+        category = FileFormatCategory.video
+    ),
+    ogv(
+        description = "Ogg video",
+        extensions = listOf("ogv"),
+        mimeTypes = listOf("video/ogg"),
+        category = FileFormatCategory.video
+    ),
+    webm(
+        description = "WEBM video",
+        extensions = listOf("webm"),
+        mimeTypes = listOf("video/webm"),
+        category = FileFormatCategory.video
+    )
+}

@@ -3,9 +3,11 @@ package party.jml.partyboi.compos
 import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.optionalUserSession
+import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureComposRouting(app: AppServices) {
@@ -19,6 +21,19 @@ fun Application.configureComposRouting(app: AppServices) {
                         ComposPage.render(generalRules, compos)
                     }
                 })
+            }
+
+            get("/compos/{id}/accept") {
+                either {
+                    val compoId = call.parameterInt("id").bind()
+                    val compo = app.compos.getById(compoId).bind()
+                    compo.fileFormats
+                        .flatMap { it.extensions.map { ext -> ".$ext" } + it.mimeTypes }
+                        .joinToString(",")
+                }.fold(
+                    { call.respond(it.statusCode, it.message) },
+                    { call.respondText(it) }
+                )
             }
 
             get("/results") {

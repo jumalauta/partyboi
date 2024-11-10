@@ -53,6 +53,28 @@ function initInteractions(target) {
         .classList.toggle("open");
     };
   });
+
+  // Entry file upload field's accepted file types
+  const compoSelector = target.querySelector('select[name="compoId"]');
+  const fileUpload = target.querySelector('input[type="file"]');
+  if (compoSelector && fileUpload) {
+    async function updateAccept() {
+      try {
+        const response = await fetch(`/compos/${compoSelector.value}/accept`);
+        const accept = await response.text();
+        if (accept.length > 0) {
+          fileUpload.setAttribute("accept", accept);
+        } else {
+          fileUpload.removeAttribute("accept");
+        }
+      } catch (_) {
+        fileUpload.removeAttribute("accept");
+      }
+    }
+
+    compoSelector.onchange = updateAccept;
+    updateAccept();
+  }
 }
 
 // Smooth page reload
