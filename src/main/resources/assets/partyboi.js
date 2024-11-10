@@ -35,7 +35,7 @@ function initInteractions(target) {
       sortable.on("sortable:sorted", (event) => {
         ids.splice(event.newIndex, 0, ...ids.splice(event.oldIndex, 1));
         fetch(container.dataset.callback, {
-          method: "PUT",
+          method: "POST",
           body: JSON.stringify(ids),
           headers: {
             "Content-Type": "application/json",

@@ -174,7 +174,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.switchApi { id, show -> app.screen.showOnInfo(id, show) }
             }
 
-            put("/admin/screen/{slideSet}/runOrder") {
+            post("/admin/screen/{slideSet}/runOrder") {
                 call.receive<List<String>>()
                     .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
                 call.respondText("OK")
