@@ -148,9 +148,9 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 call.switchApi { id, state -> app.entries.setQualified(id, state) }
             }
 
-            put("/admin/compos/{compoId}/runOrder") {
-                call.receive<List<String>>()
-                    .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
+            post("/admin/compos/{compoId}/runOrder") {
+                val runOrder = call.receive<List<String>>()
+                runOrder.mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
                 call.respondText("OK")
             }
         }
