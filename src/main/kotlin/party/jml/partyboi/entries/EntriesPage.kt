@@ -19,23 +19,22 @@ object EntriesPage {
         compos: List<Compo>,
         userEntries: List<EntryWithLatestFile>,
         screenshots: List<Screenshot>,
-    ) =
-        Page("Submit entries") {
-            h1 { +"Entries" }
+    ) = Page("Submit entries") {
+        h1 { +"Entries" }
 
-            if (compos.isEmpty() && userEntries.isEmpty()) {
-                article { +"You haven't submitted any entries and all the compos have already been closed. \uD83D\uDE25" }
-            }
-
-            columns(
-                if (compos.isNotEmpty()) {
-                    { submitNewEntryForm("/entries", compos, newEntryForm) }
-                } else null,
-                if (userEntries.isNotEmpty()) {
-                    { entryList(userEntries, compos, screenshots) }
-                } else null
-            )
+        if (compos.isEmpty() && userEntries.isEmpty()) {
+            article { +"You cannot submit entries yet. \uD83D\uDE25" }
         }
+
+        columns(
+            if (compos.isNotEmpty()) {
+                { submitNewEntryForm("/entries", compos, newEntryForm) }
+            } else null,
+            if (userEntries.isNotEmpty()) {
+                { entryList(userEntries, compos, screenshots) }
+            } else null
+        )
+    }
 }
 
 fun FlowContent.entryList(
