@@ -1,7 +1,9 @@
 package party.jml.partyboi.admin.screen
 
 import arrow.core.Either
+import arrow.core.flatMap
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -175,9 +177,16 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
 
             post("/admin/screen/{slideSet}/runOrder") {
-                call.receive<List<String>>()
-                    .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
-                call.respondText("OK")
+                val newOrder = call.receive<List<String>>()
+                call.apiRespond {
+                    either {
+                        call.parameterString("slideSet").bind()
+                        call.userSession().bind()
+                        newOrder
+                            .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
+                            .bindAll()
+                    }
+                }
             }
 
             post("/admin/screen/{slideSet}/presentation/start") {
