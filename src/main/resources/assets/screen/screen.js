@@ -15,7 +15,9 @@ function waitForNext() {
   }
   console.log("wait for next slide...");
   fetch(
-    currentSlideId === null ? "/screen/next" : `/screen/next/${currentSlideId}`
+    Number.isFinite(currentSlideId)
+      ? `/screen/next/${currentSlideId}`
+      : "/screen/next"
   )
     .then((r) => {
       const id = parseInt(r.headers.get("X-SlideId"));
