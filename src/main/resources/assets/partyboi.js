@@ -88,15 +88,17 @@ function setContent(target, html) {
 // Resize screen monitoring
 function resizePreview() {
   const container = document.querySelector(".screen-preview-container");
-  const frame = document.querySelector(".screen-preview");
-  const ratio = container.offsetWidth / frame.offsetWidth;
-  const scale = ratio * 100 + "%";
-  const width = frame.offsetWidth * ratio;
-  const height = frame.offsetHeight * ratio;
-  container.style.transform = "scale(" + scale + ")";
-  container.style.transformOrigin = "top left";
-  container.style.width = width + "px";
-  container.style.height = height + "px";
+  if (container) {
+    const frame = document.querySelector(".screen-preview");
+    const ratio = container.offsetWidth / frame.offsetWidth;
+    const scale = ratio * 100 + "%";
+    const width = frame.offsetWidth * ratio;
+    const height = frame.offsetHeight * ratio;
+    container.style.transform = "scale(" + scale + ")";
+    container.style.transformOrigin = "top left";
+    container.style.width = width + "px";
+    container.style.height = height + "px";
+  }
 }
 
 resizePreview();
