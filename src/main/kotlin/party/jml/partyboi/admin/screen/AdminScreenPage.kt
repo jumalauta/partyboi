@@ -7,11 +7,13 @@ import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
-import party.jml.partyboi.screen.*
+import party.jml.partyboi.screen.ScreenRow
+import party.jml.partyboi.screen.ScreenState
+import party.jml.partyboi.screen.Slide
+import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
-import party.jml.partyboi.templates.navigationDropdown
 import party.jml.partyboi.triggers.TriggerRow
 
 object AdminScreenPage {
@@ -49,98 +51,100 @@ object AdminScreenPage {
     ) {
         h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
 
-        nav {
-            ul {
-                if (screenState.slideSet != slideSet || !isRunning) {
-                    li {
-                        postButton("/admin/screen/${slideSet}/start") {
-                            icon(Icon("play"))
-                            +" Auto run"
+        renderWithScreenMonitoring {
+            reloadSection {
+                nav {
+                    ul {
+                        if (screenState.slideSet != slideSet || !isRunning) {
+                            li {
+                                postButton("/admin/screen/${slideSet}/start") {
+                                    icon(Icon("play"))
+                                    +" Auto run"
+                                }
+                            }
+                        }
+                        if (screenState.slideSet == slideSet && isRunning) {
+                            li {
+                                postButton("/admin/screen/${slideSet}/stop") {
+                                    icon(Icon("pause"))
+                                    +" Pause auto run"
+                                }
+                            }
                         }
                     }
                 }
-                if (screenState.slideSet == slideSet && isRunning) {
-                    li {
-                        postButton("/admin/screen/${slideSet}/stop") {
-                            icon(Icon("pause"))
-                            +" Pause auto run"
+                article {
+                    table {
+                        tbody(classes = "sortable") {
+                            attributes.put("data-draggable", "tr")
+                            attributes.put("data-handle", ".handle")
+                            attributes.put("data-callback", "/admin/screen/${slideSet}/runOrder")
+                            slides.forEach { slide ->
+                                tr {
+                                    attributes.put("data-dragid", slide.id.toString())
+                                    td(classes = "handle tight") { icon("arrows-up-down") }
+                                    td(classes = "tight") {
+                                        if (screenState.id == slide.id) {
+                                            icon("tv")
+                                        } else {
+                                            postButton("/admin/screen/${slideSet}/${slide.id}/show") {
+                                                attributes.put("class", "flat-button")
+                                                tooltip("Show on screen")
+                                                icon("play")
+                                            }
+                                        }
+                                    }
+                                    td(classes = "wide") {
+                                        a(href = "/admin/screen/${slideSet}/${slide.id}") {
+                                            val type = slide.slide.getType()
+                                            icon(type.icon, type.description)
+                                            +" "
+                                            +slide.getName()
+                                        }
+                                    }
+                                    td(classes = "settings") {
+                                        toggleButton(
+                                            slide.visible,
+                                            IconSet.visibility,
+                                            "/admin/screen/${slide.id}/setVisible"
+                                        )
+                                        toggleButton(
+                                            slide.showOnInfoPage,
+                                            IconSet.showOnInfoPage,
+                                            "/admin/screen/${slide.id}/showOnInfo"
+                                        )
+                                        deleteButton(
+                                            url = "/admin/screen/${slide.id}",
+                                            tooltipText = "Delete ${slide.getName()}",
+                                            confirmation = "Do you really want to delete slide ${slide.getName()}?"
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
 
-        renderWithScreenMonitoring {
-            article {
-                table {
-                    tbody(classes = "sortable") {
-                        attributes.put("data-draggable", "tr")
-                        attributes.put("data-handle", ".handle")
-                        attributes.put("data-callback", "/admin/screen/${slideSet}/runOrder")
-                        slides.forEach { slide ->
-                            tr {
-                                attributes.put("data-dragid", slide.id.toString())
-                                td(classes = "handle tight") { icon("arrows-up-down") }
-                                td(classes = "tight") {
-                                    if (screenState.id == slide.id) {
-                                        icon("tv")
-                                    } else {
-                                        postButton("/admin/screen/${slideSet}/${slide.id}/show") {
-                                            attributes.put("class", "flat-button")
-                                            tooltip("Show on screen")
-                                            icon("play")
-                                        }
-                                    }
-                                }
-                                td(classes = "wide") {
-                                    a(href = "/admin/screen/${slideSet}/${slide.id}") {
-                                        val type = slide.slide.getType()
-                                        icon(type.icon, type.description)
-                                        +" "
-                                        +slide.getName()
-                                    }
-                                }
-                                td(classes = "settings") {
-                                    toggleButton(
-                                        slide.visible,
-                                        IconSet.visibility,
-                                        "/admin/screen/${slide.id}/setVisible"
-                                    )
-                                    toggleButton(
-                                        slide.showOnInfoPage,
-                                        IconSet.showOnInfoPage,
-                                        "/admin/screen/${slide.id}/showOnInfo"
-                                    )
-                                    deleteButton(
-                                        url = "/admin/screen/${slide.id}",
-                                        tooltipText = "Delete ${slide.getName()}",
-                                        confirmation = "Do you really want to delete slide ${slide.getName()}?"
-                                    )
-                                }
-                            }
+            details(classes = "dropdown") {
+                summary { +"Add slide" }
+                ul {
+                    li {
+                        flatPostButton("/admin/screen/${slideSet}/text") {
+                            icon(Icon("list-ul"))
+                            +" Text slide"
                         }
                     }
-                }
-                details(classes = "dropdown") {
-                    summary { +"Add slide" }
-                    ul {
-                        li {
-                            flatPostButton("/admin/screen/${slideSet}/text") {
-                                icon(Icon("list-ul"))
-                                +" Text slide"
-                            }
+                    li {
+                        flatPostButton("/admin/screen/${slideSet}/qrcode") {
+                            icon(Icon("qrcode"))
+                            +" QR code"
                         }
-                        li {
-                            flatPostButton("/admin/screen/${slideSet}/qrcode") {
-                                icon(Icon("qrcode"))
-                                +" QR code"
-                            }
-                        }
-                        li {
-                            flatPostButton("/admin/screen/${slideSet}/image") {
-                                icon(Icon("image"))
-                                +" Image"
-                            }
+                    }
+                    li {
+                        flatPostButton("/admin/screen/${slideSet}/image") {
+                            icon(Icon("image"))
+                            +" Image"
                         }
                     }
                 }
@@ -152,9 +156,7 @@ object AdminScreenPage {
 
     fun FlowContent.renderWithScreenMonitoring(block: FlowContent.() -> Unit) {
         columns({
-            reloadSection {
-                block()
-            }
+            block()
         }, {
             div(classes = "screen-preview-container") {
                 iframe(classes = "screen-preview") {

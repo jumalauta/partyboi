@@ -52,6 +52,8 @@ class ScreenService(private val app: AppServices) {
             state.filter { it.id != currentId }.take(1)
         }
 
+    fun getAddHoc() = repository.getAdHoc()
+
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
         stopSlideSet()

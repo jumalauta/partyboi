@@ -2,6 +2,7 @@ package party.jml.partyboi.admin.screen
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.getOrElse
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
@@ -27,9 +28,10 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureAdminScreenRouting(app: AppServices) {
     routing {
         fun renderAdHocEdit(form: Form<*>? = null): Either<AppError, Page> = either {
-            val current = app.screen.currentSlide()
             AdminScreenPage.renderAdHocForm(
-                form = form ?: current.getForm(),
+                form = form ?: app.screen.getAddHoc().bind()
+                    .map { it.getSlide().getForm() }
+                    .getOrElse { Form(TextSlide::class, TextSlide.Empty, true) },
                 slideSets = app.screen.getSlideSets().bind(),
             )
         }
