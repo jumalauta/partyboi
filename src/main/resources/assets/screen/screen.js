@@ -44,4 +44,17 @@ function waitForNext() {
     });
 }
 
+// Fullscreen mode
+document.body.addEventListener("keydown", (event) => {
+  switch (event.key) {
+    case "f":
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      return;
+  }
+});
+
 waitForNext();
