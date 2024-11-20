@@ -19,13 +19,5 @@ fun Application.configureScreenRouting(app: AppServices) {
                 call.respondText(ScreenPage.renderContent(screen.slide), ContentType.Text.Html)
             }
         }
-
-        get("/screen/next/{currentSlideId}") {
-            val currentSlideId = call.parameterInt("currentSlideId").getOrNull()
-            app.screen.waitForNext(currentSlideId).collect { screen ->
-                call.response.headers.append("X-SlideId", screen.id.toString())
-                call.respondText(ScreenPage.renderContent(screen.slide), ContentType.Text.Html)
-            }
-        }
     }
 }

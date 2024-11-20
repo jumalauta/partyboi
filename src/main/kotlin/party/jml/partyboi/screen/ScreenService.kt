@@ -3,10 +3,7 @@ package party.jml.partyboi.screen
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.some
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
 import party.jml.partyboi.AppServices
@@ -41,17 +38,9 @@ class ScreenService(private val app: AppServices) {
     fun currentSlide(): Slide<*> = state.value.slide
 
     fun waitForNext(): Flow<ScreenState> {
-        val current = state.value
-        return state.filter { it != current }.take(1)
+        return state.drop(1).take(1)
     }
-
-    fun waitForNext(currentId: Int?): Flow<ScreenState> =
-        if (currentId == null) {
-            waitForNext()
-        } else {
-            state.filter { it.id != currentId }.take(1)
-        }
-
+    
     fun getAddHoc() = repository.getAdHoc()
 
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
@@ -67,7 +56,13 @@ class ScreenService(private val app: AppServices) {
     fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false)
 
-    fun update(id: Int, slide: Slide<*>) = repository.update(id, slide)
+    fun update(id: Int, slide: Slide<*>) = either {
+        val updatedRow = repository.update(id, slide).bind()
+        if (state.value.id == id) {
+            show(updatedRow)
+        }
+        updatedRow
+    }
 
     fun delete(id: Int) = repository.delete(id)
 

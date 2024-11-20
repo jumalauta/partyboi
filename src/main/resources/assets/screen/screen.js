@@ -5,7 +5,6 @@ const screens = [
 
 let currentScreen = 0;
 let retryCount = 0;
-let currentSlideId = null;
 
 function waitForNext() {
   if (++retryCount === 20) {
@@ -14,14 +13,8 @@ function waitForNext() {
     return;
   }
   console.log("wait for next slide...");
-  fetch(
-    Number.isFinite(currentSlideId)
-      ? `/screen/next/${currentSlideId}`
-      : "/screen/next"
-  )
+  fetch("/screen/next")
     .then((r) => {
-      const id = parseInt(r.headers.get("X-SlideId"));
-      currentSlideId = id === NaN ? null : id;
       return r.text();
     })
     .then((html) => {
