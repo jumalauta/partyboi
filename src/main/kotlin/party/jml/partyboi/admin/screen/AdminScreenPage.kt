@@ -58,6 +58,9 @@ object AdminScreenPage {
                         if (screenState.slideSet != slideSet || !isRunning) {
                             li {
                                 postButton("/admin/screen/${slideSet}/start") {
+                                    if (slides.all { !it.visible }) {
+                                        disabled = true
+                                    }
                                     icon(Icon("play"))
                                     +" Auto run"
                                 }
