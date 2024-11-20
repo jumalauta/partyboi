@@ -18,7 +18,7 @@ class DatabasePool(private val dataSource: HikariDataSource) : Logging() {
         }
 
     fun <A> transaction(block: (TransactionalSession) -> Either<AppError, A>): Either<AppError, A> =
-        sessionOf(dataSource).transactionEither { block(it) }
+        sessionOf(dataSource).use { it.transactionEither { tx -> block(tx) } }
 
     fun <A> useUnsafe(block: (Session) -> A): A =
         sessionOf(dataSource).use { block(it) }
@@ -88,7 +88,6 @@ inline fun <A> Session.transactionEither(operation: (TransactionalSession) -> Ei
         connection.rollback()
         throw e
     } finally {
-        connection.close()
         transactional = false
     }
 }
