@@ -6,9 +6,10 @@ import io.ktor.server.application.*
 import kotliquery.*
 import kotliquery.action.*
 import party.jml.partyboi.Config
+import party.jml.partyboi.Logging
 import java.sql.Connection
 
-class DatabasePool(private val dataSource: HikariDataSource) {
+class DatabasePool(private val dataSource: HikariDataSource) : Logging() {
     fun <A> use(tx: TransactionalSession? = null, block: (Session) -> A): A =
         if (tx != null) {
             block(tx)
@@ -24,6 +25,11 @@ class DatabasePool(private val dataSource: HikariDataSource) {
 
     fun init(query: String): Unit =
         sessionOf(dataSource).use { it.run(queryOf(query.trimIndent()).asExecute) }
+
+    fun debugPrintPoolState(message: String) {
+        val pool = dataSource.hikariPoolMXBean
+        log.info("$message: ${dataSource.poolName} (total=${pool.totalConnections}, active=${pool.activeConnections}, idle=${pool.idleConnections}, waiting=${pool.threadsAwaitingConnection})")
+    }
 
 }
 
