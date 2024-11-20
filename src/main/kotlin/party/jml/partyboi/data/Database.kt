@@ -88,6 +88,7 @@ inline fun <A> Session.transactionEither(operation: (TransactionalSession) -> Ei
         connection.rollback()
         throw e
     } finally {
+        connection.close()
         transactional = false
     }
 }
