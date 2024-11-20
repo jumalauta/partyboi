@@ -24,7 +24,7 @@ object AdminScreenPage {
         title = "Screen admin",
         subLinks = slideSets.map { it.toNavItem() },
     ) {
-        renderWithScreenMonitoring {
+        renderWithScreenMonitoring(false) {
             dataForm("/admin/screen/adhoc") {
                 article {
                     header { +"Ad hoc screen" }
@@ -51,7 +51,7 @@ object AdminScreenPage {
     ) {
         h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
 
-        renderWithScreenMonitoring {
+        renderWithScreenMonitoring(true) {
             reloadSection {
                 nav {
                     ul {
@@ -154,7 +154,7 @@ object AdminScreenPage {
         script(src = "/assets/draggable.min.js") {}
     }
 
-    fun FlowContent.renderWithScreenMonitoring(block: FlowContent.() -> Unit) {
+    private fun FlowContent.renderWithScreenMonitoring(refreshOnSlideChange: Boolean, block: FlowContent.() -> Unit) {
         columns({
             block()
         }, {
@@ -169,7 +169,9 @@ object AdminScreenPage {
                 +"Open in new tab"
             }
         })
-        script(src = "/assets/refreshOnSlideChange.js") {}
+        if (refreshOnSlideChange) {
+            script(src = "/assets/refreshOnSlideChange.js") {}
+        }
     }
 
     fun renderSlideForm(
