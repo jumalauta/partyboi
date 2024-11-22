@@ -21,6 +21,7 @@ object Migrations {
                 .outOfOrder(false)
                 .table("migrations")
                 .locations("classpath:db/migrations")
+                .validateMigrationNaming(true)
                 .baselineOnMigrate(true)
 
             val validatedConfig = config
