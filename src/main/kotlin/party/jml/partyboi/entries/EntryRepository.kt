@@ -17,26 +17,7 @@ import java.time.LocalDateTime
 
 class EntryRepository(private val app: AppServices) {
     private val db = app.db
-
-    init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS entry (
-                id SERIAL PRIMARY KEY,
-                title text NOT NULL,
-                author text NOT NULL,
-                screen_comment text,
-                org_comment text,
-                compo_id integer REFERENCES compo(id),
-                user_id integer REFERENCES appuser(id),
-                qualified boolean NOT NULL DEFAULT true,
-                run_order integer NOT NULL DEFAULT 0,
-                timestamp timestamp with time zone DEFAULT now()
-            );
-        """
-        )
-    }
-
+    
     fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
     }

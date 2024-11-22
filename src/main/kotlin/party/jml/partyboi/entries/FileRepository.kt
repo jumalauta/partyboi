@@ -24,24 +24,7 @@ import kotlin.io.path.absolutePathString
 
 class FileRepository(private val app: AppServices) {
     private val db = app.db
-
-    init {
-        db.init(
-            """
-           CREATE TABLE IF NOT EXISTS file (
-                entry_id integer REFERENCES entry(id) ON DELETE CASCADE,
-                version integer,
-                orig_filename text NOT NULL,
-                storage_filename text NOT NULL,
-                type text NOT NULL,
-                size numeric NOT NULL,
-                uploaded_at timestamp with time zone NOT NULL DEFAULT now(),
-                CONSTRAINT file_pkey PRIMARY KEY (entry_id, version)
-            ) 
-        """
-        )
-    }
-
+    
     fun makeStorageFilename(
         entry: Entry,
         originalFilename: String,

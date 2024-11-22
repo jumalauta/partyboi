@@ -8,11 +8,7 @@ import party.jml.partyboi.data.catchError
 
 class SignalService : Logging() {
     val flow = MutableStateFlow(Signal.initial())
-
-    suspend fun emit(type: SignalType, target: String? = null) {
-        emit(Signal(type, target))
-    }
-
+    
     suspend fun emit(signal: Signal) {
         log.info("Emit signal: {}", signal)
         flow.emit(signal)

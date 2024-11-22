@@ -12,7 +12,7 @@ import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
 import java.sql.Connection
 
-class DatabasePool(private val dataSource: HikariDataSource) : Logging() {
+class DatabasePool(val dataSource: HikariDataSource) : Logging() {
     fun <A> use(tx: TransactionalSession? = null, block: (Session) -> A): A =
         if (tx != null) {
             block(tx)

@@ -15,6 +15,7 @@ import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP
 import party.jml.partyboi.plugins.configureSerialization
 import party.jml.partyboi.assets.configureStaticContent
+import party.jml.partyboi.db.Migrations
 import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
@@ -30,7 +31,10 @@ fun Application.module() {
     val db = getDatabasePool()
     val app = AppServices(db)
 
-    launch { app.triggers.start() }
+    launch {
+        Migrations.migrate(app)
+        app.triggers.start()
+    }
 
     configureSerialization()
     configureHTTP()

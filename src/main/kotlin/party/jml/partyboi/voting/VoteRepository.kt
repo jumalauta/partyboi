@@ -9,19 +9,6 @@ import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 
 class VoteRepository(private val db: DatabasePool) {
-    init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS vote (
-                user_id integer REFERENCES appuser(id),
-                entry_id integer REFERENCES entry(id),
-                points integer NOT NULL,
-                CONSTRAINT vote_pkey PRIMARY KEY (user_id, entry_id)
-            )
-        """
-        )
-    }
-
     fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> = db.use {
         it.exec(
             queryOf(

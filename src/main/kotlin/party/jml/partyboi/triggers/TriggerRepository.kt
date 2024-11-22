@@ -22,24 +22,7 @@ import java.time.LocalDateTime
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
-
-    init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS trigger (
-                id SERIAL PRIMARY KEY,
-                type text NOT NULL,
-                action jsonb NOT NULL,
-                enabled boolean NOT NULL DEFAULT true,
-                signal text NOT NULL,            
-                description text NOT NULL,
-                executed_at timestamp with time zone,
-                error text
-            ) 
-        """
-        )
-    }
-
+    
     suspend fun start() {
         app.signals.flow.collect { execute(it) }
     }

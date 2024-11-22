@@ -18,16 +18,6 @@ import party.jml.partyboi.form.FieldPresentation
 
 class UserRepository(private val db: DatabasePool) {
     init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS appuser (
-                id SERIAL PRIMARY KEY,
-                name text NOT NULL UNIQUE,
-                password text NOT NULL,
-                is_admin boolean DEFAULT false
-            );
-        """
-        )
         createAdminUser()
     }
 

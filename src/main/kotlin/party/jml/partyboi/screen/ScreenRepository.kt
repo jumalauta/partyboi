@@ -23,30 +23,6 @@ class ScreenRepository(private val app: AppServices) {
     val db = app.db
 
     init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS slideset (
-                id text PRIMARY KEY,
-                name text NOT NULL,
-                icon text NOT NULL DEFAULT 'tv'::text
-            )
-        """
-        )
-
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS screen (
-                id SERIAL PRIMARY KEY,
-                slideset_id text NOT NULL REFERENCES slideset(id) ON DELETE CASCADE,
-                type text NOT NULL,
-                content jsonb NOT NULL,
-                visible boolean NOT NULL DEFAULT true,
-                run_order integer NOT NULL DEFAULT 0,
-                show_on_info boolean NOT NULL DEFAULT false
-            )
-        """
-        )
-
         upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt")
         upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info")
     }

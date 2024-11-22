@@ -15,17 +15,6 @@ import java.time.format.DateTimeFormatter
 class PropertyRepository(app: AppServices) {
     private val db = app.db
 
-    init {
-        db.init(
-            """
-           CREATE TABLE IF NOT EXISTS property (
-                key text PRIMARY KEY,
-                value jsonb NOT NULL
-            ); 
-        """
-        )
-    }
-
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))

@@ -24,24 +24,7 @@ import party.jml.partyboi.templates.NavItem
 class CompoRepository(private val app: AppServices) {
     private val db = app.db
     private val GENERAL_RULES = "CompoRepository.GeneralRules"
-
-    init {
-        db.init(
-            """
-            CREATE TABLE IF NOT EXISTS compo (
-                id SERIAL PRIMARY KEY,
-                name text NOT NULL,
-                rules text NOT NULL DEFAULT '',
-                visible boolean NOT NULL DEFAULT true,
-                allow_submit boolean NOT NULL DEFAULT true,
-                allow_vote boolean NOT NULL DEFAULT false,
-                public_results boolean NOT NULL DEFAULT false,
-                formats text[]
-            );
-        """
-        )
-    }
-
+    
     fun getGeneralRules(): Either<AppError, GeneralRules> =
         app.properties.getOrElse(GENERAL_RULES, "")
             .flatMap { it.string() }

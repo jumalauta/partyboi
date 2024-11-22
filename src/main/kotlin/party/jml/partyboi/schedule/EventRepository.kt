@@ -22,20 +22,6 @@ import java.time.LocalDateTime
 
 class EventRepository(private val app: AppServices) {
     private val db = app.db
-    private val signalEmitter = EventSignalEmitter(app)
-
-    init {
-        db.init(
-            """
-           CREATE TABLE IF NOT EXISTS event (
-                id SERIAL PRIMARY KEY,
-                name text NOT NULL,
-                time timestamp with time zone NOT NULL,
-                visible boolean NOT NULL DEFAULT true
-            ) 
-        """
-        )
-    }
 
     fun get(eventId: Int): Either<AppError, Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
