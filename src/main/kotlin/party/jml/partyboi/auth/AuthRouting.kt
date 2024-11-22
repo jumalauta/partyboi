@@ -7,6 +7,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import io.ktor.util.date.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
@@ -32,7 +33,9 @@ fun Application.configureLoginRouting(app: AppServices) {
                         val user = app.users.getUser(login.name).bind()
                         val session = user.authenticate(login.password).bind()
                         call.sessions.set(session)
-                        Redirection("/")
+                        val redirect = call.request.cookies.get("afterLogin") ?: "/"
+                        call.response.cookies.append("afterLogin", "", expires = GMTDate.START)
+                        Redirection(redirect)
 
                     }
                 },

@@ -3,17 +3,16 @@ package party.jml.partyboi.admin.assets
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.adminApiRouting
+import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.processForm
-import party.jml.partyboi.data.receiveForm
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
-import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureAdminAssetsRouting(app: AppServices) {
@@ -27,30 +26,28 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
             assets = app.assets.getList(),
         )
 
-    routing {
-        authenticate("admin") {
-            val redirectionToAssets = Redirection("/admin/assets")
+    adminRouting {
+        val redirectionToAssets = Redirection("/admin/assets")
 
-            get("/admin/assets") {
-                call.respondPage(renderAdminAssetsPage())
-            }
-
-            post("/admin/assets") {
-                call.processForm<AdminAssetsPage.AddAsset>(
-                    { app.assets.write(it.file).map { redirectionToAssets } },
-                    { renderAdminAssetsPage(addAssetForm = it).right() }
-                )
-            }
+        get("/admin/assets") {
+            call.respondPage(renderAdminAssetsPage())
         }
 
-        authenticate("admin", optional = true) {
-            delete("/admin/assets/{file}") {
-                call.apiRespond {
-                    either {
-                        call.userSession().bind()
-                        val file = call.parameterString("file").bind()
-                        app.assets.delete(file).bind()
-                    }
+        post("/admin/assets") {
+            call.processForm<AdminAssetsPage.AddAsset>(
+                { app.assets.write(it.file).map { redirectionToAssets } },
+                { renderAdminAssetsPage(addAssetForm = it).right() }
+            )
+        }
+    }
+
+    adminApiRouting {
+        delete("/admin/assets/{file}") {
+            call.apiRespond {
+                either {
+                    call.userSession().bind()
+                    val file = call.parameterString("file").bind()
+                    app.assets.delete(file).bind()
                 }
             }
         }
