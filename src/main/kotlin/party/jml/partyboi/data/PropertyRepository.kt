@@ -7,6 +7,8 @@ import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.option
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -14,18 +16,21 @@ class PropertyRepository(app: AppServices) {
     private val db = app.db
 
     init {
-        db.init("""
+        db.init(
+            """
            CREATE TABLE IF NOT EXISTS property (
                 key text PRIMARY KEY,
                 value jsonb NOT NULL
             ); 
-        """)
+        """
+        )
     }
 
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: LocalDateTime) = store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
+    fun set(key: String, value: LocalDateTime) =
+        store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
 
     fun get(key: String): Either<AppError, Option<PropertyRow>> =
         db.use {
@@ -33,19 +38,22 @@ class PropertyRepository(app: AppServices) {
         }
 
     inline fun <reified A> getOrElse(key: String, value: A): Either<AppError, PropertyRow> =
-        get(key).map { it.fold( { PropertyRow(key, Json.encodeToString(value)) }, { it }) }
+        get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
 
     private fun store(key: String, jsonValue: String) =
         db.use {
-            it.exec(queryOf("""
+            it.exec(
+                queryOf(
+                    """
                     INSERT INTO property (key, value)
                     VALUES (?, ?::jsonb)
                     ON CONFLICT (key) DO UPDATE SET
                         value = EXCLUDED.value::jsonb
                 """.trimIndent(),
-                key,
-                jsonValue
-            ))
+                    key,
+                    jsonValue
+                )
+            )
         }
 }
 

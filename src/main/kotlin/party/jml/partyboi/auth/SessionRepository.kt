@@ -2,16 +2,18 @@ package party.jml.partyboi.auth
 
 import io.ktor.server.sessions.*
 import kotliquery.queryOf
-import party.jml.partyboi.data.DatabasePool
+import party.jml.partyboi.db.DatabasePool
 
 class SessionRepository(private val db: DatabasePool) : SessionStorage {
     init {
-        db.init("""
+        db.init(
+            """
             CREATE TABLE IF NOT EXISTS session (
                 id text NOT NULL,
                 value text NOT NULL
             );
-        """)
+        """
+        )
     }
 
     override suspend fun invalidate(id: String) {

@@ -4,9 +4,9 @@ import arrow.core.Either
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.DatabasePool
-import party.jml.partyboi.data.exec
-import party.jml.partyboi.data.many
+import party.jml.partyboi.db.DatabasePool
+import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.many
 
 class VoteRepository(private val db: DatabasePool) {
     init {

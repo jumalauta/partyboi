@@ -9,7 +9,7 @@ import party.jml.partyboi.admin.screen.configureAdminScreenRouting
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.auth.configureLoginRouting
 import party.jml.partyboi.compos.configureComposRouting
-import party.jml.partyboi.data.getDatabasePool
+import party.jml.partyboi.db.getDatabasePool
 import party.jml.partyboi.entries.configureEntriesRouting
 import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP

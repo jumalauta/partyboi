@@ -34,6 +34,7 @@ dependencies {
     implementation("com.h2database:h2:$h2_version")
     implementation("com.github.seratch:kotliquery:1.9.0")
     implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.flywaydb:flyway-core:10.21.0")
     implementation("io.ktor:ktor-server-html-builder-jvm")
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinx_html_version")
     implementation("org.jetbrains:kotlin-css-jvm:1.0.0-pre.129-kotlin-1.4.20")

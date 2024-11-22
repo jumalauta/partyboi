@@ -9,7 +9,7 @@ import party.jml.partyboi.assets.AssetsRepository
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
 import party.jml.partyboi.compos.CompoRepository
-import party.jml.partyboi.data.DatabasePool
+import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
