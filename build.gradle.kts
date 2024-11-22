@@ -65,6 +65,11 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
 }
+
 kotlin {
     jvmToolchain(21)
+}
+
+tasks.named("shadowJar", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java) {
+    mergeServiceFiles()
 }
