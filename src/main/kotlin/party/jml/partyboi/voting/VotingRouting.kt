@@ -5,14 +5,14 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.userApiRouting
-import party.jml.partyboi.auth.userRouting
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.auth.votingRouting
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureVotingRouting(app: AppServices) {
-    userRouting {
+    votingRouting {
         get("/vote") {
             val user = call.userSession()
             call.respondEither({
@@ -36,7 +36,7 @@ fun Application.configureVotingRouting(app: AppServices) {
                     val entryId = call.parameterInt("entry").bind()
                     val points = call.parameterInt("points").bind()
 
-                    app.votes.castVote(user.id, entryId, points).bind()
+                    app.votes.castVote(user, entryId, points).bind()
                 }
             }
         }

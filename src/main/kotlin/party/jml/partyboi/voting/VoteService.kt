@@ -9,6 +9,7 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ResultsFileGenerator
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
+import party.jml.partyboi.data.Unauthorized
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.VotableEntry
 import party.jml.partyboi.signals.Signal
@@ -17,15 +18,19 @@ class VoteService(val app: AppServices) {
     private val repository = VoteRepository(app.db)
     private val live = MutableStateFlow(LiveVoteState.Empty)
 
-    fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> =
-        either {
-            val validPoints = validatePoints(points).bind()
-            val entry = app.entries.get(entryId).bind()
-            if (isVotingOpen(entry).bind()) {
-                repository.castVote(userId, entryId, validPoints).bind()
-            } else {
-                InvalidInput("This entry cannot be voted").left()
+    fun castVote(user: User, entryId: Int, points: Int): Either<AppError, Unit> =
+        if (user.votingEnabled) {
+            either {
+                val validPoints = validatePoints(points).bind()
+                val entry = app.entries.get(entryId).bind()
+                if (isVotingOpen(entry).bind()) {
+                    repository.castVote(user.id, entryId, validPoints).bind()
+                } else {
+                    InvalidInput("This entry cannot be voted").left()
+                }
             }
+        } else {
+            Unauthorized().left()
         }
 
     suspend fun startLiveVoting(compoId: Int) {

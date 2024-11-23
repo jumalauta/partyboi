@@ -6,6 +6,7 @@ import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
+import party.jml.partyboi.admin.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileFormat
 import java.io.File
@@ -62,6 +63,7 @@ class Form<T : Validateable<T>>(
                                     )
 
                                     is FileUpload -> Pair(InputType.file, "")
+                                    is Enum<*> -> Pair(InputType.text, a.name)
                                     else -> TODO("${a.javaClass.name} not supported as Form property")
                                 }
                             }
@@ -168,9 +170,13 @@ class Form<T : Validateable<T>>(
                             LocalDateTime.parse(stringValue)
                         }
 
-                        // TODO: Generic implementation
+                        // TODO: Generic implementations of following cases
                         "kotlin.collections.List<party.jml.partyboi.entries.FileFormat>" -> {
                             stringParams.all(name).map { FileFormat.valueOf(it) }
+                        }
+
+                        "party.jml.partyboi.admin.settings.AutomaticVoteKeys" -> {
+                            AutomaticVoteKeys.valueOf(stringValue)
                         }
 
                         else -> {

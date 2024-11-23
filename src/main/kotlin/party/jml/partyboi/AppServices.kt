@@ -25,7 +25,9 @@ import java.nio.file.Paths
 
 class AppServices(db: DatabasePool) {
     val db: DatabasePool = db
-    val users = UserRepository(db)
+    val properties = PropertyRepository(this)
+    val settings = SettingsService(this)
+    val users = UserRepository(this)
     val sessions = SessionRepository(db)
     val compos = CompoRepository(this)
     val entries = EntryRepository(this)
@@ -34,8 +36,6 @@ class AppServices(db: DatabasePool) {
     val compoRun = CompoRunService(this)
     val screen = ScreenService(this)
     val screenshots = ScreenshotRepository(this)
-    val properties = PropertyRepository(this)
-    val settings = SettingsService(this)
     val events = EventRepository(this)
     val triggers = TriggerRepository(this)
     val signals = SignalService()

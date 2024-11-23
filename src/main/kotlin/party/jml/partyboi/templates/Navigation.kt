@@ -23,10 +23,10 @@ object Navigation {
         NavItem("/results", "Results"),
     )
 
-    val userItems = listOf(
+    fun userItems(user: User) = listOf(
         NavItem("/entries", "Entries"),
-        NavItem("/vote", "Voting"),
-    )
+        if (user.votingEnabled) NavItem("/vote", "Voting") else null,
+    ).filterNotNull()
 
     val adminItems = listOf(
         NavItem("/admin/settings", "Settings"),
@@ -107,7 +107,7 @@ fun SECTION.navigation(user: User?, path: String, subLinks: List<NavItem>) {
                 ul {
                     renderItems(path, Navigation.publicItems, subLinks)
                     if (user != null) {
-                        renderItems(path, Navigation.userItems, subLinks)
+                        renderItems(path, Navigation.userItems(user), subLinks)
                     }
                 }
             }

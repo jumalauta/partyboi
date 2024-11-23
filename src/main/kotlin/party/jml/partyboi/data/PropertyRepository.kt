@@ -13,6 +13,7 @@ import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.option
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.enums.enumEntries
 
 class PropertyRepository(app: AppServices) {
     private val db = app.db
@@ -80,4 +81,32 @@ class StringProperty(val properties: PropertyRepository, val key: String, val de
 
     fun set(value: String): Either<AppError, Unit> =
         properties.set(key, value)
+}
+
+class MappedProperty<T>(
+    val properties: PropertyRepository,
+    val key: String,
+    val defaultValue: T,
+    val stringToValue: (String) -> T,
+    val valueToString: (T) -> String,
+) {
+    companion object {
+        inline fun <reified T : Enum<T>> enum(properties: PropertyRepository, key: String, defaultValue: T) =
+            MappedProperty(
+                properties,
+                key,
+                defaultValue,
+                { s -> enumEntries<T>().first { it.name == s } },
+                { it.name }
+            )
+    }
+
+    fun get(): Either<AppError, T> = either {
+        properties.get(key).bind()
+            .map { stringToValue(it.string().bind()) }
+            .getOrElse { defaultValue }
+    }
+
+    fun set(value: T): Either<AppError, Unit> =
+        properties.set(key, valueToString(value))
 }

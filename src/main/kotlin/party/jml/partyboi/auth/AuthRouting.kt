@@ -2,7 +2,9 @@ package party.jml.partyboi.auth
 
 import arrow.core.raise.either
 import arrow.core.right
+import io.ktor.client.request.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -60,7 +62,7 @@ fun Application.configureLoginRouting(app: AppServices) {
             call.processForm<NewUser>(
                 { newUser ->
                     either {
-                        val session = app.users.addUser(newUser).bind()
+                        val session = app.users.addUser(newUser, call.request.origin.remoteAddress).bind()
                         call.sessions.set(session)
                         Redirection("/entries")
                     }

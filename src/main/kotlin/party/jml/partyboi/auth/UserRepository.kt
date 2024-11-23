@@ -3,12 +3,15 @@ package party.jml.partyboi.auth
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.left
+import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.auth.*
 import kotliquery.Row
 import kotliquery.queryOf
 import org.mindrot.jbcrypt.BCrypt
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
+import party.jml.partyboi.admin.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
@@ -16,23 +19,63 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 
-class UserRepository(private val db: DatabasePool) {
+class UserRepository(private val app: AppServices) {
+    private val db = app.db
+
     init {
         createAdminUser()
     }
 
     fun getUser(name: String): Either<AppError, User> = db.use {
-        it.one(queryOf("select * from appuser where name = ?", name).map(User.fromRow))
-    }
-
-    fun addUser(user: NewUser): Either<AppError, User> = db.use {
         it.one(
             queryOf(
-                "insert into appuser(name, password) values (?, ?) returning *",
-                user.name,
-                user.hashedPassword(),
+                """
+                SELECT
+                    id,
+                    name,
+                    password,
+                    is_admin,
+                    votekey.key is not null as voting_enabled
+                FROM appuser
+                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                WHERE name = ?
+                """.trimIndent(),
+                name
             ).map(User.fromRow)
         )
+    }
+
+    fun addUser(user: NewUser, ip: String): Either<AppError, User> = db.use {
+        either {
+            val createdUser = it.one(
+                queryOf(
+                    "insert into appuser(name, password) values (?, ?) returning *, false as voting_enabled",
+                    user.name,
+                    user.hashedPassword(),
+                ).map(User.fromRow)
+            ).bind()
+
+            when (app.settings.automaticVoteKeys.get().bind()) {
+                AutomaticVoteKeys.PER_USER -> {
+                    val votekey = "user:${createdUser.id}"
+                    it.exec(queryOf("INSERT INTO votekey(key, appuser_id) values(?, ?)", votekey, createdUser.id))
+                        .bind()
+                    createdUser.copy(votingEnabled = true)
+                }
+
+                AutomaticVoteKeys.PER_IP_ADDRESS -> {
+                    val votekey = "ip:$ip"
+                    it.exec(queryOf("INSERT INTO votekey(key, appuser_id) values(?, ?)", votekey, createdUser.id)).fold(
+                        { createdUser },
+                        { createdUser.copy(votingEnabled = true) }
+                    )
+                }
+
+                else -> {
+                    createdUser
+                }
+            }
+        }
     }
 
     private fun createAdminUser() = db.use {
@@ -53,6 +96,7 @@ data class User(
     val name: String,
     val hashedPassword: String,
     val isAdmin: Boolean,
+    val votingEnabled: Boolean,
 ) : Principal {
     fun authenticate(plainPassword: String): Either<AppError, User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
@@ -67,7 +111,8 @@ data class User(
                 id = row.int("id"),
                 name = row.string("name"),
                 hashedPassword = row.string("password"),
-                isAdmin = row.boolean("is_admin")
+                isAdmin = row.boolean("is_admin"),
+                votingEnabled = row.boolean("voting_enabled"),
             )
         }
 

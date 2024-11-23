@@ -12,6 +12,7 @@ import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
+import kotlin.enums.enumEntries
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     dataForm(url) {
@@ -236,6 +237,8 @@ data class DropdownOption(val value: String, val label: String) : DropdownOption
 
     companion object {
         val fromString: (String) -> DropdownOption = { DropdownOption(it, it) }
+        inline fun <reified T : Enum<T>> fromEnum(toLabel: (T) -> String) =
+            enumEntries<T>().map { DropdownOption(it.name, toLabel(it)) }
     }
 }
 

@@ -26,6 +26,10 @@ fun Application.configureAuthentication(app: AppServices) {
             validate { it }
             challenge { call.respond(HttpStatusCode.Unauthorized) }
         }
+        session<User>("voting") {
+            validate { if (it.votingEnabled) it else null }
+            challenge { call.respondRedirect("/") }
+        }
         session<User>("admin") {
             validate { if (it.isAdmin) it else null }
             challenge { call.forwardToLogin() }
@@ -72,6 +76,12 @@ fun Application.userRouting(block: Route.() -> Unit) {
 fun Application.userApiRouting(block: Route.() -> Unit) {
     routing {
         authenticate("userApi") { block() }
+    }
+}
+
+fun Application.votingRouting(block: Route.() -> Unit) {
+    routing {
+        authenticate("voting") { block() }
     }
 }
 

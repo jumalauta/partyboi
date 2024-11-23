@@ -1,6 +1,7 @@
 package party.jml.partyboi.admin.settings
 
 import kotlinx.html.*
+import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
@@ -11,7 +12,11 @@ object AdminSettingsPage {
         h1 { +"Settings" }
         dataForm("/admin/settings") {
             article {
-                fieldSet { renderFields(settings) }
+                fieldSet {
+                    renderFields(settings, mapOf(
+                        "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label }
+                    ))
+                }
                 footer {
                     submitInput { value = "Save" }
                 }
