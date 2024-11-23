@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.ResultsFileGenerator
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.entries.Entry
@@ -69,6 +70,12 @@ class VoteService(val app: AppServices) {
 
     fun getResultsForUser(user: Option<User>): Either<AppError, List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
+
+    fun getResultsFileContent(): Either<AppError, String> = either {
+        val header = app.settings.resultsFileHeader.get().bind()
+        val results = getResults().bind()
+        ResultsFileGenerator.generate(header, results)
+    }
 
     private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =
         if (!entry.qualified) {

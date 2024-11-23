@@ -8,7 +8,7 @@ import party.jml.partyboi.data.catchError
 
 class SignalService : Logging() {
     val flow = MutableStateFlow(Signal.initial())
-    
+
     suspend fun emit(signal: Signal) {
         log.info("Emit signal: {}", signal)
         flow.emit(signal)
@@ -42,6 +42,7 @@ data class Signal(
         fun liveVotingOpened(compoId: Int) = Signal(SignalType.liveVote, "open", compoId.toString())
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
+        fun settingsUpdated() = Signal(SignalType.settingsUpdated)
     }
 }
 
@@ -50,7 +51,8 @@ enum class SignalType {
     slideShown,
     event,
     vote,
-    liveVote;
+    liveVote,
+    settingsUpdated;
 
     companion object {
         fun fromString(s: String): Either<AppError, SignalType> = catchError { SignalType.valueOf(s) }

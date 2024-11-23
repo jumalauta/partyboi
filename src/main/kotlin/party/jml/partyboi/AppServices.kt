@@ -5,6 +5,7 @@ import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
 import io.ktor.util.*
 import io.ktor.util.logging.*
 import party.jml.partyboi.admin.compos.CompoRunService
+import party.jml.partyboi.admin.settings.SettingsService
 import party.jml.partyboi.assets.AssetsRepository
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
@@ -34,6 +35,7 @@ class AppServices(db: DatabasePool) {
     val screen = ScreenService(this)
     val screenshots = ScreenshotRepository(this)
     val properties = PropertyRepository(this)
+    val settings = SettingsService(this)
     val events = EventRepository(this)
     val triggers = TriggerRepository(this)
     val signals = SignalService()

@@ -1,7 +1,6 @@
 package party.jml.partyboi.templates
 
 import kotlinx.html.*
-import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.templates.components.icon
@@ -30,6 +29,7 @@ object Navigation {
     )
 
     val adminItems = listOf(
+        NavItem("/admin/settings", "Settings"),
         NavItem("/admin/compos", "Compos"),
         NavItem("/admin/schedule", "Schedule"),
         NavItem("/admin/screen", "Info screen"),

@@ -17,6 +17,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.templates.respondPage
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -121,10 +122,18 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 val slideEditUrl = app.screen.generateResultSlidesForCompo(compoId).bind()
                 call.respondRedirect(slideEditUrl)
             }
-
         }
+
+        get("/admin/compos/results.txt") {
+            either {
+                call.respondText(app.votes.getResultsFileContent().bind())
+            }.onLeft {
+                call.respondPage(it)
+            }
+        }
+
     }
-    
+
     adminApiRouting {
         put("/admin/compos/{id}/setVisible/{state}") {
             call.switchApi { id, state -> app.compos.setVisible(id, state) }

@@ -6,6 +6,7 @@ import party.jml.partyboi.admin.assets.configureAdminAssetsRouting
 import party.jml.partyboi.admin.compos.configureAdminComposRouting
 import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
 import party.jml.partyboi.admin.screen.configureAdminScreenRouting
+import party.jml.partyboi.admin.settings.configureSettingsRouting
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.auth.configureLoginRouting
 import party.jml.partyboi.compos.configureComposRouting
@@ -51,6 +52,7 @@ fun Application.module() {
     configureScheduleRouting(app)
     configureAdminAssetsRouting(app)
     configureSignalRouting(app)
+    configureSettingsRouting(app)
 
     configureStaticContent()
 

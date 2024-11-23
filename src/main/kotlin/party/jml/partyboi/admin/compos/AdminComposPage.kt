@@ -71,6 +71,11 @@ object AdminComposPage {
                         }
                     }
                 }
+                
+                a(href = "/admin/compos/results.txt") {
+                    role = "button"
+                    +"Get results.txt"
+                }
             }
         } else null, {
             dataForm("/admin/compos") {

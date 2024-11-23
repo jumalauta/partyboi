@@ -2,6 +2,8 @@ package party.jml.partyboi.data
 
 import arrow.core.Either
 import arrow.core.Option
+import arrow.core.getOrElse
+import arrow.core.raise.either
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
@@ -67,4 +69,15 @@ data class PropertyRow(
             )
         }
     }
+}
+
+class StringProperty(val properties: PropertyRepository, val key: String, val defaultValue: String = "") {
+    fun get(): Either<AppError, String> = either {
+        properties.get(key).bind()
+            .map { it.string().bind() }
+            .getOrElse { defaultValue }
+    }
+
+    fun set(value: String): Either<AppError, Unit> =
+        properties.set(key, value)
 }
