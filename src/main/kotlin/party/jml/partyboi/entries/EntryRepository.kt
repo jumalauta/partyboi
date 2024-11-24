@@ -16,22 +16,23 @@ import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.nonEmptyString
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
+import kotliquery.TransactionalSession
+import party.jml.partyboi.Logging
+import party.jml.partyboi.db.*
+import party.jml.partyboi.replication.DataExport
 
-class EntryRepository(private val app: AppServices) {
+class EntryRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
     fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
@@ -62,7 +63,8 @@ class EntryRepository(private val app: AppServices) {
             )
         """.trimIndent(),
                 entryId,
-                userId, userId
+                userId,
+                userId,
             ).map(Entry.fromRow)
         )
     }
@@ -186,6 +188,27 @@ class EntryRepository(private val app: AppServices) {
             )
                 .map(VotableEntry.fromRow)
         )
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.entries.size} entries")
+        data.entries.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO entry (id, title, author, screen_comment, org_comment, compo_id, user_id, qualified, run_order, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    it.id,
+                    it.title,
+                    it.author,
+                    it.screenComment.getOrNull(),
+                    it.orgComment.getOrNull(),
+                    it.compoId,
+                    it.userId,
+                    it.qualified,
+                    it.runOrder,
+                    it.timestamp.toJavaLocalDateTime(),
+                )
+            )
+        }.bindAll()
     }
 }
 

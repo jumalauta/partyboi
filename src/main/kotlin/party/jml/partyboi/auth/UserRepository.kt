@@ -8,20 +8,22 @@ import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.serialization.Serializable
 import kotliquery.Row
-import kotliquery.queryOf
+import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
+import party.jml.partyboi.Logging
 import party.jml.partyboi.admin.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
-import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
+import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.replication.DataExport
 
-class UserRepository(private val app: AppServices) {
+class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
     init {
@@ -40,7 +42,7 @@ class UserRepository(private val app: AppServices) {
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
-                """.trimIndent(),
+                """,
             ).map(User.fromRow)
         )
     }
@@ -58,7 +60,7 @@ class UserRepository(private val app: AppServices) {
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
                 WHERE name = ?
-                """.trimIndent(),
+                """,
                 name
             ).map(User.fromRow)
         )
@@ -95,6 +97,33 @@ class UserRepository(private val app: AppServices) {
                 }
             }
         }
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.users.size} users")
+        data.users.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO appuser (id, name, password, is_admin) VALUES (?, ?, ?, ?)",
+                    it.id,
+                    it.name,
+                    it.hashedPassword,
+                    it.isAdmin,
+                )
+            )
+        }.bindAll()
+
+        // TODO: Move to an own repository
+        log.info("Import ${data.voteKeys.size} vote keys")
+        data.voteKeys.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO votekey (key, appuser_id) VALUES (?, ?)",
+                    it.key,
+                    it.userId,
+                )
+            )
+        }.bindAll()
     }
 
     private fun createAdminUser() = db.use {

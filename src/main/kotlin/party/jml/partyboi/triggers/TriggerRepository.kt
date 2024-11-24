@@ -6,17 +6,14 @@ import arrow.core.raise.either
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
-import party.jml.partyboi.db.exec
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.updateOne
+import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import java.time.LocalDateTime
 
@@ -78,6 +75,24 @@ class TriggerRepository(val app: AppServices) : Logging() {
         """, signal.toString()
             )
         )
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.triggers.size} triggers")
+        data.triggers.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO trigger (id, type, action, enabled, signal, description) VALUES (?, ?, ?::jsonb, ?, ?, ?)",
+                    it.triggerId,
+                    it.type,
+                    it.actionJson,
+                    it.enabled,
+                    it.signal,
+                    it.description,
+                    // TODO: Copy execution time and error
+                )
+            )
+        }.bindAll()
     }
 
     private fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {

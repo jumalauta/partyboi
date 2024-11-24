@@ -35,7 +35,7 @@ fun Application.module() {
     val app = AppServices(db)
 
     runBlocking {
-        val result = Migrations.migrate(app).getOrNull()
+        val result = Migrations.migrate(db).getOrNull()
         app.replication.setSchemaVersion(result?.targetSchemaVersion ?: result?.initialSchemaVersion)
     }
 

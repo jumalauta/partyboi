@@ -7,15 +7,11 @@ import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.option
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,10 +24,13 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import party.jml.partyboi.Logging
+import party.jml.partyboi.db.*
+import party.jml.partyboi.replication.DataExport
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.pathString
 
-class FileRepository(private val app: AppServices) {
+class FileRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
     fun makeStorageFilename(
@@ -123,6 +122,24 @@ class FileRepository(private val app: AppServices) {
 
     fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.files.size} file descriptions")
+        data.files.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO file (entry_id, version, orig_filename, storage_filename, type, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    it.entryId,
+                    it.version,
+                    it.originalFilename,
+                    it.storageFilename,
+                    it.type,
+                    it.size,
+                    it.uploadedAt,
+                )
+            )
+        }.bindAll()
     }
 
     private fun buildStorageFilename(

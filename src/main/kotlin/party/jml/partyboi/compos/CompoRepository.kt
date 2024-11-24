@@ -1,28 +1,30 @@
 package party.jml.partyboi.compos
 
 import arrow.core.*
+import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Forbidden
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
-import party.jml.partyboi.db.exec
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.DropdownOptionSupport
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.NavItem
 
-class CompoRepository(private val app: AppServices) {
+class CompoRepository(private val app: AppServices) : Logging() {
     private val db = app.db
     private val GENERAL_RULES = "CompoRepository.GeneralRules"
 
@@ -120,6 +122,25 @@ class CompoRepository(private val app: AppServices) {
             compoId,
         ).map { it.boolean(1) })
             .flatMap { if (it) Unit.right() else Forbidden().left() }
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.compos.size} compos")
+        data.compos.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO compo (id, name, rules, visible, allow_submit, allow_vote, public_results, formats) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    it.id,
+                    it.name,
+                    it.rules,
+                    it.visible,
+                    it.allowSubmit,
+                    it.allowVote,
+                    it.publicResults,
+                    it.fileFormats.map { it.name }.toTypedArray(),
+                )
+            )
+        }.bindAll()
     }
 }
 

@@ -8,15 +8,15 @@ import kotlinx.coroutines.withContext
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
 import org.flywaydb.core.api.output.ValidateOutput
-import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InternalServerError
 
 object Migrations {
-    suspend fun migrate(app: AppServices): Either<AppError, MigrateResult> =
+    suspend fun migrate(db: DatabasePool, schemaName: String = "public"): Either<AppError, MigrateResult> =
         withContext(Dispatchers.IO) {
             val config = Flyway.configure()
-                .dataSource(app.db.dataSource)
+                .dataSource(db.dataSource)
+                .schemas(schemaName)
                 .group(true)
                 .outOfOrder(false)
                 .table("migrations")

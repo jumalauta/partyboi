@@ -8,16 +8,19 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
-import kotliquery.queryOf
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
+import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.replication.DataExport
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.enums.enumEntries
 
-class PropertyRepository(app: AppServices) {
+class PropertyRepository(app: AppServices) : Logging() {
     private val db = app.db
 
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
@@ -36,6 +39,19 @@ class PropertyRepository(app: AppServices) {
 
     inline fun <reified A> getOrElse(key: String, value: A): Either<AppError, PropertyRow> =
         get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.properties.size} properties")
+        data.properties.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO property (key, value) VALUES (?, ?::jsonb)",
+                    it.key,
+                    it.json,
+                )
+            )
+        }.bindAll()
+    }
 
     private fun store(key: String, jsonValue: String) =
         db.use {

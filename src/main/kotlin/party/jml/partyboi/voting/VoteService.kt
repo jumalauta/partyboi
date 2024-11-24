@@ -3,6 +3,7 @@ package party.jml.partyboi.voting
 import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
@@ -12,6 +13,7 @@ import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Unauthorized
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.VotableEntry
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 
 class VoteService(val app: AppServices) {
@@ -83,6 +85,8 @@ class VoteService(val app: AppServices) {
         val results = getResults().bind()
         ResultsFileGenerator.generate(header, results)
     }
+
+    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
     private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =
         if (!entry.qualified) {

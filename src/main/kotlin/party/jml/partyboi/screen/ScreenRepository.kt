@@ -8,19 +8,20 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.db.*
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.NavItem
 
-class ScreenRepository(private val app: AppServices) {
+class ScreenRepository(private val app: AppServices) : Logging() {
     val db = app.db
 
     init {
@@ -161,6 +162,36 @@ class ScreenRepository(private val app: AppServices) {
 
     fun setRunOrder(id: Int, order: Int): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.slideSets.size} slide sets")
+        data.slideSets.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO slideset (id, name, icon) VALUES (?, ?, ?)",
+                    it.id,
+                    it.name,
+                    it.icon,
+                )
+            )
+        }
+
+        log.info("Import ${data.slides.size} slides")
+        data.slides.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO screen (id, slideset_id, type, content, visible, run_order, show_on_info) VALUES (?, ?, ?, ?::jsonb, ?, ?, ?)",
+                    it.id,
+                    it.slideSet,
+                    it.type,
+                    it.content,
+                    it.visible,
+                    it.runOrder,
+                    it.showOnInfoPage,
+                )
+            )
+        }.bindAll()
     }
 
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
