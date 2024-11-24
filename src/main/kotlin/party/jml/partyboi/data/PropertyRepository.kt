@@ -4,12 +4,14 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -24,10 +26,13 @@ class PropertyRepository(app: AppServices) {
     fun set(key: String, value: LocalDateTime) =
         store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
 
-    fun get(key: String): Either<AppError, Option<PropertyRow>> =
-        db.use {
-            it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
-        }
+    fun get(key: String): Either<AppError, Option<PropertyRow>> = db.use {
+        it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
+    }
+
+    fun getAll(): Either<AppError, List<PropertyRow>> = db.use {
+        it.many(queryOf("SELECT * FROM property").map(PropertyRow.fromRow))
+    }
 
     inline fun <reified A> getOrElse(key: String, value: A): Either<AppError, PropertyRow> =
         get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
@@ -49,6 +54,7 @@ class PropertyRepository(app: AppServices) {
         }
 }
 
+@Serializable
 data class PropertyRow(
     val key: String,
     val json: String,

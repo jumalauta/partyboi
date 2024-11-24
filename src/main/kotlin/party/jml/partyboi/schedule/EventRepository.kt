@@ -1,21 +1,31 @@
+@file:UseSerializers(
+    LocalDateTimeIso8601Serializer::class,
+)
+
 package party.jml.partyboi.schedule
 
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
+import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.signals.Signal
-import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.triggers.Action
+import party.jml.partyboi.triggers.TriggerRow
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -112,12 +122,14 @@ data class NewEvent(
     }
 }
 
+@Serializable
 data class Event(
     @property:Field(presentation = FieldPresentation.hidden)
     val id: Int,
     @property:Field(order = 0, label = "Event name")
     val name: String,
     @property:Field(order = 1, label = "Time and date")
+    @Contextual
     val time: LocalDateTime,
     @property:Field(order = 2, label = "Show in public schedule")
     val visible: Boolean,

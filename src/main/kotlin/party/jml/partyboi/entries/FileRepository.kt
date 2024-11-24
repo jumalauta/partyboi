@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
@@ -19,12 +20,20 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.LocalDateTime
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.pathString
 
 class FileRepository(private val app: AppServices) {
     private val db = app.db
-    
+
     fun makeStorageFilename(
         entry: Entry,
         originalFilename: String,
@@ -112,6 +121,10 @@ class FileRepository(private val app: AppServices) {
         )
     }
 
+    fun getAll() = db.use {
+        it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
+    }
+
     private fun buildStorageFilename(
         compoName: String,
         entryId: Int,
@@ -140,10 +153,12 @@ data class NewFileDesc(
     fun size(): Long = Files.size(Config.getEntryDir().resolve(storageFilename))
 }
 
+@Serializable
 data class FileDesc(
     val entryId: Int,
     val version: Int,
     val originalFilename: String,
+    @Serializable(with = PathSerializer::class)
     val storageFilename: Path,
     val type: String,
     val size: Long,
@@ -163,7 +178,7 @@ data class FileDesc(
                 storageFilename = Paths.get(row.string("storage_filename")),
                 type = row.string("type"),
                 size = row.long("size"),
-                uploadedAt = row.localDateTime("uploaded_at"),
+                uploadedAt = row.localDateTime("uploaded_at").toKotlinLocalDateTime(),
             )
         }
 
@@ -360,4 +375,13 @@ enum class FileFormat(
         mimeTypes = listOf("video/webm"),
         category = FileFormatCategory.video
     )
+}
+
+object PathSerializer : KSerializer<Path> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Path", PrimitiveKind.STRING)
+    override fun deserialize(decoder: Decoder): Path = Paths.get(decoder.decodeString())
+    override fun serialize(encoder: Encoder, value: Path) {
+        encoder.encodeString(value.pathString)
+    }
+
 }

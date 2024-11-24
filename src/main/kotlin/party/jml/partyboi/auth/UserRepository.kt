@@ -6,6 +6,7 @@ import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.auth.*
+import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.queryOf
 import org.mindrot.jbcrypt.BCrypt
@@ -15,6 +16,7 @@ import party.jml.partyboi.admin.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -24,6 +26,23 @@ class UserRepository(private val app: AppServices) {
 
     init {
         createAdminUser()
+    }
+
+    fun getUsers(): Either<AppError, List<User>> = db.use {
+        it.many(
+            queryOf(
+                """
+                SELECT
+                    id,
+                    name,
+                    password,
+                    is_admin,
+                    votekey.key is not null as voting_enabled
+                FROM appuser
+                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                """.trimIndent(),
+            ).map(User.fromRow)
+        )
     }
 
     fun getUser(name: String): Either<AppError, User> = db.use {
@@ -91,6 +110,7 @@ class UserRepository(private val app: AppServices) {
     }
 }
 
+@Serializable
 data class User(
     val id: Int,
     val name: String,

@@ -22,7 +22,7 @@ import java.time.LocalDateTime
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
-    
+
     suspend fun start() {
         app.signals.flow.collect { execute(it) }
     }
@@ -62,6 +62,10 @@ class TriggerRepository(val app: AppServices) : Logging() {
             )
                 .map(TriggerRow.fromRow)
         )
+    }
+
+    fun getAllTriggers() = db.use {
+        it.many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
     }
 
     fun reset(signal: Signal, tx: TransactionalSession? = null): Either<AppError, Unit> = db.use(tx) {

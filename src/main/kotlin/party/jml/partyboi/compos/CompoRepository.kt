@@ -2,6 +2,7 @@ package party.jml.partyboi.compos
 
 import arrow.core.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import kotliquery.queryOf
@@ -24,7 +25,7 @@ import party.jml.partyboi.templates.NavItem
 class CompoRepository(private val app: AppServices) {
     private val db = app.db
     private val GENERAL_RULES = "CompoRepository.GeneralRules"
-    
+
     fun getGeneralRules(): Either<AppError, GeneralRules> =
         app.properties.getOrElse(GENERAL_RULES, "")
             .flatMap { it.string() }
@@ -122,6 +123,7 @@ class CompoRepository(private val app: AppServices) {
     }
 }
 
+@Serializable
 data class Compo(
     @property:Field(presentation = FieldPresentation.hidden)
     val id: Int,

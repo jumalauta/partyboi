@@ -70,6 +70,8 @@ class VoteService(val app: AppServices) {
             liveVoting + normalVoting
         }
 
+    fun getAllVotes(): Either<AppError, List<VoteRow>> = repository.getAllVotes()
+
     fun getResults(): Either<AppError, List<CompoResult>> =
         repository.getResults(onlyPublic = false)
 

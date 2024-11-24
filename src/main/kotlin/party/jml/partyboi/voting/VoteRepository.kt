@@ -1,6 +1,7 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.data.AppError
@@ -25,19 +26,21 @@ class VoteRepository(private val db: DatabasePool) {
         )
     }
 
-    fun getUserVotes(userId: Int): Either<AppError, List<UserVote>> = db.use {
+    fun getUserVotes(userId: Int): Either<AppError, List<VoteRow>> = db.use {
         it.many(
             queryOf(
                 """
-                SELECT
-                    entry_id,
-                    points
+                SELECT *
                 FROM vote
                 WHERE vote.user_id = ?
             """.trimIndent(),
                 userId,
-            ).map(UserVote.fromRow)
+            ).map(VoteRow.fromRow)
         )
+    }
+
+    fun getAllVotes(): Either<AppError, List<VoteRow>> = db.use {
+        it.many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
     }
 
     fun getResults(onlyPublic: Boolean): Either<AppError, List<CompoResult>> = db.use {
@@ -107,13 +110,16 @@ data class CompoResult(
     }
 }
 
-data class UserVote(
+@Serializable
+data class VoteRow(
+    val userId: Int,
     val entryId: Int,
     val points: Int
 ) {
     companion object {
-        val fromRow: (Row) -> UserVote = { row ->
-            UserVote(
+        val fromRow: (Row) -> VoteRow = { row ->
+            VoteRow(
+                userId = row.int("user_id"),
                 entryId = row.int("entry_id"),
                 points = row.int("points"),
             )

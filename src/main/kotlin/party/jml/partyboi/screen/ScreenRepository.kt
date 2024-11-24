@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.toNonEmptyListOrNone
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -58,6 +59,10 @@ class ScreenRepository(private val app: AppServices) {
 
     fun getSlide(id: Int): Either<AppError, ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
+    }
+
+    fun getAllSlides(): Either<AppError, List<ScreenRow>> = db.use {
+        it.many(queryOf("SELECT * FROM screen").map(ScreenRow.fromRow))
     }
 
     fun getSlideSetSlides(name: String): Either<AppError, List<ScreenRow>> = db.use {
@@ -161,6 +166,7 @@ class ScreenRepository(private val app: AppServices) {
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
 }
 
+@Serializable
 data class SlideSetRow(
     val id: String,
     val name: String,
@@ -182,6 +188,7 @@ data class SlideSetRow(
     }
 }
 
+@Serializable
 data class ScreenRow(
     val id: Int,
     val slideSet: String,

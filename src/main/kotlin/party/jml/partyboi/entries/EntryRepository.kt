@@ -1,23 +1,39 @@
+@file:UseSerializers(
+    OptionSerializer::class,
+    LocalDateTimeIso8601Serializer::class,
+)
+
 package party.jml.partyboi.entries
 
-import arrow.core.*
+import arrow.core.Either
+import arrow.core.Option
+import arrow.core.getOrElse
 import arrow.core.raise.either
+import arrow.core.serialization.OptionSerializer
+import arrow.core.toOption
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.queryOf
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
-import java.time.LocalDateTime
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 
 class EntryRepository(private val app: AppServices) {
     private val db = app.db
-    
+
     fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
     }
@@ -180,6 +196,7 @@ interface EntryBase {
     val compoId: Int
 }
 
+@Serializable
 data class Entry(
     override val id: Int,
     override val title: String,
@@ -204,7 +221,7 @@ data class Entry(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp")
+                row.localDateTime("timestamp").toKotlinLocalDateTime()
             )
         }
     }
@@ -238,10 +255,10 @@ data class EntryWithLatestFile(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp"),
+                row.localDateTime("timestamp").toKotlinLocalDateTime(),
                 row.stringOrNull("orig_filename").toOption(),
                 row.intOrNull("version").toOption(),
-                row.localDateTimeOrNull("uploaded_at").toOption(),
+                row.localDateTimeOrNull("uploaded_at")?.toKotlinLocalDateTime().toOption(),
                 row.longOrNull("size").toOption(),
             )
         }

@@ -1,6 +1,9 @@
 package party.jml.partyboi.entries
 
 import arrow.core.Option
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormat
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.Filesize
@@ -8,7 +11,6 @@ import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
-import java.time.format.DateTimeFormatter
 
 object EditEntryPage {
     fun render(
@@ -73,7 +75,7 @@ object EditEntryPage {
                                     td { +file.version.toString() }
                                     td { +file.originalFilename }
                                     td { +Filesize.humanFriendly(file.size) }
-                                    td { +file.uploadedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
+                                    td { +file.uploadedAt.format(LocalDateTime.Formats.ISO) }
                                     td {
                                         a(href = "/entries/${file.entryId}/download/${file.version}") {
                                             icon("download")

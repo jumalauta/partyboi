@@ -40,7 +40,7 @@ class ScreenService(private val app: AppServices) {
     fun waitForNext(): Flow<ScreenState> {
         return state.drop(1).take(1)
     }
-    
+
     fun getAddHoc() = repository.getAdHoc()
 
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
@@ -50,6 +50,7 @@ class ScreenService(private val app: AppServices) {
     }
 
     fun getSlide(slideId: Int): Either<AppError, ScreenRow> = repository.getSlide(slideId)
+    fun getAllSlides(): Either<AppError, List<ScreenRow>> = repository.getAllSlides()
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
