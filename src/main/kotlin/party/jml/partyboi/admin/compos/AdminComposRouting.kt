@@ -7,6 +7,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -15,6 +16,7 @@ import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
@@ -156,9 +158,15 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         }
 
         post("/admin/compos/{compoId}/runOrder") {
-            val runOrder = call.receive<List<String>>()
-            runOrder.mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
-            call.respondText("OK")
+            either {
+                val runOrder = call.receive<List<String>>()
+                val compoId = call.parameterInt("compoId").bind()
+                runOrder
+                    .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
+                    .bindAll()
+                runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId)) }
+                call.respondText("OK")
+            }
         }
     }
 }

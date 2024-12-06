@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.*
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.catchError
+import java.time.LocalDateTime
 
 class SignalService : Logging() {
     val flow = MutableStateFlow(Signal.initial())
@@ -43,6 +44,8 @@ data class Signal(
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
         fun settingsUpdated() = Signal(SignalType.settingsUpdated)
+        fun compoContentUpdated(compoId: Int) =
+            Signal(SignalType.compoContentUpdated, LocalDateTime.now().toString(), compoId.toString())
     }
 }
 
@@ -52,7 +55,8 @@ enum class SignalType {
     event,
     vote,
     liveVote,
-    settingsUpdated;
+    settingsUpdated,
+    compoContentUpdated;
 
     companion object {
         fun fromString(s: String): Either<AppError, SignalType> = catchError { SignalType.valueOf(s) }

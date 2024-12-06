@@ -30,7 +30,10 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import kotliquery.TransactionalSession
 import party.jml.partyboi.Logging
 import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asBoolean
+import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.signals.Signal
 
 class EntryRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -121,12 +124,16 @@ class EntryRepository(private val app: AppServices) : Logging() {
                     app.screenshots.store(entry.id, source)
                 }
             }
+        }.map {}.onRight {
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId)) }
         }
 
-    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = db.use {
-        it.one(
-            queryOf(
-                """
+    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = either {
+        val previousVersion = get(entry.id).bind()
+        db.use {
+            it.one(
+                queryOf(
+                    """
             update entry set
                 title = ?,
                 author = ?,
@@ -139,32 +146,54 @@ class EntryRepository(private val app: AppServices) : Logging() {
             )
             returning *
             """.trimIndent(),
-                entry.title,
-                entry.author,
-                entry.compoId,
-                entry.screenComment.nonEmptyString(),
-                entry.orgComment.nonEmptyString(),
-                entry.id,
-                userId, userId
-            ).map(Entry.fromRow)
-        )
+                    entry.title,
+                    entry.author,
+                    entry.compoId,
+                    entry.screenComment.nonEmptyString(),
+                    entry.orgComment.nonEmptyString(),
+                    entry.id,
+                    userId, userId
+                ).map(Entry.fromRow)
+            )
+        }.onRight {
+            runBlocking {
+                app.signals.emit(Signal.compoContentUpdated(entry.compoId))
+                if (previousVersion.compoId != entry.compoId) {
+                    app.signals.emit(Signal.compoContentUpdated(previousVersion.compoId))
+                }
+            }
+        }.bind()
     }
 
-    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = either {
+        val entry = get(entryId).bind()
+        db.use {
+            it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+        }.onRight {
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId)) }
+        }
     }
 
-    fun delete(id: Int): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("delete from entry where id = ?", id))
+    fun delete(entryId: Int): Either<AppError, Unit> = either {
+        val entry = get(entryId).bind()
+        db.use {
+            it.updateOne(queryOf("delete from entry where id = ?", entryId))
+        }.onRight {
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId)) }
+        }
     }
 
-    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("update entry set qualified = ? where id = ?", state, entryId))
-    }
+    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
+        db.use {
+            it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
+        }.map { compoId ->
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId)) }
+        }
 
-    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> = db.use {
-        it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
-    }
+    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
+        db.use {
+            it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+        }
 
     fun getVotableEntries(userId: Int): Either<AppError, List<VotableEntry>> = db.use {
         it.many(

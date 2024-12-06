@@ -35,8 +35,8 @@ fun Application.module() {
     val app = AppServices(db)
 
     runBlocking {
-        val result = Migrations.migrate(db).getOrNull()
-        app.replication.setSchemaVersion(result?.targetSchemaVersion ?: result?.initialSchemaVersion)
+        val result = Migrations.migrate(db).getOrNull() ?: throw RuntimeException("Migration failed")
+        app.replication.setSchemaVersion(result.targetSchemaVersion ?: result.initialSchemaVersion)
     }
 
     launch { app.triggers.start() }
@@ -64,6 +64,10 @@ fun Application.module() {
     configureAdminScreenRouting(app)
     configureAdminScheduleRouting(app)
     configureReplicationRouting(app)
+
+    launch {
+        app.screen.start()
+    }
 
     if (app.replication.isReadReplica) {
         launch { app.replication.sync() }

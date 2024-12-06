@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
@@ -21,7 +22,7 @@ import java.util.*
 import kotlin.concurrent.schedule
 
 
-class ScreenService(private val app: AppServices) {
+class ScreenService(private val app: AppServices) : Logging() {
     private val state = MutableStateFlow(ScreenState.Empty)
     val repository = ScreenRepository(app)
     private var scheduler: TimerTask? = null
@@ -29,6 +30,16 @@ class ScreenService(private val app: AppServices) {
     init {
         runBlocking {
             repository.getAdHoc().map { it.map { state.emit(ScreenState.fromRow(it)) } }
+        }
+    }
+
+    suspend fun start() {
+        app.signals.flow.collect {
+            if (it.type == SignalType.compoContentUpdated && it.target != null) {
+                val compoId = it.target.toInt()
+                log.info("Update compo slides")
+                generateSlidesForCompo(compoId)
+            }
         }
     }
 
@@ -57,7 +68,7 @@ class ScreenService(private val app: AppServices) {
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
     fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) =
-        repository.add(slideSet, slide, makeVisible = false)
+        repository.add(slideSet, slide, makeVisible = false, readOnly = false)
 
     fun update(id: Int, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
@@ -121,7 +132,7 @@ class ScreenService(private val app: AppServices) {
         )
 
         val allSlides = hypeSlides + entrySlides + endingSlides
-        val dbRows = repository.replaceSlideSet(slideSet, allSlides).bind()
+        val dbRows = repository.replaceGeneratedSlideSet(slideSet, allSlides).bind()
 
         val firstShown = dbRows.first().whenShown()
         app.triggers.add(firstShown, OpenCloseSubmitting(compoId, false))
@@ -177,7 +188,7 @@ class ScreenService(private val app: AppServices) {
             )
         }
 
-        repository.replaceSlideSet(slideSet, hypeSlides + resultSlides).bind()
+        repository.replaceGeneratedSlideSet(slideSet, hypeSlides + resultSlides).bind()
 
         "/admin/screen/${slideSet}"
     }

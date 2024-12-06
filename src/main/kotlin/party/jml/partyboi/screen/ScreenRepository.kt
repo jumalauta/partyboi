@@ -91,16 +91,18 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         slideSet: String,
         slide: Slide<*>,
         makeVisible: Boolean,
+        readOnly: Boolean,
         tx: TransactionalSession? = null
     ): Either<AppError, ScreenRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
-                "INSERT INTO screen(slideset_id, type, content, visible) VALUES(?, ?, ?::jsonb, ?) RETURNING *",
+                "INSERT INTO screen(slideset_id, type, content, visible, readonly) VALUES(?, ?, ?::jsonb, ?, ?) RETURNING *",
                 slideSet,
                 type,
                 content,
                 makeVisible,
+                readOnly,
             ).map(ScreenRow.fromRow)
         )
     }
@@ -109,7 +111,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
-                "UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? RETURNING *",
+                "UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? AND NOT readonly RETURNING *",
                 type,
                 content,
                 id
@@ -121,12 +123,12 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         it.updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
     }
 
-    fun replaceSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
+    fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
         db.transaction {
             either {
                 val tx = it
                 it.exec(queryOf("DELETE FROM screen WHERE slideset_id = ?", slideSet)).bind()
-                slides.map { slide -> add(slideSet, slide, makeVisible = true, tx) }.bindAll()
+                slides.map { slide -> add(slideSet, slide, makeVisible = true, readOnly = true, tx) }.bindAll()
             }
         }
 
@@ -181,7 +183,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         data.slides.map {
             tx.exec(
                 queryOf(
-                    "INSERT INTO screen (id, slideset_id, type, content, visible, run_order, show_on_info) VALUES (?, ?, ?, ?::jsonb, ?, ?, ?)",
+                    "INSERT INTO screen (id, slideset_id, type, content, visible, run_order, show_on_info, readonly) VALUES (?, ?, ?, ?::jsonb, ?, ?, ?, ?)",
                     it.id,
                     it.slideSet,
                     it.type,
@@ -189,6 +191,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
                     it.visible,
                     it.runOrder,
                     it.showOnInfoPage,
+                    it.readOnly,
                 )
             )
         }.bindAll()
@@ -228,6 +231,7 @@ data class ScreenRow(
     val visible: Boolean,
     val runOrder: Int,
     val showOnInfoPage: Boolean,
+    val readOnly: Boolean,
 ) {
     fun getSlide(): Slide<*> =
         when (type) {
@@ -249,6 +253,7 @@ data class ScreenRow(
                 visible = row.boolean("visible"),
                 runOrder = row.int("run_order"),
                 showOnInfoPage = row.boolean("show_on_info"),
+                readOnly = row.boolean("readonly"),
             )
         }
     }

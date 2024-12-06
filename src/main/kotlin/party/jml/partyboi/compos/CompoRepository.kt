@@ -52,10 +52,11 @@ class CompoRepository(private val app: AppServices) : Logging() {
         it.exec(queryOf("insert into compo(name, rules, visible) values(?, ?, false)", compo.name, compo.rules))
     }
 
-    fun update(compo: Compo): Either<AppError, Unit> = db.use {
-        it.updateOne(
-            queryOf(
-                """
+    fun update(compo: Compo): Either<AppError, Unit> =
+        db.use {
+            it.updateOne(
+                queryOf(
+                    """
                 UPDATE compo
                 SET
                     name = ?, 
@@ -63,13 +64,16 @@ class CompoRepository(private val app: AppServices) : Logging() {
                     formats = ?
                 WHERE id = ?
                 """,
-                compo.name,
-                compo.rules,
-                compo.fileFormats.map { it.name }.toTypedArray(),
-                compo.id,
+                    compo.name,
+                    compo.rules,
+                    compo.fileFormats.map { it.name }.toTypedArray(),
+                    compo.id,
+                )
             )
-        )
-    }
+        }.onRight {
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(compo.id)) }
+        }
+
 
     fun setVisible(compoId: Int, state: Boolean): Either<AppError, Unit> = db.use {
         it.updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
@@ -116,11 +120,12 @@ class CompoRepository(private val app: AppServices) : Logging() {
     }
 
     fun assertCanSubmit(compoId: Int, isAdmin: Boolean): Either<AppError, Unit> = db.use {
-        it.one(queryOf(
-            "select ? or (visible and allow_submit) from compo where id = ?",
-            isAdmin,
-            compoId,
-        ).map { it.boolean(1) })
+        it.one(
+            queryOf(
+                "select ? or (visible and allow_submit) from compo where id = ?",
+                isAdmin,
+                compoId,
+            ).map { it.boolean(1) })
             .flatMap { if (it) Unit.right() else Forbidden().left() }
     }
 
