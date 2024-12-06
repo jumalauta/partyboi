@@ -2,6 +2,7 @@ package party.jml.partyboi
 
 import io.ktor.server.application.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.admin.assets.configureAdminAssetsRouting
 import party.jml.partyboi.admin.compos.configureAdminComposRouting
 import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
@@ -19,6 +20,7 @@ import party.jml.partyboi.assets.configureStaticContent
 import party.jml.partyboi.db.Migrations
 import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
+import party.jml.partyboi.replication.configureReplicationRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.signals.configureSignalRouting
@@ -32,10 +34,12 @@ fun Application.module() {
     val db = getDatabasePool()
     val app = AppServices(db)
 
-    launch {
-        Migrations.migrate(app)
-        app.triggers.start()
+    runBlocking {
+        val result = Migrations.migrate(db).getOrNull()
+        app.replication.setSchemaVersion(result?.targetSchemaVersion ?: result?.initialSchemaVersion)
     }
+
+    launch { app.triggers.start() }
 
     configureSerialization()
     configureHTTP()
@@ -59,4 +63,9 @@ fun Application.module() {
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)
     configureAdminScheduleRouting(app)
+    configureReplicationRouting(app)
+
+    if (app.replication.isReadReplica) {
+        launch { app.replication.sync() }
+    }
 }

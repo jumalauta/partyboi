@@ -4,22 +4,24 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.toNonEmptyListOrNone
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.db.*
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.NavItem
 
-class ScreenRepository(private val app: AppServices) {
+class ScreenRepository(private val app: AppServices) : Logging() {
     val db = app.db
 
     init {
@@ -58,6 +60,10 @@ class ScreenRepository(private val app: AppServices) {
 
     fun getSlide(id: Int): Either<AppError, ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
+    }
+
+    fun getAllSlides(): Either<AppError, List<ScreenRow>> = db.use {
+        it.many(queryOf("SELECT * FROM screen").map(ScreenRow.fromRow))
     }
 
     fun getSlideSetSlides(name: String): Either<AppError, List<ScreenRow>> = db.use {
@@ -158,9 +164,40 @@ class ScreenRepository(private val app: AppServices) {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.slideSets.size} slide sets")
+        data.slideSets.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO slideset (id, name, icon) VALUES (?, ?, ?)",
+                    it.id,
+                    it.name,
+                    it.icon,
+                )
+            )
+        }
+
+        log.info("Import ${data.slides.size} slides")
+        data.slides.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO screen (id, slideset_id, type, content, visible, run_order, show_on_info) VALUES (?, ?, ?, ?::jsonb, ?, ?, ?)",
+                    it.id,
+                    it.slideSet,
+                    it.type,
+                    it.content,
+                    it.visible,
+                    it.runOrder,
+                    it.showOnInfoPage,
+                )
+            )
+        }.bindAll()
+    }
+
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
 }
 
+@Serializable
 data class SlideSetRow(
     val id: String,
     val name: String,
@@ -182,6 +219,7 @@ data class SlideSetRow(
     }
 }
 
+@Serializable
 data class ScreenRow(
     val id: Int,
     val slideSet: String,

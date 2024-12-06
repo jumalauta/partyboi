@@ -1,9 +1,13 @@
 package party.jml.partyboi
 
+import arrow.core.Option
+import arrow.core.none
+import arrow.core.some
 import com.natpryce.konfig.*
 import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
 import io.ktor.util.*
 import io.ktor.util.logging.*
+import org.flywaydb.core.api.output.MigrateResult
 import party.jml.partyboi.admin.compos.CompoRunService
 import party.jml.partyboi.admin.settings.SettingsService
 import party.jml.partyboi.assets.AssetsRepository
@@ -15,6 +19,7 @@ import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.signals.SignalService
@@ -40,6 +45,7 @@ class AppServices(db: DatabasePool) {
     val triggers = TriggerRepository(this)
     val signals = SignalService()
     val assets = AssetsRepository(this)
+    val replication = ReplicationService(this)
 }
 
 object Config {
@@ -59,6 +65,9 @@ object Config {
     private val adminUserName = Key("admin.username", stringType)
     private val adminPassword = Key("admin.password", stringType)
     private val instanceName = Key("instance.name", stringType)
+    private val replicationExportApiKey = Key("replication.export.key", stringType)
+    private val replicationImportSource = Key("replication.import.source", stringType)
+    private val replicationImportApiKey = Key("replication.import.key", stringType)
 
     fun getSecretSignKey() = hex(config.get(secretSignKey))
     fun getEntryDir(): Path = Paths.get(config[entryDir])
@@ -72,8 +81,23 @@ object Config {
     fun getAdminUserName() = config.get(adminUserName)
     fun getAdminPassword() = config.get(adminPassword)
     fun getInstanceName() = config.getOrElse(instanceName, "Partyboi")
+    fun getReplicationExportApiKey() = config.getOrNull(replicationExportApiKey)
+    fun getReplicationImportConfig(): Option<ReplicationImport> {
+        val source = config.getOrNull(replicationImportSource)
+        val apiKey = config.getOrNull(replicationImportApiKey)
+        return if (source != null && apiKey != null) {
+            ReplicationImport(source, apiKey).some()
+        } else {
+            none()
+        }
+    }
 }
 
 abstract class Logging {
     val log = KtorSimpleLogger(this.javaClass.name)
 }
+
+data class ReplicationImport(
+    val source: String,
+    val apiKey: String,
+)

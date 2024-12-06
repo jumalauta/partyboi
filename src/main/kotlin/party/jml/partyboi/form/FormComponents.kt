@@ -22,7 +22,8 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
             } else {
                 cardHeader("Submit a new entry")
                 fieldSet {
-                    renderFields(values, mapOf(
+                    renderFields(
+                        values, mapOf(
                         "compoId" to openCompos.map { it.toDropdownOption() }
                     ))
                 }
@@ -121,10 +122,8 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
             } else {
                 val id = randomShortId()
                 KtorSimpleLogger("renderFields").error(
-                    "Error {}: {} {}",
-                    id,
-                    form.error.javaClass.simpleName,
-                    form.error.message
+                    "Error $id: ${form.error.javaClass.simpleName} ${form.error.message}",
+                    form.error.throwable
                 )
                 +"Something went wrong"
                 span {

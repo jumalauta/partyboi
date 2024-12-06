@@ -3,26 +3,25 @@ package party.jml.partyboi.triggers
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
+import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
-import party.jml.partyboi.db.exec
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.updateOne
+import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import java.time.LocalDateTime
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
-    
+
     suspend fun start() {
         app.signals.flow.collect { execute(it) }
     }
@@ -64,6 +63,10 @@ class TriggerRepository(val app: AppServices) : Logging() {
         )
     }
 
+    fun getAllTriggers() = db.use {
+        it.many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
+    }
+
     fun reset(signal: Signal, tx: TransactionalSession? = null): Either<AppError, Unit> = db.use(tx) {
         it.exec(
             queryOf(
@@ -74,6 +77,24 @@ class TriggerRepository(val app: AppServices) : Logging() {
         """, signal.toString()
             )
         )
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.triggers.size} triggers")
+        data.triggers.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO trigger (id, type, action, enabled, signal, description) VALUES (?, ?, ?::jsonb, ?, ?, ?)",
+                    it.triggerId,
+                    it.triggerType,
+                    it.actionJson,
+                    it.enabled,
+                    it.signal,
+                    it.description,
+                    // TODO: Copy execution time and error
+                )
+            )
+        }.bindAll()
     }
 
     private fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {
@@ -120,21 +141,23 @@ class TriggerRepository(val app: AppServices) : Logging() {
 
 }
 
-interface TriggerRow {
-    val triggerId: Int
-    val signal: String
-    val type: String
-    val actionJson: String
-    val description: String
-    val enabled: Boolean
+@Serializable
+sealed class TriggerRow {
+    abstract val triggerId: Int
+    abstract val signal: String
 
-    fun getAction(): Action = when (type) {
+    abstract val triggerType: String
+    abstract val actionJson: String
+    abstract val description: String
+    abstract val enabled: Boolean
+
+    fun getAction(): Action = when (triggerType) {
         OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
         OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
         OpenLiveVoting::class.qualifiedName -> Json.decodeFromString<OpenLiveVoting>(actionJson)
         CloseLiveVoting::class.qualifiedName -> Json.decodeFromString<CloseLiveVoting>(actionJson)
         EnableLiveVotingForEntry::class.qualifiedName -> Json.decodeFromString<EnableLiveVotingForEntry>(actionJson)
-        else -> TODO("JSON decoding not implemented for $type")
+        else -> TODO("JSON decoding not implemented for $triggerType")
     }
 
     companion object {
@@ -150,9 +173,26 @@ interface TriggerRow {
 
             if (executionTime != null) {
                 if (error != null) {
-                    FailedTriggerRow(triggerId, signal, type, executionTime, action, error, description, enabled)
+                    FailedTriggerRow(
+                        triggerId,
+                        signal,
+                        type,
+                        executionTime.toKotlinLocalDateTime(),
+                        action,
+                        error,
+                        description,
+                        enabled
+                    )
                 } else {
-                    SuccessfulTriggerRow(triggerId, signal, type, executionTime, action, description, enabled)
+                    SuccessfulTriggerRow(
+                        triggerId,
+                        signal,
+                        type,
+                        executionTime.toKotlinLocalDateTime(),
+                        action,
+                        description,
+                        enabled
+                    )
                 }
             } else {
                 PendingTriggerRow(triggerId, signal, type, action, description, enabled)
@@ -161,35 +201,38 @@ interface TriggerRow {
     }
 }
 
+@Serializable
 data class PendingTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
+    override val triggerType: String,
     override val actionJson: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
+@Serializable
 data class SuccessfulTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
-    val executionTime: LocalDateTime,
+    override val triggerType: String,
+    val executionTime: kotlinx.datetime.LocalDateTime,
     override val actionJson: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
+@Serializable
 data class FailedTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
-    val executionTime: LocalDateTime,
+    override val triggerType: String,
+    val executionTime: kotlinx.datetime.LocalDateTime,
     override val actionJson: String,
     val error: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
 data class NewScheduledTrigger(
     @property:Field(presentation = FieldPresentation.hidden)

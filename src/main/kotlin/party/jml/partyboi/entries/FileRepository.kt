@@ -4,27 +4,38 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.queryOf
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
+import party.jml.partyboi.Logging
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.FileChecksums
+import party.jml.partyboi.data.InternalServerError
+import party.jml.partyboi.data.toFilenameToken
+import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.option
+import party.jml.partyboi.replication.DataExport
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.LocalDateTime
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.pathString
 
-class FileRepository(private val app: AppServices) {
+class FileRepository(private val app: AppServices) : Logging() {
     private val db = app.db
-    
+
     fun makeStorageFilename(
         entry: Entry,
         originalFilename: String,
@@ -65,13 +76,14 @@ class FileRepository(private val app: AppServices) {
         db.use(tx) {
             it.one(
                 queryOf(
-                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size) VALUES(?, ?, ?, ?, ?, ?) RETURNING *",
+                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum) VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING *",
                     file.entryId,
                     version,
                     file.originalFilename,
                     file.storageFilename.toString(),
                     file.type,
-                    file.size(),
+                    file.size().getOrElse { 0 },
+                    file.checksum().getOrNull(),
                 ).map(FileDesc.fromRow)
             )
         }.bind()
@@ -112,6 +124,35 @@ class FileRepository(private val app: AppServices) {
         )
     }
 
+    fun getStoragePath(name: String): Path =
+        Config.getEntryDir().resolve(name)
+
+    fun getStorageFile(name: Path): File =
+        Config.getEntryDir().resolve(name).toFile()
+
+    fun getAll() = db.use {
+        it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.files.size} file descriptions")
+        data.files.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO file (entry_id, version, orig_filename, storage_filename, type, size, uploaded_at, checksum) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    it.entryId,
+                    it.version,
+                    it.originalFilename,
+                    it.storageFilename,
+                    it.type,
+                    it.size,
+                    it.uploadedAt,
+                    it.checksum,
+                )
+            )
+        }.bindAll()
+    }
+
     private fun buildStorageFilename(
         compoName: String,
         entryId: Int,
@@ -136,18 +177,27 @@ data class NewFileDesc(
     val storageFilename: Path,
 ) {
     val type: String by lazy { FileDesc.getType(originalFilename) }
+    val absolutePath: Path by lazy { Config.getEntryDir().resolve(storageFilename) }
 
-    fun size(): Long = Files.size(Config.getEntryDir().resolve(storageFilename))
+    fun size(): Either<InternalServerError, Long> =
+        Either.catch { Files.size(absolutePath) }.mapLeft { InternalServerError(it) }
+
+    fun checksum(): Either<AppError, String> =
+        FileChecksums.get(absolutePath)
+
 }
 
+@Serializable
 data class FileDesc(
     val entryId: Int,
     val version: Int,
     val originalFilename: String,
+    @Serializable(with = PathSerializer::class)
     val storageFilename: Path,
     val type: String,
     val size: Long,
     val uploadedAt: LocalDateTime,
+    val checksum: String?,
 ) {
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
@@ -163,7 +213,8 @@ data class FileDesc(
                 storageFilename = Paths.get(row.string("storage_filename")),
                 type = row.string("type"),
                 size = row.long("size"),
-                uploadedAt = row.localDateTime("uploaded_at"),
+                uploadedAt = row.localDateTime("uploaded_at").toKotlinLocalDateTime(),
+                checksum = row.stringOrNull("checksum"),
             )
         }
 
@@ -360,4 +411,13 @@ enum class FileFormat(
         mimeTypes = listOf("video/webm"),
         category = FileFormatCategory.video
     )
+}
+
+object PathSerializer : KSerializer<Path> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Path", PrimitiveKind.STRING)
+    override fun deserialize(decoder: Decoder): Path = Paths.get(decoder.decodeString())
+    override fun serialize(encoder: Encoder, value: Path) {
+        encoder.encodeString(value.pathString)
+    }
+
 }

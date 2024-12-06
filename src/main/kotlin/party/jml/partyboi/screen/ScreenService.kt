@@ -6,10 +6,12 @@ import arrow.core.some
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
@@ -40,7 +42,7 @@ class ScreenService(private val app: AppServices) {
     fun waitForNext(): Flow<ScreenState> {
         return state.drop(1).take(1)
     }
-    
+
     fun getAddHoc() = repository.getAdHoc()
 
     suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
@@ -50,6 +52,7 @@ class ScreenService(private val app: AppServices) {
     }
 
     fun getSlide(slideId: Int): Either<AppError, ScreenRow> = repository.getSlide(slideId)
+    fun getAllSlides(): Either<AppError, List<ScreenRow>> = repository.getAllSlides()
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
@@ -178,6 +181,8 @@ class ScreenService(private val app: AppServices) {
 
         "/admin/screen/${slideSet}"
     }
+
+    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
     private fun show(row: ScreenRow): Unit =
         runBlocking {

@@ -102,6 +102,18 @@ class Forbidden : UserError {
     override val message: String = "Forbidden"
 }
 
+class NotReady : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
+    override val message: String = "Not ready"
+    override val throwable: Throwable? = null
+}
+
+class InvalidSchemaVersion : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
+    override val message: String = "Invalid schema version"
+    override val throwable: Throwable? = null
+}
+
 fun <A> catchError(f: () -> A): Either<AppError, A> =
     Either.catch { f() }.mapLeft {
         InternalServerError(it)

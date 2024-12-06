@@ -4,33 +4,56 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
-import kotliquery.queryOf
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.replication.DataExport
 import kotlin.enums.enumEntries
 
-class PropertyRepository(app: AppServices) {
+class PropertyRepository(app: AppServices) : Logging() {
     private val db = app.db
 
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: LocalDateTime) =
-        store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
+    fun set(key: String, value: java.time.LocalDateTime) =
+        store(key, Json.encodeToString(value.toKotlinLocalDateTime().format(LocalDateTime.Formats.ISO)))
 
-    fun get(key: String): Either<AppError, Option<PropertyRow>> =
-        db.use {
-            it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
-        }
+    fun get(key: String): Either<AppError, Option<PropertyRow>> = db.use {
+        it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
+    }
+
+    fun getAll(): Either<AppError, List<PropertyRow>> = db.use {
+        it.many(queryOf("SELECT * FROM property").map(PropertyRow.fromRow))
+    }
 
     inline fun <reified A> getOrElse(key: String, value: A): Either<AppError, PropertyRow> =
         get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
+
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.properties.size} properties")
+        data.properties.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO property (key, value) VALUES (?, ?::jsonb)",
+                    it.key,
+                    it.json,
+                )
+            )
+        }.bindAll()
+    }
 
     private fun store(key: String, jsonValue: String) =
         db.use {
@@ -49,6 +72,7 @@ class PropertyRepository(app: AppServices) {
         }
 }
 
+@Serializable
 data class PropertyRow(
     val key: String,
     val json: String,
@@ -56,7 +80,8 @@ data class PropertyRow(
     fun string(): Either<AppError, String> = decode<String>()
     fun long(): Either<AppError, Long> = decode<Long>()
     fun boolean(): Either<AppError, Boolean> = decode<Boolean>()
-    fun localDateTime(): Either<AppError, LocalDateTime> = string().map { LocalDateTime.parse(it) }
+    fun localDateTime(): Either<AppError, java.time.LocalDateTime> =
+        string().map { LocalDateTime.parse(it).toJavaLocalDateTime() }
 
     private inline fun <reified A> decode() =
         Either.catch { Json.decodeFromString<A>(json) }

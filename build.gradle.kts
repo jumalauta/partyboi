@@ -4,6 +4,7 @@ val postgres_version: String by project
 val h2_version: String by project
 val kotlinx_html_version: String by project
 val flyway_version: String by project
+val arrow_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.20"
@@ -31,6 +32,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-server-content-negotiation-jvm")
+    implementation("io.ktor:ktor-client-core")
+    implementation("io.ktor:ktor-client-cio")
+    implementation("io.ktor:ktor-client-content-negotiation-jvm")
     implementation("org.postgresql:postgresql:$postgres_version")
     implementation("com.h2database:h2:$h2_version")
     implementation("com.github.seratch:kotliquery:1.9.0")
@@ -52,13 +56,15 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-config-yaml")
-    implementation("io.arrow-kt:arrow-core:1.2.4")
-    implementation("io.arrow-kt:arrow-fx-coroutines:1.2.4")
+    implementation("io.arrow-kt:arrow-core:$arrow_version")
+    implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
+    implementation("io.arrow-kt:arrow-core-serialization:$arrow_version")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("com.natpryce:konfig:1.6.10.0")
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
     implementation("org.jetbrains:markdown:0.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
