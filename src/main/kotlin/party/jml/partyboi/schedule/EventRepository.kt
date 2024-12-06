@@ -8,6 +8,8 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -131,7 +133,7 @@ data class NewEvent(
         }
 
         fun make(otherEvents: List<Event>): NewEvent =
-            make(LocalDate.now(), otherEvents.map { it.time.toLocalDate() })
+            make(LocalDate.now(), otherEvents.map { it.time.toJavaLocalDateTime().toLocalDate() })
     }
 }
 
@@ -142,8 +144,7 @@ data class Event(
     @property:Field(order = 0, label = "Event name")
     val name: String,
     @property:Field(order = 1, label = "Time and date")
-    @Contextual
-    val time: LocalDateTime,
+    val time: kotlinx.datetime.LocalDateTime,
     @property:Field(order = 2, label = "Show in public schedule")
     val visible: Boolean,
 ) : Validateable<Event> {
@@ -158,7 +159,7 @@ data class Event(
             Event(
                 id = row.int("id"),
                 name = row.string("name"),
-                time = row.localDateTime("time"),
+                time = row.localDateTime("time").toKotlinLocalDateTime(),
                 visible = row.boolean("visible"),
             )
         }

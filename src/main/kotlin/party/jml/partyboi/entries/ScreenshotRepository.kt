@@ -4,10 +4,15 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
+import io.ktor.client.statement.*
+import io.ktor.util.*
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
@@ -69,8 +74,11 @@ class ScreenshotRepository(val app: AppServices) {
             .map { app.screenshots.get(it.id) }
             .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
 
-    private fun getFile(entryId: Int): Path =
+    fun getFile(entryId: Int): Path =
         Config.getScreenshotsDir().resolve("screenshot-$entryId.jpg")
+
+    fun getChecksum(entryId: Int): Either<AppError, String> =
+        FileChecksums.get(getFile(entryId))
 
     private fun heuristicsScore(filename: String): Int {
         val magicWords = mapOf(

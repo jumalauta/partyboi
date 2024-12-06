@@ -13,7 +13,7 @@ object SchedulePage {
 
 fun FlowContent.schedule(events: List<Event>) {
     events
-        .groupBy { it.time.toLocalDate() }
+        .groupBy { it.time.date }
         .forEach { (date, events) ->
             article {
                 cardHeader("${date.dayOfWeek.name.lowercase().capitalize()} $date")
@@ -21,7 +21,7 @@ fun FlowContent.schedule(events: List<Event>) {
                     tbody {
                         events.forEach { event ->
                             tr {
-                                td(classes = "narrow") { +event.time.toLocalTime().toString() }
+                                td(classes = "narrow") { +event.time.time.toString() }
                                 td { +event.name }
                             }
                         }

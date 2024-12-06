@@ -4,6 +4,10 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -16,8 +20,6 @@ import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.enums.enumEntries
 
 class PropertyRepository(app: AppServices) : Logging() {
@@ -26,8 +28,8 @@ class PropertyRepository(app: AppServices) : Logging() {
     fun set(key: String, value: String) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
     fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: LocalDateTime) =
-        store(key, Json.encodeToString(value.format(DateTimeFormatter.ISO_DATE_TIME)))
+    fun set(key: String, value: java.time.LocalDateTime) =
+        store(key, Json.encodeToString(value.toKotlinLocalDateTime().format(LocalDateTime.Formats.ISO)))
 
     fun get(key: String): Either<AppError, Option<PropertyRow>> = db.use {
         it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
@@ -78,7 +80,8 @@ data class PropertyRow(
     fun string(): Either<AppError, String> = decode<String>()
     fun long(): Either<AppError, Long> = decode<Long>()
     fun boolean(): Either<AppError, Boolean> = decode<Boolean>()
-    fun localDateTime(): Either<AppError, LocalDateTime> = string().map { LocalDateTime.parse(it) }
+    fun localDateTime(): Either<AppError, java.time.LocalDateTime> =
+        string().map { LocalDateTime.parse(it).toJavaLocalDateTime() }
 
     private inline fun <reified A> decode() =
         Either.catch { Json.decodeFromString<A>(json) }

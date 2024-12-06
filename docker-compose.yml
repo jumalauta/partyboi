@@ -21,7 +21,7 @@ services:
     image: ilkkahanninen/partyboi:latest
     restart: unless-stopped
     ports:
-      - "8123:8123"
+      - "${PORT:-8123}:8123"
     environment:
       INSTANCE_NAME: "${INSTANCE_NAME}"
       ADMIN_USERNAME: "${ADMIN_USERNAME}"
@@ -33,6 +33,9 @@ services:
       DIR_ASSETS: /assets
       DIR_ENTRIES: /entries
       DIR_SCREENSHOTS: /screenshots
+      REPLICATION_EXPORT_KEY: "${REPLICATION_EXPORT_KEY}"
+      REPLICATION_IMPORT_SOURCE: "${REPLICATION_IMPORT_SOURCE}"
+      REPLICATION_IMPORT_KEY: "${REPLICATION_IMPORT_KEY}"
     volumes:
       - "${DIR_ASSETS}:/assets"
       - "${DIR_ENTRIES}:/entries"

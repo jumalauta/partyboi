@@ -3,6 +3,8 @@ package party.jml.partyboi.triggers
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
+import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -84,7 +86,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
                 queryOf(
                     "INSERT INTO trigger (id, type, action, enabled, signal, description) VALUES (?, ?, ?::jsonb, ?, ?, ?)",
                     it.triggerId,
-                    it.type,
+                    it.triggerType,
                     it.actionJson,
                     it.enabled,
                     it.signal,
@@ -139,21 +141,23 @@ class TriggerRepository(val app: AppServices) : Logging() {
 
 }
 
-interface TriggerRow {
-    val triggerId: Int
-    val signal: String
-    val type: String
-    val actionJson: String
-    val description: String
-    val enabled: Boolean
+@Serializable
+sealed class TriggerRow {
+    abstract val triggerId: Int
+    abstract val signal: String
 
-    fun getAction(): Action = when (type) {
+    abstract val triggerType: String
+    abstract val actionJson: String
+    abstract val description: String
+    abstract val enabled: Boolean
+
+    fun getAction(): Action = when (triggerType) {
         OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
         OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
         OpenLiveVoting::class.qualifiedName -> Json.decodeFromString<OpenLiveVoting>(actionJson)
         CloseLiveVoting::class.qualifiedName -> Json.decodeFromString<CloseLiveVoting>(actionJson)
         EnableLiveVotingForEntry::class.qualifiedName -> Json.decodeFromString<EnableLiveVotingForEntry>(actionJson)
-        else -> TODO("JSON decoding not implemented for $type")
+        else -> TODO("JSON decoding not implemented for $triggerType")
     }
 
     companion object {
@@ -169,9 +173,26 @@ interface TriggerRow {
 
             if (executionTime != null) {
                 if (error != null) {
-                    FailedTriggerRow(triggerId, signal, type, executionTime, action, error, description, enabled)
+                    FailedTriggerRow(
+                        triggerId,
+                        signal,
+                        type,
+                        executionTime.toKotlinLocalDateTime(),
+                        action,
+                        error,
+                        description,
+                        enabled
+                    )
                 } else {
-                    SuccessfulTriggerRow(triggerId, signal, type, executionTime, action, description, enabled)
+                    SuccessfulTriggerRow(
+                        triggerId,
+                        signal,
+                        type,
+                        executionTime.toKotlinLocalDateTime(),
+                        action,
+                        description,
+                        enabled
+                    )
                 }
             } else {
                 PendingTriggerRow(triggerId, signal, type, action, description, enabled)
@@ -180,35 +201,38 @@ interface TriggerRow {
     }
 }
 
+@Serializable
 data class PendingTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
+    override val triggerType: String,
     override val actionJson: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
+@Serializable
 data class SuccessfulTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
-    val executionTime: LocalDateTime,
+    override val triggerType: String,
+    val executionTime: kotlinx.datetime.LocalDateTime,
     override val actionJson: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
+@Serializable
 data class FailedTriggerRow(
     override val triggerId: Int,
     override val signal: String,
-    override val type: String,
-    val executionTime: LocalDateTime,
+    override val triggerType: String,
+    val executionTime: kotlinx.datetime.LocalDateTime,
     override val actionJson: String,
     val error: String,
     override val description: String,
     override val enabled: Boolean,
-) : TriggerRow
+) : TriggerRow()
 
 data class NewScheduledTrigger(
     @property:Field(presentation = FieldPresentation.hidden)

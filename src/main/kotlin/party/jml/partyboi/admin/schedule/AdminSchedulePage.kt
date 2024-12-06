@@ -26,7 +26,7 @@ object AdminSchedulePage {
                 if (events.isNotEmpty()) {
                     {
                         events
-                            .groupBy { it.time.toLocalDate() }
+                            .groupBy { it.time.date }
                             .forEach { (date, events) ->
                                 article {
                                     header { +"Schedule – ${date.dayOfWeek.name} $date" }
@@ -41,7 +41,7 @@ object AdminSchedulePage {
                                         tbody {
                                             events.forEach { event ->
                                                 tr {
-                                                    td { +event.time.toLocalTime().toString() }
+                                                    td { +event.time.time.toString() }
                                                     td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
                                                     td(classes = "settings") {
                                                         deleteButton(

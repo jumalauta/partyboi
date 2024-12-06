@@ -64,4 +64,8 @@ fun Application.module() {
     configureAdminScreenRouting(app)
     configureAdminScheduleRouting(app)
     configureReplicationRouting(app)
+
+    if (app.replication.isReadReplica) {
+        launch { app.replication.sync() }
+    }
 }

@@ -6,21 +6,31 @@ package party.jml.partyboi.replication
 
 import arrow.core.Either
 import arrow.core.Option
+import arrow.core.computations.ResultEffect.bind
 import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.*
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.InvalidSchemaVersion
-import party.jml.partyboi.data.NotReady
-import party.jml.partyboi.data.PropertyRow
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.entries.Entry
@@ -30,9 +40,28 @@ import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.voting.VoteRow
+import java.io.File
+import kotlin.io.path.exists
 
 class ReplicationService(val app: AppServices) : Logging() {
     private var schemaVersion: String? = null
+    private val client = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
+    private val importConfig = Config.getReplicationImportConfig()
+
+    val isReadReplica: Boolean = importConfig.isSome()
+
+    suspend fun sync(): Either<AppError, Unit> = either {
+        val response = makeRequest("export").bind()
+        val data = response.body<DataExport>()
+        import(data).bind()
+        syncEntries(data.files).bind()
+        syncScreenShots(data.files).bind()
+        syncAssets(data.assets).bind()
+    }.onLeft { log.error(it.toString(), it.throwable) }
 
     fun setSchemaVersion(version: String?) {
         schemaVersion = version
@@ -58,6 +87,7 @@ class ReplicationService(val app: AppServices) : Logging() {
                     triggers = app.triggers.getAllTriggers().bind(),
                     votes = app.votes.getAllVotes().bind(),
                     voteKeys = getVoteKeys().bind(),
+                    assets = app.assets.getList(),
                 )
             }
         }
@@ -91,6 +121,79 @@ class ReplicationService(val app: AppServices) : Logging() {
             }
         }
 
+    @OptIn(InternalAPI::class)
+    suspend fun downloadFile(path: String, checksum: String?, target: File): Either<AppError, Unit> = either {
+        log.info("Check file $path (checksum: $checksum)")
+        val response = makeRequest(path, checksum).bind()
+        if (response.status == HttpStatusCode.OK) {
+            log.info("Download $path to $target")
+            Either.catch {
+                target.toPath().parent.toFile().mkdirs()
+                response.content.copyAndClose(target.writeChannel())
+            }.mapLeft { InternalServerError(it) }.bind()
+        } else {
+            log.info("Skipped $path (${response.status})")
+        }
+    }
+
+    suspend fun syncEntries(files: List<FileDesc>): Either<AppError, Unit> = either {
+        val newFiles = files.filterNot { it.storageFilename.exists() }
+        log.info("Sync ${newFiles.size} of ${files.size} entry files")
+        newFiles.map {
+            downloadFile(
+                path = "entry/${it.storageFilename}",
+                checksum = it.checksum,
+                target = app.files.getStorageFile(it.storageFilename)
+            )
+        }.bindAll()
+    }
+
+    suspend fun syncScreenShots(files: List<FileDesc>): Either<AppError, Unit> = either {
+        log.info("Sync ${files.size} screenshots")
+        files
+            .map {
+                downloadFile(
+                    path = "screenshot/${it.entryId}",
+                    checksum = it.checksum,
+                    target = app.screenshots.getFile(it.entryId).toFile()
+                )
+            }
+            .bindAll()
+    }
+
+    suspend fun syncAssets(assets: List<String>): Either<AppError, Unit> = either {
+        log.info("Sync ${assets.size} assets")
+        assets
+            .map {
+                downloadFile(
+                    path = "asset/$it",
+                    checksum = app.assets.getChecksum(it).getOrNull(),
+                    target = app.assets.getFile(it).toFile(),
+                )
+            }
+            .bindAll()
+    }
+
+    private suspend fun makeRequest(
+        replicationRoute: String,
+        checksum: String? = null
+    ): Either<AppError, HttpResponse> =
+        importConfig
+            .toEither { Notice("This is not a read replica") }
+            .flatMap { config ->
+                Either.catch {
+                    val request = HttpRequestBuilder()
+                    request.url("${config.source}/replication/$replicationRoute")
+                    request.header(HttpHeaders.Authorization, "Bearer ${config.apiKey}")
+                    if (checksum != null) request.header("ETag", checksum)
+                    val response = client.get(request)
+                    if (response.status.value >= 400) {
+                        throw Error("Unexpected response: ${response.status}")
+                    }
+                    response
+                }.mapLeft { InternalServerError(it) }
+            }
+
     // TODO: Move to an own repository
     private fun getVoteKeys(): Either<AppError, List<VoteKeyRow>> = app.db.use {
         it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
@@ -111,6 +214,7 @@ data class DataExport(
     val triggers: List<TriggerRow>,
     val votes: List<VoteRow>,
     val voteKeys: List<VoteKeyRow>,
+    val assets: List<String>,
 )
 
 @Serializable
