@@ -16,6 +16,7 @@ import party.jml.partyboi.auth.UserRepository
 import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.data.PropertyRepository
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
@@ -83,8 +84,8 @@ object Config {
     fun getInstanceName() = config.getOrElse(instanceName, "Partyboi")
     fun getReplicationExportApiKey() = config.getOrNull(replicationExportApiKey)
     fun getReplicationImportConfig(): Option<ReplicationImport> {
-        val source = config.getOrNull(replicationImportSource)
-        val apiKey = config.getOrNull(replicationImportApiKey)
+        val source = config.getOrNull(replicationImportSource)?.nonEmptyString()
+        val apiKey = config.getOrNull(replicationImportApiKey)?.nonEmptyString()
         return if (source != null && apiKey != null) {
             ReplicationImport(source, apiKey).some()
         } else {

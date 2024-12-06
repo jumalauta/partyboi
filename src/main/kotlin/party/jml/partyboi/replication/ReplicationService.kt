@@ -4,11 +4,8 @@
 
 package party.jml.partyboi.replication
 
-import arrow.core.Either
-import arrow.core.Option
+import arrow.core.*
 import arrow.core.computations.ResultEffect.bind
-import arrow.core.flatMap
-import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
 import io.ktor.client.*
@@ -60,6 +57,15 @@ class ReplicationService(val app: AppServices) : Logging() {
                     }
                 }
             }
+        }
+    }
+
+    init {
+        Config.getReplicationExportApiKey().toOption().onSome {
+            log.info("This instance can be replicated with api key: $it")
+        }
+        importConfig.onSome {
+            log.info("This instance replicates ${it.source} with api key: ${it.apiKey}")
         }
     }
 
