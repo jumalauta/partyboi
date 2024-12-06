@@ -127,7 +127,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         db.transaction {
             either {
                 val tx = it
-                it.exec(queryOf("DELETE FROM screen WHERE slideset_id = ?", slideSet)).bind()
+                it.exec(queryOf("DELETE FROM screen WHERE slideset_id = ? AND readonly", slideSet)).bind()
                 slides.map { slide -> add(slideSet, slide, makeVisible = true, readOnly = true, tx) }.bindAll()
             }
         }

@@ -84,6 +84,8 @@ object AdminScreenPage {
                                     attributes.put("data-dragid", slide.id.toString())
                                     if (!slide.readOnly) {
                                         td(classes = "handle tight") { icon("arrows-up-down") }
+                                    } else {
+                                        td(classes = "tight") {}
                                     }
                                     td(classes = "tight") {
                                         if (screenState.id == slide.id) {
@@ -104,8 +106,8 @@ object AdminScreenPage {
                                             +slide.getName()
                                         }
                                     }
-                                    if (!slide.readOnly) {
-                                        td(classes = "settings") {
+                                    td(classes = "settings") {
+                                        if (!slide.readOnly) {
                                             toggleButton(
                                                 slide.visible,
                                                 IconSet.visibility,
