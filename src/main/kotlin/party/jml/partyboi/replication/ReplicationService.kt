@@ -41,16 +41,27 @@ import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.voting.VoteRow
 import java.io.File
+import java.security.cert.X509Certificate
+import javax.net.ssl.X509TrustManager
 import kotlin.io.path.exists
 
 class ReplicationService(val app: AppServices) : Logging() {
     private var schemaVersion: String? = null
+    private val importConfig = Config.getReplicationImportConfig()
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
         }
+        importConfig.onSome {
+            if (it.source == "https://localhost") {
+                engine {
+                    https {
+                        trustManager = TrustAllX509TrustManager()
+                    }
+                }
+            }
+        }
     }
-    private val importConfig = Config.getReplicationImportConfig()
 
     val isReadReplica: Boolean = importConfig.isSome()
 
@@ -230,4 +241,10 @@ data class VoteKeyRow(
             )
         }
     }
+}
+
+class TrustAllX509TrustManager : X509TrustManager {
+    override fun getAcceptedIssuers(): Array<X509Certificate?> = arrayOfNulls(0)
+    override fun checkClientTrusted(certs: Array<X509Certificate?>?, authType: String?) {}
+    override fun checkServerTrusted(certs: Array<X509Certificate?>?, authType: String?) {}
 }
