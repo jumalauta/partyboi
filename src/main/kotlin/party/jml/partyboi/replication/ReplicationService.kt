@@ -62,10 +62,10 @@ class ReplicationService(val app: AppServices) : Logging() {
 
     init {
         Config.getReplicationExportApiKey().toOption().onSome {
-            log.info("This instance can be replicated with api key: $it")
+            log.info("This instance can be replicated with an api key")
         }
         importConfig.onSome {
-            log.info("This instance replicates ${it.source} with api key: ${it.apiKey}")
+            log.info("This instance replicates ${it.source} with an api key")
         }
     }
 
