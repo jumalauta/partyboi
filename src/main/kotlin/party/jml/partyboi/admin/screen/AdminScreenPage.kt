@@ -3,10 +3,7 @@ package party.jml.partyboi.admin.screen
 import kotlinx.html.*
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
-import party.jml.partyboi.form.DropdownOption
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.ScreenState
 import party.jml.partyboi.screen.Slide
@@ -85,7 +82,9 @@ object AdminScreenPage {
                             slides.forEach { slide ->
                                 tr {
                                     attributes.put("data-dragid", slide.id.toString())
-                                    td(classes = "handle tight") { icon("arrows-up-down") }
+                                    if (!slide.readOnly) {
+                                        td(classes = "handle tight") { icon("arrows-up-down") }
+                                    }
                                     td(classes = "tight") {
                                         if (screenState.id == slide.id) {
                                             icon("tv")
@@ -105,22 +104,24 @@ object AdminScreenPage {
                                             +slide.getName()
                                         }
                                     }
-                                    td(classes = "settings") {
-                                        toggleButton(
-                                            slide.visible,
-                                            IconSet.visibility,
-                                            "/admin/screen/${slide.id}/setVisible"
-                                        )
-                                        toggleButton(
-                                            slide.showOnInfoPage,
-                                            IconSet.showOnInfoPage,
-                                            "/admin/screen/${slide.id}/showOnInfo"
-                                        )
-                                        deleteButton(
-                                            url = "/admin/screen/${slide.id}",
-                                            tooltipText = "Delete ${slide.getName()}",
-                                            confirmation = "Do you really want to delete slide ${slide.getName()}?"
-                                        )
+                                    if (!slide.readOnly) {
+                                        td(classes = "settings") {
+                                            toggleButton(
+                                                slide.visible,
+                                                IconSet.visibility,
+                                                "/admin/screen/${slide.id}/setVisible"
+                                            )
+                                            toggleButton(
+                                                slide.showOnInfoPage,
+                                                IconSet.showOnInfoPage,
+                                                "/admin/screen/${slide.id}/showOnInfo"
+                                            )
+                                            deleteButton(
+                                                url = "/admin/screen/${slide.id}",
+                                                tooltipText = "Delete ${slide.getName()}",
+                                                confirmation = "Do you really want to delete slide ${slide.getName()}?"
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -191,15 +192,19 @@ object AdminScreenPage {
         h1 { +"${slide.getName()} / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set ${slideSet}"}" }
         val form = slide.slide.getForm()
         article {
-            dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
-                fieldSet {
-                    renderFields(
-                        if (errors == null) form else form.with(errors),
-                        mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
-                    )
-                }
-                footer {
-                    submitInput { value = "Save changes" }
+            if (slide.readOnly) {
+                renderReadonlyFields(form)
+            } else {
+                dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
+                    fieldSet {
+                        renderFields(
+                            if (errors == null) form else form.with(errors),
+                            mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
+                        )
+                    }
+                    footer {
+                        submitInput { value = "Save changes" }
+                    }
                 }
             }
         }
@@ -238,6 +243,7 @@ data class SlideEditData(
     val visible: Boolean,
     val showOnInfoPage: Boolean,
     val slide: Slide<*>,
+    val readOnly: Boolean,
 ) {
     fun getName(): String =
         slide.getName().nonEmptyString() ?: "Untitled slide #${id}"
@@ -249,6 +255,7 @@ data class SlideEditData(
                 visible = row.visible,
                 showOnInfoPage = row.showOnInfoPage,
                 slide = row.getSlide(),
+                readOnly = row.readOnly,
             )
         }
     }
