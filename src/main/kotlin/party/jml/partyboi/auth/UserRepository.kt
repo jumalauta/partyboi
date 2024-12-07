@@ -27,7 +27,7 @@ class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
     init {
-        createAdminUser()
+        createAdminUser().throwOnError()
     }
 
     fun getUsers(): Either<AppError, List<User>> = db.use {

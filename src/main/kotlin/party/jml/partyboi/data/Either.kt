@@ -19,3 +19,5 @@ class EitherCache<K, E, A> {
         }
     }
 }
+
+fun <A : AppError, B> Either<A, B>.throwOnError() = onLeft { throw it.throwable ?: Error(it.message) }

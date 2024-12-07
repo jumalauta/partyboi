@@ -60,10 +60,7 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
 
     private fun dropSchema(tx: TransactionalSession, name: String) =
         tx.exec(queryOf("DROP SCHEMA IF EXISTS $name CASCADE"))
-
-    fun init(query: String): Unit =
-        sessionOf(dataSource).use { it.run(queryOf(query.trimIndent()).asExecute) }
-
+    
     fun debugPrintPoolState(message: String) {
         val pool = dataSource.hikariPoolMXBean
         log.info("$message: ${dataSource.poolName} (total=${pool.totalConnections}, active=${pool.activeConnections}, idle=${pool.idleConnections}, waiting=${pool.threadsAwaitingConnection})")

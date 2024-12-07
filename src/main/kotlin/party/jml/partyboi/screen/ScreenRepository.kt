@@ -25,8 +25,8 @@ class ScreenRepository(private val app: AppServices) : Logging() {
     val db = app.db
 
     init {
-        upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt")
-        upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info")
+        upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt").throwOnError()
+        upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info").throwOnError()
     }
 
     fun upsertSlideSet(id: String, name: String, icon: String) = db.use {
