@@ -32,12 +32,11 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val db = getDatabasePool()
-    val app = AppServices(db)
-
-    runBlocking {
-        val result = Migrations.migrate(db).getOrNull() ?: throw RuntimeException("Migration failed")
-        app.replication.setSchemaVersion(result.targetSchemaVersion ?: result.initialSchemaVersion)
+    val migration = runBlocking {
+        Migrations.migrate(db).getOrNull() ?: throw RuntimeException("Migration failed")
     }
+    val app = AppServices(db)
+    app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
 
     launch { app.triggers.start() }
 
