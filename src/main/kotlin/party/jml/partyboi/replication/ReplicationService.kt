@@ -28,6 +28,8 @@ import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.*
+import party.jml.partyboi.db.DbBasicMappers.asString
+import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.entries.Entry
@@ -78,6 +80,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         syncEntries(data.files).bind()
         syncScreenShots(data.files).bind()
         syncAssets(data.assets).bind()
+        resetSequences().bind()
     }.onLeft { log.error(it.toString(), it.throwable) }
 
     fun setSchemaVersion(version: String?) {
@@ -211,14 +214,19 @@ class ReplicationService(val app: AppServices) : Logging() {
                 }.mapLeft { InternalServerError(it) }
             }
 
-    private fun resetSequences() = app.db.use {
-        SELECT setval('appuser_id_seq', (SELECT coalesce(max(id), 1) from appuser));
-        SELECT setval('compo_id_seq', (SELECT coalesce(max(id), 1) from compo));
-        SELECT setval('entry_id_seq', (SELECT coalesce(max(id), 1) from entry));
-        SELECT setval('screen_id_seq', (SELECT coalesce(max(id), 1) from screen));
-        SELECT setval('event_id_seq', (SELECT coalesce(max(id), 1) from event));
-        SELECT setval('trigger_id_seq', (SELECT coalesce(max(id), 1) from trigger));
-
+    private fun resetSequences() = app.db.use { db ->
+        either {
+            val sequences =
+                db.many(queryOf("SELECT sequence_name FROM information_schema.sequences").map(asString)).bind()
+            sequences.forEach { sequence ->
+                val tokens = sequence.split('_')
+                if (tokens.size == 3 && tokens.get(2) == "seq") {
+                    val table = tokens.get(0)
+                    val column = tokens.get(1)
+                    db.exec(queryOf("SELECT setval(?, (SELECT coalesce(max($column), 1) FROM $table))", sequence))
+                }
+            }
+        }
     }
 
     // TODO: Move to an own repository

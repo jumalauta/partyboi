@@ -60,7 +60,7 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
 
     private fun dropSchema(tx: TransactionalSession, name: String) =
         tx.exec(queryOf("DROP SCHEMA IF EXISTS $name CASCADE"))
-    
+
     fun debugPrintPoolState(message: String) {
         val pool = dataSource.hikariPoolMXBean
         log.info("$message: ${dataSource.poolName} (total=${pool.totalConnections}, active=${pool.activeConnections}, idle=${pool.idleConnections}, waiting=${pool.threadsAwaitingConnection})")
@@ -102,6 +102,7 @@ fun Session.updateOne(query: Query): Either<AppError, Unit> =
     updateAny(query).flatMap { if (it != 1) NotFound("Not found").left() else Unit.right() }
 
 object DbBasicMappers {
+    val asString: (Row) -> String = { it.string(1) }
     val asBoolean: (Row) -> Boolean = { it.boolean(1) }
     val asInt: (Row) -> Int = { it.int(1) }
     val asIntOrNull: (Row) -> Int? = { it.intOrNull(1) }
