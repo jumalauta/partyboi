@@ -75,6 +75,14 @@ function initInteractions(target) {
     compoSelector.onchange = updateAccept;
     updateAccept();
   }
+
+  // Add Windows detection to specific links
+  if (window.navigator.oscpu?.includes("Windows")) {
+    const osLinks = document.querySelectorAll("a.osSpecific");
+    osLinks.forEach((link) => {
+      link.setAttribute("href", link.getAttribute("href") + "?win=true");
+    });
+  }
 }
 
 // Smooth page reload

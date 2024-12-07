@@ -20,7 +20,7 @@ import kotlin.io.path.createTempDirectory
 
 
 class CompoRunService(val app: AppServices) {
-    fun prepareFiles(compoId: Int): Either<AppError, Path> = either {
+    fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): Either<AppError, Path> = either {
         val tempDir = createTempDirectory()
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind()
@@ -29,7 +29,8 @@ class CompoRunService(val app: AppServices) {
 
         entries.forEach { entry ->
             val fileDesc = getLatestFileDesc(entry).bind()
-            val targetFilename = app.files.makeCompoRunFileOrDirName(fileDesc, entry, compo, tempDir)
+            val targetFilename =
+                app.files.makeCompoRunFileOrDirName(fileDesc, entry, compo, tempDir, useFoldersForSingleFiles)
             if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
                 extractZip(fileDesc, targetFilename)
             } else {

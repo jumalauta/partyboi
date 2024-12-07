@@ -90,8 +90,9 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         get("/admin/compos/{id}/download") {
             either {
                 val compoId = call.parameterInt("id").bind()
+                val useFoldersForSingleFiles = call.request.queryParameters["win"] == "true"
                 val compo = app.compos.getById(compoId).bind()
-                val entries = app.compoRun.prepareFiles(compoId).bind()
+                val entries = app.compoRun.prepareFiles(compoId, useFoldersForSingleFiles).bind()
                 val zipFile = app.compoRun.compressDirectory(entries).bind()
 
                 val compoName = compo.name.toFilenameToken(true)

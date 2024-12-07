@@ -53,14 +53,28 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun makeCompoRunFileOrDirName(fileDesc: FileDesc, entry: Entry, compo: Compo, targetDir: Path): Path {
+    fun makeCompoRunFileOrDirName(
+        fileDesc: FileDesc,
+        entry: Entry,
+        compo: Compo,
+        targetDir: Path,
+        useFoldersForSingleFiles: Boolean,
+    ): Path {
         val compoName = compo.name.toFilenameToken(true) ?: "compo-${compo.id}"
         val authorClean = entry.author.toFilenameToken(false)
         val titleClean = entry.title.toFilenameToken(false)
         val extension = if (fileDesc.isArchive) "" else ".${fileDesc.extension}"
         val order = entry.runOrder.toString().padStart(2, '0')
 
-        return Paths.get(targetDir.absolutePathString(), compoName, "$order-$authorClean-$titleClean$extension")
+        return if (useFoldersForSingleFiles && !fileDesc.isArchive) {
+            Paths.get(
+                targetDir.absolutePathString(),
+                compoName,
+                "$order-$authorClean-$titleClean/$order-$authorClean-$titleClean$extension"
+            )
+        } else {
+            Paths.get(targetDir.absolutePathString(), compoName, "$order-$authorClean-$titleClean$extension")
+        }
     }
 
     fun latestVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Option<Int>> =
