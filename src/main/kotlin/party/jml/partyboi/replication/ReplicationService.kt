@@ -211,6 +211,16 @@ class ReplicationService(val app: AppServices) : Logging() {
                 }.mapLeft { InternalServerError(it) }
             }
 
+    private fun resetSequences() = app.db.use {
+        SELECT setval('appuser_id_seq', (SELECT coalesce(max(id), 1) from appuser));
+        SELECT setval('compo_id_seq', (SELECT coalesce(max(id), 1) from compo));
+        SELECT setval('entry_id_seq', (SELECT coalesce(max(id), 1) from entry));
+        SELECT setval('screen_id_seq', (SELECT coalesce(max(id), 1) from screen));
+        SELECT setval('event_id_seq', (SELECT coalesce(max(id), 1) from event));
+        SELECT setval('trigger_id_seq', (SELECT coalesce(max(id), 1) from trigger));
+
+    }
+
     // TODO: Move to an own repository
     private fun getVoteKeys(): Either<AppError, List<VoteKeyRow>> = app.db.use {
         it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))

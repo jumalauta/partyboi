@@ -47,7 +47,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8123/health"]
+      test: ["CMD", "curl", "-f", "-m", "5", "http://localhost:8123/health"]
       interval: 10s
       timeout: 2s
       retries: 3
@@ -68,6 +68,14 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 1s
+  autoheal:
+    image: docker:cli
+    network_mode: none
+    cap_drop:
+      - ALL
+    volumes: [ "/var/run/docker.sock:/var/run/docker.sock" ]
+    command: [ "/bin/sh", "-c", "while true; do sleep 15; docker ps -q -f health=unhealthy | xargs --no-run-if-empty docker restart; done" ]
+    restart: unless-stopped
 
 networks:
   frontend:
