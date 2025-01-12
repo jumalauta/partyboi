@@ -4,10 +4,12 @@ import arrow.core.Either
 import arrow.core.raise.either
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.html.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -15,13 +17,19 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.data.*
+import party.jml.partyboi.entries.respondFileShow
+import party.jml.partyboi.entries.respondNamedFileDownload
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
+import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.io.path.isDirectory
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
 
 fun Application.configureAdminComposRouting(app: AppServices) {
 
@@ -135,6 +143,28 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             }
         }
 
+        get("/admin/host/{entryId}/{version}") {
+            either {
+                val entryId = call.parameterInt("entryId").bind()
+                val version = call.parameterInt("version").bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                call.hostFile(hostedEntry)
+            }.mapLeft { error ->
+                call.respondPage(error)
+            }
+        }
+
+        get("/admin/host/{entryId}/{version}/{path...}") {
+            either {
+                val entryId = call.parameterInt("entryId").bind()
+                val version = call.parameterInt("version").bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                val path = call.parameterPath("path") { Path.of(it) }.bind()
+                call.hostFile(hostedEntry, path)
+            }.mapLeft { error ->
+                call.respondPage(error)
+            }
+        }
     }
 
     adminApiRouting {
@@ -169,5 +199,32 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 call.respondText("OK")
             }
         }
+    }
+}
+
+suspend fun ApplicationCall.hostFile(hostedEntry: ExtractedEntry, filename: Path? = null) {
+    val target = let {
+        val path = hostedEntry.dir.toPath()
+        if (filename == null) path else path.resolve(filename)
+    }
+    if (target.toFile().isDirectory()) {
+        val entries = target.listDirectoryEntries()
+        respondHtml {
+            body {
+                pre {
+                    entries.forEach { file ->
+                        a(href = request.uri + "/" + file.name) {
+                            +file.name
+                            if (file.isDirectory()) {
+                                +" <dir>"
+                            }
+                        }
+                        +"\n"
+                    }
+                }
+            }
+        }
+    } else {
+        respondFileShow(target.toFile())
     }
 }

@@ -5,15 +5,18 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format
 import kotlinx.datetime.format.DateTimeFormat
 import kotlinx.html.*
+import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
 
 object EditEntryPage {
     fun render(
+        user: User,
         entryUpdateForm: Form<EntryUpdate>,
         screenshotForm: Form<NewScreenshot>,
         compos: List<Compo>,
@@ -77,8 +80,18 @@ object EditEntryPage {
                                     td { +Filesize.humanFriendly(file.size) }
                                     td { +file.uploadedAt.format(LocalDateTime.Formats.ISO) }
                                     td {
-                                        a(href = "/entries/${file.entryId}/download/${file.version}") {
-                                            icon("download")
+                                        buttonGroup {
+                                            a(href = "/entries/${file.entryId}/download/${file.version}") {
+                                                icon("download", "Download")
+                                            }
+                                            if (user.isAdmin) {
+                                                a(
+                                                    href = "/admin/host/${file.entryId}/${file.version}",
+                                                    target = "_blank"
+                                                ) {
+                                                    icon("globe", "Open in browser")
+                                                }
+                                            }
                                         }
                                     }
                                 }

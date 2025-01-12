@@ -112,6 +112,16 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
+    fun getVersion(entryId: Int, version: Int): Either<AppError, FileDesc> = db.use {
+        it.one(
+            queryOf(
+                "SELECT * FROM file WHERE entry_id = ? AND version = ?",
+                entryId,
+                version
+            ).map(FileDesc.fromRow)
+        )
+    }
+
     fun getAllVersions(entryId: Int): Either<AppError, List<FileDesc>> = db.use {
         it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
     }

@@ -1,18 +1,20 @@
 package party.jml.partyboi.admin.compos
 
 import arrow.core.Either
+import arrow.core.flatMap
 import arrow.core.raise.either
+import arrow.core.right
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.EitherCache
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
 import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -20,6 +22,8 @@ import kotlin.io.path.createTempDirectory
 
 
 class CompoRunService(val app: AppServices) {
+    private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
+
     fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): Either<AppError, Path> = either {
         val tempDir = createTempDirectory()
         val compo = app.compos.getById(compoId).bind()
@@ -49,6 +53,34 @@ class CompoRunService(val app: AppServices) {
             outputFile
         }.mapLeft { InternalServerError(it) }
 
+    fun extractEntryFiles(entryId: Int, version: Int): Either<AppError, ExtractedEntry> = either {
+        val file = app.files.getVersion(entryId, version).bind()
+        val entry = app.entries.get(entryId).bind()
+        val compo = app.compos.getById(entry.compoId).bind()
+        val tempDir = createTempDirectory()
+        Pair(
+            file,
+            app.files.makeCompoRunFileOrDirName(file, entry, compo, tempDir, useFoldersForSingleFiles = true)
+        )
+    }.flatMap { target ->
+        val (file, targetFilename) = target
+        hostCache.memoize(Pair(entryId, file.version)) {
+            val effect = if (file.type == FileDesc.ZIP_ARCHIVE) {
+                extractZip(file, targetFilename)
+            } else {
+                copyFile(file, targetFilename)
+            }
+            effect
+                .mapLeft { InternalServerError(it) }
+                .map {
+                    ExtractedEntry(
+                        file.type == FileDesc.ZIP_ARCHIVE,
+                        targetFilename.toFile()
+                    )
+                }
+        }
+    }
+
     @Throws(IOException::class, FileNotFoundException::class)
     private fun compressDirectoryToZipfile(rootDir: Path, sourceDir: Path, out: ZipOutputStream) {
         for (file in sourceDir.toFile().listFiles()!!) {
@@ -75,7 +107,7 @@ class CompoRunService(val app: AppServices) {
                 }
             }
 
-    private fun copyFile(source: FileDesc, target: Path) {
+    private fun copyFile(source: FileDesc, target: Path) = Either.catch {
         source.getStorageFile().copyTo(target.toFile())
     }
 
@@ -89,12 +121,19 @@ class CompoRunService(val app: AppServices) {
                         val input = zip.getInputStream(entry)
                         val output = target.resolve(entry.name)
                         output.parent.toFile().mkdirs()
-                        input.use { inputStream ->
-                            output.toFile().outputStream().use { outputStream ->
-                                inputStream.transferTo(outputStream)
+                        if (!entry.isDirectory) {
+                            input.use { inputStream ->
+                                output.toFile().outputStream().use { outputStream ->
+                                    inputStream.transferTo(outputStream)
+                                }
                             }
                         }
                     }
                 }
         }
 }
+
+data class ExtractedEntry(
+    val isFolder: Boolean,
+    val dir: File
+)

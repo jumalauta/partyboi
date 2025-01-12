@@ -49,6 +49,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
         val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
         EditEntryPage.render(
+            user = user.bind(),
             entryUpdateForm = entryUpdateForm ?: Form(
                 EntryUpdate::class,
                 EntryUpdate.fromEntry(entry),
