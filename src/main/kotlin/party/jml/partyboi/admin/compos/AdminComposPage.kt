@@ -11,6 +11,7 @@ import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
+import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.toggleButton
 
@@ -25,75 +26,81 @@ object AdminComposPage {
         subLinks = compos.map { it.toNavItem() },
     ) {
         h1 { +"Compos" }
-        columns(if (compos.isNotEmpty()) {
-            {
-                article {
-                    table {
-                        thead {
-                            tr {
-                                th { +"Name" }
-                                th { +"Entries" }
-                                th {}
-                            }
-                        }
-                        tbody {
-                            compos.forEach { compo ->
+        columns(
+            if (compos.isNotEmpty()) {
+                {
+                    article {
+                        table {
+                            thead {
                                 tr {
-                                    td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
-                                    td {
-                                        val count = entries.get(compo.id)?.size ?: 0
-                                        +count.toString()
-                                    }
-                                    td(classes = "settings") {
-                                        toggleButton(
-                                            compo.visible,
-                                            IconSet.visibility,
-                                            "/admin/compos/${compo.id}/setVisible"
-                                        )
-                                        toggleButton(
-                                            compo.allowSubmit,
-                                            IconSet.submitting,
-                                            "/admin/compos/${compo.id}/setSubmit"
-                                        )
-                                        toggleButton(
-                                            compo.allowVote,
-                                            IconSet.voting,
-                                            "/admin/compos/${compo.id}/setVoting"
-                                        )
-                                        toggleButton(
-                                            compo.publicResults,
-                                            IconSet.resultsPublic,
-                                            "/admin/compos/${compo.id}/publishResults"
-                                        )
+                                    th { +"Name" }
+                                    th { +"Entries" }
+                                    th {}
+                                }
+                            }
+                            tbody {
+                                compos.forEach { compo ->
+                                    tr {
+                                        td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
+                                        td {
+                                            val count = entries.get(compo.id)?.size ?: 0
+                                            +count.toString()
+                                        }
+                                        td(classes = "settings") {
+                                            toggleButton(
+                                                compo.visible,
+                                                IconSet.visibility,
+                                                "/admin/compos/${compo.id}/setVisible"
+                                            )
+                                            toggleButton(
+                                                compo.allowSubmit,
+                                                IconSet.submitting,
+                                                "/admin/compos/${compo.id}/setSubmit"
+                                            )
+                                            toggleButton(
+                                                compo.allowVote,
+                                                IconSet.voting,
+                                                "/admin/compos/${compo.id}/setVoting"
+                                            )
+                                            toggleButton(
+                                                compo.publicResults,
+                                                IconSet.resultsPublic,
+                                                "/admin/compos/${compo.id}/publishResults"
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                
-                a(href = "/admin/compos/results.txt") {
-                    role = "button"
-                    +"Get results.txt"
-                }
-            }
-        } else null, {
-            dataForm("/admin/compos") {
-                article {
-                    header { +"Add new compo" }
-                    fieldSet { renderFields(newCompoForm) }
-                    footer { submitInput { value = "Add" } }
-                }
-            }
-
-            article {
-                dataForm("/admin/compos/generalRules") {
-                    fieldSet {
-                        renderFields(generalRulesForm)
+                    buttonGroup {
+                        a(href = "/admin/compos/results.txt") {
+                            role = "button"
+                            +"Get results.txt"
+                        }
+                        a(href = "/admin/compos/entries.zip") {
+                            role = "button"
+                            +"Download entries for distribution"
+                        }
                     }
-                    footer { submitInput { value = "Save changes" } }
                 }
-            }
-        })
+            } else null, {
+                dataForm("/admin/compos") {
+                    article {
+                        header { +"Add new compo" }
+                        fieldSet { renderFields(newCompoForm) }
+                        footer { submitInput { value = "Add" } }
+                    }
+                }
+
+                article {
+                    dataForm("/admin/compos/generalRules") {
+                        fieldSet {
+                            renderFields(generalRulesForm)
+                        }
+                        footer { submitInput { value = "Save changes" } }
+                    }
+                }
+            })
     }
 }

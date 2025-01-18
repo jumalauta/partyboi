@@ -59,21 +59,26 @@ class FileRepository(private val app: AppServices) : Logging() {
         compo: Compo,
         targetDir: Path,
         useFoldersForSingleFiles: Boolean,
+        includeOrderNumber: Boolean,
     ): Path {
         val compoName = compo.name.toFilenameToken(true) ?: "compo-${compo.id}"
         val authorClean = entry.author.toFilenameToken(false)
         val titleClean = entry.title.toFilenameToken(false)
         val extension = if (fileDesc.isArchive) "" else ".${fileDesc.extension}"
-        val order = entry.runOrder.toString().padStart(2, '0')
+        val order = if (includeOrderNumber) {
+            entry.runOrder.toString().padStart(2, '0') + "-"
+        } else {
+            ""
+        }
 
         return if (useFoldersForSingleFiles && !fileDesc.isArchive) {
             Paths.get(
                 targetDir.absolutePathString(),
                 compoName,
-                "$order-$authorClean-$titleClean/$order-$authorClean-$titleClean$extension"
+                "$order$authorClean-$titleClean/$order$authorClean-$titleClean$extension"
             )
         } else {
-            Paths.get(targetDir.absolutePathString(), compoName, "$order-$authorClean-$titleClean$extension")
+            Paths.get(targetDir.absolutePathString(), compoName, "$order$authorClean-$titleClean$extension")
         }
     }
 

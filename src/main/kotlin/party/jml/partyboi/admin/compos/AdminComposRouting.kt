@@ -143,6 +143,17 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             }
         }
 
+        get("/admin/compos/entries.zip") {
+            either {
+                call.respondNamedFileDownload(
+                    app.compoRun.compressAllEntries().bind().toFile(),
+                    "entries.zip"
+                )
+            }.onLeft {
+                call.respondPage(it)
+            }
+        }
+
         get("/admin/host/{entryId}/{version}") {
             either {
                 val entryId = call.parameterInt("entryId").bind()

@@ -3,15 +3,9 @@ package party.jml.partyboi.admin.compos
 import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.raise.either
-import arrow.core.right
-import io.ktor.server.application.*
-import io.ktor.server.response.*
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.EitherCache
-import party.jml.partyboi.data.InternalServerError
-import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
 import java.io.*
@@ -34,7 +28,14 @@ class CompoRunService(val app: AppServices) {
         entries.forEach { entry ->
             val fileDesc = getLatestFileDesc(entry).bind()
             val targetFilename =
-                app.files.makeCompoRunFileOrDirName(fileDesc, entry, compo, tempDir, useFoldersForSingleFiles)
+                app.files.makeCompoRunFileOrDirName(
+                    fileDesc,
+                    entry,
+                    compo,
+                    tempDir,
+                    useFoldersForSingleFiles,
+                    includeOrderNumber = true,
+                )
             if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
                 extractZip(fileDesc, targetFilename)
             } else {
@@ -60,7 +61,14 @@ class CompoRunService(val app: AppServices) {
         val tempDir = createTempDirectory()
         Pair(
             file,
-            app.files.makeCompoRunFileOrDirName(file, entry, compo, tempDir, useFoldersForSingleFiles = true)
+            app.files.makeCompoRunFileOrDirName(
+                file,
+                entry,
+                compo,
+                tempDir,
+                useFoldersForSingleFiles = true,
+                includeOrderNumber = true,
+            )
         )
     }.flatMap { target ->
         val (file, targetFilename) = target
@@ -70,15 +78,46 @@ class CompoRunService(val app: AppServices) {
             } else {
                 copyFile(file, targetFilename)
             }
-            effect
-                .mapLeft { InternalServerError(it) }
-                .map {
-                    ExtractedEntry(
-                        file.type == FileDesc.ZIP_ARCHIVE,
-                        targetFilename.toFile()
-                    )
-                }
+            effect.map {
+                ExtractedEntry(
+                    file.type == FileDesc.ZIP_ARCHIVE,
+                    targetFilename.toFile()
+                )
+            }
         }
+    }
+
+    fun compressAllEntries(): Either<AppError, Path> = either {
+        val dir = createTempDirectory()
+
+        // Write results
+        val results = app.votes.getResultsFileContent().bind()
+        catchError {
+            dir.resolve("results.txt").toFile().writeText(results)
+        }.bind()
+
+        // Copy latest file version of each qualified entry
+        val entries = app.entries.getAllEntries().bind().filter { it.qualified }
+        val compos = app.compos.getAllCompos().bind()
+        entries.forEach { entry ->
+            val compo = compos.find { it.id == entry.id }
+            if (compo != null) {
+                val file = app.files.getLatest(entry.id).bind()
+                val target =
+                    app.files.makeCompoRunFileOrDirName(
+                        file,
+                        entry,
+                        compo,
+                        dir,
+                        useFoldersForSingleFiles = false,
+                        includeOrderNumber = false,
+                    )
+                copyFile(file, target).bind()
+            }
+        }
+
+        // Compress zip file
+        compressDirectory(dir).bind()
     }
 
     @Throws(IOException::class, FileNotFoundException::class)
@@ -107,12 +146,12 @@ class CompoRunService(val app: AppServices) {
                 }
             }
 
-    private fun copyFile(source: FileDesc, target: Path) = Either.catch {
+    private fun copyFile(source: FileDesc, target: Path) = catchError {
         source.getStorageFile().copyTo(target.toFile())
     }
 
-    private fun extractZip(source: FileDesc, target: Path): Either<Throwable, Unit> =
-        Either.catch {
+    private fun extractZip(source: FileDesc, target: Path): Either<AppError, Unit> =
+        catchError {
             ZipFile.builder()
                 .setFile(source.getStorageFile())
                 .get()
