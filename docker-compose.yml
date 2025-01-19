@@ -14,8 +14,8 @@ services:
       - frontend
     volumes:
       - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - $PWD/caddy/data:/data"
-      - $PWD/caddy/config:/config"
+      - $PWD/caddy/data:/data
+      - $PWD/caddy/config:/config
 
   appserver:
     image: ilkkahanninen/partyboi:latest
