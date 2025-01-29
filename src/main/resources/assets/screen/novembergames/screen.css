@@ -84,6 +84,8 @@ main {
     transition: opacity 500ms, transform 500ms;
 }
 
+main:be
+
 .shown {
     transform: scale(100%) translateY(0);
     opacity: 100%;
