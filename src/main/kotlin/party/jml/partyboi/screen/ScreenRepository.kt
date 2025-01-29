@@ -1,13 +1,12 @@
 package party.jml.partyboi.screen
 
-import arrow.core.Either
-import arrow.core.Option
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.toNonEmptyListOrNone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
+import kotliquery.param
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
@@ -255,6 +254,19 @@ data class ScreenRow(
                 showOnInfoPage = row.boolean("show_on_info"),
                 readOnly = row.boolean("readonly"),
             )
+        }
+    }
+}
+
+enum class ScreenTheme(val displayName: String, val dir: String) {
+    NOTEPAD("Notepad", "notepad"),
+    NOVEMBER_GAMES("November Games", "novembergames");
+
+    companion object {
+        fun getTheme(dir: String): Option<ScreenTheme> = try {
+            Some(entries.first { t -> t.dir == dir })
+        } catch (_: Throwable) {
+            None
         }
     }
 }

@@ -9,11 +9,11 @@ object ScreenPage {
             slide.render(this)
         }
 
-    fun render(slide: Slide<*>) =
+    fun render(slide: Slide<*>, theme: ScreenTheme) =
         createHTML().html {
             head {
                 title { +"Screen" }
-                link(rel = "stylesheet", href = "/assets/screen/screen.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/screen/${theme.dir}/screen.css", type = "text/css")
             }
             body {
                 main(classes = "shown") {
@@ -23,7 +23,7 @@ object ScreenPage {
                 main {
                     attributes["id"] = "screen2"
                 }
-                script(src = "/assets/screen/screen.js") {}
+                script(src = "/assets/screen/${theme.dir}/screen.js") {}
             }
         }
 }
