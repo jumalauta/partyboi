@@ -82,6 +82,20 @@ class FileRepository(private val app: AppServices) : Logging() {
         }
     }
 
+    fun makeDistributionFileName(
+        fileDesc: FileDesc,
+        entry: Entry,
+        compo: Compo,
+        targetDir: Path,
+    ): Path {
+        val compoName = compo.name.toFilenameToken(true) ?: "compo-${compo.id}"
+        val authorClean = entry.author.toFilenameToken(false, 128)
+        val titleClean = entry.title.toFilenameToken(false, 128)
+        val extension = fileDesc.extension
+
+        return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
+    }
+
     fun latestVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Option<Int>> =
         db.use(tx) {
             it.option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))

@@ -5,6 +5,7 @@ import arrow.core.flatMap
 import arrow.core.raise.either
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
@@ -15,7 +16,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.io.path.createTempDirectory
 
 
-class CompoRunService(val app: AppServices) {
+class CompoRunService(val app: AppServices) : Logging() {
     private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
 
     fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): Either<AppError, Path> = either {
@@ -100,17 +101,15 @@ class CompoRunService(val app: AppServices) {
         val entries = app.entries.getAllEntries().bind().filter { it.qualified }
         val compos = app.compos.getAllCompos().bind()
         entries.forEach { entry ->
-            val compo = compos.find { it.id == entry.id }
+            val compo = compos.find { it.id == entry.compoId }
             if (compo != null) {
                 val file = app.files.getLatest(entry.id).bind()
                 val target =
-                    app.files.makeCompoRunFileOrDirName(
+                    app.files.makeDistributionFileName(
                         file,
                         entry,
                         compo,
                         dir,
-                        useFoldersForSingleFiles = false,
-                        includeOrderNumber = false,
                     )
                 copyFile(file, target).bind()
             }
@@ -147,6 +146,7 @@ class CompoRunService(val app: AppServices) {
             }
 
     private fun copyFile(source: FileDesc, target: Path) = catchError {
+        log.info("Copy $source to $target")
         source.getStorageFile().copyTo(target.toFile())
     }
 
