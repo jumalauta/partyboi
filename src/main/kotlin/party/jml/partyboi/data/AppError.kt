@@ -10,6 +10,7 @@ import kotlinx.html.p
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
+import java.lang.RuntimeException
 
 interface AppError : Renderable {
     val message: String
@@ -27,6 +28,9 @@ interface AppError : Renderable {
         return page.getHTML(user, path)
     }
 
+    fun throwError(): Nothing {
+        throw throwable ?: RuntimeException(message)
+    }
 }
 
 interface UserError : AppError {

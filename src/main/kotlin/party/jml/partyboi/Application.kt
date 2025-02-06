@@ -1,5 +1,6 @@
 package party.jml.partyboi
 
+import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.launch
@@ -38,7 +39,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val db = getDatabasePool()
     val migration = runBlocking {
-        Migrations.migrate(db).getOrNull() ?: throw RuntimeException("Migration failed")
+        Migrations.migrate(db).getOrElse { it.throwError() }
     }
     val app = AppServices(db)
     app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)

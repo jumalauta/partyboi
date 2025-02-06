@@ -14,6 +14,7 @@ import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
 import kotlin.enums.enumEntries
 
+// TODO: Move these to entries package
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     dataForm(url) {
         article {
@@ -24,8 +25,8 @@ fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values:
                 fieldSet {
                     renderFields(
                         values, mapOf(
-                        "compoId" to openCompos.map { it.toDropdownOption() }
-                    ))
+                            "compoId" to openCompos.map { it.toDropdownOption() }
+                        ))
                 }
                 footer {
                     submitInput { value = "Submit" }
@@ -219,6 +220,13 @@ fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: L
                 option {
                     value = ddOpt.value
                     selected = ddOpt.value == data.value
+                    if (ddOpt.dataFields != null) {
+                        ddOpt.dataFields.forEach { (key, value) ->
+                            if (value != null) {
+                                attributes["data-$key"] = value
+                            }
+                        }
+                    }
                     +ddOpt.label
                 }
             }
@@ -231,7 +239,11 @@ interface DropdownOptionSupport {
     fun toDropdownOption(): DropdownOption
 }
 
-data class DropdownOption(val value: String, val label: String) : DropdownOptionSupport {
+data class DropdownOption(
+    val value: String,
+    val label: String,
+    val dataFields: Map<String, String?>? = null,
+) : DropdownOptionSupport {
     override fun toDropdownOption(): DropdownOption = this
 
     companion object {

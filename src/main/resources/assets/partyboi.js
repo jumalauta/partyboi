@@ -54,26 +54,29 @@ function initInteractions(target) {
     };
   });
 
-  // Entry file upload field's accepted file types
+  // Update file uploader according to the selected compo
   const compoSelector = target.querySelector('select[name="compoId"]');
   const fileUpload = target.querySelector('input[type="file"]');
   if (compoSelector && fileUpload) {
-    async function updateAccept() {
-      try {
-        const response = await fetch(`/compos/${compoSelector.value}/accept`);
-        const accept = await response.text();
-        if (accept.length > 0) {
-          fileUpload.setAttribute("accept", accept);
-        } else {
-          fileUpload.removeAttribute("accept");
-        }
-      } catch (_) {
+    async function updateFileUploadInput(selectedOptionElement) {
+      const optionData = selectedOptionElement?.dataset;
+      console.log("optionData", optionData);
+      fileUpload.parentElement.style.visibility =
+        !optionData || optionData.uploadenabled ? "visible" : "hidden";
+      if (optionData) {
+        fileUpload.setAttribute("accept", optionData.accept);
+      } else {
         fileUpload.removeAttribute("accept");
       }
     }
 
-    compoSelector.onchange = updateAccept;
-    updateAccept();
+    compoSelector.onchange = (event) => {
+      const value = event.target.value;
+      const option = event.target.querySelector(`option[value="${value}"]`);
+      updateFileUploadInput(option);
+    };
+    const defaultOption = compoSelector.querySelector("option:first-child");
+    updateFileUploadInput(defaultOption);
   }
 
   // Add Windows detection to specific links

@@ -23,7 +23,7 @@ object EntriesPage {
         h1 { +"Entries" }
 
         if (compos.isEmpty() && userEntries.isEmpty()) {
-            article { +"You cannot submit entries yet. \uD83D\uDE25" }
+            article { +"Submitting entries disabled. \uD83D\uDE25" }
         }
 
         columns(

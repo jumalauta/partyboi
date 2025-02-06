@@ -5,12 +5,9 @@
 
 package party.jml.partyboi.entries
 
-import arrow.core.Either
-import arrow.core.Option
-import arrow.core.getOrElse
+import arrow.core.*
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
-import arrow.core.toOption
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
@@ -22,10 +19,7 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.data.nonEmptyString
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.form.Field
@@ -97,6 +91,11 @@ class EntryRepository(private val app: AppServices) : Logging() {
     fun add(newEntry: NewEntry): Either<AppError, Unit> =
         db.transaction {
             either {
+                val compo = app.compos.getById(newEntry.compoId, it).bind()
+                if (compo.requireFile == true && !newEntry.file.isDefined) {
+                    FormError("${compo.name} compo requires a file").left().bind<Unit>()
+                }
+
                 val entry = it.one(
                     queryOf(
                         "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
@@ -109,18 +108,20 @@ class EntryRepository(private val app: AppServices) : Logging() {
                     ).map(Entry.fromRow)
                 ).bind()
 
-                val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
+                if (newEntry.file.isDefined) {
+                    val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
 
-                val fileDesc = NewFileDesc(
-                    entryId = entry.id,
-                    originalFilename = newEntry.file.name,
-                    storageFilename = storageFilename,
-                )
-                runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
-                val storedFile = app.files.add(fileDesc, it).bind()
+                    val fileDesc = NewFileDesc(
+                        entryId = entry.id,
+                        originalFilename = newEntry.file.name,
+                        storageFilename = storageFilename,
+                    )
+                    runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
+                    val storedFile = app.files.add(fileDesc, it).bind()
 
-                app.screenshots.scanForScreenshotSource(storedFile).map { source ->
-                    app.screenshots.store(entry.id, source)
+                    app.screenshots.scanForScreenshotSource(storedFile).map { source ->
+                        app.screenshots.store(entry.id, source)
+                    }
                 }
             }
         }.map {}.onRight {
@@ -337,7 +338,6 @@ data class NewEntry(
             expectMaxLength("title", title, 64),
             expectNotEmpty("author", author),
             expectMaxLength("author", author, 64),
-            expectNotEmpty("file", file.name),
             expectMaxLength("file", file.name, 128),
         )
     }

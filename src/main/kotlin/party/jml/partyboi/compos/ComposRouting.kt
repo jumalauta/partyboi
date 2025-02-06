@@ -22,20 +22,7 @@ fun Application.configureComposRouting(app: AppServices) {
                 }
             })
         }
-
-        get("/compos/{id}/accept") {
-            either {
-                val compoId = call.parameterInt("id").bind()
-                val compo = app.compos.getById(compoId).bind()
-                compo.fileFormats
-                    .flatMap { it.extensions.map { ext -> ".$ext" } + it.mimeTypes }
-                    .joinToString(",")
-            }.fold(
-                { call.respond(it.statusCode, it.message) },
-                { call.respondText(it) }
-            )
-        }
-
+        
         get("/results") {
             call.respondEither({
                 either {

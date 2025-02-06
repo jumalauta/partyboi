@@ -31,8 +31,27 @@ object AdminEditCompoPage {
                     article {
                         fieldSet {
                             renderFields(compoForm)
+                        }
+
+                        fieldSet {
+                            p { +"File uploads" }
+                            radioInput(name = "requireFile") {
+                                checked = compoForm.data.requireFile == true
+                                label { +"Required" }
+                            }
+                            radioInput(name = "requireFile") {
+                                checked = compoForm.data.requireFile == null
+                                label { +"Optional" }
+                            }
+                            radioInput(name = "requireFile") {
+                                checked = compoForm.data.requireFile == false
+                                label { +"File uploads disabled" }
+                            }
+                        }
+
+                        fieldSet {
                             label {
-                                p { +"Accepted file formats to upload" }
+                                p { +"Accepted file formats" }
                                 FileFormatCategory.entries.forEach { cat ->
                                     details {
                                         val formats = FileFormat.entries.filter { it.category == cat }

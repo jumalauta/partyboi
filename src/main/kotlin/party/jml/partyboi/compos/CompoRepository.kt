@@ -9,10 +9,7 @@ import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.Forbidden
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
@@ -162,6 +159,8 @@ data class Compo(
     val allowVote: Boolean,
     val publicResults: Boolean,
     @property:Field(presentation = FieldPresentation.custom)
+    val requireFile: Boolean?,
+    @property:Field(presentation = FieldPresentation.custom)
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
@@ -171,9 +170,21 @@ data class Compo(
         expectMaxLength("name", name, 64),
     )
 
-    override fun toDropdownOption() = DropdownOption(id.toString(), name)
+    override fun toDropdownOption() = DropdownOption(
+        value = id.toString(),
+        label = name,
+        dataFields = mapOf(
+            "uploadEnabled" to if (requireFile == false) null else "true",
+            "accept" to acceptedFormatsString(),
+        ),
+    )
 
     fun toNavItem() = NavItem("/admin/compos/${id}", name)
+
+    fun acceptedFormatsString() =
+        fileFormats
+            .flatMap { it.extensions.map { ext -> ".$ext" } + it.mimeTypes }
+            .joinToString(",")
 
     companion object {
         val fromRow: (Row) -> Compo = { row ->
@@ -186,6 +197,7 @@ data class Compo(
                 allowVote = row.boolean("allow_vote"),
                 publicResults = row.boolean("public_results"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
+                requireFile = row.optionalBoolean("require_file"),
             )
         }
 
@@ -198,6 +210,7 @@ data class Compo(
             allowVote = false,
             publicResults = false,
             fileFormats = emptyList(),
+            requireFile = null,
         )
     }
 }
