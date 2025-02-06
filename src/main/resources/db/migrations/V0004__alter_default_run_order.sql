@@ -1,0 +1,1 @@
+ALTER TABLE "entry" ALTER COLUMN "run_order" SET DEFAULT 999999;
