@@ -199,6 +199,10 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             call.switchApi { id, state -> app.entries.setQualified(id, state) }
         }
 
+        put("/admin/compos/entries/{id}/allowEdit/{state}") {
+            call.switchApi { id, state -> app.entries.allowEdit(id, state) }
+        }
+
         post("/admin/compos/{compoId}/runOrder") {
             either {
                 val runOrder = call.receive<List<String>>()

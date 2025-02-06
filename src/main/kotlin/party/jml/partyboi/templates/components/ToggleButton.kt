@@ -47,6 +47,10 @@ data class IconSet(
         val scheduled = IconSet(Icon("clock", "Pending"), Icon("ban", "Disabled"))
         val showOnInfoPage =
             IconSet(Icon("circle-info", "Show on info page"), Icon("circle-info", "Do not show on info page"))
+        val allowEdit = IconSet(
+            Icon("file-arrow-up", "Editing allowed after deadline"),
+            Icon("file-arrow-up", "Editing not allowed after deadline")
+        )
     }
 }
 

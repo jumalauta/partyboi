@@ -153,7 +153,7 @@ object AdminEditCompoPage {
                                         th(classes = "narrow") {}
                                         th { +"Title" }
                                         th { +"Author" }
-                                        th(classes = "narrow") { +"Q." }
+                                        th(classes = "settings") {}
                                     }
                                 }
                                 tbody(classes = "sortable") {
@@ -171,6 +171,11 @@ object AdminEditCompoPage {
                                                     entry.qualified,
                                                     IconSet.qualified,
                                                     "/admin/compos/entries/${entry.id}/setQualified"
+                                                )
+                                                toggleButton(
+                                                    entry.allowEdit,
+                                                    IconSet.allowEdit,
+                                                    "/admin/compos/entries/${entry.id}/allowEdit"
                                                 )
                                             }
                                         }
@@ -207,6 +212,11 @@ object AdminEditCompoPage {
                                                     entry.qualified,
                                                     IconSet.qualified,
                                                     "/admin/compos/entries/${entry.id}/setQualified"
+                                                )
+                                                toggleButton(
+                                                    entry.allowEdit,
+                                                    IconSet.allowEdit,
+                                                    "/admin/compos/entries/${entry.id}/allowEdit"
                                                 )
                                             }
                                         }

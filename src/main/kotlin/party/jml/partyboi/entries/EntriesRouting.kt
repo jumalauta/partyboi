@@ -48,6 +48,13 @@ fun Application.configureEntriesRouting(app: AppServices) {
         val entry = app.entries.get(entryId.bind(), user.bind().id).bind()
         val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
+        val allowEdit =
+            compos.find { it.id == entry.compoId }?.allowSubmit == true ||
+                    app.entries.assertCanSubmit(
+                        entryId.bind(),
+                        user.bind().isAdmin
+                    ).isRight()
+
         EditEntryPage.render(
             user = user.bind(),
             entryUpdateForm = entryUpdateForm ?: Form(
@@ -59,6 +66,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             compos = compos,
             files = files,
             screenshot = screenshotUrl,
+            allowEdit = allowEdit,
         )
     }
 
@@ -139,7 +147,11 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     either {
                         val user = call.userSession().bind()
 
-                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                        firstRight(
+                            app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
+                            app.entries.assertCanSubmit(entry.id, user.isAdmin),
+                        ).bind()
+
                         val newEntry = app.entries.update(entry, user.id).bind()
 
                         if (entry.file.isDefined) {

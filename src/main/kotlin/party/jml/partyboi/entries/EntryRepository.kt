@@ -190,6 +190,27 @@ class EntryRepository(private val app: AppServices) : Logging() {
             runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId)) }
         }
 
+    fun allowEdit(entryId: Int, state: Boolean): Either<AppError, Unit> =
+        db.use {
+            it.updateOne(
+                queryOf(
+                    "update entry set allow_edit = ? where id = ? returning compo_id",
+                    state,
+                    entryId
+                )
+            )
+        }
+
+    fun assertCanSubmit(entryId: Int, isAdmin: Boolean): Either<AppError, Unit> = db.use {
+        it.one(
+            queryOf(
+                "select ? or allow_edit from entry where id = ?",
+                isAdmin,
+                entryId,
+            ).map { it.boolean(1) })
+            .flatMap { if (it) Unit.right() else Forbidden().left() }
+    }
+
     fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
         db.use {
             it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
@@ -260,6 +281,7 @@ data class Entry(
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: LocalDateTime,
+    val allowEdit: Boolean,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> Entry = { row ->
@@ -273,7 +295,8 @@ data class Entry(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp").toKotlinLocalDateTime()
+                row.localDateTime("timestamp").toKotlinLocalDateTime(),
+                row.boolean("allow_edit"),
             )
         }
     }

@@ -21,3 +21,8 @@ class EitherCache<K, E, A> {
 }
 
 fun <A : AppError, B> Either<A, B>.throwOnError() = onLeft { throw it.throwable ?: Error(it.message) }
+
+fun <A, B> firstRight(head: Either<A, B>, vararg tail: Either<A, B>): Either<A, B> {
+    (listOf(head) + tail).forEach { e -> if (e.isRight()) return e }
+    return head
+}

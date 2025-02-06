@@ -22,16 +22,16 @@ object EditEntryPage {
         compos: List<Compo>,
         files: List<FileDesc>,
         screenshot: Option<String>,
+        allowEdit: Boolean,
     ): Page {
-        val isFrozen = compos.find { it.id == entryUpdateForm.data.compoId }?.allowSubmit != true
-        val title = if (isFrozen) "Entry" else "Edit entry"
+        val title = if (!allowEdit) "Entry" else "Edit entry"
 
         return Page(title) {
             h1 { +title }
 
             columns(
                 {
-                    if (isFrozen) {
+                    if (!allowEdit) {
                         entryDetails(compos, entryUpdateForm)
                     } else {
                         editEntryForm(
