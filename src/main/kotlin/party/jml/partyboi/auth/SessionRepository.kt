@@ -19,6 +19,17 @@ class SessionRepository(private val db: DatabasePool) : SessionStorage {
     }
 
     override suspend fun write(id: String, value: String) {
-        db.use { it.execute(queryOf("INSERT INTO session(id, value) VALUES (?, ?)", id, value)) }
+        db.use {
+            it.execute(
+                queryOf(
+                    """
+                    INSERT INTO session (id, value)
+                    VALUES (?, ?)
+                    ON CONFLICT (id) DO UPDATE SET
+                        value = EXCLUDED.value""",
+                    id, value
+                )
+            )
+        }
     }
 }
