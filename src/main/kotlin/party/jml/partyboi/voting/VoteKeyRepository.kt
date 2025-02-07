@@ -1,12 +1,14 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import arrow.core.raise.either
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
+import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.db.DbBasicMappers.asString
-import party.jml.partyboi.db.exec
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.queryOf
+import kotlin.random.Random
 
 class VoteKeyRepository(val app: AppServices) {
     val db = app.db
@@ -19,8 +21,45 @@ class VoteKeyRepository(val app: AppServices) {
         it.exec(queryOf("DELETE FROM votekey WHERE appuser_id = ?", userId))
     }
 
-    fun registerVoteKey(userId: Int, voteKey: VoteKey) = db.use {
+    fun insertVoteKey(userId: Int?, voteKey: VoteKey, tx: TransactionalSession? = null) = db.use(tx) {
         it.exec(queryOf("INSERT INTO votekey (appuser_id, key) VALUES (?, ?)", userId, voteKey.toString()))
+    }
+
+    fun registerTicket(userId: Int, code: String): Either<AppError, Unit> = db.use {
+        it.updateOne(
+            queryOf(
+                "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
+                userId,
+                VoteKey.ticket(code).toString()
+            )
+        )
+    }
+
+    fun createTickets(count: Int) = db.transaction { tx ->
+        either {
+            for (i in 1..count) {
+                generateTicket(tx).bind()
+            }
+        }
+    }
+
+    private fun generateTicket(tx: TransactionalSession): Either<AppError, Unit> = either {
+        val voteKey = VoteKey.ticket(generateTicketCode())
+        val exists =
+            tx.one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean)).bind()
+        if (exists) {
+            generateTicket(tx)
+        } else {
+            insertVoteKey(userId = null, voteKey, tx)
+        }
+    }
+
+    private fun generateTicketCode(): String =
+        (0..8).map { getRandomTicketChar() }.joinToString("")
+
+    companion object {
+        val TICKET_CHARS = "ABCDEFHJKLMNPRSTUVWXY2346789".toList()
+        fun getRandomTicketChar() = TICKET_CHARS[Random.nextInt(0, TICKET_CHARS.size)]
     }
 }
 
@@ -41,6 +80,7 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
         fun user(userId: Int) = VoteKey(VoteKeyType.USER, userId.toString())
         fun ipAddr(ipAddr: String) = VoteKey(VoteKeyType.IP, ipAddr)
         fun manual(grantedBy: String) = VoteKey(VoteKeyType.MANUAL, grantedBy)
+        fun ticket(code: String) = VoteKey(VoteKeyType.TICKET, code.lowercase())
 
         val fromKey: (String) -> VoteKey = { key ->
             val tokens = key.split(":")

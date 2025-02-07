@@ -25,7 +25,11 @@ object Navigation {
 
     fun userItems(user: User) = listOf(
         NavItem("/entries", "Entries"),
-        if (user.votingEnabled) NavItem("/vote", "Voting") else null,
+        if (user.votingEnabled) {
+            NavItem("/vote", "Voting")
+        } else {
+            NavItem("/vote/register", "Register vote key")
+        },
     ).filterNotNull()
 
     val adminItems = listOf(

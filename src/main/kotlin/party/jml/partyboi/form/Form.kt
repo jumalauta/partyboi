@@ -190,6 +190,9 @@ class Form<T : Validateable<T>>(
                 FormError(e.message ?: e.toString()).left()
             }
         }
+
+        inline fun <reified T : Validateable<T>> empty(emptyData: T): Form<T> =
+            Form(T::class, emptyData, initial = true)
     }
 }
 

@@ -94,7 +94,7 @@ class UserRepository(private val app: AppServices) : Logging() {
             ).bind()
 
             fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
-                votingEnabled = app.voteKeys.registerVoteKey(createdUser.id, voteKey).isRight()
+                votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey).isRight()
             )
 
             when (app.settings.automaticVoteKeys.get().bind()) {

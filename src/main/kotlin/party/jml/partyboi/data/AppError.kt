@@ -82,9 +82,8 @@ class RedirectInterruption(val location: String) : UserError {
         mapOf("Location" to location)
 }
 
-class Unauthorized : UserError {
+class Unauthorized(override val message: String = "Unauthorized") : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.Unauthorized
-    override val message: String = "Unauthorized"
 }
 
 class NotFound(override val message: String) : UserError {

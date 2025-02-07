@@ -76,7 +76,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
             call.switchApi { id, state ->
                 val admin = call.userSession().getOrNull()
                 if (state) {
-                    app.voteKeys.registerVoteKey(id, VoteKey.manual(admin?.name ?: "anon"))
+                    app.voteKeys.insertVoteKey(id, VoteKey.manual(admin?.name ?: "anon"))
                 } else {
                     app.voteKeys.revokeUserVoteKeys(id)
                 }
