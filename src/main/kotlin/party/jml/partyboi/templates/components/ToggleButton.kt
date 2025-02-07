@@ -17,7 +17,11 @@ fun FlowContent.icon(icon: Icon, tooltipText: String? = null) {
     }
 }
 
-fun FlowContent.toggleButton(toggled: Boolean, icons: IconSet, urlPrefix: String) {
+fun FlowContent.toggleButton(
+    toggled: Boolean,
+    icons: IconSet,
+    urlPrefix: String,
+) {
     val shownIcon = icons.get(toggled)
     button(classes = "flat-button ${if (toggled) "on" else "off"}") {
         tooltip(shownIcon.tooltip)
@@ -26,6 +30,25 @@ fun FlowContent.toggleButton(toggled: Boolean, icons: IconSet, urlPrefix: String
             refresh()
         }
         icon(shownIcon)
+    }
+}
+
+fun FlowContent.labeledToggleButton(
+    toggled: Boolean,
+    icons: IconSet,
+    urlPrefix: String,
+    label: String,
+    disabled: Boolean = false,
+) {
+    val shownIcon = icons.get(toggled)
+    button(classes = "raised-button") {
+        this.disabled = disabled
+        onClick = Javascript.build {
+            httpPut("$urlPrefix/${!toggled}")
+            refresh()
+        }
+        icon(shownIcon)
+        span { +" $label" }
     }
 }
 
@@ -51,6 +74,7 @@ data class IconSet(
             Icon("file-arrow-up", "Editing allowed after deadline"),
             Icon("file-arrow-up", "Editing not allowed after deadline")
         )
+        val admin = IconSet(Icon.admin, Icon.admin)
     }
 }
 
@@ -63,5 +87,6 @@ data class Icon(
     companion object {
         val visible = Icon("eye", "Visible")
         val hidden = Icon("eye-slash", "Hidden")
+        val admin = Icon("brain", "Admin")
     }
 }

@@ -15,13 +15,11 @@ import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
 import party.jml.partyboi.admin.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
-import party.jml.partyboi.db.exec
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -66,7 +64,26 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun addUser(user: NewUser, ip: String): Either<AppError, User> = db.use {
+    fun getUser(id: Int): Either<AppError, User> = db.use {
+        it.one(
+            queryOf(
+                """
+                SELECT
+                    id,
+                    name,
+                    password,
+                    is_admin,
+                    votekey.key is not null as voting_enabled
+                FROM appuser
+                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                WHERE id = ?
+                """,
+                id
+            ).map(User.fromRow)
+        )
+    }
+
+    fun addUser(user: UserCredentials, ip: String): Either<AppError, User> = db.use {
         either {
             val createdUser = it.one(
                 queryOf(
@@ -76,26 +93,37 @@ class UserRepository(private val app: AppServices) : Logging() {
                 ).map(User.fromRow)
             ).bind()
 
+            fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
+                votingEnabled = app.voteKeys.registerVoteKey(createdUser.id, voteKey).isRight()
+            )
+
             when (app.settings.automaticVoteKeys.get().bind()) {
-                AutomaticVoteKeys.PER_USER -> {
-                    val votekey = "user:${createdUser.id}"
-                    it.exec(queryOf("INSERT INTO votekey(key, appuser_id) values(?, ?)", votekey, createdUser.id))
-                        .bind()
-                    createdUser.copy(votingEnabled = true)
-                }
-
-                AutomaticVoteKeys.PER_IP_ADDRESS -> {
-                    val votekey = "ip:$ip"
-                    it.exec(queryOf("INSERT INTO votekey(key, appuser_id) values(?, ?)", votekey, createdUser.id)).fold(
-                        { createdUser },
-                        { createdUser.copy(votingEnabled = true) }
-                    )
-                }
-
-                else -> {
-                    createdUser
-                }
+                AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
+                AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
+                else -> createdUser
             }
+        }
+    }
+
+    fun updateUser(userId: Int, user: UserCredentials): Either<AppError, Unit> = db.transaction {
+        either {
+            if (user.password.isNotEmpty()) {
+                it.updateOne(
+                    queryOf(
+                        "UPDATE appuser SET password = ? WHERE id = ?",
+                        user.hashedPassword(),
+                        userId
+                    )
+                ).bind()
+            }
+
+            it.updateOne(
+                queryOf(
+                    "UPDATE appuser SET name = ? WHERE id = ?",
+                    user.name,
+                    userId
+                )
+            ).bind()
         }
     }
 
@@ -126,9 +154,13 @@ class UserRepository(private val app: AppServices) : Logging() {
         }.bindAll()
     }
 
+    fun makeAdmin(userId: Int, state: Boolean) = db.use {
+        it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
+    }
+
     private fun createAdminUser() = db.use {
         val password = Config.getAdminPassword()
-        val admin = NewUser(Config.getAdminUserName(), password, password)
+        val admin = UserCredentials(Config.getAdminUserName(), password, password)
         it.exec(
             queryOf(
                 "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",
@@ -170,26 +202,36 @@ data class User(
     }
 }
 
-data class NewUser(
+data class UserCredentials(
     @property:Field(1, "User name")
     val name: String,
     @property:Field(2, "Password", presentation = FieldPresentation.secret)
     val password: String,
     @property:Field(3, "Password again", presentation = FieldPresentation.secret)
     val password2: String,
-) : Validateable<NewUser> {
+    @property:Field(presentation = FieldPresentation.hidden)
+    val isUpdate: Boolean = false,
+) : Validateable<UserCredentials> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectNotEmpty("name", name),
         expectMaxLength("name", name, 64),
+        expectEqual("password2", password2, password)
+    ) + (if (isUpdate && password.isEmpty()) emptyList() else listOf(
         expectMinLength("password", password, 8),
         expectMinLength("password2", password2, 8),
-        expectEqual("password2", password2, password)
-    )
+    ))
 
     fun hashedPassword(): String = BCrypt.hashpw(password, BCrypt.gensalt())
 
     companion object {
-        val Empty = NewUser("", "", "")
+        val Empty = UserCredentials("", "", "")
+
+        fun fromUser(user: User): UserCredentials = UserCredentials(
+            name = user.name,
+            password = "",
+            password2 = "",
+            isUpdate = true,
+        )
     }
 }
 

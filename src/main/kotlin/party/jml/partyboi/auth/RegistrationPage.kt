@@ -7,7 +7,7 @@ import party.jml.partyboi.form.renderFields
 import party.jml.partyboi.templates.Page
 
 object RegistrationPage {
-    fun render(formData: Form<NewUser> = Form(NewUser::class, NewUser.Empty, true)) =
+    fun render(formData: Form<UserCredentials> = Form(UserCredentials::class, UserCredentials.Empty, true)) =
         Page("Register") {
             dataForm("/register") {
                 article {

@@ -30,6 +30,7 @@ object Navigation {
 
     val adminItems = listOf(
         NavItem("/admin/settings", "Settings"),
+        NavItem("/admin/users", "Users"),
         NavItem("/admin/compos", "Compos"),
         NavItem("/admin/schedule", "Schedule"),
         NavItem("/admin/screen", "Info screen"),

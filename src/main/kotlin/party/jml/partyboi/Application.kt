@@ -31,6 +31,7 @@ import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.signals.configureSignalRouting
 import party.jml.partyboi.voting.configureVotingRouting
+import party.jml.partyboi.admin.users.configureUserMgmtRouting
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -68,6 +69,7 @@ fun Application.module() {
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)
     configureAdminScheduleRouting(app)
+    configureUserMgmtRouting(app)
     configureReplicationRouting(app)
 
     launch {

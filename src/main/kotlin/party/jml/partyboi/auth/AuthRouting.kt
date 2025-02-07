@@ -2,22 +2,17 @@ package party.jml.partyboi.auth
 
 import arrow.core.raise.either
 import arrow.core.right
-import io.ktor.client.request.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.util.date.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.data.Notice
 import party.jml.partyboi.data.processForm
-import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
-import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureLoginRouting(app: AppServices) {
@@ -59,7 +54,7 @@ fun Application.configureLoginRouting(app: AppServices) {
         }
 
         post("/register") {
-            call.processForm<NewUser>(
+            call.processForm<UserCredentials>(
                 { newUser ->
                     either {
                         val session = app.users.addUser(newUser, call.request.origin.remoteAddress).bind()
