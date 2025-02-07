@@ -84,7 +84,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         delete("/admin/schedule/events/{id}") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val eventId = call.parameterInt("id").bind()
                     app.events.delete(eventId).bind()
                 }

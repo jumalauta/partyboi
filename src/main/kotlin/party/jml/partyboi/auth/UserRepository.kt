@@ -1,10 +1,7 @@
 package party.jml.partyboi.auth
 
-import arrow.core.Either
-import arrow.core.Option
-import arrow.core.left
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.serialization.Serializable
 import kotliquery.Row
@@ -23,6 +20,7 @@ import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
+    private val userSessionReloadRequests = mutableSetOf<Int>()
 
     init {
         createAdminUser().throwOnError()
@@ -157,6 +155,18 @@ class UserRepository(private val app: AppServices) : Logging() {
     fun makeAdmin(userId: Int, state: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
+
+    fun requestUserSessionReload(userId: Int) {
+        userSessionReloadRequests.add(userId)
+    }
+
+    fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
+        if (userSessionReloadRequests.contains(userId)) {
+            userSessionReloadRequests.remove(userId)
+            getUser(userId).getOrNone()
+        } else {
+            none()
+        }
 
     private fun createAdminUser() = db.use {
         val password = Config.getAdminPassword()

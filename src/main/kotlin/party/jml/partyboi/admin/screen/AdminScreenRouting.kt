@@ -112,7 +112,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/text") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
                 }
@@ -122,7 +122,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/qrcode") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     app.screen.addEmptySlideToSlideSet(slideSetName, QrCodeSlide.Empty).bind()
                 }
@@ -132,7 +132,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/image") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     app.screen.addEmptySlideToSlideSet(slideSetName, ImageSlide.Empty).bind()
                 }
@@ -142,7 +142,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/start") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     app.screen.startSlideSet(slideSetName).bind()
                 }
@@ -152,7 +152,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/stop") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     app.screen.stopSlideSet()
                 }
             }
@@ -161,7 +161,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/{slideId}/show") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideId = call.parameterInt("slideId").bind()
                     app.screen.show(slideId).bind()
                 }
@@ -181,7 +181,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.apiRespond {
                 either {
                     call.parameterString("slideSet").bind()
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     newOrder
                         .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
                         .bindAll()
@@ -192,7 +192,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/presentation/start") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     val slideSet = app.screen.getSlideSet(slideSetName).bind()
                     if (slideSet.isNotEmpty()) {
@@ -206,7 +206,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/presentation/next") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     val (state) = app.screen.currentState()
                     if (state.slideSet == slideSetName) {
@@ -219,7 +219,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         delete("/admin/screen/{slideId}") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val slideId = call.parameterInt("slideId").bind()
                     app.screen.delete(slideId).bind()
                 }

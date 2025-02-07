@@ -16,7 +16,7 @@ import party.jml.partyboi.templates.respondPage
 fun Application.configureVotingRouting(app: AppServices) {
     votingRouting {
         get("/vote") {
-            val user = call.userSession()
+            val user = call.userSession(app)
             call.respondEither({
                 either {
                     val entries = app.votes.getVotableEntries(user.bind().id).bind()
@@ -41,7 +41,7 @@ fun Application.configureVotingRouting(app: AppServices) {
             call.processForm<VoteKeyForm>(
                 { data ->
                     either {
-                        val user = call.userSession().bind()
+                        val user = call.userSession(app).bind()
                         if (user.votingEnabled) raise(Unauthorized("You cannot register a vote key because you have voting rights already enabled."))
 
                         app.voteKeys
@@ -72,7 +72,7 @@ fun Application.configureVotingRouting(app: AppServices) {
         put("/vote/{entry}/{points}") {
             call.apiRespond {
                 either {
-                    val user = call.userSession().bind()
+                    val user = call.userSession(app).bind()
                     val entryId = call.parameterInt("entry").bind()
                     val points = call.parameterInt("points").bind()
 

@@ -76,7 +76,7 @@ fun ApplicationCall.parameterPath(name: String, nameToPath: (String) -> Path) =
 suspend fun ApplicationCall.switchApi(block: (id: Int, state: Boolean) -> Either<AppError, Unit>) {
     apiRespond {
         either {
-            userSession().bind()
+            userSession(null).bind()
             val id = parameterInt("id").bind()
             val state = parameterBoolean("state").bind()
             block(id, state).bind()

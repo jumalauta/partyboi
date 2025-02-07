@@ -22,11 +22,11 @@ fun Application.configureComposRouting(app: AppServices) {
                 }
             })
         }
-        
+
         get("/results") {
             call.respondEither({
                 either {
-                    val user = call.optionalUserSession()
+                    val user = call.optionalUserSession(app)
                     val results = app.votes.getResultsForUser(user).bind()
                     ResultsPage.render(results)
                 }

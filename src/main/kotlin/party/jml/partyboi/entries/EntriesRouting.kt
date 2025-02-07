@@ -72,7 +72,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
     userRouting {
         get("/entries") {
-            call.respondEither({ renderEntriesPage(call.userSession()) })
+            call.respondEither({ renderEntriesPage(call.userSession(app)) })
         }
 
         get("/entries/submit/{compoId}") {
@@ -80,7 +80,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 either {
                     val compoId = call.parameterInt("compoId").bind()
                     val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
-                    renderEntriesPage(call.userSession(), form).bind()
+                    renderEntriesPage(call.userSession(app), form).bind()
                 }
             })
         }
@@ -89,7 +89,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             call.processForm<NewEntry>(
                 { newEntry ->
                     either {
-                        val user = call.userSession().bind()
+                        val user = call.userSession(app).bind()
                         val entry = newEntry.copy(userId = user.id)
                         app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
                         app.entries.add(entry).bind()
@@ -97,14 +97,14 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     }
                 },
                 {
-                    renderEntriesPage(call.userSession(), newEntryForm = it)
+                    renderEntriesPage(call.userSession(app), newEntryForm = it)
                 }
             )
         }
 
         get("/entries/{id}") {
             call.respondEither({
-                renderEditEntryPage(call.parameterInt("id"), call.userSession())
+                renderEditEntryPage(call.parameterInt("id"), call.userSession(app))
             })
         }
 
@@ -124,7 +124,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             either {
                 val id = call.parameterInt("id").bind()
                 val version = call.parameterInt("version").bind()
-                val user = call.userSession().bind()
+                val user = call.userSession(app).bind()
                 app.files.getUserVersion(id, version, user.id).bind()
             }.fold(
                 { call.respondPage(it) },
@@ -145,7 +145,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             call.processForm<EntryUpdate>(
                 { entry ->
                     either {
-                        val user = call.userSession().bind()
+                        val user = call.userSession(app).bind()
 
                         firstRight(
                             app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
@@ -168,7 +168,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     }
                 },
                 {
-                    renderEditEntryPage(call.parameterInt("id"), call.userSession(), entryUpdateForm = it)
+                    renderEditEntryPage(call.parameterInt("id"), call.userSession(app), entryUpdateForm = it)
                 }
             )
         }
@@ -177,7 +177,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             call.processForm<NewScreenshot>(
                 { screenshot ->
                     either {
-                        val user = call.userSession().bind()
+                        val user = call.userSession(app).bind()
                         val entryId = call.parameterInt("id").bind()
                         val entry = app.entries.get(entryId, user.id).bind()
 
@@ -187,7 +187,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         Redirection("/entries/$entryId")
                     }
                 },
-                { renderEditEntryPage(call.parameterInt("id"), call.userSession(), screenshotForm = it) }
+                { renderEditEntryPage(call.parameterInt("id"), call.userSession(app), screenshotForm = it) }
             )
         }
     }
@@ -196,7 +196,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
         delete("/entries/{id}") {
             call.apiRespond {
                 either {
-                    val user = call.userSession().bind()
+                    val user = call.userSession(app).bind()
                     val id = call.parameterInt("id").bind()
                     app.entries.delete(id, user.id).bind()
                 }

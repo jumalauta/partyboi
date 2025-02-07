@@ -1,8 +1,6 @@
 package party.jml.partyboi.auth
 
-import arrow.core.Either
-import arrow.core.Option
-import arrow.core.toOption
+import arrow.core.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -66,11 +64,17 @@ suspend fun ApplicationCall.forwardToLogin() {
     respondRedirect("/login")
 }
 
-fun ApplicationCall.optionalUserSession(): Option<User> =
-    principal<User>().toOption()
+fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
+    principal<User>()
+        .toOption()
+        .flatMap { user ->
+            (app?.users?.consumeUserSessionReloadRequest(user.id) ?: none())
+                .onSome { sessions.set(it) }
+                .recover { user }
+        }
 
-fun ApplicationCall.userSession(): Either<AppError, User> =
-    optionalUserSession().toEither { RedirectInterruption("/login") }
+fun ApplicationCall.userSession(app: AppServices?): Either<AppError, User> =
+    optionalUserSession(app).toEither { RedirectInterruption("/login") }
 
 fun Application.publicRouting(block: Route.() -> Unit) {
     routing {

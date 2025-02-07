@@ -45,7 +45,7 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
         delete("/admin/assets/{file}") {
             call.apiRespond {
                 either {
-                    call.userSession().bind()
+                    call.userSession(app).bind()
                     val file = call.parameterString("file").bind()
                     app.assets.delete(file).bind()
                 }

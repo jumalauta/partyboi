@@ -5,6 +5,7 @@ import arrow.core.none
 import arrow.core.some
 import com.natpryce.konfig.*
 import com.natpryce.konfig.ConfigurationProperties.Companion.systemProperties
+import io.ktor.server.application.*
 import io.ktor.util.*
 import io.ktor.util.logging.*
 import org.flywaydb.core.api.output.MigrateResult

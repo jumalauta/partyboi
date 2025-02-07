@@ -67,7 +67,7 @@ enum class VoteKeyType(val explain: (String) -> String) {
     USER({ "Created automatically on registration" }),
     IP({ "Created automatically for IP $it" }),
     TICKET({ "User entered a ticket: $it" }),
-    MANUAL({ "Manually granted by $it" }),
+    MANUAL({ "Manually granted by admin" }),
     OTHER({ "Manually edited to database" }),
 }
 
@@ -79,7 +79,7 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
     companion object {
         fun user(userId: Int) = VoteKey(VoteKeyType.USER, userId.toString())
         fun ipAddr(ipAddr: String) = VoteKey(VoteKeyType.IP, ipAddr)
-        fun manual(grantedBy: String) = VoteKey(VoteKeyType.MANUAL, grantedBy)
+        fun manual(userId: Int) = VoteKey(VoteKeyType.MANUAL, userId.toString())
         fun ticket(code: String) = VoteKey(VoteKeyType.TICKET, code.lowercase())
 
         val fromKey: (String) -> VoteKey = { key ->

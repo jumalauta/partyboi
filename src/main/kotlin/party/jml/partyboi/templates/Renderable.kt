@@ -38,7 +38,7 @@ suspend fun ApplicationCall.respondEither(
 }
 
 suspend fun ApplicationCall.respondPage(renderable: Renderable) {
-    val user = userSession().getOrNull()
+    val user = userSession(null).getOrNull()
     val text = "<!DOCTYPE html>\n" + renderable.getHTML(user, request.path())
     val status = renderable.statusCode()
     renderable.headers().map { (k, v) ->

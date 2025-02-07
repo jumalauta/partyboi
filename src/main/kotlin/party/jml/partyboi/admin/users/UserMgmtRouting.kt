@@ -45,7 +45,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         get("/admin/users/{id}") {
             call.respondEither({
                 renderEditPage(
-                    call.userSession(),
+                    call.userSession(app),
                     call.parameterInt("id")
                 )
             })
@@ -62,7 +62,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
                 },
                 {
                     renderEditPage(
-                        session = call.userSession(),
+                        session = call.userSession(app),
                         id = call.parameterInt("id"),
                         currentForm = it
                     )
@@ -74,17 +74,22 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
     adminApiRouting {
         put("/admin/users/{id}/voting/{state}") {
             call.switchApi { id, state ->
-                val admin = call.userSession().getOrNull()
-                if (state) {
-                    app.voteKeys.insertVoteKey(id, VoteKey.manual(admin?.name ?: "anon"))
+                (if (state) {
+                    app.voteKeys.insertVoteKey(id, VoteKey.manual(id))
                 } else {
                     app.voteKeys.revokeUserVoteKeys(id)
+                }).onRight {
+                    app.users.requestUserSessionReload(id)
                 }
             }
         }
 
         put("/admin/users/{id}/admin/{state}") {
-            call.switchApi { id, state -> app.users.makeAdmin(id, state) }
+            call.switchApi { id, state ->
+                app.users.makeAdmin(id, state).onRight {
+                    app.users.requestUserSessionReload(id)
+                }
+            }
         }
     }
 }
