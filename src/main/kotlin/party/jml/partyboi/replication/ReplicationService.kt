@@ -1,13 +1,10 @@
-@file:UseSerializers(
-    OptionSerializer::class,
-)
-
 package party.jml.partyboi.replication
 
-import arrow.core.*
-import arrow.core.computations.ResultEffect.bind
+import arrow.core.Either
+import arrow.core.flatMap
+import arrow.core.left
 import arrow.core.raise.either
-import arrow.core.serialization.OptionSerializer
+import arrow.core.toOption
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -20,8 +17,6 @@ import io.ktor.util.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
-import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
@@ -38,6 +33,7 @@ import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.triggers.TriggerRow
+import party.jml.partyboi.voting.VoteKeyRow
 import party.jml.partyboi.voting.VoteRow
 import java.io.File
 import java.security.cert.X509Certificate
@@ -106,7 +102,7 @@ class ReplicationService(val app: AppServices) : Logging() {
                     slideSets = app.screen.getSlideSets().bind(),
                     triggers = app.triggers.getAllTriggers().bind(),
                     votes = app.votes.getAllVotes().bind(),
-                    voteKeys = getVoteKeys().bind(),
+                    voteKeys = app.voteKeys.getAllVoteKeys().bind(),
                     assets = app.assets.getList(),
                 )
             }
@@ -131,6 +127,7 @@ class ReplicationService(val app: AppServices) : Logging() {
                         app.screen.import(tx, data).bind()
                         app.triggers.import(tx, data).bind()
                         app.votes.import(tx, data).bind()
+                        app.voteKeys.import(tx, data).bind()
                         log.info("Copy sessions")
                         app.db.copyRows(tx, "public.session", "$schema.session").bind()
                         log.info("Publish changes")
@@ -228,11 +225,6 @@ class ReplicationService(val app: AppServices) : Logging() {
             }
         }
     }
-
-    // TODO: Move to an own repository
-    private fun getVoteKeys(): Either<AppError, List<VoteKeyRow>> = app.db.use {
-        it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
-    }
 }
 
 @Serializable
@@ -251,21 +243,6 @@ data class DataExport(
     val voteKeys: List<VoteKeyRow>,
     val assets: List<String>,
 )
-
-@Serializable
-data class VoteKeyRow(
-    val key: String,
-    val userId: Option<Int>,
-) {
-    companion object {
-        val fromRow: (Row) -> VoteKeyRow = { row ->
-            VoteKeyRow(
-                key = row.string("key"),
-                userId = Option.fromNullable(row.intOrNull("appuser_id")),
-            )
-        }
-    }
-}
 
 class TrustAllX509TrustManager : X509TrustManager {
     override fun getAcceptedIssuers(): Array<X509Certificate?> = arrayOfNulls(0)

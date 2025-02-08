@@ -1,17 +1,32 @@
+@file:UseSerializers(
+    OptionSerializer::class,
+)
+
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import arrow.core.Option
 import arrow.core.raise.either
+import arrow.core.serialization.OptionSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.db.DbBasicMappers.asString
+import party.jml.partyboi.replication.DataExport
 import kotlin.random.Random
 
-class VoteKeyRepository(val app: AppServices) {
+class VoteKeyRepository(val app: AppServices) : Logging() {
     val db = app.db
+
+    fun getAllVoteKeys(): Either<AppError, List<VoteKeyRow>> = app.db.use {
+        it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
+    }
 
     fun getUserVoteKeys(userId: Int): Either<AppError, List<VoteKey>> = db.use {
         it.many(queryOf("SELECT key FROM votekey WHERE appuser_id = ?", userId).map(asString))
@@ -43,6 +58,19 @@ class VoteKeyRepository(val app: AppServices) {
         }
     }
 
+    fun import(tx: TransactionalSession, data: DataExport) = either {
+        log.info("Import ${data.voteKeys.size} vote keys")
+        data.voteKeys.map {
+            tx.exec(
+                queryOf(
+                    "INSERT INTO votekey (key, appuser_id) VALUES (?, ?)",
+                    it.key,
+                    it.userId,
+                )
+            )
+        }.bindAll()
+    }
+
     private fun generateTicket(tx: TransactionalSession): Either<AppError, Unit> = either {
         val voteKey = VoteKey.ticket(generateTicketCode())
         val exists =
@@ -71,6 +99,7 @@ enum class VoteKeyType(val explain: (String) -> String) {
     OTHER({ "Manually edited to database" }),
 }
 
+@Serializable
 data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
     fun explain(): String = keyType.explain(id ?: "???")
 
@@ -91,6 +120,21 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
             }
             val id = tokens.getOrNull(1)
             VoteKey(keyType, id)
+        }
+    }
+}
+
+@Serializable
+data class VoteKeyRow(
+    val key: VoteKey,
+    val userId: Option<Int>,
+) {
+    companion object {
+        val fromRow: (Row) -> VoteKeyRow = { row ->
+            VoteKeyRow(
+                key = VoteKey.fromKey(row.string("key")),
+                userId = Option.fromNullable(row.intOrNull("appuser_id")),
+            )
         }
     }
 }

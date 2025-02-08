@@ -138,18 +138,6 @@ class UserRepository(private val app: AppServices) : Logging() {
                 )
             )
         }.bindAll()
-
-        // TODO: Move to an own repository
-        log.info("Import ${data.voteKeys.size} vote keys")
-        data.voteKeys.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO votekey (key, appuser_id) VALUES (?, ?)",
-                    it.key,
-                    it.userId,
-                )
-            )
-        }.bindAll()
     }
 
     fun makeAdmin(userId: Int, state: Boolean) = db.use {
