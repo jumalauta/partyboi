@@ -14,47 +14,6 @@ import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
 import kotlin.enums.enumEntries
 
-// TODO: Move these to entries package
-fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
-    dataForm(url) {
-        article {
-            if (openCompos.isEmpty()) {
-                +"Submitting is closed"
-            } else {
-                cardHeader("Submit a new entry")
-                fieldSet {
-                    renderFields(
-                        values, mapOf(
-                            "compoId" to openCompos.map { it.toDropdownOption() }
-                        ))
-                }
-                footer {
-                    submitInput { value = "Submit" }
-                }
-            }
-        }
-    }
-}
-
-fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<EntryUpdate>) {
-    dataForm(url) {
-        article {
-            fieldSet {
-                renderFields(values, mapOf("compoId" to compos))
-            }
-            footer {
-                submitInput { value = "Save changes" }
-            }
-        }
-    }
-}
-
-fun FlowContent.entryDetails(compos: List<Compo>, values: Form<EntryUpdate>) {
-    article {
-        renderReadonlyFields(values, mapOf("compoId" to compos))
-    }
-}
-
 fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
     form(action = url, method = FormMethod.post, encType = FormEncType.multipartFormData) {
         block()

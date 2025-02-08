@@ -1,17 +1,14 @@
 package party.jml.partyboi.entries
 
-import arrow.core.None
-import arrow.core.Option
-import arrow.core.flatten
-import arrow.core.toOption
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.submitNewEntryForm
+import party.jml.partyboi.form.dataForm
+import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.renderReadonlyFields
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
-import java.nio.file.Path
 
 object EntriesPage {
     fun render(
@@ -80,5 +77,45 @@ fun FlowContent.entryList(
                 }
             }
         }
+    }
+}
+
+fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
+    dataForm(url) {
+        article {
+            if (openCompos.isEmpty()) {
+                +"Submitting is closed"
+            } else {
+                cardHeader("Submit a new entry")
+                fieldSet {
+                    renderFields(
+                        values, mapOf(
+                            "compoId" to openCompos.map { it.toDropdownOption() }
+                        ))
+                }
+                footer {
+                    submitInput { value = "Submit" }
+                }
+            }
+        }
+    }
+}
+
+fun FlowContent.editEntryForm(url: String, compos: List<Compo>, values: Form<EntryUpdate>) {
+    dataForm(url) {
+        article {
+            fieldSet {
+                renderFields(values, mapOf("compoId" to compos))
+            }
+            footer {
+                submitInput { value = "Save changes" }
+            }
+        }
+    }
+}
+
+fun FlowContent.entryDetails(compos: List<Compo>, values: Form<EntryUpdate>) {
+    article {
+        renderReadonlyFields(values, mapOf("compoId" to compos))
     }
 }
