@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.schedule
+package party.jml.partyboi.schedule.admin
 
 import arrow.core.Either
 import arrow.core.raise.either

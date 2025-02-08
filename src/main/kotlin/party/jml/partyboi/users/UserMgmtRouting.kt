@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.users
+package party.jml.partyboi.users
 
 import arrow.core.Either
 import arrow.core.raise.either

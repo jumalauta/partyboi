@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.compos
+package party.jml.partyboi.compos.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo

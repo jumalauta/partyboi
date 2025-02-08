@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.screen
+package party.jml.partyboi.screen.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.data.AppError

@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.compos
+package party.jml.partyboi.compos.admin
 
 import arrow.core.Either
 import arrow.core.flatMap

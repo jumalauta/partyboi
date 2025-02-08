@@ -10,7 +10,7 @@ import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
-import party.jml.partyboi.admin.settings.AutomaticVoteKeys
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field

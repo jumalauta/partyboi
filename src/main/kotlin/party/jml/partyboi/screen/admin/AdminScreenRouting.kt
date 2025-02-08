@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.screen
+package party.jml.partyboi.screen.admin
 
 import arrow.core.Either
 import arrow.core.getOrElse

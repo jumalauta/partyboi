@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.schedule
+package party.jml.partyboi.schedule.admin
 
 import party.jml.partyboi.templates.Page
 import kotlinx.html.*

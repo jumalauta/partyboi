@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.compos
+package party.jml.partyboi.compos.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
@@ -8,7 +8,6 @@ import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.renderFields
-import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
 import party.jml.partyboi.templates.components.buttonGroup

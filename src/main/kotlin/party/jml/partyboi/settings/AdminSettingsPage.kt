@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.settings
+package party.jml.partyboi.settings
 
 import kotlinx.html.*
 import party.jml.partyboi.form.DropdownOption
@@ -13,7 +13,8 @@ object AdminSettingsPage {
         dataForm("/admin/settings") {
             article {
                 fieldSet {
-                    renderFields(settings, mapOf(
+                    renderFields(
+                        settings, mapOf(
                         "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label }
                     ))
                 }

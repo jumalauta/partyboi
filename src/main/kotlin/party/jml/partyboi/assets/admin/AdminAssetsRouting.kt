@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.assets
+package party.jml.partyboi.assets.admin
 
 import arrow.core.raise.either
 import arrow.core.right

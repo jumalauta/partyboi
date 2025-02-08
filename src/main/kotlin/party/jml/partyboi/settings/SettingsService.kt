@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.settings
+package party.jml.partyboi.settings
 
 import arrow.core.raise.either
 import party.jml.partyboi.AppServices

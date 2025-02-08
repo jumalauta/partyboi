@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.users
+package party.jml.partyboi.users
 
 import kotlinx.html.*
 import party.jml.partyboi.auth.UserCredentials

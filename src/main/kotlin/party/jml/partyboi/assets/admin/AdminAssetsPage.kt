@@ -1,4 +1,4 @@
-package party.jml.partyboi.admin.assets
+package party.jml.partyboi.assets.admin
 
 import arrow.core.Option
 import party.jml.partyboi.templates.Page

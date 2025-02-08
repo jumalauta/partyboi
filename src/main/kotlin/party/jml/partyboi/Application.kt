@@ -5,11 +5,11 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import party.jml.partyboi.admin.assets.configureAdminAssetsRouting
-import party.jml.partyboi.admin.compos.configureAdminComposRouting
-import party.jml.partyboi.admin.schedule.configureAdminScheduleRouting
-import party.jml.partyboi.admin.screen.configureAdminScreenRouting
-import party.jml.partyboi.admin.settings.configureSettingsRouting
+import party.jml.partyboi.assets.admin.configureAdminAssetsRouting
+import party.jml.partyboi.compos.admin.configureAdminComposRouting
+import party.jml.partyboi.schedule.admin.configureAdminScheduleRouting
+import party.jml.partyboi.screen.admin.configureAdminScreenRouting
+import party.jml.partyboi.settings.configureSettingsRouting
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.auth.configureLoginRouting
 import party.jml.partyboi.compos.configureComposRouting
@@ -31,7 +31,7 @@ import party.jml.partyboi.schedule.configureScheduleRouting
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.signals.configureSignalRouting
 import party.jml.partyboi.voting.configureVotingRouting
-import party.jml.partyboi.admin.users.configureUserMgmtRouting
+import party.jml.partyboi.users.configureUserMgmtRouting
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
