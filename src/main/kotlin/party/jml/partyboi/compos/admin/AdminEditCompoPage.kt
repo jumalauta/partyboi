@@ -5,10 +5,7 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.entries.FileFormatCategory
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
-import party.jml.partyboi.form.switchLink
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 
@@ -80,9 +77,7 @@ object AdminEditCompoPage {
                                 }
                             }
                         }
-                        footer {
-                            submitInput { value = "Save changes" }
-                        }
+                        submitButton("Save changes")
                     }
                 }
 

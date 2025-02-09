@@ -2,6 +2,7 @@ package party.jml.partyboi.form
 
 import arrow.core.Option
 import io.ktor.util.logging.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.UserError
@@ -231,5 +232,27 @@ fun FlowContent.switchLink(
             disabled = disable
             +(if (toggled) labelOn else labelOff)
         }
+    }
+}
+
+fun <T : Validateable<T>> FlowContent.renderForm(
+    url: String,
+    form: Form<T>,
+    title: String? = null,
+    submitButtonLabel: String = "Save changes",
+    options: Map<String, List<DropdownOptionSupport>>? = null
+) {
+    dataForm(url) {
+        article {
+            if (title != null) header { +title }
+            fieldSet { renderFields(form, options) }
+            submitButton(submitButtonLabel)
+        }
+    }
+}
+
+fun FlowContent.submitButton(label: String) {
+    footer {
+        submitInput { value = label }
     }
 }

@@ -22,17 +22,12 @@ object AdminScreenPage {
         subLinks = slideSets.map { it.toNavItem() },
     ) {
         renderWithScreenMonitoring(false) {
-            dataForm("/admin/screen/adhoc") {
-                article {
-                    header { +"Ad hoc screen" }
-                    fieldSet {
-                        renderFields(form)
-                    }
-                    footer {
-                        submitInput { value = "Show now" }
-                    }
-                }
-            }
+            renderForm(
+                url = "/admin/screen/adhoc",
+                form = form,
+                title = "Ad hoc screen",
+                submitButtonLabel = "Show now"
+            )
         }
     }
 
@@ -193,22 +188,15 @@ object AdminScreenPage {
     ) {
         h1 { +"${slide.getName()} / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set ${slideSet}"}" }
         val form = slide.slide.getForm()
-        article {
-            if (slide.readOnly) {
-                renderReadonlyFields(form)
-            } else {
-                dataForm("/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}") {
-                    fieldSet {
-                        renderFields(
-                            if (errors == null) form else form.with(errors),
-                            mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
-                        )
-                    }
-                    footer {
-                        submitInput { value = "Save changes" }
-                    }
-                }
-            }
+        if (slide.readOnly) {
+            article { renderReadonlyFields(form) }
+        } else {
+            renderForm(
+                url = "/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}",
+                form = if (errors == null) form else form.with(errors),
+                submitButtonLabel = "Save changes",
+                options = mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
+            )
         }
 
         if (triggers.isNotEmpty()) {

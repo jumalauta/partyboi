@@ -3,9 +3,7 @@ package party.jml.partyboi.schedule.admin
 import party.jml.partyboi.templates.Page
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.templates.components.*
@@ -57,19 +55,15 @@ object AdminSchedulePage {
                                 }
                             }
                     }
-                } else null,
-                {
-                    article {
-                        header { +"New event" }
-                        dataForm("/admin/schedule/events") {
-                            fieldSet {
-                                renderFields(newEventForm)
-                            }
-                            footer { submitInput { value = "Add event" } }
-                        }
-                    }
-                }
-            )
+                } else null
+            ) {
+                renderForm(
+                    title = "New Event",
+                    url = "/admin/schedule/events",
+                    form = newEventForm,
+                    submitButtonLabel = "Add event",
+                )
+            }
         }
 
     fun renderEdit(
@@ -82,14 +76,10 @@ object AdminSchedulePage {
             h1 { +"Edit event" }
 
             columns({
-                article {
-                    dataForm("/admin/schedule/events/${eventForm.data.id}") {
-                        fieldSet {
-                            renderFields(eventForm)
-                        }
-                        footer { submitInput { value = "Save changes" } }
-                    }
-                }
+                renderForm(
+                    url = "/admin/schedule/events/${eventForm.data.id}",
+                    form = eventForm,
+                )
             }, {
                 if (triggers.isNotEmpty()) {
                     article {
@@ -128,20 +118,16 @@ object AdminSchedulePage {
                     }
                 }
 
-                article {
-                    header { +"Add new trigger" }
-                    dataForm("/admin/schedule/triggers") {
-                        fieldSet {
-                            renderFields(
-                                newTriggerForm, mapOf(
-                                    "action" to NewScheduledTrigger.TriggerOptions,
-                                    "compoId" to compos
-                                )
-                            )
-                        }
-                        footer { submitInput { value = "Add trigger" } }
-                    }
-                }
+                renderForm(
+                    title = "Add new trigger",
+                    url = "/admin/schedule/triggers",
+                    form = newTriggerForm,
+                    options = mapOf(
+                        "action" to NewScheduledTrigger.TriggerOptions,
+                        "compoId" to compos
+                    ),
+                    submitButtonLabel = "Add trigger"
+                )
             })
         }
 }

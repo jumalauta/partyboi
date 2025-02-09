@@ -5,7 +5,7 @@ import kotlinx.html.FlowContent
 import kotlinx.html.div
 import kotlinx.html.section
 
-fun FlowContent.columns(left: (DIV.() -> Unit)?, right: (DIV.() -> Unit)? = null) {
+fun FlowContent.columns(left: (FlowContent.() -> Unit)?, right: (FlowContent.() -> Unit)? = null) {
     if (left != null) {
         if (right != null) {
             section(classes = "two-columns") {

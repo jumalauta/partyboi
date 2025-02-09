@@ -3,9 +3,7 @@ package party.jml.partyboi.users
 import kotlinx.html.*
 import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.voting.VoteKey
@@ -17,15 +15,11 @@ object UserEditPage {
 
             columns(
                 {
-                    article {
-                        header { +"Credentials" }
-                        dataForm("/admin/users/${user.id}") {
-                            fieldSet {
-                                renderFields(credentials)
-                            }
-                            footer { submitInput { value = "Save changes" } }
-                        }
-                    }
+                    renderForm(
+                        title = "Credentials",
+                        url = "/admin/users/${user.id}",
+                        form = credentials,
+                    )
                 },
                 {
                     article {

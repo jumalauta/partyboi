@@ -2,21 +2,17 @@ package party.jml.partyboi.voting
 
 import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.dataForm
-import party.jml.partyboi.form.renderFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 
 object RegisterVoteKeyPage {
     fun render(form: Form<VoteKeyForm>) = Page("Enable voting") {
-        article {
-            header { +"Enable voting" }
-            dataForm("/vote/register") {
-                fieldSet { renderFields(form) }
-                footer { submitInput { value = "Register your vote key" } }
-            }
-        }
+        renderForm(
+            title = "Enable voting",
+            url = "/vote/register",
+            form = form,
+            submitButtonLabel = "Register your vote key"
+        )
     }
 }
 

@@ -45,17 +45,12 @@ object AdminAssetsPage {
                     }
                 } else null,
                 {
-                    article {
-                        header { +"Add asset" }
-                        dataForm("/admin/assets") {
-                            fieldSet {
-                                renderFields(addAssetForm)
-                            }
-                            footer {
-                                submitInput { value = "Add" }
-                            }
-                        }
-                    }
+                    renderForm(
+                        url = "/admin/assets",
+                        form = addAssetForm,
+                        title = "Add asset",
+                        submitButtonLabel = "Add"
+                    )
                 }
             )
         }

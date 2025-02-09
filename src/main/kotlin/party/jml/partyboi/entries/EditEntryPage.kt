@@ -34,10 +34,10 @@ object EditEntryPage {
                     if (!allowEdit) {
                         entryDetails(compos, entryUpdateForm)
                     } else {
-                        editEntryForm(
-                            "/entries/${entryUpdateForm.data.id}",
-                            compos,
-                            entryUpdateForm
+                        renderForm(
+                            url = "/entries/${entryUpdateForm.data.id}",
+                            form = entryUpdateForm,
+                            options = mapOf("compoId" to compos),
                         )
                     }
                 },
@@ -45,17 +45,12 @@ object EditEntryPage {
                     screenshot.map {
                         figure { img(src = it) }
                     }
-                    article {
-                        header { +"Screenshot / preview" }
-                        dataForm("/entries/${entryUpdateForm.data.id}/screenshot") {
-                            fieldSet {
-                                renderFields(screenshotForm)
-                            }
-                            footer {
-                                submitInput { value = "Set screenshot" }
-                            }
-                        }
-                    }
+                    renderForm(
+                        url = "/entries/${entryUpdateForm.data.id}/screenshot",
+                        form = screenshotForm,
+                        title = "Screenshot / preview",
+                        submitButtonLabel = "Set screenshot"
+                    )
                 }
             )
 

@@ -10,17 +10,12 @@ import party.jml.partyboi.templates.Page
 object LoginPage {
     fun render(formData: Form<UserLogin> = Form(UserLogin::class, UserLogin.Empty, true)) =
         Page("Login") {
-            dataForm("/login") {
-                article {
-                    header { +"Login" }
-                    fieldSet {
-                        renderFields(formData)
-                    }
-                    footer {
-                        submitInput { value = "Login" }
-                    }
-                }
-            }
+            renderForm(
+                url = "/login",
+                form = formData,
+                title = "Login",
+                submitButtonLabel = "Login"
+            )
         }
 
     data class UserLogin(
