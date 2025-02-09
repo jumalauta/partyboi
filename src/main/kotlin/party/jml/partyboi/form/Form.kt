@@ -206,7 +206,7 @@ enum class FieldPresentation {
     normal,
     hidden,
     large,
-    ascii,
+    monospace,
     secret,
     custom,
 }

@@ -2,16 +2,11 @@ package party.jml.partyboi.form
 
 import arrow.core.Option
 import io.ktor.util.logging.*
-import kotlinx.coroutines.flow.Flow
 import kotlinx.html.*
-import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.randomShortId
-import party.jml.partyboi.entries.EntryUpdate
-import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.templates.Javascript
-import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
 import kotlin.enums.enumEntries
 
@@ -105,10 +100,10 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
         } else {
             val opts = options?.get(data.key)
             if (opts == null) {
-                if (data.presentation == FieldPresentation.large) {
-                    formTextArea(data)
-                } else {
-                    formTextInput(data)
+                when (data.presentation) {
+                    FieldPresentation.large -> formTextArea(data, monospace = false)
+                    FieldPresentation.monospace -> formTextArea(data, monospace = true)
+                    else -> formTextInput(data)
                 }
             } else {
                 dropdown(data, opts)
@@ -136,12 +131,16 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(
     }
 }
 
-fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData) {
+fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData, monospace: Boolean) {
     label {
         span { +data.label }
-        textArea {
-            name = data.key
-            +data.value
+        div(classes = "grow-wrap") {
+            attributes["data-replicated-value"] = data.value
+            textArea(classes = if (monospace) "monospace" else null) {
+                name = data.key
+                onInput = "this.parentNode.dataset.replicatedValue = this.value"
+                +data.value
+            }
         }
         formError(data.error)
     }

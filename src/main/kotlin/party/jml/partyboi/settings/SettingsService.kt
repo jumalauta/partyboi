@@ -45,7 +45,7 @@ class SettingsService(val app: AppServices) {
 data class PartyboiSettings(
     @property:Field(order = 1, label = "Automatic vote keys")
     val automaticVoteKeys: AutomaticVoteKeys,
-    @property:Field(order = 2, label = "results.txt header", presentation = FieldPresentation.large)
+    @property:Field(order = 2, label = "results.txt header", presentation = FieldPresentation.monospace)
     val resultsFileHeader: String,
 ) : Validateable<PartyboiSettings>
 
