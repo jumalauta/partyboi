@@ -91,10 +91,10 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
     }
 }
 
-enum class VoteKeyType(val explain: (String) -> String) {
+enum class VoteKeyType(val explain: (String?) -> String) {
     USER({ "Created automatically on registration" }),
-    IP({ "Created automatically for IP $it" }),
-    TICKET({ "User entered a ticket: $it" }),
+    IP({ if (it != null) "Created automatically for IP $it" else "Created automatically per IP" }),
+    TICKET({ if (it != null) "User entered a ticket: $it" else "Vote key ticket" }),
     MANUAL({ "Manually granted by admin" }),
     OTHER({ "Manually edited to database" }),
 }
