@@ -327,3 +327,38 @@ iframe.screen-preview {
 textarea.monospace {
   font-family: monospace;
 }
+
+@media print {
+  * {
+    background: none !important;
+    box-shadow: none !important;
+  }
+  .container > header {
+    display: none;
+  }
+  .container {
+    max-width: 100%;
+  }
+  article.votekeys header {
+    display: none;
+  }
+  article.votekeys ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 !important;
+    font-size: 0;
+  }
+  article.votekeys li {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24%;
+    height: 4ex;
+    border: 1px solid #888;
+    margin: 0 !important;
+    font-size: 16pt;
+    color: black;
+    text-transform: uppercase;
+    line-height: normal;
+  }
+}

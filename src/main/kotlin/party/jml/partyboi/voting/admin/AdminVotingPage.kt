@@ -11,6 +11,12 @@ object AdminVotingPage {
         voteKeys.groupBy { it.key.keyType.explain(null) }.forEach { (keyType, keys) ->
             renderVoteKeyTable("$keyType (${keys.size})", keys, users)
         }
+        article {
+            a("/admin/voting/generate") {
+                role = "button"
+                +"Generate new vote key tickets"
+            }
+        }
     }
 }
 
@@ -26,6 +32,9 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
         }
         .sortedBy { it.second.fold({ "" }, { it.name.lowercase() }) }
 
+    val keySets = sorted.mapNotNull { it.first.set }
+    val includePrintLinks = keySets.isNotEmpty()
+
     details {
         summary {
             role = "button"
@@ -35,17 +44,23 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
             table {
                 thead {
                     tr {
-                        th { +"Assigned to" }
                         th { +"Key" }
-                        th { +"Description" }
+                        th { +"Assigned to" }
+                        if (includePrintLinks) th { +"Print" }
                     }
                 }
                 tbody {
                     sorted.forEach { (key, user) ->
                         tr {
-                            td { user.map { a(href = "/admin/users/${it.id}") { +it.name } } }
                             td { +key.key.toString() }
-                            td { +key.key.explain() }
+                            td { user.map { a(href = "/admin/users/${it.id}") { +it.name } } }
+                            if (includePrintLinks) {
+                                td {
+                                    if (key.set != null) {
+                                        a(href = "/admin/voting/print/${key.set}") { +"Show ticket set '${key.set}'" }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

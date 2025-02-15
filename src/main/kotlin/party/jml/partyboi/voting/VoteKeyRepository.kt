@@ -5,6 +5,7 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Either
+import arrow.core.NonEmptyList
 import arrow.core.Option
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
@@ -28,6 +29,10 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
     }
 
+    fun getVoteKeySet(keySet: String): Either<AppError, NonEmptyList<VoteKeyRow>> = app.db.use {
+        it.atLeastOne(queryOf("SELECT * FROM votekey WHERE key_set = ?", keySet).map(VoteKeyRow.fromRow))
+    }
+
     fun getUserVoteKeys(userId: Int): Either<AppError, List<VoteKey>> = db.use {
         it.many(queryOf("SELECT key FROM votekey WHERE appuser_id = ?", userId).map(asString))
     }.map { it.map(VoteKey.fromKey) }
@@ -36,8 +41,15 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         it.exec(queryOf("DELETE FROM votekey WHERE appuser_id = ?", userId))
     }
 
-    fun insertVoteKey(userId: Int?, voteKey: VoteKey, tx: TransactionalSession? = null) = db.use(tx) {
-        it.exec(queryOf("INSERT INTO votekey (appuser_id, key) VALUES (?, ?)", userId, voteKey.toString()))
+    fun insertVoteKey(userId: Int?, voteKey: VoteKey, keySet: String?, tx: TransactionalSession? = null) = db.use(tx) {
+        it.exec(
+            queryOf(
+                "INSERT INTO votekey (appuser_id, key, key_set) VALUES (?, ?, ?)",
+                userId,
+                voteKey.toString(),
+                keySet
+            )
+        )
     }
 
     fun registerTicket(userId: Int, code: String): Either<AppError, Unit> = db.use {
@@ -50,10 +62,10 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         )
     }
 
-    fun createTickets(count: Int) = db.transaction { tx ->
+    fun createTickets(count: Int, keySet: String?) = db.transaction { tx ->
         either {
             for (i in 1..count) {
-                generateTicket(tx).bind()
+                generateTicket(tx, keySet).bind()
             }
         }
     }
@@ -71,14 +83,15 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private fun generateTicket(tx: TransactionalSession): Either<AppError, Unit> = either {
+    private fun generateTicket(tx: TransactionalSession, keySet: String?): Either<AppError, Unit> = either {
         val voteKey = VoteKey.ticket(generateTicketCode())
-        val exists =
-            tx.one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean)).bind()
+        val exists = tx
+            .one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean))
+            .isRight()
         if (exists) {
-            generateTicket(tx)
+            generateTicket(tx, keySet)
         } else {
-            insertVoteKey(userId = null, voteKey, tx)
+            insertVoteKey(userId = null, voteKey, keySet, tx)
         }
     }
 
@@ -128,12 +141,14 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
 data class VoteKeyRow(
     val key: VoteKey,
     val userId: Option<Int>,
+    val set: String?,
 ) {
     companion object {
         val fromRow: (Row) -> VoteKeyRow = { row ->
             VoteKeyRow(
                 key = VoteKey.fromKey(row.string("key")),
                 userId = Option.fromNullable(row.intOrNull("appuser_id")),
+                set = row.stringOrNull("key_set"),
             )
         }
     }

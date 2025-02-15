@@ -1,7 +1,6 @@
 package party.jml.partyboi.auth
 
 import arrow.core.Option
-import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.*

@@ -21,15 +21,20 @@ interface Validateable<T : Validateable<T>> {
         cond(name, value, value.isEmpty(), "Value cannot be empty")
 
     fun expectMinLength(name: String, value: String, minLength: Int) =
-        cond(name, value,value.length < minLength, "Minimum length is $minLength characters")
+        cond(name, value, value.length < minLength, "Minimum length is $minLength characters")
 
     fun expectMaxLength(name: String, value: String, maxLength: Int) =
-        cond(name, value,value.length > maxLength, "Maximum length is $maxLength characters")
+        cond(name, value, value.length > maxLength, "Maximum length is $maxLength characters")
 
     fun expectEqual(name: String, value: String, expected: String) =
         cond(name, value, value != expected, "Value is not equal")
 
+    fun expectAtLeast(name: String, value: Int, minValue: Int) =
+        cond(name, value.toString(), value < minValue, "Minimum value is $minValue")
+
+    fun expectAtMost(name: String, value: Int, maxValue: Int) =
+        cond(name, value.toString(), value > maxValue, "Maximum value is $maxValue")
+
     fun cond(target: String, value: String, errorCondition: Boolean, message: String): Option<ValidationError.Message> =
         if (errorCondition) Some(ValidationError.Message(target, message, value)) else None
-
 }

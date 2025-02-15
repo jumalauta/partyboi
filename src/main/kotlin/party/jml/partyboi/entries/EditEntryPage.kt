@@ -3,7 +3,6 @@ package party.jml.partyboi.entries
 import arrow.core.Option
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format
-import kotlinx.datetime.format.DateTimeFormat
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo

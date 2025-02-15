@@ -1,6 +1,5 @@
 package party.jml.partyboi.auth
 
-import kotlinx.html.*
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 

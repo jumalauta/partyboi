@@ -1,6 +1,5 @@
 package party.jml.partyboi.voting
 
-import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page

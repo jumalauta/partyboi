@@ -92,6 +92,9 @@ fun <A> Session.one(query: ResultQueryActionBuilder<A>): Either<AppError, A> =
 fun <A> Session.many(query: ResultQueryActionBuilder<A>): Either<AppError, List<A>> =
     runSafely(query.asList)
 
+fun <A> Session.atLeastOne(query: ResultQueryActionBuilder<A>): Either<AppError, NonEmptyList<A>> =
+    many(query).flatMap { it.toNonEmptyListOrNone().toEither { NotFound("Not found") } }
+
 fun Session.exec(query: Query): Either<AppError, Unit> =
     runSafely(query.asExecute).map {}
 

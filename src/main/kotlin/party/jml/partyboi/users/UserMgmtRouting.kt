@@ -75,7 +75,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         put("/admin/users/{id}/voting/{state}") {
             call.switchApi { id, state ->
                 (if (state) {
-                    app.voteKeys.insertVoteKey(id, VoteKey.manual(id))
+                    app.voteKeys.insertVoteKey(id, VoteKey.manual(id), null)
                 } else {
                     app.voteKeys.revokeUserVoteKeys(id)
                 }).onRight {
