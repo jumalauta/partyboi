@@ -1,15 +1,11 @@
 package party.jml.partyboi
 
-import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
-import party.jml.partyboi.db.Migrations
-import party.jml.partyboi.db.getDatabasePool
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.plugins.configureDefaultRouting
@@ -21,7 +17,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val app = initServices()
+    val app = services()
 
     launch { app.triggers.start() }
 

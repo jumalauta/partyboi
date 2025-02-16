@@ -124,6 +124,10 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
     }
 
+    fun deleteUserByName(name: String) = db.use {
+        it.exec(queryOf("DELETE FROM appuser WHERE name = ?", name))
+    }
+
     fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.users.size} users")
         data.users.map {
