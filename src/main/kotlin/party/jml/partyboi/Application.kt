@@ -43,7 +43,7 @@ fun Application.module() {
     val migration = runBlocking {
         Migrations.migrate(db).getOrElse { it.throwError() }
     }
-    val app = AppServices(db)
+    val app = AppServices(db, config())
     app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
 
     launch { app.triggers.start() }

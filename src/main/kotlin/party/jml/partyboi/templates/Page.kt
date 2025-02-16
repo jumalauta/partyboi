@@ -22,7 +22,7 @@ data class Page(
                     name = "viewport"
                     content = "width=device-width, initial-scale=1"
                 }
-                title { +"$titleText - ${Config.getInstanceName()}" }
+                title { +"$titleText - ${Config.get().instanceName}" }
                 link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
@@ -39,7 +39,7 @@ data class Page(
                                             icon("bars")
                                         }
                                     }
-                                    strong { a(href = "/") { +Config.getInstanceName() } }
+                                    strong { a(href = "/") { +Config.get().instanceName } }
                                 }
                             }
                             ul {

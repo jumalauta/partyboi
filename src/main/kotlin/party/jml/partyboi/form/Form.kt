@@ -218,7 +218,7 @@ data class FileUpload(
     fun write(storageFilename: Path): Either<AppError, Unit> {
         return try {
             val source = fileItem.streamProvider()
-            val file = Config.getEntryDir().resolve(storageFilename).toFile()
+            val file = Config.get().entryDir.resolve(storageFilename).toFile()
             File(file.parent).mkdirs()
             file.outputStream().use { out ->
                 while (true) {

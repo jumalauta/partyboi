@@ -75,7 +75,7 @@ class ScreenshotRepository(val app: AppServices) {
             .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
 
     fun getFile(entryId: Int): Path =
-        Config.getScreenshotsDir().resolve("screenshot-$entryId.jpg")
+        app.config.screenshotsDir.resolve("screenshot-$entryId.jpg")
 
     fun getChecksum(entryId: Int): Either<AppError, String> =
         FileChecksums.get(getFile(entryId))

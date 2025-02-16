@@ -91,7 +91,7 @@ fun SECTION.navigation(user: User?, path: String, subLinks: List<NavItem>) {
             nav {
                 ul {
                     li {
-                        strong { a(href = "/") { +Config.getInstanceName() } }
+                        strong { a(href = "/") { +Config.get().instanceName } }
                     }
                 }
                 ul {

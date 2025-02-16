@@ -3,7 +3,6 @@ package party.jml.partyboi.assets
 import arrow.core.Either
 import arrow.core.flatMap
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Config
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.catchError
@@ -14,7 +13,7 @@ import java.nio.file.Path
 import kotlin.io.path.name
 
 class AssetsRepository(app: AppServices) {
-    val assetsDir = Config.getAssetsDir()
+    private val assetsDir = app.config.assetsDir
 
     fun write(file: FileUpload): Either<AppError, Unit> =
         catchError {

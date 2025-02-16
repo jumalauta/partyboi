@@ -8,14 +8,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toJavaLocalDateTime
 import kotliquery.*
 import kotliquery.action.*
-import org.flywaydb.core.api.output.MigrateResult
-import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
+import party.jml.partyboi.config
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
 import java.nio.file.Path
-import java.sql.Connection
 import java.sql.Timestamp
 
 class DatabasePool(val dataSource: HikariDataSource) : Logging() {
@@ -154,34 +152,9 @@ fun convertQueryParam(param: Any?): Any? = when (param) {
     else -> param
 }
 
-/**
- * Makes a connection to a Postgres database.
- *
- * In order to connect to your running Postgres process,
- * please specify the following parameters in your configuration file:
- * - postgres.url -- Url of your running database process.
- * - postgres.user -- Username for database connection
- * - postgres.password -- Password for database connection
- *
- * If you don't have a database process running yet, you may need to [download]((https://www.postgresql.org/download/))
- * and install Postgres and follow the instructions [here](https://postgresapp.com/).
- * Then, you would be able to edit your url,  which is usually "jdbc:postgresql://host:port/database", as well as
- * user and password values.
- *
- *
- * @param embedded -- if [true] defaults to an embedded database for tests that runs locally in the same process.
- * In this case you don't have to provide any parameters in configuration file, and you don't have to run a process.
- *
- * @return [Connection] that represent connection to the database. Please, don't forget to close this connection when
- * your application shuts down by calling [Connection.close]
- * */
 fun Application.getDatabasePool(): DatabasePool {
     Class.forName("org.postgresql.Driver")
-
-    val host = Config.getDbHost()
-    val port = Config.getDbPort()
-    val database = Config.getDbDatabase()
-    val url = "jdbc:postgresql://$host:$port/$database"
-
-    return DatabasePool(HikariCP.default(url, Config.getDbUser(), Config.getDbPassword()))
+    val cfg = config()
+    val url = "jdbc:postgresql://${cfg.dbHost}:${cfg.dbPort}/${cfg.dbDatabase}"
+    return DatabasePool(HikariCP.default(url, cfg.dbUser, cfg.dbPassword))
 }

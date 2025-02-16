@@ -24,22 +24,25 @@ services:
       - "${PORT:-8123}:8123"
     environment:
       INSTANCE_NAME: "${INSTANCE_NAME}"
+      HOST_ADDRESS: "${HOST_ADDRESS}"
+      SESSION_SIGN_KEY: "${SESSION_SIGN_KEY}"
       ADMIN_USERNAME: "${ADMIN_USERNAME}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
       DB_PASSWORD: "${DB_PASSWORD}"
       DB_USER: postgres
       DB_DATABASE: partyboi
       DB_HOST: db
-      DIR_ASSETS: /assets
-      DIR_ENTRIES: /entries
-      DIR_SCREENSHOTS: /screenshots
+      DB_PORT: "${DB_PORT}"
+      FILES_ASSETS: /assets
+      FILES_ENTRIES: /entries
+      FILES_SCREENSHOTS: /screenshots
       REPLICATION_EXPORT_KEY: "${REPLICATION_EXPORT_KEY}"
       REPLICATION_IMPORT_SOURCE: "${REPLICATION_IMPORT_SOURCE}"
       REPLICATION_IMPORT_KEY: "${REPLICATION_IMPORT_KEY}"
     volumes:
-      - "${DIR_ASSETS}:/assets"
-      - "${DIR_ENTRIES}:/entries"
-      - "${DIR_SCREENSHOTS}:/screenshots"
+      - "${FILES_ASSETS}:/assets"
+      - "${FILES_ENTRIES}:/entries"
+      - "${FILES_SCREENSHOTS}:/screenshots"
     networks:
       - frontend
       - backend
@@ -47,7 +50,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "-m", "5", "http://localhost:8123/health"]
+      test: [ "CMD", "curl", "-f", "-m", "5", "http://localhost:8123/health" ]
       interval: 10s
       timeout: 2s
       retries: 3
@@ -62,7 +65,7 @@ services:
       POSTGRES_DB: partyboi
       # POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      - "$DB_PORT:5432"
     networks:
       - backend
     healthcheck:

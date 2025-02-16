@@ -42,7 +42,7 @@ import kotlin.io.path.exists
 
 class ReplicationService(val app: AppServices) : Logging() {
     private var schemaVersion: String? = null
-    private val importConfig = Config.getReplicationImportConfig()
+    private val importConfig = app.config.replicationImport
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
@@ -59,7 +59,7 @@ class ReplicationService(val app: AppServices) : Logging() {
     }
 
     init {
-        Config.getReplicationExportApiKey().toOption().onSome {
+        app.config.replicationExportApiKey.toOption().onSome {
             log.info("This instance can be replicated with an api key")
         }
         importConfig.onSome {

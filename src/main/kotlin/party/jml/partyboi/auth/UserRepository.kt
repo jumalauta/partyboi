@@ -8,7 +8,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
@@ -157,8 +156,8 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
 
     private fun createAdminUser() = db.use {
-        val password = Config.getAdminPassword()
-        val admin = UserCredentials(Config.getAdminUserName(), password, password)
+        val password = app.config.adminPassword
+        val admin = UserCredentials(app.config.adminUsername, password, password)
         it.exec(
             queryOf(
                 "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",

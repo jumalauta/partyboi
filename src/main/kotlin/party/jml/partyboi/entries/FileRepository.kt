@@ -168,10 +168,10 @@ class FileRepository(private val app: AppServices) : Logging() {
     }
 
     fun getStoragePath(name: String): Path =
-        Config.getEntryDir().resolve(name)
+        app.config.entryDir.resolve(name)
 
     fun getStorageFile(name: Path): File =
-        Config.getEntryDir().resolve(name).toFile()
+        app.config.entryDir.resolve(name).toFile()
 
     fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
@@ -220,7 +220,7 @@ data class NewFileDesc(
     val storageFilename: Path,
 ) {
     val type: String by lazy { FileDesc.getType(originalFilename) }
-    val absolutePath: Path by lazy { Config.getEntryDir().resolve(storageFilename) }
+    val absolutePath: Path by lazy { Config.get().entryDir.resolve(storageFilename) }
 
     fun size(): Either<InternalServerError, Long> =
         Either.catch { Files.size(absolutePath) }.mapLeft { InternalServerError(it) }
@@ -245,7 +245,7 @@ data class FileDesc(
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
 
-    fun getStorageFile(): File = Config.getEntryDir().resolve(storageFilename).toFile()
+    fun getStorageFile(): File = Config.get().entryDir.resolve(storageFilename).toFile()
 
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->

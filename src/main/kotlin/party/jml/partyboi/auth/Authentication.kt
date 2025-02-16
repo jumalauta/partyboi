@@ -9,7 +9,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Config
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.RedirectInterruption
 import kotlin.time.Duration.Companion.days
@@ -38,7 +37,7 @@ fun Application.configureAuthentication(app: AppServices) {
         }
         bearer("replication") {
             realm = "Data replication"
-            val apiKey = Config.getReplicationExportApiKey()
+            val apiKey = app.config.replicationExportApiKey
             authenticate { tokenCredential ->
                 if (tokenCredential.token == apiKey) {
                     UserIdPrincipal("replication")
@@ -50,7 +49,7 @@ fun Application.configureAuthentication(app: AppServices) {
     }
 
     install(Sessions) {
-        val secretSignKey = Config.getSecretSignKey()
+        val secretSignKey = app.config.secretSignKey
         cookie<User>("user_session", app.sessions) {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 7.days.inWholeSeconds
