@@ -67,6 +67,7 @@ dependencies {
     implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    testImplementation("it.skrape:skrapeit:1.2.2")
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
 }

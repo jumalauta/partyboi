@@ -1,0 +1,47 @@
+services:
+
+  appserver:
+    build: .
+    ports:
+      - "8124:8123"
+    environment:
+      INSTANCE_NAME: "Partyboi (dev)"
+      ADMIN_USERNAME: "admin"
+      ADMIN_PASSWORD: "password"
+      DB_USER: "postgres"
+      DB_PASSWORD: "password"
+      DB_DATABASE: "partyboi"
+      DB_HOST: db
+      DB_PORT: 5432
+    volumes:
+      - "./data/assets:/assets"
+      - "./data/entries:/entries"
+      - "./data/screenshots:/screenshots"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build: db-dev
+    volumes:
+      - "./data/db:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "partyboi"
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+
+networks:
+  frontend:
+    name: frontend
+  backend:
+    name: backend

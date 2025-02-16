@@ -1,0 +1,36 @@
+ktor:
+  application:
+    modules:
+      - party.jml.partyboi.ApplicationKt.module
+  deployment:
+    port: "$PORT:8123"
+  sessions:
+    secretSignKey: "$SESSION_SIGN_KEY:0123456789abcdef"
+
+instance:
+  name: "$INSTANCE_NAME:Partyboi (test)"
+  host: "$HOST_ADDRESS:localhost"
+
+init:
+  admin:
+    username: "$ADMIN_USERNAME:admin"
+    password: "$ADMIN_PASSWORD:password"
+
+db:
+  host: "$DB_HOST:localhost"
+  port: "$DB_PORT:5432"
+  user: "$DB_USER:postgres"
+  password: "$DB_PASSWORD:password"
+  database: "$DB_DATABASE:partyboi_test"
+
+files:
+  entries: "$FILES_ENTRIES:/entries"
+  assets: "$FILES_ASSETS:/assets"
+  screenshots: "$FILES_SCREENSHOTS:/screenshots"
+
+replication:
+  import:
+    source: "$REPLICATION_IMPORT_SOURCE:"
+    key: "$REPLICATION_IMPORT_KEY:"
+  export:
+    key: "$REPLICATION_EXPORT_KEY:"
