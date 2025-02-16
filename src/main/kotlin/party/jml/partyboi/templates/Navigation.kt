@@ -30,10 +30,11 @@ object Navigation {
         } else {
             NavItem("/vote/register", "Register vote key")
         },
-    ).filterNotNull()
+    )
 
     val adminItems = listOf(
         NavItem("/admin/settings", "Settings"),
+        NavItem("/admin/voting", "Vote keys"),
         NavItem("/admin/users", "Users"),
         NavItem("/admin/compos", "Compos"),
         NavItem("/admin/schedule", "Schedule"),
