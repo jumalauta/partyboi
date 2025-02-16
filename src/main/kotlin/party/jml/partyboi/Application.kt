@@ -21,12 +21,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val db = getDatabasePool()
-    val migration = runBlocking {
-        Migrations.migrate(db).getOrElse { it.throwError() }
-    }
-    val app = AppServices(db, config())
-    app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
+    val app = initServices()
 
     launch { app.triggers.start() }
 
@@ -35,9 +30,7 @@ fun Application.module() {
     configureAuthentication(app)
     configureDefaultRouting(app)
 
-    launch {
-        app.screen.start()
-    }
+    launch { app.screen.start() }
 
     if (app.replication.isReadReplica) {
         launch { app.replication.sync() }

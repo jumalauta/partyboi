@@ -1,6 +1,10 @@
 package party.jml.partyboi
 
+import arrow.core.getOrElse
+import io.ktor.server.application.*
 import io.ktor.util.logging.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.assets.AssetsRepository
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
@@ -8,6 +12,8 @@ import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.compos.admin.CompoRunService
 import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.db.DatabasePool
+import party.jml.partyboi.db.Migrations
+import party.jml.partyboi.db.getDatabasePool
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
@@ -41,6 +47,17 @@ class AppServices(
     val signals = SignalService()
     val assets = AssetsRepository(this)
     val replication = ReplicationService(this)
+}
+
+fun Application.initServices(): AppServices {
+    val db = getDatabasePool()
+    val migration = runBlocking {
+        Migrations.migrate(db).getOrElse { it.throwError() }
+    }
+    val app = AppServices(db, config())
+    app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
+    
+    return app
 }
 
 abstract class Logging {
