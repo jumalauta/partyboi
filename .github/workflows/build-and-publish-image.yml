@@ -9,12 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Setup database for tests
+      run: docker compose --file docker-compose-dev.yml up db -d
     - name: Run tests
+      run: gradle test
+    - name: Clean up
       run: |
-        docker compose --file docker-compose-dev.yml up db -d
-        gradle test
-    - name: Build and publish
-      run: |
-        docker login -u ilkkahanninen -p ${{ secrets.DOCKER_PASSWORD }}
-        docker build . --tag ilkkahanninen/partyboi:latest
-        docker push ilkkahanninen/partyboi
+        docker compose --file docker-compose-dev.yml down
+        sudo rm -rf data
+    - name: Login to Docker Hub
+      run: docker login -u ilkkahanninen -p ${{ secrets.DOCKER_PASSWORD }}
+    - name: Build a release image
+      run: docker build . --tag ilkkahanninen/partyboi:latest
+    - name: Publish the image
+      run: docker push ilkkahanninen/partyboi
