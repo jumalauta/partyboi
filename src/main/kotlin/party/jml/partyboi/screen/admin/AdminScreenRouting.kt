@@ -114,7 +114,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 either {
                     call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addEmptySlideToSlideSet(slideSetName, TextSlide.Empty).bind()
+                    app.screen.addSlide(slideSetName, TextSlide.Empty).bind()
                 }
             }
         }
@@ -124,7 +124,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 either {
                     call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addEmptySlideToSlideSet(slideSetName, QrCodeSlide.Empty).bind()
+                    app.screen.addSlide(slideSetName, QrCodeSlide.Empty).bind()
                 }
             }
         }
@@ -134,7 +134,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 either {
                     call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addEmptySlideToSlideSet(slideSetName, ImageSlide.Empty).bind()
+                    app.screen.addSlide(slideSetName, ImageSlide.Empty).bind()
                 }
             }
         }
