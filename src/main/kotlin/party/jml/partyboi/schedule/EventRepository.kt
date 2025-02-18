@@ -98,6 +98,10 @@ class EventRepository(private val app: AppServices) : Logging() {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
+    fun deleteAll(): Either<AppError, Unit> = db.use {
+        it.exec(queryOf("DELETE FROM event"))
+    }
+
     fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.events.size} events")
         data.events.map {

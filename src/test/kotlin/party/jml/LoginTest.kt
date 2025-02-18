@@ -6,7 +6,6 @@ import it.skrape.matchers.toBe
 import it.skrape.selects.html5.li
 import it.skrape.selects.text
 import party.jml.partyboi.auth.UserCredentials
-import party.jml.partyboi.services
 import kotlin.test.Test
 
 class LoginTest : PartyboiTester {
@@ -27,7 +26,7 @@ class LoginTest : PartyboiTester {
     @Test
     fun testRegistration() = test {
         val userName = "foobar"
-        application { services().users.deleteUserByName(userName) }
+        services { it.users.deleteUserByName(userName).bind() }
 
         // User cannot see the entry page before registration
         it.get("/entries") {
@@ -85,7 +84,10 @@ class LoginTest : PartyboiTester {
     fun loginTest() = test {
         val username = "zorro"
         val password = "password"
-        application { services().users.addUser(UserCredentials(username, password, password), "0.0.0.0") }
+        services {
+            it.users.deleteUserByName(username)
+            it.users.addUser(UserCredentials(username, password, password), "0.0.0.0").bind()
+        }
 
         // Check that login page loads
         it.get("/login")

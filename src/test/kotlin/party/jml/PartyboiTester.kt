@@ -1,5 +1,7 @@
 package party.jml
 
+import arrow.core.raise.Raise
+import arrow.core.raise.either
 import io.ktor.client.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -12,6 +14,9 @@ import io.ktor.server.testing.*
 import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
+import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.services
 import kotlin.test.assertEquals
 
 interface PartyboiTester {
@@ -60,4 +65,14 @@ class TestHtmlClient(val client: HttpClient) {
 
 fun Headers.redirectsTo(urlString: String) {
     this["Location"].toBe(urlString)
+}
+
+fun ApplicationTestBuilder.services(block: Raise<AppError>.(AppServices) -> Unit) {
+    application {
+        either {
+            block(services())
+        }.onLeft {
+            throw it.throwable ?: RuntimeException(it.message)
+        }
+    }
 }

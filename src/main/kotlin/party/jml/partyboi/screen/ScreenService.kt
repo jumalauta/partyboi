@@ -67,7 +67,7 @@ class ScreenService(private val app: AppServices) : Logging() {
 
     fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
-    fun addEmptySlideToSlideSet(slideSet: String, slide: Slide<*>) =
+    fun addSlide(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false, readOnly = false)
 
     fun update(id: Int, slide: Slide<*>) = either {
@@ -79,6 +79,8 @@ class ScreenService(private val app: AppServices) : Logging() {
     }
 
     fun delete(id: Int) = repository.delete(id)
+
+    fun deleteAll() = repository.deleteAll()
 
     fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
