@@ -1,7 +1,6 @@
 package party.jml
 
-import arrow.core.raise.Raise
-import arrow.core.raise.either
+import arrow.core.Either
 import io.ktor.client.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -46,6 +45,7 @@ class TestHtmlClient(val client: HttpClient) {
         client.get(urlString).apply {
             assertEquals(expectedStatus, status)
             htmlDocument(bodyAsText()) {
+                relaxed = true
                 if (block != null) block()
             }
         }
@@ -57,6 +57,7 @@ class TestHtmlClient(val client: HttpClient) {
             formData = formData
         ).apply {
             htmlDocument(bodyAsText()) {
+                relaxed = true
                 block(headers)
             }
         }
@@ -67,11 +68,9 @@ fun Headers.redirectsTo(urlString: String) {
     this["Location"].toBe(urlString)
 }
 
-fun ApplicationTestBuilder.services(block: Raise<AppError>.(AppServices) -> Unit) {
+fun <T> ApplicationTestBuilder.services(block: AppServices.() -> Either<AppError, T>) {
     application {
-        either {
-            block(services())
-        }.onLeft {
+        services().block().onLeft {
             throw it.throwable ?: RuntimeException(it.message)
         }
     }

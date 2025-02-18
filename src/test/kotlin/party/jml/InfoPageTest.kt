@@ -12,7 +12,7 @@ import kotlin.test.Test
 class InfoPageTest : PartyboiTester {
     @Test
     fun testEmptyInfoPage() = test {
-        services { app -> resetInfoPage(app).bind() }
+        services { resetInfoPage(this) }
 
         it.get("/") {
             article {
@@ -24,13 +24,14 @@ class InfoPageTest : PartyboiTester {
 
     @Test
     fun testInfoNuggets() = test {
-        services { app ->
-            resetInfoPage(app).bind()
-
-            val slide1 = app.screen.addSlide("default", TextSlide("Hello, world!", "Nice to be here!")).bind()
-            app.screen.showOnInfo(slide1.id, true).bind()
-
-            app.screen.addSlide("default", TextSlide("Food wave", "Food wave begins at 14:00")).bind()
+        services {
+            val self = this
+            either {
+                resetInfoPage(self).bind()
+                val slide1 = screen.addSlide("default", TextSlide("Hello, world!", "Nice to be here!")).bind()
+                screen.showOnInfo(slide1.id, true).bind()
+                screen.addSlide("default", TextSlide("Food wave", "Food wave begins at 14:00")).bind()
+            }
         }
 
         it.get("/") {
@@ -43,22 +44,25 @@ class InfoPageTest : PartyboiTester {
 
     @Test
     fun testSchedule() = test {
-        services { app ->
-            resetInfoPage(app).bind()
-            app.events.add(
-                NewEvent(
-                    name = "Foodwave",
-                    time = LocalDateTime.of(2025, 2, 18, 20, 8),
-                    visible = true
-                )
-            ).bind()
-            app.events.add(
-                NewEvent(
-                    name = "Secret santa",
-                    time = LocalDateTime.of(2025, 2, 20, 20, 8),
-                    visible = false
-                ),
-            ).bind()
+        services {
+            val self = this
+            either {
+                resetInfoPage(self).bind()
+                events.add(
+                    NewEvent(
+                        name = "Foodwave",
+                        time = LocalDateTime.of(2025, 2, 18, 20, 8),
+                        visible = true
+                    )
+                ).bind()
+                events.add(
+                    NewEvent(
+                        name = "Secret santa",
+                        time = LocalDateTime.of(2025, 2, 20, 20, 8),
+                        visible = false
+                    ),
+                ).bind()
+            }
         }
 
         it.get("/") {

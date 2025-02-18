@@ -26,7 +26,7 @@ class LoginTest : PartyboiTester {
     @Test
     fun testRegistration() = test {
         val userName = "foobar"
-        services { it.users.deleteUserByName(userName).bind() }
+        services { users.deleteUserByName(userName) }
 
         // User cannot see the entry page before registration
         it.get("/entries") {
@@ -84,9 +84,10 @@ class LoginTest : PartyboiTester {
     fun loginTest() = test {
         val username = "zorro"
         val password = "password"
+
         services {
-            it.users.deleteUserByName(username)
-            it.users.addUser(UserCredentials(username, password, password), "0.0.0.0").bind()
+            users.deleteUserByName(username)
+            users.addUser(UserCredentials(username, password, password), "0.0.0.0")
         }
 
         // Check that login page loads

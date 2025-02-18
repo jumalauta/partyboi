@@ -45,8 +45,14 @@ class CompoRepository(private val app: AppServices) : Logging() {
         it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
     }
 
-    fun add(compo: NewCompo): Either<AppError, Unit> = db.use {
-        it.exec(queryOf("insert into compo(name, rules, visible) values(?, ?, false)", compo.name, compo.rules))
+    fun add(compo: NewCompo): Either<AppError, Compo> = db.use {
+        it.one(
+            queryOf(
+                "insert into compo(name, rules, visible) values(?, ?, false) returning *",
+                compo.name,
+                compo.rules
+            ).map(Compo.fromRow)
+        )
     }
 
     fun update(compo: Compo): Either<AppError, Unit> =
@@ -143,6 +149,10 @@ class CompoRepository(private val app: AppServices) : Logging() {
                 )
             )
         }.bindAll()
+    }
+
+    fun deleteAll() = db.use {
+        it.exec(queryOf("DELETE FROM compo"))
     }
 }
 
