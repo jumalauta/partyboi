@@ -235,6 +235,13 @@ data class FileUpload(
         }
     }
 
+    fun toByteArray(): ByteArray {
+        val source = fileItem.streamProvider()
+        val bytes = source.readAllBytes()
+        fileItem.dispose()
+        return bytes
+    }
+
     val isDefined = name.isNotEmpty()
 
     companion object {
@@ -242,6 +249,15 @@ data class FileUpload(
             "", PartData.FileItem(
                 { throw Error("Empty file") },
                 { },
+                Headers.Empty
+            )
+        )
+
+        fun createTestData(filename: String, length: Int) = FileUpload(
+            filename,
+            PartData.FileItem(
+                { ByteReadPacket(ByteArray(length), 0, length) },
+                {},
                 Headers.Empty
             )
         )

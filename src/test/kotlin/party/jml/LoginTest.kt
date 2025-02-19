@@ -34,7 +34,7 @@ class LoginTest : PartyboiTester {
         }
 
         // Check that registration page loads
-        it.get("/register")
+        it.get("/register") {}
 
         // Register with invalid data -> shows errors
         it.post(
@@ -91,7 +91,7 @@ class LoginTest : PartyboiTester {
         }
 
         // Check that login page loads
-        it.get("/login")
+        it.get("/login") {}
 
         // Login with invalid credentials fails and error is shown
         it.post("/login", formData {

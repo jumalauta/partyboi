@@ -15,51 +15,86 @@ import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.services
+import kotlin.reflect.full.memberProperties
 import kotlin.test.assertEquals
 
 interface PartyboiTester {
     fun test(block: suspend ApplicationTestBuilder.(TestHtmlClient) -> Unit) {
         testApplication {
-            environment {
-                config = ApplicationConfig("tests.yaml")
-            }
-            block(htmlClient())
+            environment { config = ApplicationConfig("tests.yaml") }
+            val client = createClient { install(HttpCookies) }
+            block(TestHtmlClient(client))
         }
     }
-}
-
-fun ApplicationTestBuilder.htmlClient(): TestHtmlClient {
-    val client = createClient {
-        install(HttpCookies)
-    }
-    return TestHtmlClient(client)
 }
 
 class TestHtmlClient(val client: HttpClient) {
-    suspend fun get(
+    suspend fun <T> get(
         urlString: String,
         expectedStatus: HttpStatusCode = HttpStatusCode.OK,
-        block: (Doc.() -> Unit)? = null
-    ) {
+        block: (Doc.() -> T)
+    ): T {
         client.get(urlString).apply {
             assertEquals(expectedStatus, status)
-            htmlDocument(bodyAsText()) {
+            return htmlDocument(bodyAsText()) {
                 relaxed = true
-                if (block != null) block()
+                block()
             }
         }
     }
 
-    suspend fun post(urlString: String, formData: List<PartData>, block: Doc.(Headers) -> Unit) {
+    suspend fun <T> post(
+        urlString: String,
+        formData: List<PartData>,
+        block: (Doc.(Headers) -> T)
+    ): T {
         client.submitFormWithBinaryData(
             url = urlString,
             formData = formData
         ).apply {
-            htmlDocument(bodyAsText()) {
+            return htmlDocument(bodyAsText()) {
                 relaxed = true
                 block(headers)
             }
+        }
+    }
+
+    suspend inline fun <reified T : Validateable<T>, A> post(
+        urlString: String,
+        obj: Validateable<T>,
+        noinline block: (Doc.(Headers) -> A)
+    ): A {
+        val map = T::class.memberProperties.associate { it.name to it.getter.call(obj) }
+        val data = formData {
+            map.forEach {
+                when (val value = it.value) {
+                    is FileUpload -> append(it.key, value.toByteArray(), headers {
+                        append("Content-Type", "application/octet-stream")
+                        append("Content-Disposition", "form-data; name=\"file\"; filename=\"${value.name}\"")
+                    })
+
+                    else -> append(it.key, value.toString())
+                }
+            }
+        }
+        return post(urlString, data, block)
+    }
+
+    suspend fun login(username: String = "user", password: String = "password") {
+        post("/register", formData {
+            append("name", username)
+            append("password", password)
+            append("password2", password)
+        }) {}
+
+        post("/login", formData {
+            append("name", username)
+            append("password", password)
+        }) {
+
         }
     }
 }

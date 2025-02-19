@@ -151,9 +151,10 @@ class CompoRepository(private val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    fun deleteAll() = db.use {
-        it.exec(queryOf("DELETE FROM compo"))
-    }
+    fun deleteAll(): Either<AppError, Unit> =
+        app.entries.deleteAll().flatMap {
+            db.use { it.exec(queryOf("DELETE FROM compo")) }
+        }
 }
 
 @Serializable

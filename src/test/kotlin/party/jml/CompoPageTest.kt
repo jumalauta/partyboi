@@ -82,7 +82,7 @@ class CompoPageTest : PartyboiTester {
                 compos.publishResults(demoCompoId, true)
             }
         }
-        
+
         it.get("/compos") {
             findFirst("article.compo .results") { text.toBe("Results") }
         }
