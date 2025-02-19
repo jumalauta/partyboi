@@ -24,9 +24,9 @@ db:
   database: "$DB_DATABASE:partyboi_test"
 
 files:
-  entries: "$FILES_ENTRIES:/entries"
-  assets: "$FILES_ASSETS:/assets"
-  screenshots: "$FILES_SCREENSHOTS:/screenshots"
+  entries: "$FILES_ENTRIES:./data/test/entries"
+  assets: "$FILES_ASSETS:./data/test/assets"
+  screenshots: "$FILES_SCREENSHOTS:./data/test/screenshots"
 
 replication:
   import:

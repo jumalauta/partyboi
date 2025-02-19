@@ -183,6 +183,10 @@ class EntryRepository(private val app: AppServices) : Logging() {
         }
     }
 
+    fun deleteAll(): Either<AppError, Unit> = db.use {
+        it.exec(queryOf("delete from entry"))
+    }
+
     fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
         db.use {
             it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
