@@ -11,4 +11,4 @@ jobs:
     - name: Run tests
       run: |
         docker compose --file docker-compose-dev.yml up db -d
-        gradle test
+        gradle test -i
