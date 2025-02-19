@@ -100,7 +100,7 @@ class TestHtmlClient(val client: HttpClient) {
 }
 
 fun Headers.redirectsTo(urlString: String) {
-    this["Location"].toBe(urlString)
+    this["Location"]?.trim().toBe(urlString.trim())
 }
 
 fun <T> ApplicationTestBuilder.services(block: AppServices.() -> Either<AppError, T>) {

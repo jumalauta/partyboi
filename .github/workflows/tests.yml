@@ -11,4 +11,6 @@ jobs:
     - name: Run tests
       run: |
         docker compose --file docker-compose-dev.yml up db -d
+        sudo mkdir -p data/test
+        sudo chmod -R 777 data
         gradle test -i
