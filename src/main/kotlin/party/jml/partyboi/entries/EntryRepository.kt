@@ -88,7 +88,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun add(newEntry: NewEntry): Either<AppError, Unit> =
+    fun add(newEntry: NewEntry): Either<AppError, Entry> =
         db.transaction {
             either {
                 val compo = app.compos.getById(newEntry.compoId, it).bind()
@@ -123,8 +123,10 @@ class EntryRepository(private val app: AppServices) : Logging() {
                         app.screenshots.store(entry.id, source)
                     }
                 }
+                
+                entry
             }
-        }.map {}.onRight {
+        }.onRight {
             runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId)) }
         }
 
