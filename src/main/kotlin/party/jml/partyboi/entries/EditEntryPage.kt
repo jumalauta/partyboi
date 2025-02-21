@@ -54,7 +54,7 @@ object EditEntryPage {
             )
 
             if (files.isNotEmpty()) {
-                article {
+                article(classes = "fileversions") {
                     header { +"File versions" }
                     table {
                         thead {
