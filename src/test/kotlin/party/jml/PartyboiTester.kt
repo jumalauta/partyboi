@@ -10,6 +10,7 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
+import io.ktor.util.*
 import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
@@ -43,6 +44,17 @@ class TestHtmlClient(val client: HttpClient) {
                 relaxed = true
                 block()
             }
+        }
+    }
+
+    suspend fun <T> getBinary(
+        urlString: String,
+        expectedStatus: HttpStatusCode = HttpStatusCode.OK,
+        block: (ByteArray) -> T
+    ) {
+        client.get(urlString).apply {
+            assertEquals(expectedStatus, status)
+            block(bodyAsChannel().toByteArray())
         }
     }
 

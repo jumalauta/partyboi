@@ -11,6 +11,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileFormat
 import java.io.File
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
@@ -253,10 +254,22 @@ data class FileUpload(
             )
         )
 
-        fun createTestData(filename: String, length: Int) = FileUpload(
+        fun createTestData(filename: String, length: Int) = fromByteArray(
+            filename,
+            ByteArray(length)
+        )
+
+        fun fromResource(self: Any, filename: String) = self::class.java.getResource(filename)?.let {
+            fromByteArray(
+                Paths.get(filename).fileName.toString(),
+                it.readBytes()
+            )
+        }
+
+        fun fromByteArray(filename: String, bytes: ByteArray) = FileUpload(
             filename,
             PartData.FileItem(
-                { ByteReadPacket(ByteArray(length), 0, length) },
+                { ByteReadPacket(bytes, 0, bytes.size) },
                 {},
                 Headers.Empty
             )

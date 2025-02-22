@@ -4,6 +4,7 @@ import arrow.core.raise.either
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import it.skrape.matchers.toBe
+import it.skrape.matchers.toBeNot
 import it.skrape.selects.text
 import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.compos.NewCompo
@@ -11,6 +12,7 @@ import party.jml.partyboi.data.toDecimals
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.EntryUpdate
 import party.jml.partyboi.entries.NewEntry
+import party.jml.partyboi.entries.NewScreenshot
 import party.jml.partyboi.form.FileUpload
 import kotlin.test.Test
 
@@ -169,6 +171,59 @@ class SubmitEntryPageTest : PartyboiTester {
                     findThird("td") { text.toBe("${4.1.toDecimals(1)} kB") }
                 }
             }
+        }
+    }
+
+    @Test
+    fun testScreenshots() = test {
+        var entry: Entry? = null
+
+        services {
+            either {
+                entries.deleteAll().bind()
+                compos.deleteAll().bind()
+                val gfxCompo = compos.add(NewCompo("Graphics", "")).bind()
+                compos.setVisible(gfxCompo.id, true).bind()
+
+                users.addUser(UserCredentials("user", "password", "password"), "0.0.0.0")
+                val user = users.getUser("user").bind()
+
+                entry = entries.add(
+                    NewEntry(
+                        title = "Final Dog",
+                        author = "Naettiii",
+                        file = FileUpload.fromResource(this, "/images/image.zip")!!,
+                        compoId = gfxCompo.id,
+                        screenComment = "Hello to audience",
+                        orgComment = "Hello to orgs",
+                        userId = user.id,
+                    )
+                ).bind()
+            }
+        }
+
+        it.login()
+
+        // Test that the screenshot is shown on the entry page
+        val screenshotUrl = "/entries/${entry!!.id}/screenshot.jpg"
+        it.get("/entries/${entry!!.id}") {
+            findFirst("figure img") { attribute("src").to(screenshotUrl) }
+        }
+
+        // Screenshot can be downloaded
+        val originalScreenshotHash = "599cf1dbe77dfb63ea5526311d89c38c" // hash of resized final.png inside image.zip
+        it.getBinary(screenshotUrl) {
+            TestUtils.md5(it).toBe(originalScreenshotHash)
+        }
+
+        // Screenshot can be changed
+        it.post(
+            "/entries/${entry!!.id}/screenshot",
+            NewScreenshot(FileUpload.fromResource(this, "/images/final2.png")!!)
+        ) {}
+
+        it.getBinary(screenshotUrl) {
+            TestUtils.md5(it).toBeNot(originalScreenshotHash)
         }
     }
 }
