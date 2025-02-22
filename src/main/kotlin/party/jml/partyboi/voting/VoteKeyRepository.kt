@@ -95,8 +95,12 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }
     }
 
+    fun deleteAll() = db.use {
+        it.exec(queryOf("DELETE FROM votekey"))
+    }
+
     private fun generateTicketCode(): String =
-        (0..8).map { getRandomTicketChar() }.joinToString("")
+        (0..7).map { getRandomTicketChar() }.joinToString("")
 
     companion object {
         val TICKET_CHARS = "ABCDEFHJKLMNPRSTUVWXY2346789".toList()
