@@ -29,6 +29,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 interface PartyboiTester {
     fun test(block: suspend ApplicationTestBuilder.(TestHtmlClient) -> Unit) {
@@ -109,6 +110,18 @@ class TestHtmlClient(val client: HttpClient) {
             }
         }
         return post(urlString, data, block)
+    }
+
+    suspend inline fun buttonClick(urlString: String) {
+        client.put(urlString).apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+    }
+
+    suspend inline fun buttonClickFails(urlString: String) {
+        client.put(urlString).apply {
+            assertNotEquals(HttpStatusCode.OK, status)
+        }
     }
 
     suspend fun login(username: String = "user", password: String = "password") {
