@@ -64,7 +64,7 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
             WHERE qualified
             ${if (onlyPublic) "AND public_results" else ""}
             GROUP BY compo_id, compo.name, entry.id, title, author
-            ORDER BY compo_id, points DESC
+            ORDER BY compo_id, points DESC, entry_id
         """.trimIndent()
             ).map(CompoResult.fromRow)
         )
@@ -82,6 +82,10 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
                 )
             )
         }.bindAll()
+    }
+
+    fun deleteAll() = db.use {
+        it.exec(queryOf("DELETE FROM vote"))
     }
 }
 

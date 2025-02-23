@@ -24,6 +24,7 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.services
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties
@@ -139,6 +140,7 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: AppServices.() -> Eit
         val app = services()
 
         either {
+            app.settings.automaticVoteKeys.set(AutomaticVoteKeys.DISABLED)
             app.events.deleteAll().bind()
             app.screen.deleteAll().bind()
             app.votes.deleteAll().bind()
