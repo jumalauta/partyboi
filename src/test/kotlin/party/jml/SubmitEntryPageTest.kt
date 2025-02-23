@@ -1,6 +1,7 @@
 package party.jml
 
 import arrow.core.raise.either
+import arrow.core.some
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import it.skrape.matchers.toBe
@@ -167,6 +168,50 @@ class SubmitEntryPageTest : PartyboiTester {
                     findThird("td") { text.toBe("${4.1.toDecimals(1)} kB") }
                 }
             }
+        }
+    }
+
+    @Test
+    fun testSubmittingToFileFreeCompo() = test {
+        var entry: Entry? = null
+        setupServices {
+            val app = this
+            either {
+                val wildCompo = compos.add(NewCompo("Wild", "")).bind()
+                compos.setVisible(wildCompo.id, true).bind()
+                compos.update(wildCompo.copy(requireFile = false.some())).bind()
+
+                val user = addTestUser(app).bind()
+                entry = entries.add(
+                    NewEntry(
+                        title = "Porvari nukkuu erinomaisesti",
+                        author = "Kokoomusnuoret",
+                        file = FileUpload.Empty,
+                        compoId = wildCompo.id,
+                        screenComment = "Hello to audience",
+                        orgComment = "Hello to orgs",
+                        userId = user.id,
+                    )
+                ).bind()
+            }
+        }
+
+        it.login()
+
+        // Update entry
+        val updated = EntryUpdate(
+            id = entry!!.id,
+            title = "Mega Turbo Färjan 2000 Deluxe Plus Nitro",
+            author = "Jumalauta Game Committee",
+            file = FileUpload.Empty,
+            compoId = entry!!.compoId,
+            userId = entry!!.userId,
+            screenComment = "Turbo!!!",
+            orgComment = "Yeah!!!"
+        )
+
+        it.post("/entries/${entry!!.id}", updated) {
+            it.redirectsTo("/entries")
         }
     }
 

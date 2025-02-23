@@ -8,6 +8,8 @@ import party.jml.partyboi.entries.FileFormatCategory
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
+import party.jml.partyboi.data.isFalse
+import party.jml.partyboi.data.isTrue
 
 object AdminEditCompoPage {
     fun render(
@@ -33,15 +35,18 @@ object AdminEditCompoPage {
                         fieldSet {
                             p { +"File uploads" }
                             radioInput(name = "requireFile") {
-                                checked = compoForm.data.requireFile == true
+                                checked = compoForm.data.requireFile.isTrue()
+                                value = "true"
                                 label { +"Required" }
                             }
                             radioInput(name = "requireFile") {
-                                checked = compoForm.data.requireFile == null
+                                checked = compoForm.data.requireFile.isNone()
+                                value = "none"
                                 label { +"Optional" }
                             }
                             radioInput(name = "requireFile") {
-                                checked = compoForm.data.requireFile == false
+                                checked = compoForm.data.requireFile.isFalse()
+                                value = "false"
                                 label { +"File uploads disabled" }
                             }
                         }

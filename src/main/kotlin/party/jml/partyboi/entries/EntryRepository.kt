@@ -92,7 +92,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.transaction {
             either {
                 val compo = app.compos.getById(newEntry.compoId, it).bind()
-                if (compo.requireFile == true && !newEntry.file.isDefined) {
+                if (compo.requireFile.isTrue() && !newEntry.file.isDefined) {
                     FormError("${compo.name} compo requires a file").left().bind<Unit>()
                 }
 
@@ -123,7 +123,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                         app.screenshots.store(entry.id, source)
                     }
                 }
-                
+
                 entry
             }
         }.onRight {
