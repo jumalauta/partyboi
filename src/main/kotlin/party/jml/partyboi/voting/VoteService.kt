@@ -28,7 +28,7 @@ class VoteService(val app: AppServices) {
                 if (isVotingOpen(entry).bind()) {
                     repository.castVote(user.id, entryId, validPoints).bind()
                 } else {
-                    InvalidInput("This entry cannot be voted").left()
+                    raise(InvalidInput("This entry cannot be voted"))
                 }
             }
         } else {
