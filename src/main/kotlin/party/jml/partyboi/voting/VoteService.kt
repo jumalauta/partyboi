@@ -88,6 +88,8 @@ class VoteService(val app: AppServices) {
 
     fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
+    fun deleteAll() = repository.deleteAll()
+
     private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =
         if (!entry.qualified) {
             false.right()
