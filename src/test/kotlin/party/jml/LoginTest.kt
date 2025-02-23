@@ -5,7 +5,6 @@ import io.ktor.http.*
 import it.skrape.matchers.toBe
 import it.skrape.selects.html5.li
 import it.skrape.selects.text
-import party.jml.partyboi.auth.UserCredentials
 import kotlin.test.Test
 
 class LoginTest : PartyboiTester {
@@ -86,7 +85,7 @@ class LoginTest : PartyboiTester {
         val password = "password"
 
         setupServices {
-            users.addUser(UserCredentials(username, password, password), "0.0.0.0")
+            addTestUser(this, username, password)
         }
 
         // Check that login page loads
