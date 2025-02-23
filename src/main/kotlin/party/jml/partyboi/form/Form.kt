@@ -180,6 +180,13 @@ class Form<T : Validateable<T>>(
                             AutomaticVoteKeys.valueOf(stringValue)
                         }
 
+                        "arrow.core.Option<kotlin.Boolean>" -> when (stringValue) {
+                            "true" -> true.some()
+                            "false" -> false.some()
+                            "none" -> none()
+                            else -> throw RuntimeException("Invalid Option<Boolean> value (accepted: 'true', 'false', 'none')")
+                        }
+
                         else -> {
                             throw error("Unsupported data type on property '$name': ${it.type}")
                         }
@@ -246,13 +253,7 @@ data class FileUpload(
     val isDefined = name.isNotEmpty()
 
     companion object {
-        val Empty = FileUpload(
-            "", PartData.FileItem(
-                { throw Error("Empty file") },
-                { },
-                Headers.Empty
-            )
-        )
+        val Empty = createTestData("", 0)
 
         fun createTestData(filename: String, length: Int) = fromByteArray(
             filename,

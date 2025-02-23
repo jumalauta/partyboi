@@ -3,6 +3,7 @@ package party.jml.partyboi.compos
 import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -64,12 +65,14 @@ class CompoRepository(private val app: AppServices) : Logging() {
                 SET
                     name = ?, 
                     rules = ?,
-                    formats = ?
+                    formats = ?,
+                    require_file = ?::optional_boolean
                 WHERE id = ?
                 """,
                     compo.name,
                     compo.rules,
                     compo.fileFormats.map { it.name }.toTypedArray(),
+                    compo.requireFile.toDatabaseEnum(),
                     compo.id,
                 )
             )
@@ -170,7 +173,8 @@ data class Compo(
     val allowVote: Boolean,
     val publicResults: Boolean,
     @property:Field(presentation = FieldPresentation.custom)
-    val requireFile: Boolean?,
+    @Contextual
+    val requireFile: Option<Boolean>,
     @property:Field(presentation = FieldPresentation.custom)
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
@@ -185,7 +189,7 @@ data class Compo(
         value = id.toString(),
         label = name,
         dataFields = mapOf(
-            "uploadEnabled" to if (requireFile == false) null else "true",
+            "uploadEnabled" to if (requireFile.isFalse()) null else "true",
             "accept" to acceptedFormatsString(),
         ),
     )
@@ -221,7 +225,7 @@ data class Compo(
             allowVote = false,
             publicResults = false,
             fileFormats = emptyList(),
-            requireFile = null,
+            requireFile = none(),
         )
     }
 }
