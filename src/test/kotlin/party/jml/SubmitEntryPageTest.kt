@@ -207,7 +207,7 @@ class SubmitEntryPageTest : PartyboiTester {
         // Screenshot can be downloaded
         val originalScreenshotHash = "599cf1dbe77dfb63ea5526311d89c38c" // hash of resized final.png inside image.zip
         it.getBinary(screenshotUrl) {
-            TestUtils.md5(it).toBe(originalScreenshotHash)
+            md5(it).toBe(originalScreenshotHash)
         }
 
         // Screenshot can be changed
@@ -217,7 +217,7 @@ class SubmitEntryPageTest : PartyboiTester {
         ) {}
 
         it.getBinary(screenshotUrl) {
-            TestUtils.md5(it).toBeNot(originalScreenshotHash)
+            md5(it).toBeNot(originalScreenshotHash)
         }
     }
 }

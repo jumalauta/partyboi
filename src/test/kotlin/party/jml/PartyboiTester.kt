@@ -17,11 +17,15 @@ import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.User
+import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.services
+import java.math.BigInteger
+import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties
 import kotlin.test.assertEquals
 
@@ -33,6 +37,14 @@ interface PartyboiTester {
             block(TestHtmlClient(client))
         }
     }
+
+    fun md5(bytes: ByteArray): String {
+        val md = MessageDigest.getInstance("MD5")
+        return BigInteger(1, md.digest(bytes)).toString(16).padStart(32, '0')
+    }
+
+    fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): Either<AppError, User> =
+        app.users.addUser(UserCredentials(name, password, password), "0.0.0.0")
 }
 
 class TestHtmlClient(val client: HttpClient) {
@@ -122,21 +134,21 @@ fun ApplicationTestBuilder.setupServices() {
     Unit.right()
 }
 
-fun <T> ApplicationTestBuilder.setupServices(block: AppServices.() -> Either<AppError, T>) {
+fun <T> ApplicationTestBuilder.setupServices(setupForTest: AppServices.() -> Either<AppError, T>) {
     application {
         val app = services()
 
         either {
             app.events.deleteAll().bind()
             app.screen.deleteAll().bind()
+            app.votes.deleteAll().bind()
+            app.voteKeys.deleteAll().bind()
             app.entries.deleteAll().bind()
             app.compos.deleteAll().bind()
             app.compos.setGeneralRules(GeneralRules("")).bind()
-            app.voteKeys.deleteAll().bind()
             app.users.deleteAll().bind()
-        }
-
-        app.block().onLeft {
+            app.setupForTest().bind()
+        }.onLeft {
             throw it.throwable ?: RuntimeException(it.message)
         }
     }
