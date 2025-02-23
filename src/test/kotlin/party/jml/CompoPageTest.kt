@@ -13,7 +13,7 @@ import kotlin.test.Test
 class CompoPageTest : PartyboiTester {
     @Test
     fun testEmptyCompoPage() = test {
-        services { resetCompos(this, addCompos = false) }
+        setupServices { setupCompos(this, addCompos = false) }
 
         it.get("/compos") {
             this.findAll("#generalRules").toBeEmpty
@@ -23,10 +23,10 @@ class CompoPageTest : PartyboiTester {
 
     @Test
     fun testCompoPageForSubmitting() = test {
-        services {
+        setupServices {
             val self = this
             either {
-                resetCompos(self).bind()
+                setupCompos(self).bind()
                 compos.setGeneralRules(GeneralRules("Make no harm.")).bind()
             }
         }
@@ -45,10 +45,10 @@ class CompoPageTest : PartyboiTester {
     }
 
     fun testCompoPageAfterSubmittingClosed() = test {
-        services {
+        setupServices {
             val self = this
             either {
-                val demoCompoId = resetCompos(self).bind()
+                val demoCompoId = setupCompos(self).bind()
                 compos.allowSubmit(demoCompoId!!, false)
             }
         }
@@ -59,10 +59,10 @@ class CompoPageTest : PartyboiTester {
     }
 
     fun testCompoPageWhenVotingOpened() = test {
-        services {
+        setupServices {
             val self = this
             either {
-                val demoCompoId = resetCompos(self).bind()
+                val demoCompoId = setupCompos(self).bind()
                 compos.allowSubmit(demoCompoId!!, false)
                 compos.allowVoting(demoCompoId, true)
             }
@@ -74,10 +74,10 @@ class CompoPageTest : PartyboiTester {
     }
 
     fun testCompoPageWhenResultsPublished() = test {
-        services {
+        setupServices {
             val self = this
             either {
-                val demoCompoId = resetCompos(self).bind()
+                val demoCompoId = setupCompos(self).bind()
                 compos.allowSubmit(demoCompoId!!, false)
                 compos.publishResults(demoCompoId, true)
             }
@@ -88,9 +88,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
-    private fun resetCompos(app: AppServices, addCompos: Boolean = true): Either<AppError, Int?> = either {
-        app.compos.deleteAll().bind()
-        app.compos.setGeneralRules(GeneralRules("")).bind()
+    private fun setupCompos(app: AppServices, addCompos: Boolean = true): Either<AppError, Int?> = either {
         if (addCompos) {
             val demoCompo = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
             app.compos.setVisible(demoCompo.id, true).bind()

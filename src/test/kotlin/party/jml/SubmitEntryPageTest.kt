@@ -21,10 +21,8 @@ class SubmitEntryPageTest : PartyboiTester {
     fun testSubmitEntry() = test {
         var compoId: Int = -1
 
-        services {
+        setupServices {
             either {
-                entries.deleteAll().bind()
-                compos.deleteAll().bind()
                 val secretCompo = compos.add(NewCompo("Secret", "")).bind()
                 val demoCompo = compos.add(NewCompo("Demo", "")).bind()
                 val musicCompo = compos.add(NewCompo("Music", "")).bind()
@@ -88,10 +86,8 @@ class SubmitEntryPageTest : PartyboiTester {
     fun testEditEntry() = test {
         var entry: Entry? = null
 
-        services {
+        setupServices {
             either {
-                entries.deleteAll().bind()
-                compos.deleteAll().bind()
                 val wildCompo = compos.add(NewCompo("Wild", "")).bind()
                 compos.setVisible(wildCompo.id, true).bind()
 
@@ -178,10 +174,8 @@ class SubmitEntryPageTest : PartyboiTester {
     fun testScreenshots() = test {
         var entry: Entry? = null
 
-        services {
+        setupServices {
             either {
-                entries.deleteAll().bind()
-                compos.deleteAll().bind()
                 val gfxCompo = compos.add(NewCompo("Graphics", "")).bind()
                 compos.setVisible(gfxCompo.id, true).bind()
 
