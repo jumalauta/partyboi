@@ -3,7 +3,6 @@ package party.jml
 import arrow.core.raise.either
 import it.skrape.matchers.toBe
 import it.skrape.selects.html5.article
-import party.jml.partyboi.AppServices
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.screen.slides.TextSlide
 import java.time.LocalDateTime
@@ -12,7 +11,7 @@ import kotlin.test.Test
 class InfoPageTest : PartyboiTester {
     @Test
     fun testEmptyInfoPage() = test {
-        services { resetInfoPage(this) }
+        setupServices()
 
         it.get("/") {
             article {
@@ -24,10 +23,8 @@ class InfoPageTest : PartyboiTester {
 
     @Test
     fun testInfoNuggets() = test {
-        services {
-            val self = this
+        setupServices {
             either {
-                resetInfoPage(self).bind()
                 val slide1 = screen.addSlide("default", TextSlide("Hello, world!", "Nice to be here!")).bind()
                 screen.showOnInfo(slide1.id, true).bind()
                 screen.addSlide("default", TextSlide("Food wave", "Food wave begins at 14:00")).bind()
@@ -44,10 +41,8 @@ class InfoPageTest : PartyboiTester {
 
     @Test
     fun testSchedule() = test {
-        services {
-            val self = this
+        setupServices {
             either {
-                resetInfoPage(self).bind()
                 events.add(
                     NewEvent(
                         name = "Foodwave",
@@ -71,10 +66,5 @@ class InfoPageTest : PartyboiTester {
                 findSecond { text.toBe("Tuesday 2025-02-18 20:08 Foodwave") }
             }
         }
-    }
-
-    private fun resetInfoPage(app: AppServices) = either {
-        app.screen.deleteAll().bind()
-        app.events.deleteAll().bind()
     }
 }

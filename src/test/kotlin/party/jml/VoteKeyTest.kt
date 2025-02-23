@@ -13,12 +13,8 @@ class VoteKeyTest : PartyboiTester {
     @Test
     fun testVoteKeyRegistration() = test {
         var voteKey: VoteKeyRow? = null
-        services {
+        setupServices {
             either {
-                voteKeys.deleteAll().bind()
-                users.deleteUserByName("user")
-                users.deleteUserByName("otherUser")
-
                 val keySet = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                 voteKeys.createTickets(1, keySet).bind()
                 voteKey = voteKeys.getVoteKeySet(keySet).bind().first()

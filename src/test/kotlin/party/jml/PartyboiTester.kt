@@ -1,6 +1,8 @@
 package party.jml
 
 import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.client.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -15,6 +17,7 @@ import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.FileUpload
@@ -115,9 +118,25 @@ fun Headers.redirectsTo(urlString: String) {
     this["Location"]?.trim().toBe(urlString.trim())
 }
 
-fun <T> ApplicationTestBuilder.services(block: AppServices.() -> Either<AppError, T>) {
+fun ApplicationTestBuilder.setupServices() {
+    Unit.right()
+}
+
+fun <T> ApplicationTestBuilder.setupServices(block: AppServices.() -> Either<AppError, T>) {
     application {
-        services().block().onLeft {
+        val app = services()
+
+        either {
+            app.events.deleteAll().bind()
+            app.screen.deleteAll().bind()
+            app.entries.deleteAll().bind()
+            app.compos.deleteAll().bind()
+            app.compos.setGeneralRules(GeneralRules("")).bind()
+            app.voteKeys.deleteAll().bind()
+            app.users.deleteAll().bind()
+        }
+
+        app.block().onLeft {
             throw it.throwable ?: RuntimeException(it.message)
         }
     }
