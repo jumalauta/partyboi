@@ -2,8 +2,10 @@ package party.jml
 
 import arrow.core.Either
 import arrow.core.raise.either
+import io.ktor.client.request.*
 import kotlin.test.Test
 import it.skrape.matchers.*
+import kotlinx.coroutines.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.NewCompo
@@ -12,6 +14,9 @@ import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.signals.SignalType
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class VotingTest : PartyboiTester {
     @Test
@@ -67,6 +72,40 @@ class VotingTest : PartyboiTester {
         it.buttonClickFails("/vote/$entryId/6")
         it.buttonClickFails("/vote/$entryId/foo")
         it.buttonClickFails("/vote/9999/4")
+    }
+
+    @Test
+    fun testLiveVoting() = test {
+        var entry: Entry? = null
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either {
+                settings.automaticVoteKeys.set(AutomaticVoteKeys.PER_USER)
+                addTestAdmin(app!!).bind()
+                val (compo, testEntry) = setupCompo(app!!).bind()
+                compos.allowSubmit(compo.id, false).bind()
+                runBlocking { votes.startLiveVoting(compo.id) }
+                entry = testEntry
+            }
+        }
+
+        it.login("admin")
+
+        // Live voting is active but no entries can be voted yet
+        it.get("/vote") {
+            findFirst("article") { text.toBe("Live voting for Demo compo begins soon!") }
+        }
+        it.buttonClickFails("/vote/${entry!!.id}/3")
+
+        // An entry is shown
+        app!!.votes.addEntryToLiveVoting(entry!!)
+        it.get("/vote") {
+            findFirst("article") {
+                text.toBe("Live: Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action")
+            }
+        }
+        it.buttonClick("/vote/${entry!!.id}/3")
     }
 
     private fun setupCompo(app: AppServices): Either<AppError, Pair<Compo, Entry>> = either {

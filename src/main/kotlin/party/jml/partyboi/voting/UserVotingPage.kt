@@ -27,7 +27,7 @@ object UserVotingPage {
 
         liveVote.map { live ->
             if (live.entries.isEmpty()) {
-                article { +"Live voting begins when the compo starts..." }
+                article { +"Live voting for ${live.compo.name} compo begins soon!" }
             }
         }
 
