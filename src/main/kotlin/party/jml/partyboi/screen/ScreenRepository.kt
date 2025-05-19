@@ -266,6 +266,7 @@ data class ScreenRow(
 }
 
 enum class ScreenTheme(val displayName: String, val dir: String) {
+    SIXTYEIGHTK_INSIDE("68k Inside", "68k_inside"),
     WIN95("Windows 95", "win95"),
     NOVEMBER_GAMES("November Games", "novembergames");
 
