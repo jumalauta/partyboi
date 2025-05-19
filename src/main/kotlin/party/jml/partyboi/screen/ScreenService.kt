@@ -2,6 +2,7 @@ package party.jml.partyboi.screen
 
 import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.right
 import arrow.core.some
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -114,6 +115,13 @@ class ScreenService(private val app: AppServices) : Logging() {
             { show(it) }
         )
     }
+
+    fun showNextSlideFromSet(slideSetName: String): Either<AppError, Unit> =
+        if (state.value.slideSet == slideSetName) {
+            showNext().right()
+        } else {
+            repository.getFirstSlide(slideSetName).map { show(it) }
+        }
 
     fun generateSlidesForCompo(compoId: Int): Either<AppError, String> = either {
         val slideSet = "compo-${compoId}"

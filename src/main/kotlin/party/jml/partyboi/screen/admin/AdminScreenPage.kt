@@ -3,11 +3,17 @@ package party.jml.partyboi.screen.admin
 import kotlinx.html.*
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.DropdownOption
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.renderReadonlyFields
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.ScreenState
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideSetRow
+import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.screen.slides.TextSlide.Companion.CompoEntryVariant
+import party.jml.partyboi.screen.slides.TextSlide.Companion.CompoInfoVariant
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
@@ -41,28 +47,44 @@ object AdminScreenPage {
         title = "Screen admin",
         subLinks = slideSets.map { it.toNavItem() },
     ) {
+        val isCompoSet = slides.find {
+            it.slide is TextSlide && listOf(
+                CompoInfoVariant,
+                CompoEntryVariant
+            ).contains(it.slide.variant)
+        } != null
+
         h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
 
         renderWithScreenMonitoring(true) {
             reloadSection {
                 nav {
                     ul {
-                        if (screenState.slideSet != slideSet || !isRunning) {
-                            li {
-                                postButton("/admin/screen/${slideSet}/start") {
-                                    if (slides.all { !it.visible }) {
-                                        disabled = true
+                        if (!isCompoSet) {
+                            if (screenState.slideSet != slideSet || !isRunning) {
+                                li {
+                                    postButton("/admin/screen/${slideSet}/start") {
+                                        if (slides.all { !it.visible }) {
+                                            disabled = true
+                                        }
+                                        icon(Icon("play"))
+                                        +" Auto run"
                                     }
-                                    icon(Icon("play"))
-                                    +" Auto run"
                                 }
                             }
-                        }
-                        if (screenState.slideSet == slideSet && isRunning) {
+                            if (screenState.slideSet == slideSet && isRunning) {
+                                li {
+                                    postButton("/admin/screen/${slideSet}/stop") {
+                                        icon(Icon("pause"))
+                                        +" Pause auto run"
+                                    }
+                                }
+                            }
+                        } else {
                             li {
-                                postButton("/admin/screen/${slideSet}/stop") {
-                                    icon(Icon("pause"))
-                                    +" Pause auto run"
+                                postButton("/admin/screen/${slideSet}/next") {
+                                    icon(Icon.next)
+                                    +" Show next slide"
                                 }
                             }
                         }

@@ -88,5 +88,6 @@ data class Icon(
         val visible = Icon("eye", "Visible")
         val hidden = Icon("eye-slash", "Hidden")
         val admin = Icon("brain", "Admin")
+        val next = Icon("arrow-right", "Next")
     }
 }

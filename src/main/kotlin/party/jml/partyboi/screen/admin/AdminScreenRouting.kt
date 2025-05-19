@@ -158,6 +158,16 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
         }
 
+        post("/admin/screen/{slideSet}/next") {
+            call.apiRespond {
+                either {
+                    call.userSession(app).bind()
+                    val slideSetName = call.parameterString("slideSet").bind()
+                    app.screen.showNextSlideFromSet(slideSetName).bind()
+                }
+            }
+        }
+
         post("/admin/screen/{slideSet}/{slideId}/show") {
             call.apiRespond {
                 either {
