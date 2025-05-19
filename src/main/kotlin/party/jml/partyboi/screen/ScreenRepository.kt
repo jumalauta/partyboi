@@ -236,7 +236,6 @@ data class ScreenRow(
     val runOrder: Int,
     val showOnInfoPage: Boolean,
     val readOnly: Boolean,
-    val variant: String?,
 ) {
     fun getSlide(): Slide<*> =
         when (type) {
@@ -259,7 +258,6 @@ data class ScreenRow(
                 runOrder = row.int("run_order"),
                 showOnInfoPage = row.boolean("show_on_info"),
                 readOnly = row.boolean("readonly"),
-                variant = row.stringOrNull("variant"),
             )
         }
     }
