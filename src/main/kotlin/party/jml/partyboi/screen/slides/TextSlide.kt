@@ -14,11 +14,13 @@ import party.jml.partyboi.screen.SlideType
 import party.jml.partyboi.templates.components.markdown
 
 @Serializable
-data class TextSlide (
+data class TextSlide(
     @property:Field(order = 0, label = "Title")
     val title: String,
     @property:Field(order = 1, label = "Content", presentation = FieldPresentation.large)
     val content: String,
+    @property:Field(order = 2, label = "Variant", presentation = FieldPresentation.hidden)
+    val variant: String? = null,
 ) : Slide<TextSlide>, Validateable<TextSlide> {
     override fun render(ctx: FlowContent) {
         with(ctx) {
@@ -27,12 +29,16 @@ data class TextSlide (
         }
     }
 
+    override fun variant(): String? = variant
     override fun getForm(): Form<TextSlide> = Form(TextSlide::class, this, true)
     override fun toJson(): String = Json.encodeToString(this)
     override fun getName(): String = title
     override fun getType(): SlideType = SlideType("list-ul", "Text")
 
     companion object {
-        val Empty = TextSlide("", "")
+        val Empty = TextSlide("", "", null)
+        
+        val CompoInfoVariant = "compo-info"
+        val CompoEntryVariant = "compo-entry"
     }
 }

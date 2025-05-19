@@ -6,13 +6,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import kotliquery.param
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.*
-import party.jml.partyboi.db.DbBasicMappers.asBoolean
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
@@ -235,6 +236,7 @@ data class ScreenRow(
     val runOrder: Int,
     val showOnInfoPage: Boolean,
     val readOnly: Boolean,
+    val variant: String?,
 ) {
     fun getSlide(): Slide<*> =
         when (type) {
@@ -257,6 +259,7 @@ data class ScreenRow(
                 runOrder = row.int("run_order"),
                 showOnInfoPage = row.boolean("show_on_info"),
                 readOnly = row.boolean("readonly"),
+                variant = row.stringOrNull("variant"),
             )
         }
     }

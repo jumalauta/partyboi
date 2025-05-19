@@ -2,8 +2,6 @@ package party.jml.partyboi.screen.slides
 
 import kotlinx.html.FlowContent
 import kotlinx.html.div
-import kotlinx.html.img
-import kotlinx.html.style
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

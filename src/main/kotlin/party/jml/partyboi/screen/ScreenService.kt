@@ -3,7 +3,10 @@ package party.jml.partyboi.screen
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.some
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
 import kotliquery.TransactionalSession
@@ -119,18 +122,19 @@ class ScreenService(private val app: AppServices) : Logging() {
         val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
 
         val hypeSlides = listOf(
-            TextSlide("${compo.name} compo starts soon", "")
+            TextSlide("${compo.name} compo starts soon", "", TextSlide.CompoInfoVariant)
         )
         val entrySlides = entries.mapIndexed { index, entry ->
             TextSlide(
                 "#${index + 1} ${entry.title}",
                 listOf(entry.author.some(), entry.screenComment)
                     .flatMap { it.toList() }
-                    .joinToString(separator = "\n\n") { it }
+                    .joinToString(separator = "\n\n") { it },
+                TextSlide.CompoEntryVariant
             )
         }
         val endingSlides = listOf(
-            TextSlide("${compo.name} compo has ended", "")
+            TextSlide("${compo.name} compo has ended", "", TextSlide.CompoInfoVariant)
         )
 
         val allSlides = hypeSlides + entrySlides + endingSlides
@@ -175,7 +179,7 @@ class ScreenService(private val app: AppServices) : Logging() {
             }.reversed()
 
         val hypeSlides = listOf(
-            TextSlide("Next: ${compo.name} compo results", "")
+            TextSlide("Next: ${compo.name} compo results", "", "compo-info")
         )
         val resultSlides = resultsBySlide.map { placeAndResults ->
             val places = placeAndResults.map { it.place }
@@ -186,7 +190,8 @@ class ScreenService(private val app: AppServices) : Logging() {
             }
             TextSlide(
                 title = if (minPlace == 1) "Winner" else if (minPlace == maxPlace) "Place $minPlace" else "Places $minPlace-$maxPlace",
-                rows.joinToString(separator = "\n")
+                rows.joinToString(separator = "\n"),
+                "results"
             )
         }
 
@@ -224,6 +229,7 @@ data class ScreenState(
 
 interface Slide<A : Validateable<A>> {
     fun render(ctx: FlowContent)
+    fun variant(): String? = null
     fun getForm(): Form<A>
     fun toJson(): String
     fun getName(): String

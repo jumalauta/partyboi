@@ -5,7 +5,9 @@ import kotlinx.html.stream.createHTML
 
 object ScreenPage {
     fun renderContent(slide: Slide<*>) =
-        createHTML().article(classes = slide::class.simpleName) {
+        createHTML().article(
+            classes = classes(slide)
+        ) {
             slide.render(this)
         }
 
@@ -18,7 +20,7 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article(classes = slide::class.simpleName) { slide.render(this) }
+                    article(classes = classes(slide)) { slide.render(this) }
                 }
                 main {
                     attributes["id"] = "screen2"
@@ -26,4 +28,10 @@ object ScreenPage {
                 script(src = "/assets/screen/${theme.dir}/screen.js") {}
             }
         }
+
+    private fun classes(slide: Slide<*>): String =
+        listOfNotNull(
+            slide::class.simpleName,
+            slide.variant()
+        ).joinToString(" ")
 }
