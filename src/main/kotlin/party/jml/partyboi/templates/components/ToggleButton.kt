@@ -60,19 +60,19 @@ data class IconSet(
 
     companion object {
         val visibility = IconSet(Icon.visible, Icon.hidden)
-        val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
-        val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
+        val submitting = IconSet(Icon("file-arrow-up", "Close submitting"), Icon("file-arrow-up", "Open submitting"))
+        val voting = IconSet(Icon("check-to-slot", "Close voting"), Icon("check-to-slot", "Open voting"))
         val resultsPublic = IconSet(
-            Icon("square-poll-horizontal", "Results are public"),
-            Icon("square-poll-horizontal", "Results are secret")
+            Icon("square-poll-horizontal", "Hide results"),
+            Icon("square-poll-horizontal", "Publish results")
         )
-        val qualified = IconSet(Icon("star", "Qualified"), Icon("star", "Unqualified / disqualified"))
+        val qualified = IconSet(Icon("star", "Non-/disqualify"), Icon("star", "Qualify"))
         val scheduled = IconSet(Icon("clock", "Pending"), Icon("ban", "Disabled"))
         val showOnInfoPage =
-            IconSet(Icon("circle-info", "Show on info page"), Icon("circle-info", "Do not show on info page"))
+            IconSet(Icon("circle-info", "Do not show on info page"), Icon("circle-info", "Show on info page"))
         val allowEdit = IconSet(
-            Icon("file-arrow-up", "Editing allowed after deadline"),
-            Icon("file-arrow-up", "Editing not allowed after deadline")
+            Icon("file-arrow-up", "Disable editing after deadline"),
+            Icon("file-arrow-up", "Enable editing after deadline")
         )
         val admin = IconSet(Icon.admin, Icon.admin)
     }
@@ -85,8 +85,8 @@ data class Icon(
     val classes = "fa-solid fa-$icon"
 
     companion object {
-        val visible = Icon("eye", "Visible")
-        val hidden = Icon("eye-slash", "Hidden")
+        val visible = Icon("eye", "Hide")
+        val hidden = Icon("eye-slash", "Publish")
         val admin = Icon("brain", "Admin")
         val next = Icon("arrow-right", "Next")
     }

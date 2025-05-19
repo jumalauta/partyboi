@@ -63,10 +63,12 @@ object AdminScreenPage {
                         if (!isCompoSet) {
                             if (screenState.slideSet != slideSet || !isRunning) {
                                 li {
+                                    val isDisabled = slides.all { !it.visible }
+                                    if (isDisabled) {
+                                        tooltip("Need at least one slide set visible to activate autorun")
+                                    }
                                     postButton("/admin/screen/${slideSet}/start") {
-                                        if (slides.all { !it.visible }) {
-                                            disabled = true
-                                        }
+                                        disabled = isDisabled
                                         icon(Icon("play"))
                                         +" Auto run"
                                     }

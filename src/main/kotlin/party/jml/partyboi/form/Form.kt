@@ -6,9 +6,9 @@ import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
-import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileFormat
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -148,6 +148,10 @@ class Form<T : Validateable<T>>(
 
                     when (it.type.toString()) {
                         "kotlin.String" -> {
+                            stringValue
+                        }
+
+                        "kotlin.String?" -> {
                             stringValue
                         }
 
