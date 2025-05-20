@@ -131,8 +131,9 @@ ul:first-child {
     background-position: center;
     background-repeat: no-repeat;
     position: absolute;
-    left: -10vw;
-    right: -10vw;
-    top: -10vh;
-    bottom: -10vh;
+
+    top: -8vh;
+    left: -8vw;
+    right: -33vw;
+    bottom: -8vh;
 }

@@ -20,7 +20,7 @@ data class ImageSlide(
     override fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
             div(classes = "image") {
-                attributes["style"] = "background-image: url(/assets/uploaded/$assetImage)"
+                attributes["style"] = "background-image: url(\"/assets/uploaded/$assetImage\")"
             }
         }
     }
