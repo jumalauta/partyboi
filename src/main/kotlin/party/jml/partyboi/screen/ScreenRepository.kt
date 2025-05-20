@@ -17,6 +17,7 @@ import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
+import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.NavItem
@@ -242,6 +243,7 @@ data class ScreenRow(
             TextSlide::class.qualifiedName -> Json.decodeFromString<TextSlide>(content)
             QrCodeSlide::class.qualifiedName -> Json.decodeFromString<QrCodeSlide>(content)
             ImageSlide::class.qualifiedName -> Json.decodeFromString<ImageSlide>(content)
+            ScheduleSlide::class.qualifiedName -> Json.decodeFromString<ScheduleSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
 

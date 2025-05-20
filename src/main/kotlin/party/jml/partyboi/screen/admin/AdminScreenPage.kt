@@ -113,11 +113,19 @@ object AdminScreenPage {
                                         }
                                     }
                                     td(classes = "wide") {
-                                        a(href = "/admin/screen/${slideSet}/${slide.id}") {
+                                        if (slide.slide is NonEditable) {
+                                            tooltip("This slide cannot be edited")
                                             val type = slide.slide.getType()
                                             icon(type.icon, type.description)
                                             +" "
                                             +slide.getName()
+                                        } else {
+                                            a(href = "/admin/screen/${slideSet}/${slide.id}") {
+                                                val type = slide.slide.getType()
+                                                icon(type.icon, type.description)
+                                                +" "
+                                                +slide.getName()
+                                            }
                                         }
                                     }
                                     td(classes = "settings") {
@@ -152,19 +160,25 @@ object AdminScreenPage {
                     li {
                         flatPostButton("/admin/screen/${slideSet}/text") {
                             icon(Icon("list-ul"))
-                            +" Text slide"
+                            +" Normal text slide"
                         }
                     }
                     li {
                         flatPostButton("/admin/screen/${slideSet}/qrcode") {
                             icon(Icon("qrcode"))
-                            +" QR code"
+                            +" Slide with a QR code"
                         }
                     }
                     li {
                         flatPostButton("/admin/screen/${slideSet}/image") {
                             icon(Icon("image"))
-                            +" Image"
+                            +" Full screen image"
+                        }
+                    }
+                    li {
+                        flatPostButton("/admin/screen/${slideSet}/schedule") {
+                            icon(Icon("calendar"))
+                            +" All missing schedule slides"
                         }
                     }
                 }

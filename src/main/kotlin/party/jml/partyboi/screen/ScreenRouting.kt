@@ -21,7 +21,7 @@ fun Application.configureScreenRouting(app: AppServices) {
             val page = call.parameterString("theme").getOrNone()
                 .flatMap { ScreenTheme.getTheme(it) }
                 .toEither { NotFound("Theme not found") }
-                .map { ScreenPage.render(app.screen.currentSlide(), it) }
+                .map { ScreenPage.render(app.screen.currentSlide(), it, app) }
                 .map { HtmlString(it) }
             call.respondEither({ page })
         }
@@ -29,7 +29,7 @@ fun Application.configureScreenRouting(app: AppServices) {
         get("/screen/next") {
             app.screen.waitForNext().collect { screen ->
                 call.response.headers.append("X-SlideId", screen.id.toString())
-                call.respondText(ScreenPage.renderContent(screen.slide), ContentType.Text.Html)
+                call.respondText(ScreenPage.renderContent(screen.slide, app), ContentType.Text.Html)
             }
         }
     }

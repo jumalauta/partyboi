@@ -2,16 +2,17 @@ package party.jml.partyboi.screen
 
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import party.jml.partyboi.AppServices
 
 object ScreenPage {
-    fun renderContent(slide: Slide<*>) =
+    fun renderContent(slide: Slide<*>, app: AppServices) =
         createHTML().article(
             classes = classes(slide)
         ) {
-            slide.render(this)
+            slide.render(this, app)
         }
 
-    fun render(slide: Slide<*>, theme: ScreenTheme) =
+    fun render(slide: Slide<*>, theme: ScreenTheme, app: AppServices) =
         createHTML().html {
             head {
                 title { +"Screen" }
@@ -20,7 +21,7 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article(classes = classes(slide)) { slide.render(this) }
+                    article(classes = classes(slide)) { slide.render(this, app) }
                 }
                 main {
                     attributes["id"] = "screen2"

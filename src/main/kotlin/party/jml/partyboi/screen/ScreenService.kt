@@ -240,7 +240,7 @@ data class ScreenState(
 }
 
 interface Slide<A : Validateable<A>> {
-    fun render(ctx: FlowContent)
+    fun render(ctx: FlowContent, app: AppServices)
     fun variant(): String? = null
     fun getForm(): Form<A>
     fun toJson(): String
@@ -251,6 +251,8 @@ interface Slide<A : Validateable<A>> {
 interface AutoRunHalting {
     fun haltAutoRun(): Boolean
 }
+
+interface NonEditable
 
 data class SlideType(
     val icon: String,

@@ -5,6 +5,7 @@ import kotlinx.html.div
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
@@ -16,7 +17,7 @@ data class ImageSlide(
     @property:Field(order = 0, label = "Image")
     val assetImage: String,
 ) : Slide<ImageSlide>, Validateable<ImageSlide> {
-    override fun render(ctx: FlowContent) {
+    override fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
             div(classes = "image") {
                 attributes["style"] = "background-image: url(/assets/uploaded/$assetImage)"
