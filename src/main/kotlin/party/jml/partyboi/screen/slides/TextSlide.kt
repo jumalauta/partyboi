@@ -9,6 +9,7 @@ import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.screen.AutoRunHalting
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
 import party.jml.partyboi.templates.components.markdown
@@ -21,7 +22,7 @@ data class TextSlide(
     val content: String,
     @property:Field(order = 2, label = "Variant", presentation = FieldPresentation.hidden)
     val variant: String? = null,
-) : Slide<TextSlide>, Validateable<TextSlide> {
+) : Slide<TextSlide>, Validateable<TextSlide>, AutoRunHalting {
     override fun render(ctx: FlowContent) {
         with(ctx) {
             h1 { +title }
@@ -35,9 +36,11 @@ data class TextSlide(
     override fun getName(): String = title
     override fun getType(): SlideType = SlideType("list-ul", "Text")
 
+    override fun haltAutoRun(): Boolean = variant == CompoInfoVariant || variant == CompoEntryVariant
+
     companion object {
         val Empty = TextSlide("", "", null)
-        
+
         val CompoInfoVariant = "compo-info"
         val CompoEntryVariant = "compo-entry"
     }

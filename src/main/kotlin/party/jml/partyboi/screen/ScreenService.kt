@@ -212,6 +212,10 @@ class ScreenService(private val app: AppServices) : Logging() {
 
     private fun show(row: ScreenRow): Unit =
         runBlocking {
+            val slide = row.getSlide()
+            if (slide is AutoRunHalting && slide.haltAutoRun()) {
+                stopSlideSet()
+            }
             state.emit(ScreenState.fromRow(row))
             app.signals.emit(Signal.slideShown(row.id))
         }
@@ -242,6 +246,10 @@ interface Slide<A : Validateable<A>> {
     fun toJson(): String
     fun getName(): String
     fun getType(): SlideType
+}
+
+interface AutoRunHalting {
+    fun haltAutoRun(): Boolean
 }
 
 data class SlideType(

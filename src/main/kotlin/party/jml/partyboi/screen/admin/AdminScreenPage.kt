@@ -7,13 +7,7 @@ import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.form.renderReadonlyFields
-import party.jml.partyboi.screen.ScreenRow
-import party.jml.partyboi.screen.ScreenState
-import party.jml.partyboi.screen.Slide
-import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.TextSlide
-import party.jml.partyboi.screen.slides.TextSlide.Companion.CompoEntryVariant
-import party.jml.partyboi.screen.slides.TextSlide.Companion.CompoInfoVariant
+import party.jml.partyboi.screen.*
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
@@ -47,11 +41,8 @@ object AdminScreenPage {
         title = "Screen admin",
         subLinks = slideSets.map { it.toNavItem() },
     ) {
-        val isCompoSet = slides.find {
-            it.slide is TextSlide && listOf(
-                CompoInfoVariant,
-                CompoEntryVariant
-            ).contains(it.slide.variant)
+        val willHaltAutoRun = slides.find {
+            it.slide is AutoRunHalting && it.slide.haltAutoRun()
         } != null
 
         h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
@@ -60,7 +51,7 @@ object AdminScreenPage {
             reloadSection {
                 nav {
                     ul {
-                        if (!isCompoSet) {
+                        if (!willHaltAutoRun) {
                             if (screenState.slideSet != slideSet || !isRunning) {
                                 li {
                                     val isDisabled = slides.all { !it.visible }
@@ -108,7 +99,11 @@ object AdminScreenPage {
                                     }
                                     td(classes = "tight") {
                                         if (screenState.id == slide.id) {
-                                            icon("tv")
+                                            if (isRunning) {
+                                                span { attributes["aria-busy"] = "true" }
+                                            } else {
+                                                icon("tv")
+                                            }
                                         } else {
                                             postButton("/admin/screen/${slideSet}/${slide.id}/show") {
                                                 attributes.put("class", "flat-button")
