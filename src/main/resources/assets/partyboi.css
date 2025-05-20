@@ -40,6 +40,18 @@ h5 {
     font-weight: 100;
 }
 
+h2, h3 {
+    font-size: 110%;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+article > *:last-child {
+    margin-bottom: 0;
+}
+
 article header h3 {
     margin-bottom: 0;
 }
