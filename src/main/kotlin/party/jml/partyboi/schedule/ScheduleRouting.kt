@@ -2,6 +2,7 @@ package party.jml.partyboi.schedule
 
 import arrow.core.raise.either
 import io.ktor.server.application.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.publicRouting
@@ -16,6 +17,13 @@ fun Application.configureScheduleRouting(app: AppServices) {
                     SchedulePage.render(events)
                 }
             })
+        }
+
+        get("/schedule/json") {
+            either {
+                val events = app.events.getPublic().bind()
+                call.respond(events)
+            }
         }
     }
 }
