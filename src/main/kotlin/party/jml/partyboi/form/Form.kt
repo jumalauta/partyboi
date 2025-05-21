@@ -4,6 +4,7 @@ import arrow.core.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
@@ -61,6 +62,11 @@ class Form<T : Validateable<T>>(
                                     is LocalDateTime -> Pair(
                                         InputType.dateTimeLocal,
                                         a.format(DateTimeFormatter.ISO_DATE_TIME)
+                                    )
+
+                                    is kotlinx.datetime.LocalDateTime -> Pair(
+                                        InputType.dateTimeLocal,
+                                        a.toJavaLocalDateTime().format(DateTimeFormatter.ISO_DATE_TIME)
                                     )
 
                                     is FileUpload -> Pair(InputType.file, "")
@@ -173,6 +179,10 @@ class Form<T : Validateable<T>>(
 
                         "java.time.LocalDateTime" -> {
                             LocalDateTime.parse(stringValue)
+                        }
+
+                        "kotlinx.datetime.LocalDateTime" -> {
+                            kotlinx.datetime.LocalDateTime.parse(stringValue)
                         }
 
                         // TODO: Generic implementations of following cases
