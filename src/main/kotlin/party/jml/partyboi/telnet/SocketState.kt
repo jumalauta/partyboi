@@ -25,21 +25,27 @@ data class SocketState(
     ) {
         try {
             val header = "Partyboi BBS - ${page.getTitle()}"
+            println("Output a page: $header")
             tx.writeStringUtf8("\u001B[2J\u001B[H")
             tx.writeStringUtf8("$header\n")
             tx.writeStringUtf8("${"-" * header.length}\n\n")
             tx.writeStringUtf8(page.print(this, app))
 
+            println("Waiting for the user input...")
             val input = rx.readUTF8Line()
+            println("Received input: $input")
             if (input != null) {
                 val newState = page.input(input, this, app)
                 if (newState == null) {
+                    println("Input mapped to null, closing the connection...")
                     closeConnection()
                 } else {
+                    println("New state received. Execute the next state.")
                     newState.run(rx, tx, app, closeConnection)
                 }
             }
         } catch (e: Throwable) {
+            println("Error: ${e.localizedMessage}. Closing the connection...")
             closeConnection()
         }
     }

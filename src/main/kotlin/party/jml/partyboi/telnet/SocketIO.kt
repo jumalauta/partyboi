@@ -20,6 +20,7 @@ suspend fun Application.runSocketServer(port: Int, app: AppServices) {
         launch {
             val receiveChannel = socket.openReadChannel()
             val sendChannel = socket.openWriteChannel(autoFlush = true)
+            println("Starting a new socket session...")
             SocketState().run(receiveChannel, sendChannel, app) {
                 socket.close()
             }
