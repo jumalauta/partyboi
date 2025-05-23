@@ -1,0 +1,70 @@
+package party.jml.partyboi.telnet
+
+import io.ktor.utils.io.*
+import kotlinx.css.times
+import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.User
+
+data class SocketState(
+    val user: User? = null,
+    val page: SocketPage = SocketAuthMenu(),
+) {
+    fun setUser(u: User) = copy(user = u)
+    fun goto(page: SocketPage) =
+        if (page.requiresAuthorization() && user == null) {
+            copy(page = SocketLogin())
+        } else {
+            copy(page = page)
+        }
+
+    suspend fun run(
+        rx: ByteReadChannel,
+        tx: ByteWriteChannel,
+        app: AppServices,
+        closeConnection: () -> Unit
+    ) {
+        try {
+            val header = "Partyboi BBS - ${page.getTitle()}"
+            tx.writeStringUtf8("\u001B[2J\u001B[H")
+            tx.writeStringUtf8("$header\n")
+            tx.writeStringUtf8("${"-" * header.length}\n\n")
+            tx.writeStringUtf8(page.print(this, app))
+
+            val input = rx.readUTF8Line()
+            if (input != null) {
+                val newState = page.input(input, this, app)
+                if (newState == null) {
+                    closeConnection()
+                } else {
+                    newState.run(rx, tx, app, closeConnection)
+                }
+            }
+        } catch (e: Throwable) {
+            closeConnection()
+        }
+    }
+}
+
+interface SocketPage {
+    fun requiresAuthorization(): Boolean = false
+
+    fun getTitle(): String
+    fun print(state: SocketState, app: AppServices): String
+    fun input(query: String, state: SocketState, app: AppServices): SocketState?
+
+    fun formattedQuery(query: String): String = query.trim().uppercase()
+}
+
+interface AuthorizedSocketPage : SocketPage {
+    override fun requiresAuthorization(): Boolean = true
+}
+
+interface SocketMenu : SocketPage {
+    fun getMenuTitle(): String = "Select"
+    fun getItems(state: SocketState, app: AppServices): Map<String, String>
+
+    override fun print(state: SocketState, app: AppServices): String =
+        (listOf(getMenuTitle() + ":", "") + getItems(state, app)
+            .map { "  ${it.key}) ${it.value}" })
+            .joinToString("\n") + "\n\n? "
+}
