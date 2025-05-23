@@ -137,3 +137,11 @@ ul:first-child {
     right: -33vw;
     bottom: -8vh;
 }
+
+.ScheduleSlide table td, .ScheduleSlide table th {
+    vertical-align: top;
+}
+
+.ScheduleSlide table th {
+    padding-right: 1ex;
+}

@@ -10,7 +10,6 @@ import arrow.core.raise.either
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
@@ -38,7 +37,13 @@ class EventRepository(private val app: AppServices) : Logging() {
     }
 
     fun getBetween(since: LocalDateTime, until: LocalDateTime): Either<AppError, List<Event>> = db.use {
-        it.many(queryOf("SELECT * FROM event WHERE time > ? AND time <= ?", since, until).map(Event.fromRow))
+        it.many(
+            queryOf(
+                "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
+                since,
+                until
+            ).map(Event.fromRow)
+        )
     }
 
     fun getAll(): Either<AppError, List<Event>> = db.use {
