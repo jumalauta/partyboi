@@ -9,7 +9,7 @@ import party.jml.partyboi.AppServices
 
 suspend fun Application.runSocketServer(port: Int, app: AppServices) {
     val selectorManager = SelectorManager(Dispatchers.IO)
-    val serverSocket = aSocket(selectorManager).tcp().bind("127.0.0.1", port)
+    val serverSocket = aSocket(selectorManager).tcp().bind("0.0.0.0", port)
 
     println("Server is listening at ${serverSocket.localAddress}")
 
