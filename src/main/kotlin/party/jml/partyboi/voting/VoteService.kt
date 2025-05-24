@@ -60,13 +60,15 @@ class VoteService(val app: AppServices) {
             val normalVoting = app.entries.getVotableEntries(userId).bind()
             val liveVoting = if (live.value.open) {
                 val userVotes = repository.getUserVotes(userId).bind()
-                live.value.entries.map { entry ->
-                    VotableEntry.apply(
-                        entry,
-                        "Live: ${live.value.compo.name}",
-                        userVotes.find { it.entryId == entry.id }?.points
-                    )
-                }
+                live.value.entries
+                    .sortedWith(compareBy({ it.runOrder }, { it.timestamp }))
+                    .map { entry ->
+                        VotableEntry.apply(
+                            entry,
+                            "Live: ${live.value.compo.name}",
+                            userVotes.find { it.entryId == entry.id }?.points
+                        )
+                    }
             } else emptyList()
 
             liveVoting + normalVoting
