@@ -15,6 +15,7 @@
 body {
     margin: 0;
     height: 100%;
+    overflow: hidden;
 
     background-color: #000000;
     background-image: url("68k2025-bg.png");
