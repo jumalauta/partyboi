@@ -190,7 +190,7 @@ class Form<T : Validateable<T>>(
                             stringParams.all(name).map { FileFormat.valueOf(it) }
                         }
 
-                        "party.jml.partyboi.settings.admin.AutomaticVoteKeys" -> {
+                        "party.jml.partyboi.settings.AutomaticVoteKeys" -> {
                             AutomaticVoteKeys.valueOf(stringValue)
                         }
 
