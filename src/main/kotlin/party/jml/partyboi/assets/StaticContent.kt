@@ -9,18 +9,24 @@ import party.jml.partyboi.config
 fun Application.configureStaticContent() {
     val uploadedAssetsDir = config().assetsDir.toFile()
     routing {
-        staticFiles("/assets/uploaded", uploadedAssetsDir)
-        staticResources("/assets", "assets") {
-            cacheControl {
-                listOf(
-                    CacheControl.MaxAge(
-                        maxAgeSeconds = 31536000,
-                        proxyMaxAgeSeconds = 600,
-                        visibility = CacheControl.Visibility.Public
-                    )
-                )
-            }
+        staticFiles("/assets/uploaded", uploadedAssetsDir) {
+            aggressiveCaching()
         }
-        staticResources("/", "favicon")
+        staticResources("/assets", "assets")
+        staticResources("/", "favicon") {
+            aggressiveCaching()
+        }
+    }
+}
+
+fun StaticContentConfig<*>.aggressiveCaching() {
+    cacheControl {
+        listOf(
+            CacheControl.MaxAge(
+                maxAgeSeconds = 31536000,
+                proxyMaxAgeSeconds = 600,
+                visibility = CacheControl.Visibility.Public
+            )
+        )
     }
 }

@@ -35,7 +35,7 @@ object UserVotingPage {
             article {
                 cardHeader(compo.value.first().compoName)
                 section {
-                    table {
+                    table(classes = "voting") {
                         thead {
                             tr {
                                 th(classes = "tight") { +"#" }
@@ -50,7 +50,7 @@ object UserVotingPage {
                             compo.value.forEachIndexed { index, entry ->
                                 val screenshot = screenshots.find { it.entryId == entry.entryId }
                                 tr {
-                                    td(classes = "tight") { +"${index + 1}." }
+                                    td(classes = "tight order") { +"${index + 1}." }
                                     td(classes = "screenshot") {
                                         figure {
                                             if (screenshot != null) {
@@ -59,9 +59,9 @@ object UserVotingPage {
                                             }
                                         }
                                     }
-                                    th(classes = "wide") { +"${entry.author} – ${entry.title}" }
+                                    th(classes = "wide title") { +"${entry.author} – ${entry.title}" }
                                     for (points in VoteService.POINT_RANGE) {
-                                        td(classes = "tight center") {
+                                        td(classes = "tight center points") {
                                             voteButton(entry.id, points, entry.points.getOrNull() == points)
                                         }
                                     }
@@ -76,13 +76,18 @@ object UserVotingPage {
 }
 
 fun FlowContent.voteButton(entryId: Int, points: Int, selected: Boolean) {
+    val inputId = "entry-$entryId-$points"
     input {
         type = InputType.radio
-        id = "entry-$entryId-$points"
+        id = inputId
         name = "entry-${entryId}"
         checked = selected
         onClick = Javascript.build {
             httpPut("/vote/${entryId}/$points")
         }
+    }
+    label {
+        htmlFor = inputId
+        +"$points"
     }
 }

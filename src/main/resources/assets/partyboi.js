@@ -60,7 +60,6 @@ function initInteractions(target) {
     if (compoSelector && fileUpload) {
         async function updateFileUploadInput(selectedOptionElement) {
             const optionData = selectedOptionElement?.dataset;
-            console.log("optionData", optionData);
             fileUpload.parentElement.style.visibility =
                 !optionData || optionData.uploadenabled ? "visible" : "hidden";
             if (optionData) {
@@ -177,8 +176,12 @@ function refreshOnSignal(signalType) {
     wait();
 }
 
-window.addEventListener("focus", () => {
-    Object.keys(refreshOnSignalAbortControllers).forEach(refreshOnSignal)
+window.addEventListener("focus", async () => {
+    const keys = Object.keys(refreshOnSignalAbortControllers)
+    if (keys.length > 0) {
+        keys.forEach(refreshOnSignal)
+        await smoothReload()
+    }
 });
 
 // Init

@@ -20,10 +20,10 @@ data class Page(
                 meta { charset = "utf-8" }
                 meta {
                     name = "viewport"
-                    content = "width=device-width, initial-scale=1"
+                    content = "width=device-width, height=device-height, initial-scale=1"
                 }
                 title { +"$titleText - ${Config.get().instanceName}" }
-                link(rel = "stylesheet", href = "/assets/pico.min.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/pico.min.css?foo=123", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/partyboi.css", type = "text/css")

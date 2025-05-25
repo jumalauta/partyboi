@@ -388,3 +388,53 @@ textarea.monospace {
 [data-tooltip] {
     border-bottom: none !important;
 }
+
+@media screen and (max-width: 767.99px) {
+    table.voting thead {
+        display: none;
+    }
+
+    table.voting tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    table.voting tbody tr td,
+    table.voting tbody tr th {
+        border: none;
+    }
+
+    table.voting tbody .order {
+        order: 1;
+        width: 10%;
+    }
+
+    table.voting tbody .title {
+        order: 2;
+        width: 90%;
+    }
+
+    table.voting tbody .screenshot {
+        order: 3;
+        width: 100%;
+        padding: 0;
+    }
+
+    table.voting tbody .screenshot figure {
+        width: 100%;
+        height: 160px;
+        margin: var(--pico-spacing) 0;
+    }
+
+    table.voting tbody .points {
+        order: 4;
+        width: 20%;
+        padding-bottom: calc(var(--pico-spacing) * 2);
+        margin-bottom: calc(var(--pico-spacing) * 2);
+        border-bottom: var(--pico-border-width) solid var(--pico-table-border-color);;
+    }
+
+    table.voting tbody input {
+        margin-right: 1ex;
+    }
+}
