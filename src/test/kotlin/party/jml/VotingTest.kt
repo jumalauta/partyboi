@@ -2,10 +2,8 @@ package party.jml
 
 import arrow.core.Either
 import arrow.core.raise.either
-import io.ktor.client.request.*
-import kotlin.test.Test
-import it.skrape.matchers.*
-import kotlinx.coroutines.*
+import it.skrape.matchers.toBe
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.NewCompo
@@ -14,9 +12,7 @@ import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
-import party.jml.partyboi.signals.SignalType
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class VotingTest : PartyboiTester {
     @Test
@@ -53,7 +49,7 @@ class VotingTest : PartyboiTester {
         it.login()
         it.get("/vote") {
             findFirst("article") {
-                text.toBe("Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action")
+                text.toBe("Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action 1 2 3 4 5")
             }
         }
 
@@ -82,8 +78,8 @@ class VotingTest : PartyboiTester {
             app = this
             either {
                 settings.automaticVoteKeys.set(AutomaticVoteKeys.PER_USER)
-                addTestAdmin(app!!).bind()
-                val (compo, testEntry) = setupCompo(app!!).bind()
+                addTestAdmin(app).bind()
+                val (compo, testEntry) = setupCompo(app).bind()
                 compos.allowSubmit(compo.id, false).bind()
                 runBlocking { votes.startLiveVoting(compo.id) }
                 entry = testEntry
@@ -102,7 +98,7 @@ class VotingTest : PartyboiTester {
         app!!.votes.addEntryToLiveVoting(entry!!)
         it.get("/vote") {
             findFirst("article") {
-                text.toBe("Live: Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action")
+                text.toBe("Live: Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action 1 2 3 4 5")
             }
         }
         it.buttonClick("/vote/${entry!!.id}/3")
