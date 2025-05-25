@@ -44,8 +44,8 @@ h2, h3 {
     font-size: 110%;
 }
 
-tbody tr:last-child td {
-    border-bottom: none;
+tbody tr:last-child td, tbody tr:last-child th {
+    border-bottom: none !important;
 }
 
 article > *:last-child {
@@ -438,3 +438,8 @@ textarea.monospace {
         margin-right: 1ex;
     }
 }
+
+table.voting tbody .points label {
+    font-size: 80%;
+}
+
