@@ -10,6 +10,7 @@ import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.templates.ColorScheme
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -192,6 +193,11 @@ class Form<T : Validateable<T>>(
 
                         "party.jml.partyboi.settings.AutomaticVoteKeys" -> {
                             AutomaticVoteKeys.valueOf(stringValue)
+                        }
+
+                        "party.jml.partyboi.templates.ColorScheme" -> {
+                            val x = ColorScheme.valueOf(stringValue)
+                            x
                         }
 
                         "arrow.core.Option<kotlin.Boolean>" -> when (stringValue) {

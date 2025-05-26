@@ -11,7 +11,13 @@ data class Page(
     val title: String,
     val subLinks: List<NavItem> = emptyList(),
     val children: DIV.() -> Unit,
-) : Renderable {
+) : Renderable, Themeable {
+    private var theme = Theme.Default
+
+    override fun setTheme(theme: Theme) {
+        this.theme = theme
+    }
+
     override fun getHTML(user: User?, path: String): String {
         val titleText = title
         return createHTML().html {
@@ -23,7 +29,7 @@ data class Page(
                     content = "width=device-width, height=device-height, initial-scale=1"
                 }
                 title { +"$titleText - ${Config.get().instanceName}" }
-                link(rel = "stylesheet", href = "/assets/pico.min.css?foo=123", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/picocss/${theme.colorScheme.filename}", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
                 link(rel = "stylesheet", href = "/assets/partyboi.css", type = "text/css")

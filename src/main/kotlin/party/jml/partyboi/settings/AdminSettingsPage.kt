@@ -1,7 +1,10 @@
 package party.jml.partyboi.settings
 
-import kotlinx.html.*
-import party.jml.partyboi.form.*
+import kotlinx.html.h1
+import party.jml.partyboi.form.DropdownOption
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Page
 
 object AdminSettingsPage {
@@ -10,7 +13,10 @@ object AdminSettingsPage {
         renderForm(
             url = "/admin/settings",
             form = settings,
-            options = mapOf("automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label }),
+            options = mapOf(
+                "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label },
+                "colorScheme" to DropdownOption.fromEnum<ColorScheme> { it.displayName }
+            ),
         )
     }
 }
