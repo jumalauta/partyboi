@@ -8,6 +8,8 @@ jobs:
   tests:
     name: "Tests"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
@@ -15,6 +17,8 @@ jobs:
   build:
     name: "Build"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Build an image
@@ -25,6 +29,8 @@ jobs:
       - tests
     name: "Publish"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Publish the image
@@ -36,6 +42,8 @@ jobs:
     needs: publish
     name: "Deploy"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
