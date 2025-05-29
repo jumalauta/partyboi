@@ -1,4 +1,4 @@
-name: "Build and publish the image"
+name: "Build an image"
 inputs:
   repositoryName:
     description: "Target repository name"
@@ -11,12 +11,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Login to Docker Hub
-      shell: bash
-      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-    - name: Build the image
+    - name: Build an image
       shell: bash
       run: docker build . --tag ${{ inputs.repositoryName }}:${{ inputs.tag }}
-    - name: Publish the image
+    - name: Save the image to tarball
       shell: bash
-      run: docker push ${{ inputs.repositoryName }}:${{ inputs.tag }}
+      run: docker save ${{ inputs.repositoryName }}:${{ inputs.tag }} -o partyboi.tar
+    - name: Store the image
+      uses: actions/upload-artifact@v4
+      with:
+        name: partyboi-image
+        path: partyboi.tar

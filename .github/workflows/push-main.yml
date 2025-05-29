@@ -11,4 +11,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/run-tests
-      - uses: ./.github/actions/build-and-publish
+      - uses: ./.github/actions/build-image
+      # - uses: ./.github/actions/publish-image
