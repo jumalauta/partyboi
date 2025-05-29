@@ -1,15 +1,54 @@
-name: Build and publish Docker image
+name: Build, publish and deploy
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: "Run tests and publish"
+  tests:
+    name: "Tests"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/run-tests
-      - uses: ./.github/actions/build-image
-      # - uses: ./.github/actions/publish-image
+      - name: Run tests
+        uses: ./.github/actions/run-tests
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build an image
+        uses: ./.github/actions/build-image
+  publish:
+    needs:
+      - build
+      - tests
+    name: "Publish"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the image
+        uses: ./.github/actions/publish-image
+        with:
+          dockerPassword: ${{ secrets.DOCKER_PASSWORD }}
+          dockerUsername: ${{ secrets.DOCKER_USERNAME }}
+  deploy:
+    needs: publish
+    name: "Deploy"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ilkkahanninen/partyboi-infra
+          ssh-key: ${{ secrets.INFRA_REPOSITORY_PRIVATE_KEY }}
+      - name: Set up SSH key for the remote server
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PARTYBOI_APP_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H partyboi.app >> ~/.ssh/known_hosts
+      - name: Update containers
+        run: ansible-playbook update-images-only.yaml -i hosts/public.yaml
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
