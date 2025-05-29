@@ -1,0 +1,15 @@
+name: "Run tests"
+runs:
+  using: "composite"
+  steps:
+    - name: Start database for tests
+      shell: bash
+      run: docker compose --file docker-compose-dev.yml up db -d
+    - name: Create a directory for asset files
+      shell: bash
+      run: |
+        sudo mkdir -p data/test
+        sudo chmod -R 777 data
+    - name: Run tests
+      shell: bash
+      run: gradle test -i
