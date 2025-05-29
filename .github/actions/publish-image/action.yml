@@ -1,0 +1,32 @@
+name: "Build and publish the image"
+inputs:
+  repositoryName:
+    description: "Target repository name"
+    required: true
+    default: "ilkkahanninen/partyboi"
+  tag:
+    description: "Image tag"
+    required: true
+    default: "latest"
+  dockerUsername:
+    description: "Docker Hub username"
+    required: true
+  dockerPassword:
+    description: "Docker Hub password"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Get image from artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: partyboi-image
+    - name: Load the image
+      shell: bash
+      run: docker load -i partyboi.tar
+    - name: Login to Docker Hub
+      shell: bash
+      run: docker login -u ${{ inputs.dockerUsername }} -p ${{ inputs.dockerPassword }}
+    - name: Publish the image
+      shell: bash
+      run: docker push ${{ inputs.repositoryName }}:${{ inputs.tag }}
