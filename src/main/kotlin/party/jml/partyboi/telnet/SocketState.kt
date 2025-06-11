@@ -1,7 +1,6 @@
 package party.jml.partyboi.telnet
 
 import io.ktor.utils.io.*
-import kotlinx.css.times
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 
@@ -28,7 +27,7 @@ data class SocketState(
             println("Output a page: $header")
             tx.writeStringUtf8("\u001B[2J\u001B[H")
             tx.writeStringUtf8("$header\n")
-            tx.writeStringUtf8("${"-" * header.length}\n\n")
+            tx.writeStringUtf8("${"-".repeat(header.length)}\n\n")
             tx.writeStringUtf8(page.print(this, app))
 
             println("Waiting for the user input...")
