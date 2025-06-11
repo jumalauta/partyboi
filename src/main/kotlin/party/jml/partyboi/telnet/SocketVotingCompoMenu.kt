@@ -2,7 +2,6 @@ package party.jml.partyboi.telnet
 
 import arrow.core.getOrElse
 import arrow.core.raise.either
-import kotlinx.css.times
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
@@ -68,7 +67,7 @@ data class SocketVotingEntryMenu(val compo: Compo) : SocketMenu, AuthorizedSocke
         return entries.mapValues {
             it.value.first.padEnd(maxLength) + "   " + it.value.second.fold(
                 { "(no vote)" },
-                { "*" * it })
+                { "*".repeat(it) })
         } + mapOf("X" to "Back")
     }
 

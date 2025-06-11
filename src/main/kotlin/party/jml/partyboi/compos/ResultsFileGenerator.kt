@@ -1,6 +1,5 @@
 package party.jml.partyboi.compos
 
-import kotlinx.css.times
 import party.jml.partyboi.voting.CompoResult
 
 object ResultsFileGenerator {
@@ -42,7 +41,7 @@ object ResultsFileGenerator {
     }
 
     private fun separator(builder: StringBuilder) {
-        builder.append("\n" + "-".times(LINE_WIDTH) + "\n\n")
+        builder.append("\n" + "-".repeat(LINE_WIDTH) + "\n\n")
     }
 
     private fun centered(builder: StringBuilder, text: String, padChar: Char = ' ') {
@@ -50,16 +49,16 @@ object ResultsFileGenerator {
         val charsLeft = (LINE_WIDTH - len) / 2
         val charsRight = LINE_WIDTH - charsLeft - len
 
-        builder.append("$padChar".times(charsLeft))
+        builder.append("$padChar".repeat(charsLeft))
         builder.append(text)
-        builder.append("$padChar".times(charsRight))
+        builder.append("$padChar".repeat(charsRight))
         builder.append("\n")
     }
 
     private fun entry(builder: StringBuilder, place: Int?, points: Int, title: String, author: String) {
         builder.append((if (place == null) "" else "$place.").padStart(PLACE_COL_WIDTH, ' '))
         builder.append("$points pts".padStart(POINTS_COL_WIDTH, ' '))
-        builder.append(" ".times(SPACE_BEFORE_ENTRY))
+        builder.append(" ".repeat(SPACE_BEFORE_ENTRY))
 
         val singleLine = "$title by $author"
         if (singleLine.length <= ENTRY_WIDTH) {
@@ -67,7 +66,7 @@ object ResultsFileGenerator {
             builder.append("\n")
         } else {
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH, title)
-            builder.append(" ".times(LINE_WIDTH - ENTRY_WIDTH))
+            builder.append(" ".repeat(LINE_WIDTH - ENTRY_WIDTH))
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH + 1, author, "  by ")
         }
     }
@@ -78,7 +77,7 @@ object ResultsFileGenerator {
         text.split(' ').forEachIndexed { index, token ->
             val len = token.length
             if (cursor + len > ENTRY_WIDTH) {
-                builder.append("\n" + " ".times(indent))
+                builder.append("\n" + " ".repeat(indent))
                 cursor = 0
             }
             if (index > 0) {
