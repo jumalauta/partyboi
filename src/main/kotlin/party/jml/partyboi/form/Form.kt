@@ -8,15 +8,14 @@ import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
-import party.jml.partyboi.entries.FileFormat
-import party.jml.partyboi.settings.AutomaticVoteKeys
-import party.jml.partyboi.templates.ColorScheme
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
@@ -148,74 +147,105 @@ class Form<T : Validateable<T>>(
                     }
                 }
 
-                val args: List<Any> = ctor.valueParameters.map {
-                    val name = it.name ?: throw Error("Anonymous parameters not supported")
+                val args: List<Any?> = ctor.valueParameters.map { param ->
+                    val name = param.name ?: throw Error("Anonymous parameters not supported")
+                    try {
+                        val prop = T::class.memberProperties.find { it.name == name }
+                        val isFormFieldProperty = prop?.findAnnotation<Field>() != null
 
-                    val stringValue by lazy { stringParams.first(name) ?: "" }
-
-                    when (it.type.toString()) {
-                        "kotlin.String" -> {
-                            stringValue
-                        }
-
-                        "kotlin.String?" -> {
-                            stringValue
-                        }
-
-                        "kotlin.Int" -> {
-                            try {
-                                stringValue.toInt()
-                            } catch (_: NumberFormatException) {
-                                -1
-                            }
-                        }
-
-                        "kotlin.Boolean" -> {
-                            stringValue.isNotEmpty()
-                        }
-
-                        "party.jml.partyboi.form.FileUpload" -> {
-                            fileParams.get(name) ?: throw Error("File parameter '$name' not found")
-                        }
-
-                        "java.time.LocalDateTime" -> {
-                            LocalDateTime.parse(stringValue)
-                        }
-
-                        "kotlinx.datetime.LocalDateTime" -> {
-                            kotlinx.datetime.LocalDateTime.parse(stringValue)
-                        }
-
-                        // TODO: Generic implementations of following cases
-                        "kotlin.collections.List<party.jml.partyboi.entries.FileFormat>" -> {
-                            stringParams.all(name).map { FileFormat.valueOf(it) }
-                        }
-
-                        "party.jml.partyboi.settings.AutomaticVoteKeys" -> {
-                            AutomaticVoteKeys.valueOf(stringValue)
-                        }
-
-                        "party.jml.partyboi.templates.ColorScheme" -> {
-                            val x = ColorScheme.valueOf(stringValue)
-                            x
-                        }
-
-                        "arrow.core.Option<kotlin.Boolean>" -> when (stringValue) {
-                            "true" -> true.some()
-                            "false" -> false.some()
-                            "none" -> none()
-                            else -> throw RuntimeException("Invalid Option<Boolean> value (accepted: 'true', 'false', 'none')")
-                        }
-
-                        else -> {
-                            throw error("Unsupported data type on property '$name': ${it.type}")
-                        }
+                        deserializeValue(
+                            kType = param.type,
+                            optional = param.isOptional,
+                            isFormFieldProperty = isFormFieldProperty,
+                            values = stringParams.all(name),
+                            fileUpload = fileParams[name]
+                        )
+                    } catch (e: Throwable) {
+                        throw Error("Could not parse $name: ${e.message}")
                     }
                 }
+
                 val data = ctor.call(*args.toTypedArray())
                 Form(T::class, data, initial = false).right()
             } catch (e: Error) {
                 FormError(e.message ?: e.toString()).left()
+            }
+        }
+
+        fun deserializeValue(
+            kType: KType,
+            optional: Boolean,
+            isFormFieldProperty: Boolean,
+            values: List<String>,
+            fileUpload: FileUpload?
+        ): Any? {
+            fun firstValue(default: String? = null): String? =
+                if (isFormFieldProperty) {
+                    if (optional) values.firstOrNull()
+                    else values.first()
+                } else {
+                    if (optional) null
+                    else default
+                }
+
+            val firstArgType by lazy { kType.arguments.first().type!! }
+
+            return when (kType.classifier) {
+                String::class ->
+                    firstValue("")
+
+                Int::class ->
+                    firstValue("-1")?.toInt()
+
+                Boolean::class ->
+                    firstValue("false")?.let {
+                        when (it) {
+                            "true" -> true
+                            "false" -> false
+                            "none" -> null
+                            else -> it.isNotEmpty()
+                        }
+                    }
+
+                LocalDate::class ->
+                    firstValue("1000-01-01")?.let { LocalDateTime.parse(it) }
+
+                kotlinx.datetime.LocalDateTime::class -> firstValue("1000-01-01")?.let {
+                    kotlinx.datetime.LocalDateTime.parse(
+                        it
+                    )
+                }
+
+                Option::class ->
+                    deserializeValue(
+                        kType = firstArgType,
+                        optional = true,
+                        isFormFieldProperty = isFormFieldProperty,
+                        values = values,
+                        fileUpload = fileUpload
+                    ).let {
+                        it?.some() ?: none()
+                    }
+
+                FileUpload::class -> fileUpload
+
+                List::class -> values.map {
+                    deserializeValue(
+                        kType = firstArgType,
+                        optional = optional,
+                        isFormFieldProperty = isFormFieldProperty,
+                        values = listOf(it),
+                        fileUpload = fileUpload
+                    )
+                }
+
+                else -> {
+                    val klass = kType.classifier as KClass<*>
+                    if (klass.java.isEnum) {
+                        val value = firstValue()
+                        klass.java.enumConstants.firstOrNull { (it as Enum<*>).name == value }
+                    } else TODO("Unsupported type $kType")
+                }
             }
         }
 
