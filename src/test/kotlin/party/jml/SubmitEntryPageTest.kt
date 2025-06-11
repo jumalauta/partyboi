@@ -5,15 +5,11 @@ import arrow.core.some
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import it.skrape.matchers.toBe
-import it.skrape.matchers.toBeNot
 import it.skrape.selects.text
-import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.data.toDecimals
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.EntryUpdate
 import party.jml.partyboi.entries.NewEntry
-import party.jml.partyboi.entries.NewScreenshot
 import party.jml.partyboi.form.FileUpload
 import kotlin.test.Test
 
@@ -52,6 +48,7 @@ class SubmitEntryPageTest : PartyboiTester {
                 append("Content-Disposition", "form-data; name=\"file\"; filename=\"\"")
             })
         }) {
+            println(this.html)
             findFirst(".error") { text.toBe("Value cannot be empty") }
             findSecond(".error") { text.toBe("Value cannot be empty") }
         }

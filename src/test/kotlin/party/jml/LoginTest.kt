@@ -42,6 +42,7 @@ class LoginTest : PartyboiTester {
                 append("name", "")
                 append("password", "hunter2")
                 append("password2", "password")
+                append("isUpdate", "")
             }
         ) {
             findFirst(".error") { text.toBe("Value cannot be empty") }
@@ -56,6 +57,7 @@ class LoginTest : PartyboiTester {
                 append("name", userName)
                 append("password", "password")
                 append("password2", "password")
+                append("isUpdate", "")
             }
         ) {
             it.redirectsTo("/entries")
@@ -73,6 +75,7 @@ class LoginTest : PartyboiTester {
                 append("name", userName)
                 append("password", "password")
                 append("password2", "password")
+                append("isUpdate", "")
             }
         ) {
             findFirst(".error") { text.toBe("The user name has already been registered") }
