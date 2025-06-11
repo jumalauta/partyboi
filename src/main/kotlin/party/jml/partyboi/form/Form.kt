@@ -182,6 +182,7 @@ class Form<T : Validateable<T>>(
             fun firstValue(default: String? = null): String? =
                 if (isFormFieldProperty) {
                     if (optional) values.firstOrNull()
+                    else if (default != null) values.firstOrNull() ?: default
                     else values.first()
                 } else {
                     if (optional) null
