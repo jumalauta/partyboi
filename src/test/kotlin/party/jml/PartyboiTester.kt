@@ -136,14 +136,13 @@ class TestHtmlClient(val client: HttpClient) {
             append("name", username)
             append("password", password)
             append("password2", password)
+            append("isUpdate", "")
         }) {}
 
         post("/login", formData {
             append("name", username)
             append("password", password)
-        }) {
-
-        }
+        }) {}
     }
 }
 
