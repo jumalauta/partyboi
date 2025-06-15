@@ -21,6 +21,7 @@ import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
+import party.jml.partyboi.system.ErrorRepository
 import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.TriggerRepository
 import party.jml.partyboi.voting.VoteKeyRepository
@@ -48,6 +49,7 @@ class AppServices(
     val signals = SignalService()
     val assets = AssetsRepository(this)
     val replication = ReplicationService(this)
+    val errors = ErrorRepository(this)
 
     companion object {
         var globalInstance: AppServices? = null

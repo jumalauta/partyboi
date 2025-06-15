@@ -40,6 +40,7 @@ object Navigation {
         NavItem("/admin/schedule", "Schedule"),
         NavItem("/admin/screen", "Info screen"),
         NavItem("/admin/assets", "Assets"),
+        NavItem("/admin/errors", "Error log")
     )
 
     val accountItems = listOf(

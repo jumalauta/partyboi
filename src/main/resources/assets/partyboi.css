@@ -443,3 +443,10 @@ table.voting tbody .points label {
     font-size: 80%;
 }
 
+table.compact {
+    font-size: 80%;
+}
+
+table.compact th, table.compact td {
+    vertical-align: top;
+}

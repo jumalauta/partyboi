@@ -8,9 +8,9 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.randomShortId
 
-fun FlowContent.errorMessage(error: Throwable) {
+fun FlowContent.errorMessage(storedId: String?, error: Throwable) {
     section(classes = "error") {
-        val id = randomShortId()
+        val id = storedId ?: randomShortId()
         KtorSimpleLogger("renderFields").error("Error {}: {}", id, error)
         +"Something went wrong"
         span {
