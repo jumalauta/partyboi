@@ -2,12 +2,7 @@ package party.jml.partyboi.data
 
 import arrow.core.Either
 import arrow.core.Option
-import arrow.core.getOrElse
 import arrow.core.raise.either
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.format
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -20,16 +15,26 @@ import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
-import kotlin.enums.enumEntries
 
 class PropertyRepository(app: AppServices) : Logging() {
     private val db = app.db
 
-    fun set(key: String, value: String) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: Long) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: Boolean) = store(key, Json.encodeToString(value))
-    fun set(key: String, value: java.time.LocalDateTime) =
-        store(key, Json.encodeToString(value.toKotlinLocalDateTime().format(LocalDateTime.Formats.ISO)))
+    inline fun <reified T> property(key: String, defaultValue: T): PersistentCachedValue<T> =
+        PersistentCachedValue(
+            fetchValue = {
+                either {
+                    get(key)
+                        .bind()
+                        .fold(
+                            { defaultValue },
+                            { Json.decodeFromString<T>(it.json) }
+                        )
+                }
+            },
+            storeValue = { value ->
+                store(key, Json.encodeToString(value))
+            }
+        )
 
     fun get(key: String): Either<AppError, Option<PropertyRow>> = db.use {
         it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
@@ -55,7 +60,7 @@ class PropertyRepository(app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private fun store(key: String, jsonValue: String) =
+    fun store(key: String, jsonValue: String) =
         db.use {
             it.exec(
                 queryOf(
@@ -77,16 +82,6 @@ data class PropertyRow(
     val key: String,
     val json: String,
 ) {
-    fun string(): Either<AppError, String> = decode<String>()
-    fun long(): Either<AppError, Long> = decode<Long>()
-    fun boolean(): Either<AppError, Boolean> = decode<Boolean>()
-    fun localDateTime(): Either<AppError, java.time.LocalDateTime> =
-        string().map { LocalDateTime.parse(it).toJavaLocalDateTime() }
-
-    private inline fun <reified A> decode() =
-        Either.catch { Json.decodeFromString<A>(json) }
-            .mapLeft { InternalServerError(it) }
-
     companion object {
         val fromRow: (Row) -> PropertyRow = { row ->
             PropertyRow(
@@ -95,43 +90,4 @@ data class PropertyRow(
             )
         }
     }
-}
-
-class StringProperty(val properties: PropertyRepository, val key: String, val defaultValue: String = "") {
-    fun get(): Either<AppError, String> = either {
-        properties.get(key).bind()
-            .map { it.string().bind() }
-            .getOrElse { defaultValue }
-    }
-
-    fun set(value: String): Either<AppError, Unit> =
-        properties.set(key, value)
-}
-
-class MappedProperty<T>(
-    val properties: PropertyRepository,
-    val key: String,
-    val defaultValue: T,
-    val stringToValue: (String) -> T,
-    val valueToString: (T) -> String,
-) {
-    companion object {
-        inline fun <reified T : Enum<T>> enum(properties: PropertyRepository, key: String, defaultValue: T) =
-            MappedProperty(
-                properties,
-                key,
-                defaultValue,
-                { s -> enumEntries<T>().first { it.name == s } },
-                { it.name }
-            )
-    }
-
-    fun get(): Either<AppError, T> = either {
-        properties.get(key).bind()
-            .map { stringToValue(it.string().bind()) }
-            .getOrElse { defaultValue }
-    }
-
-    fun set(value: T): Either<AppError, Unit> =
-        properties.set(key, valueToString(value))
 }

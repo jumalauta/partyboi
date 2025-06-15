@@ -24,15 +24,8 @@ import party.jml.partyboi.templates.NavItem
 
 class CompoRepository(private val app: AppServices) : Logging() {
     private val db = app.db
-    private val GENERAL_RULES = "CompoRepository.GeneralRules"
 
-    fun getGeneralRules(): Either<AppError, GeneralRules> =
-        app.properties.getOrElse(GENERAL_RULES, "")
-            .flatMap { it.string() }
-            .map { GeneralRules(it) }
-
-    fun setGeneralRules(rules: GeneralRules): Either<AppError, Unit> =
-        app.properties.set(GENERAL_RULES, rules.rules)
+    val generalRules = app.properties.property("CompoRepository.GeneralRules", GeneralRules(""))
 
     fun getById(id: Int, tx: TransactionalSession? = null): Either<AppError, Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
@@ -246,6 +239,7 @@ data class NewCompo(
     }
 }
 
+@Serializable
 data class GeneralRules(
     @property:Field(label = "General compo rules", presentation = FieldPresentation.large)
     val rules: String

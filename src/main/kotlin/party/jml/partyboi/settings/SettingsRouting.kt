@@ -8,14 +8,13 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.processForm
-import party.jml.partyboi.data.receiveForm
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureSettingsRouting(app: AppServices) {
-    fun renderSettings(settingsForm: Form<PartyboiSettings>? = null): Either<AppError, Page> = either {
+    suspend fun renderSettings(settingsForm: Form<PartyboiSettings>? = null): Either<AppError, Page> = either {
         AdminSettingsPage.render(
             settings = settingsForm ?: Form(PartyboiSettings::class, app.settings.getSettings().bind(), initial = false)
         )

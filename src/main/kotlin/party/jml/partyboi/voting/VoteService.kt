@@ -82,7 +82,7 @@ class VoteService(val app: AppServices) {
     fun getResultsForUser(user: Option<User>): Either<AppError, List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
-    fun getResultsFileContent(): Either<AppError, String> = either {
+    suspend fun getResultsFileContent(): Either<AppError, String> = either {
         val header = app.settings.resultsFileHeader.get().bind()
         val results = getResults().bind()
         ResultsFileGenerator.generate(header, results)

@@ -28,10 +28,8 @@ fun ApplicationConfigValue.getPath(): Path = Paths.get(getString())
 fun ApplicationConfigValue.getInt(): Int = getString().toInt()
 
 class ConfigReader(private val config: ApplicationConfig) {
-    // Instance
-    val instanceName: String by lazy { config.property("instance.name").getString() }
-
     // Data initialization
+    val instanceName: String by lazy { config.property("instance.name").getString() }
     val adminUsername: String by lazy { config.property("init.admin.username").getString() }
     val adminPassword: String by lazy { config.property("init.admin.password").getString() }
 

@@ -1,7 +1,6 @@
 package party.jml.partyboi.data
 
 import arrow.core.Either
-import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
@@ -36,8 +35,8 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm() =
     Form.fromParameters<T>(receiveMultipart())
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
-    handleForm: (data: T) -> Either<AppError, Renderable>,
-    crossinline handleError: (formWithErrors: Form<T>) -> Either<AppError, Renderable>
+    handleForm: suspend (data: T) -> Either<AppError, Renderable>,
+    crossinline handleError: suspend (formWithErrors: Form<T>) -> Either<AppError, Renderable>
 ) {
     receiveForm<T>().fold(
         { respondPage(it) },

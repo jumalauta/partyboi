@@ -2,6 +2,7 @@ package party.jml.partyboi.compos.admin
 
 import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
@@ -9,7 +10,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.*
+import kotlinx.html.a
+import kotlinx.html.body
+import kotlinx.html.pre
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -41,7 +44,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             newCompoForm = newCompoForm ?: Form(NewCompo::class, NewCompo.Empty, initial = true),
             generalRulesForm = generalRulesForm ?: Form(
                 GeneralRules::class,
-                app.compos.getGeneralRules().bind(),
+                app.compos.generalRules.getSync().bind(),
                 initial = true
             ),
             compos = app.compos.getAllCompos().bind(),
@@ -77,7 +80,10 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         post("/admin/compos/generalRules") {
             call.processForm<GeneralRules>(
-                { app.compos.setGeneralRules(it).map { redirectionToCompos } },
+                {
+                    app.compos.generalRules.set(it)
+                    redirectionToCompos.right()
+                },
                 { renderAdminComposPage(generalRulesForm = it) }
             )
         }

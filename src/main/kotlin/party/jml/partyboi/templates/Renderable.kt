@@ -1,6 +1,7 @@
 package party.jml.partyboi.templates
 
 import arrow.core.Either
+import arrow.core.raise.either
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -24,7 +25,7 @@ interface Themeable {
 }
 
 
-private fun safely(block: () -> Either<AppError, Renderable>) =
+private suspend fun safely(block: suspend () -> Either<AppError, Renderable>) =
     try {
         block()
     } catch (err: Error) {
@@ -32,8 +33,8 @@ private fun safely(block: () -> Either<AppError, Renderable>) =
     }
 
 suspend fun ApplicationCall.respondEither(
-    block: () -> Either<AppError, Renderable>,
-    vararg retries: (AppError) -> Either<AppError, Renderable>
+    block: suspend () -> Either<AppError, Renderable>,
+    vararg retries: suspend (AppError) -> Either<AppError, Renderable>
 ) {
     var result = safely { block() }
     for (retry in retries) {
@@ -47,10 +48,12 @@ suspend fun ApplicationCall.respondPage(renderable: Renderable) {
     val user = userSession(null).getOrNull()
 
     if (renderable is Themeable) {
-        val theme = application.services().settings.getTheme()
-        renderable.setTheme(theme)
+        either {
+            val theme = application.services().settings.getTheme().bind()
+            renderable.setTheme(theme)
+        }
     }
-    
+
     val text = "<!DOCTYPE html>\n" + renderable.getHTML(user, request.path())
     val status = renderable.statusCode()
     renderable.headers().map { (k, v) ->
