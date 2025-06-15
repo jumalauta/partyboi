@@ -1,10 +1,7 @@
 package party.jml.partyboi.settings
 
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.MappedProperty
-import party.jml.partyboi.data.StringProperty
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -13,24 +10,22 @@ import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 
 class SettingsService(val app: AppServices) {
-    val automaticVoteKeys = MappedProperty.enum(
-        app.properties,
+    val automaticVoteKeys = app.properties.property(
         AUTOMATIC_VOTE_KEYS,
         AutomaticVoteKeys.DISABLED,
     )
 
-    val resultsFileHeader = StringProperty(
-        app.properties,
-        RESULTS_FILE_HEADER
+    val resultsFileHeader = app.properties.property(
+        RESULTS_FILE_HEADER,
+        ""
     )
 
-    val colorScheme = MappedProperty.enum(
-        app.properties,
+    val colorScheme = app.properties.property(
         COLOR_SCHEME,
         ColorScheme.Blue
     )
 
-    fun getSettings() = either {
+    suspend fun getSettings() = either {
         PartyboiSettings(
             automaticVoteKeys = automaticVoteKeys.get().bind(),
             resultsFileHeader = resultsFileHeader.get().bind(),
@@ -38,11 +33,11 @@ class SettingsService(val app: AppServices) {
         )
     }
 
-    fun getTheme() = either {
+    suspend fun getTheme() = either {
         Theme(
             colorScheme = colorScheme.get().bind(),
         )
-    }.getOrElse { Theme.Default }
+    }
 
     suspend fun saveSettings(settings: PartyboiSettings) = either {
         listOf(

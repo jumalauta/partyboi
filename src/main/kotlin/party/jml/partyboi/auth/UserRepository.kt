@@ -9,12 +9,12 @@ import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
@@ -94,7 +94,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                 votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
             )
 
-            when (app.settings.automaticVoteKeys.get().bind()) {
+            when (app.settings.automaticVoteKeys.getSync().bind()) {
                 AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
                 AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
                 else -> createdUser

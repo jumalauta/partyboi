@@ -27,7 +27,7 @@ class CompoPageTest : PartyboiTester {
             val self = this
             either {
                 setupCompos(self).bind()
-                compos.setGeneralRules(GeneralRules("Make no harm.")).bind()
+                compos.generalRules.set(GeneralRules("Make no harm.")).bind()
             }
         }
 

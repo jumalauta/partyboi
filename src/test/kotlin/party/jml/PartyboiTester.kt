@@ -16,6 +16,7 @@ import io.ktor.util.*
 import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.UserCredentials
@@ -154,21 +155,23 @@ fun ApplicationTestBuilder.setupServices() {
     Unit.right()
 }
 
-fun <T> ApplicationTestBuilder.setupServices(setupForTest: AppServices.() -> Either<AppError, T>) {
+fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> Either<AppError, T>) {
     application {
         val app = services()
 
         either {
-            app.settings.automaticVoteKeys.set(AutomaticVoteKeys.DISABLED)
+            app.settings.automaticVoteKeys.setSync(AutomaticVoteKeys.DISABLED)
             app.events.deleteAll().bind()
             app.screen.deleteAll().bind()
             app.votes.deleteAll().bind()
             app.voteKeys.deleteAll().bind()
             app.entries.deleteAll().bind()
             app.compos.deleteAll().bind()
-            app.compos.setGeneralRules(GeneralRules("")).bind()
+            app.compos.generalRules.setSync(GeneralRules("")).bind()
             app.users.deleteAll().bind()
-            app.setupForTest().bind()
+            runBlocking {
+                app.setupForTest().bind()
+            }
         }.onLeft {
             throw it.throwable ?: RuntimeException(it.message)
         }

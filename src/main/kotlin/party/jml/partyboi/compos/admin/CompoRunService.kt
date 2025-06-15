@@ -89,7 +89,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         }
     }
 
-    fun compressAllEntries(): Either<AppError, Path> = either {
+    suspend fun compressAllEntries(): Either<AppError, Path> = either {
         val dir = createTempDirectory()
 
         // Write results
