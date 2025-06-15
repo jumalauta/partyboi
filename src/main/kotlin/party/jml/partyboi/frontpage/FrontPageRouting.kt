@@ -17,7 +17,8 @@ fun Application.configureFrontPageRouting(app: AppServices) {
                     val infoScreen = app.screen
                         .getSlideSet(SlideSetRow.DEFAULT).bind()
                         .filter { it.showOnInfoPage }
-                    FrontPage.render(events, infoScreen)
+                    val timeZone = app.time.timeZone.get().bind()
+                    FrontPage.render(events, infoScreen, timeZone)
                 }
             })
         }

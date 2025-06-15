@@ -17,7 +17,7 @@ object ICalendar {
                 event {
                     prop("UID", "${it.id}@partyboi.app")
                     prop("DTSTAMP", now)
-                    prop("DTSTART", it.time)
+                    //prop("DTSTART", it.time)
                     prop("SUMMARY", it.name)
                 }
             }

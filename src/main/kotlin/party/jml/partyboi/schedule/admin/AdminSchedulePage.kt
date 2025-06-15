@@ -1,21 +1,25 @@
 package party.jml.partyboi.schedule.admin
 
-import party.jml.partyboi.templates.Page
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
+import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.FailedTriggerRow
 import party.jml.partyboi.triggers.NewScheduledTrigger
-import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.triggers.SuccessfulTriggerRow
+import party.jml.partyboi.triggers.TriggerRow
 
 object AdminSchedulePage {
     fun render(
         newEventForm: Form<NewEvent>,
         events: List<Event>,
+        timeZone: TimeZone
     ) =
         Page("Schedule") {
             h1 { +"Schedule" }
@@ -24,7 +28,7 @@ object AdminSchedulePage {
                 if (events.isNotEmpty()) {
                     {
                         events
-                            .groupBy { it.time.date }
+                            .groupBy { it.time.toLocalDateTime(timeZone).date }
                             .forEach { (date, events) ->
                                 article {
                                     header { +"Schedule – ${date.dayOfWeek.name} $date" }
@@ -39,7 +43,7 @@ object AdminSchedulePage {
                                         tbody {
                                             events.forEach { event ->
                                                 tr {
-                                                    td { +event.time.time.toString() }
+                                                    td { +event.time.toLocalDateTime(timeZone).time.toString() }
                                                     td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
                                                     td(classes = "settings") {
                                                         deleteButton(
