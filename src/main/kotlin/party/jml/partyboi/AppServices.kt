@@ -21,6 +21,7 @@ import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
+import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.TriggerRepository
 import party.jml.partyboi.voting.VoteKeyRepository
 import party.jml.partyboi.voting.VoteService
@@ -31,6 +32,7 @@ class AppServices(
 ) {
     val properties = PropertyRepository(this)
     val settings = SettingsService(this)
+    val time = TimeService(this)
     val users = UserRepository(this)
     val sessions = SessionRepository(db)
     val compos = CompoRepository(this)

@@ -22,7 +22,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
     fun renderSchedulesPage(newEventForm: Form<NewEvent>? = null) = either {
         val events = app.events.getAll().bind()
         AdminSchedulePage.render(
-            newEventForm = newEventForm ?: Form(NewEvent::class, NewEvent.make(events), true),
+            newEventForm = newEventForm ?: Form(NewEvent::class, NewEvent.make(events, app.time), true),
             events = events
         )
     }

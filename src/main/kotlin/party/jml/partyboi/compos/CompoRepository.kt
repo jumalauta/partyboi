@@ -70,7 +70,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
                 )
             )
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(compo.id)) }
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(compo.id, app.time)) }
         }
 
 

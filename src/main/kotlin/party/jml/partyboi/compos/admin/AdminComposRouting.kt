@@ -28,8 +28,6 @@ import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 import java.nio.file.Path
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
@@ -110,9 +108,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 val zipFile = app.compoRun.compressDirectory(entries).bind()
 
                 val compoName = compo.name.toFilenameToken(true)
-                val timestamp = LocalDateTime.now()
-                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                    .toFilenameToken(true)
+                val timestamp = app.time.isoLocalTime().toFilenameToken(true)
 
                 call.response.header(
                     HttpHeaders.ContentDisposition,
@@ -216,7 +212,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 runOrder
                     .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
                     .bindAll()
-                runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId)) }
+                runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId, app.time)) }
                 call.respondText("OK")
             }
         }

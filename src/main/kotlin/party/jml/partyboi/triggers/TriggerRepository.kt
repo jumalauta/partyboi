@@ -3,6 +3,7 @@ package party.jml.partyboi.triggers
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -10,14 +11,14 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
-import java.time.LocalDateTime
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
@@ -106,8 +107,9 @@ class TriggerRepository(val app: AppServices) : Logging() {
     }
 
     private fun execute(signal: Signal): Either<AppError, Unit> = either {
+        val now = app.time.localTimeSync()
         getTriggers(signal.toString()).bind().forEach {
-            val result = executeTrigger(it, LocalDateTime.now())
+            val result = executeTrigger(it, now)
             log.info(
                 "Executed trigger {} -> {} -> {}",
                 signal,
