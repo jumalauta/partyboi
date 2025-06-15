@@ -77,6 +77,11 @@ class PropertyRepository(app: AppServices) : Logging() {
         }
 }
 
+abstract class StoredProperties(val app: AppServices) : Logging() {
+    inline fun <reified T> property(key: String, value: T) =
+        app.properties.property("${this::class.simpleName}.$key", value)
+}
+
 @Serializable
 data class PropertyRow(
     val key: String,

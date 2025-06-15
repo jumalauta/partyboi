@@ -127,7 +127,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                 entry
             }
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId)) }
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time)) }
         }
 
     fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = either {
@@ -159,9 +159,9 @@ class EntryRepository(private val app: AppServices) : Logging() {
             )
         }.onRight {
             runBlocking {
-                app.signals.emit(Signal.compoContentUpdated(entry.compoId))
+                app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
                 if (previousVersion.compoId != entry.compoId) {
-                    app.signals.emit(Signal.compoContentUpdated(previousVersion.compoId))
+                    app.signals.emit(Signal.compoContentUpdated(previousVersion.compoId, app.time))
                 }
             }
         }.bind()
@@ -172,7 +172,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId)) }
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time)) }
         }
     }
 
@@ -181,7 +181,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.updateOne(queryOf("delete from entry where id = ?", entryId))
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId)) }
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time)) }
         }
     }
 
@@ -193,7 +193,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
         }.map { compoId ->
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId)) }
+            runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId, app.time)) }
         }
 
     fun allowEdit(entryId: Int, state: Boolean): Either<AppError, Unit> =

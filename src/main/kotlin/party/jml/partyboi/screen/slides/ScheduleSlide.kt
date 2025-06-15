@@ -8,7 +8,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.serializers.LocalDateIso8601Serializer
-import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -22,14 +21,15 @@ import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
 import java.time.format.TextStyle
 import java.util.*
+import kotlin.time.Duration.Companion.days
 
 @Serializable
 data class ScheduleSlide(
     val date: LocalDate,
 ) : Slide<ScheduleSlide>, Validateable<ScheduleSlide>, NonEditable {
     override fun render(ctx: FlowContent, app: AppServices) {
-        val from = LocalDateTime(date, SplitDateAt).toJavaLocalDateTime()
-        val eventsE = app.events.getBetween(from, from.plusDays(1))
+        val from = LocalDateTime(date, SplitDateAt)
+        val eventsE = app.events.getBetween(from, app.time.addSync(from, 1.days))
         with(ctx) {
             h1 { +"${date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK)}" }
             eventsE.map { events ->

@@ -7,8 +7,10 @@ package party.jml.partyboi.schedule
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.atTime
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
-import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -24,10 +26,9 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -137,12 +138,12 @@ data class NewEvent(
 
     companion object {
         fun make(today: LocalDate, preferredDates: List<LocalDate>): NewEvent {
-            val date = preferredDates.find { it == today } ?: preferredDates.sorted().lastOrNull() ?: today
+            val date = preferredDates.find { it == today } ?: preferredDates.maxOrNull() ?: today
             return NewEvent("", date.atTime(12, 0, 0), true)
         }
 
-        fun make(otherEvents: List<Event>): NewEvent =
-            make(LocalDate.now(), otherEvents.map { it.time.toJavaLocalDateTime().toLocalDate() })
+        fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent =
+            make(timeService.todaySync(), otherEvents.map { it.time.date })
     }
 }
 

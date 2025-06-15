@@ -3,19 +3,16 @@ package party.jml.partyboi.schedule
 import arrow.core.getOrElse
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
-import java.time.LocalDate.EPOCH
-import java.time.LocalDateTime
+import party.jml.partyboi.data.StoredProperties
 import java.util.*
 import kotlin.concurrent.schedule
 
-class EventSignalEmitter(app: AppServices) : Logging() {
-    private val defaultLastCheck = EPOCH.atTime(0, 0)
-    private val lastCheck = app.properties.property("EventSignalEmitter.lastCheck", defaultLastCheck)
+class EventSignalEmitter(app: AppServices) : StoredProperties(app) {
+    private val lastCheck = property("lastCheck", app.time.localTimeSync())
 
     private val scheduler: TimerTask = Timer().schedule(1000, 1000) {
-        val now = LocalDateTime.now()
-        val lastCheckTime = lastCheck.getSync().getOrElse { defaultLastCheck }
+        val now = app.time.localTimeSync()
+        val lastCheckTime = lastCheck.getSync().getOrElse { app.time.fallbackTime }
         app.events.getBetween(lastCheckTime, now).map {
             runBlocking {
                 it.forEach { event ->

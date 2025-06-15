@@ -4,6 +4,7 @@ import arrow.core.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.utils.io.core.*
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
@@ -70,6 +71,7 @@ class Form<T : Validateable<T>>(
                                     )
 
                                     is FileUpload -> Pair(InputType.file, "")
+                                    is TimeZone -> Pair(InputType.text, a.id)
                                     is Enum<*> -> Pair(InputType.text, a.name)
                                     else -> TODO("${a.javaClass.name} not supported as Form property")
                                 }
@@ -229,6 +231,8 @@ class Form<T : Validateable<T>>(
                     }
 
                 FileUpload::class -> fileUpload
+
+                TimeZone::class -> firstValue(TimeZone.currentSystemDefault().id)?.let { TimeZone.of(it) }
 
                 List::class -> values.map {
                     deserializeValue(

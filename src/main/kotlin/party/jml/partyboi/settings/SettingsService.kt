@@ -1,7 +1,9 @@
 package party.jml.partyboi.settings
 
 import arrow.core.raise.either
+import kotlinx.datetime.TimeZone
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.StoredProperties
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -9,27 +11,17 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 
-class SettingsService(val app: AppServices) {
-    val automaticVoteKeys = app.properties.property(
-        AUTOMATIC_VOTE_KEYS,
-        AutomaticVoteKeys.DISABLED,
-    )
-
-    val resultsFileHeader = app.properties.property(
-        RESULTS_FILE_HEADER,
-        ""
-    )
-
-    val colorScheme = app.properties.property(
-        COLOR_SCHEME,
-        ColorScheme.Blue
-    )
+class SettingsService(app: AppServices) : StoredProperties(app) {
+    val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
+    val resultsFileHeader = property("resultsFileHeader", "")
+    val colorScheme = property("colorScheme", ColorScheme.Blue)
 
     suspend fun getSettings() = either {
         PartyboiSettings(
             automaticVoteKeys = automaticVoteKeys.get().bind(),
             resultsFileHeader = resultsFileHeader.get().bind(),
             colorScheme = colorScheme.get().bind(),
+            timeZone = app.time.timeZone.get().bind()
         )
     }
 
@@ -44,14 +36,9 @@ class SettingsService(val app: AppServices) {
             automaticVoteKeys.set(settings.automaticVoteKeys),
             resultsFileHeader.set(settings.resultsFileHeader.trimEnd()),
             colorScheme.set(settings.colorScheme),
+            app.time.timeZone.set(settings.timeZone),
         ).bindAll()
         app.signals.emit(Signal.settingsUpdated())
-    }
-
-    companion object {
-        const val AUTOMATIC_VOTE_KEYS = "Settings.automaticVoteKeys"
-        const val RESULTS_FILE_HEADER = "Settings.resultsFileHeader"
-        const val COLOR_SCHEME = "Settings.colorScheme"
     }
 }
 
@@ -62,6 +49,8 @@ data class PartyboiSettings(
     val resultsFileHeader: String,
     @property:Field(order = 2, label = "Color scheme")
     val colorScheme: ColorScheme,
+    @property:Field(order = 4, label = "Time zone")
+    val timeZone: TimeZone,
 ) : Validateable<PartyboiSettings>
 
 enum class AutomaticVoteKeys(val label: String) {

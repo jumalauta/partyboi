@@ -12,8 +12,6 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 fun Application.configureAdminVotingRouting(app: AppServices) {
     adminRouting {
@@ -40,7 +38,7 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
             call.processForm<GenerateVoteKeysPage.GenerateVoteKeySettings>(
                 {
                     either {
-                        val keySet = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        val keySet = app.time.isoLocalTime()
                         app.voteKeys.createTickets(it.numberOfKeys, keySet).bind()
                         Redirection("/admin/voting/print/$keySet")
                     }

@@ -3,9 +3,9 @@ package party.jml
 import arrow.core.raise.either
 import it.skrape.matchers.toBe
 import it.skrape.selects.html5.article
+import kotlinx.datetime.LocalDateTime
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.screen.slides.TextSlide
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 class InfoPageTest : PartyboiTester {
@@ -46,14 +46,14 @@ class InfoPageTest : PartyboiTester {
                 events.add(
                     NewEvent(
                         name = "Foodwave",
-                        time = LocalDateTime.of(2025, 2, 18, 20, 8),
+                        time = LocalDateTime(2025, 2, 18, 20, 8),
                         visible = true
                     )
                 ).bind()
                 events.add(
                     NewEvent(
                         name = "Secret santa",
-                        time = LocalDateTime.of(2025, 2, 20, 20, 8),
+                        time = LocalDateTime(2025, 2, 20, 20, 8),
                         visible = false
                     ),
                 ).bind()

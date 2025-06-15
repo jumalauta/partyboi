@@ -1,11 +1,14 @@
 package party.jml.partyboi.signals
 
 import arrow.core.Either
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.catchError
-import java.time.LocalDateTime
+import party.jml.partyboi.system.TimeService
 
 class SignalService : Logging() {
     val flow = MutableStateFlow(Signal.initial())
@@ -44,8 +47,8 @@ data class Signal(
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
         fun settingsUpdated() = Signal(SignalType.settingsUpdated)
-        fun compoContentUpdated(compoId: Int) =
-            Signal(SignalType.compoContentUpdated, LocalDateTime.now().toString(), compoId.toString())
+        fun compoContentUpdated(compoId: Int, timeService: TimeService) =
+            Signal(SignalType.compoContentUpdated, timeService.isoLocalTimeSync(), compoId.toString())
     }
 }
 
