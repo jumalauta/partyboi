@@ -8,6 +8,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.serializers.LocalDateIso8601Serializer
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -28,6 +29,7 @@ data class ScheduleSlide(
     val date: LocalDate,
 ) : Slide<ScheduleSlide>, Validateable<ScheduleSlide>, NonEditable {
     override fun render(ctx: FlowContent, app: AppServices) {
+        val tz = app.time.timeZone.getSync().getOrNull()!!
         val from = LocalDateTime(date, SplitDateAt)
         val eventsE = app.events.getBetween(from, app.time.addSync(from, 1.days))
         with(ctx) {
@@ -36,7 +38,7 @@ data class ScheduleSlide(
                 table {
                     events.forEach { event ->
                         tr {
-                            th { +event.time.time.toString() }
+                            th { +event.time.toLocalDateTime(tz).time.toString() }
                             td { +event.name }
                         }
                     }

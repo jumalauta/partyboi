@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.TimeZone
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -19,11 +20,12 @@ import party.jml.partyboi.triggers.NewScheduledTrigger
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
 
-    fun renderSchedulesPage(newEventForm: Form<NewEvent>? = null) = either {
+    fun renderSchedulesPage(newEventForm: Form<NewEvent>? = null, timeZone: TimeZone) = either {
         val events = app.events.getAll().bind()
         AdminSchedulePage.render(
             newEventForm = newEventForm ?: Form(NewEvent::class, NewEvent.make(events, app.time), true),
-            events = events
+            events = events,
+            timeZone = timeZone
         )
     }
 
@@ -50,13 +52,18 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         fun redirectionToEvent(id: Int) = Redirection("/admin/schedule/events/$id")
 
         get("/admin/schedule") {
-            call.respondEither({ renderSchedulesPage() })
+            call.respondEither({ renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!) })
         }
 
         post("/admin/schedule/events") {
             call.processForm<NewEvent>(
                 { app.events.add(it).map { redirectionToSchedules } },
-                { renderSchedulesPage(newEventForm = it) }
+                {
+                    renderSchedulesPage(
+                        newEventForm = it,
+                        timeZone = app.time.timeZone.get().getOrNull()!!
+                    )
+                }
             )
         }
 

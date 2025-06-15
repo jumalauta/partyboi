@@ -1,6 +1,10 @@
 package party.jml.partyboi.frontpage
 
-import kotlinx.html.*
+import kotlinx.datetime.TimeZone
+import kotlinx.html.a
+import kotlinx.html.article
+import kotlinx.html.h2
+import kotlinx.html.p
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.schedule
 import party.jml.partyboi.screen.ScreenRow
@@ -12,7 +16,7 @@ import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.markdown
 
 object FrontPage {
-    fun render(events: List<Event>, infoScreen: List<ScreenRow>) = Page("Home") {
+    fun render(events: List<Event>, infoScreen: List<ScreenRow>, timeZone: TimeZone) = Page("Home") {
         columns(
             {
                 h2 { +"Info" }
@@ -50,7 +54,7 @@ object FrontPage {
             {
                 h2 { +"Schedule" }
                 if (events.isNotEmpty()) {
-                    schedule(events)
+                    schedule(events, timeZone)
                 } else {
                     article { +"Schedule will be released soon!" }
                 }
