@@ -10,7 +10,6 @@ import kotliquery.*
 import kotliquery.action.*
 import party.jml.partyboi.Logging
 import party.jml.partyboi.config
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.system.AppResult
@@ -18,23 +17,23 @@ import java.nio.file.Path
 import java.sql.Timestamp
 
 class DatabasePool(val dataSource: HikariDataSource) : Logging() {
-    fun <A> use(tx: TransactionalSession? = null, block: (Session) -> A): A =
+    suspend fun <A> use(tx: TransactionalSession? = null, block: suspend (Session) -> A): A =
         if (tx != null) {
             block(tx)
         } else {
             sessionOf(dataSource).use { block(it) }
         }
 
-    fun <A> transaction(
+    suspend fun <A> transaction(
         schema: String? = null,
-        block: (TransactionalSession) -> AppResult<A>
+        block: suspend (TransactionalSession) -> AppResult<A>
     ): AppResult<A> =
         sessionOf(dataSource).use { it.transactionEither(schema) { tx -> block(tx) } }
 
-    fun <A> useUnsafe(block: (Session) -> A): A =
+    suspend fun <A> useUnsafe(block: suspend (Session) -> A): A =
         sessionOf(dataSource).use { block(it) }
 
-    fun createSchema(name: String): AppResult<String> {
+    suspend fun createSchema(name: String): AppResult<String> {
         val schema = transaction {
             dropSchema(it, name)
             it.exec(queryOf("CREATE SCHEMA $name"))

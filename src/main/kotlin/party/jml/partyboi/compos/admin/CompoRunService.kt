@@ -20,7 +20,7 @@ import kotlin.io.path.createTempDirectory
 class CompoRunService(val app: AppServices) : Logging() {
     private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
 
-    fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<Path> = either {
+    suspend fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<Path> = either {
         val tempDir = createTempDirectory()
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind()
@@ -57,7 +57,7 @@ class CompoRunService(val app: AppServices) : Logging() {
             outputFile
         }.mapLeft { InternalServerError(it) }
 
-    fun extractEntryFiles(entryId: Int, version: Int): AppResult<ExtractedEntry> = either {
+    suspend fun extractEntryFiles(entryId: Int, version: Int): AppResult<ExtractedEntry> = either {
         val file = app.files.getVersion(entryId, version).bind()
         val entry = app.entries.get(entryId).bind()
         val compo = app.compos.getById(entry.compoId).bind()
@@ -138,7 +138,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         }
     }
 
-    private fun getLatestFileDesc(entry: Entry) =
+    private suspend fun getLatestFileDesc(entry: Entry) =
         app.files.getLatest(entry.id)
             .mapLeft {
                 when (it) {

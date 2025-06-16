@@ -1,15 +1,19 @@
 package party.jml.partyboi.screen
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import party.jml.partyboi.AppServices
 
 object ScreenPage {
-    fun renderContent(slide: Slide<*>, app: AppServices) =
+    suspend fun renderContent(slide: Slide<*>, app: AppServices) =
         createHTML().article(
             classes = classes(slide)
         ) {
-            slide.render(this, app)
+            val self = this
+            runBlocking {
+                slide.render(self, app)
+            }
         }
 
     fun render(slide: Slide<*>, theme: ScreenTheme, app: AppServices) =
@@ -21,7 +25,12 @@ object ScreenPage {
             body {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
-                    article(classes = classes(slide)) { slide.render(this, app) }
+                    article(classes = classes(slide)) {
+                        val self = this
+                        runBlocking {
+                            slide.render(self, app)
+                        }
+                    }
                 }
                 main {
                     attributes["id"] = "screen2"

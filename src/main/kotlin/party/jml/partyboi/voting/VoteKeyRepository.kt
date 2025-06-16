@@ -24,34 +24,35 @@ import kotlin.random.Random
 class VoteKeyRepository(val app: AppServices) : Logging() {
     val db = app.db
 
-    fun getAllVoteKeys(): AppResult<List<VoteKeyRow>> = app.db.use {
+    suspend fun getAllVoteKeys(): AppResult<List<VoteKeyRow>> = app.db.use {
         it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
     }
 
-    fun getVoteKeySet(keySet: String): AppResult<NonEmptyList<VoteKeyRow>> = app.db.use {
+    suspend fun getVoteKeySet(keySet: String): AppResult<NonEmptyList<VoteKeyRow>> = app.db.use {
         it.atLeastOne(queryOf("SELECT * FROM votekey WHERE key_set = ?", keySet).map(VoteKeyRow.fromRow))
     }
 
-    fun getUserVoteKeys(userId: Int): AppResult<List<VoteKey>> = db.use {
+    suspend fun getUserVoteKeys(userId: Int): AppResult<List<VoteKey>> = db.use {
         it.many(queryOf("SELECT key FROM votekey WHERE appuser_id = ?", userId).map(asString))
     }.map { it.map(VoteKey.fromKey) }
 
-    fun revokeUserVoteKeys(userId: Int) = db.use {
+    suspend fun revokeUserVoteKeys(userId: Int) = db.use {
         it.exec(queryOf("DELETE FROM votekey WHERE appuser_id = ?", userId))
     }
 
-    fun insertVoteKey(userId: Int?, voteKey: VoteKey, keySet: String?, tx: TransactionalSession? = null) = db.use(tx) {
-        it.exec(
-            queryOf(
-                "INSERT INTO votekey (appuser_id, key, key_set) VALUES (?, ?, ?)",
-                userId,
-                voteKey.toString(),
-                keySet
+    suspend fun insertVoteKey(userId: Int?, voteKey: VoteKey, keySet: String?, tx: TransactionalSession? = null) =
+        db.use(tx) {
+            it.exec(
+                queryOf(
+                    "INSERT INTO votekey (appuser_id, key, key_set) VALUES (?, ?, ?)",
+                    userId,
+                    voteKey.toString(),
+                    keySet
+                )
             )
-        )
-    }
+        }
 
-    fun registerTicket(userId: Int, code: String): AppResult<Unit> = db.use {
+    suspend fun registerTicket(userId: Int, code: String): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
@@ -61,7 +62,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         )
     }
 
-    fun createTickets(count: Int, keySet: String?) = db.transaction { tx ->
+    suspend fun createTickets(count: Int, keySet: String?) = db.transaction { tx ->
         either {
             for (i in 1..count) {
                 generateTicket(tx, keySet).bind()
@@ -69,7 +70,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }
     }
 
-    fun grantVotingRightsByEmail() = db.use {
+    suspend fun grantVotingRightsByEmail() = db.use {
         it.exec(
             queryOf(
                 """
@@ -108,7 +109,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {
+    private suspend fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {
         val voteKey = VoteKey.ticket(generateTicketCode())
         val exists = tx
             .one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean))
@@ -120,7 +121,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }
     }
 
-    fun deleteAll() = db.use {
+    suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM votekey"))
     }
 

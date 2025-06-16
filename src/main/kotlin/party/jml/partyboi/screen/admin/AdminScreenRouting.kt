@@ -28,7 +28,7 @@ import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
-    fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
+    suspend fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
         AdminScreenPage.renderAdHocForm(
             form = form ?: app.screen.getAddHoc().bind()
                 .map { it.getSlide().getForm() }
@@ -37,7 +37,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
-    fun renderSlideSetPage(slideSetName: AppResult<String>) = either {
+    suspend fun renderSlideSetPage(slideSetName: AppResult<String>) = either {
         val slides = app.screen.getSlideSet(slideSetName.bind()).bind()
         val (state, isRunning) = app.screen.currentState()
         AdminScreenPage.renderSlideSetForms(
@@ -49,7 +49,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
-    fun renderSlideEdit(
+    suspend fun renderSlideEdit(
         slideSetName: AppResult<String>,
         slideId: AppResult<Int>,
         errors: AppError? = null,
@@ -267,7 +267,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
 suspend inline fun <reified T> ApplicationCall.updateSlide(
     app: AppServices,
-    crossinline onError: (AppResult<String>, AppResult<Int>, AppError?) -> AppResult<Renderable>
+    crossinline onError: suspend (AppResult<String>, AppResult<Int>, AppError?) -> AppResult<Renderable>
 ) where
         T : Slide<T>,
         T : Validateable<T> {

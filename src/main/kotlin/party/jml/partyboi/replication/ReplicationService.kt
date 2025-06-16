@@ -83,7 +83,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         schemaVersion = version
     }
 
-    fun export(): AppResult<DataExport> {
+    suspend fun export(): AppResult<DataExport> {
         val version = schemaVersion
         return if (version == null) {
             log.error("Cannot export data because schema version is unknown. Database migration not ready?")
@@ -109,7 +109,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         }
     }
 
-    fun import(data: DataExport): AppResult<Unit> =
+    suspend fun import(data: DataExport): AppResult<Unit> =
         if (data.schemaVersion != schemaVersion) {
             log.error("Cannot import data because the schema version mismatches. Own version: $schemaVersion, their version: ${data.schemaVersion}")
             InvalidSchemaVersion().left()
@@ -211,7 +211,7 @@ class ReplicationService(val app: AppServices) : Logging() {
                 }.mapLeft { InternalServerError(it) }
             }
 
-    private fun resetSequences() = app.db.use { db ->
+    private suspend fun resetSequences() = app.db.use { db ->
         either {
             val sequences =
                 db.many(queryOf("SELECT sequence_name FROM information_schema.sequences").map(asString)).bind()

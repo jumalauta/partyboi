@@ -1,6 +1,5 @@
 package party.jml.partyboi.data
 
-import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
@@ -41,15 +40,15 @@ class PropertyRepository(val app: AppServices) : Logging() {
             }
         )
 
-    fun get(key: String): AppResult<Option<PropertyRow>> = db.use {
+    suspend fun get(key: String): AppResult<Option<PropertyRow>> = db.use {
         it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
     }
 
-    fun getAll(): AppResult<List<PropertyRow>> = db.use {
+    suspend fun getAll(): AppResult<List<PropertyRow>> = db.use {
         it.many(queryOf("SELECT * FROM property").map(PropertyRow.fromRow))
     }
 
-    inline fun <reified A> getOrElse(key: String, value: A): AppResult<PropertyRow> =
+    suspend inline fun <reified A> getOrElse(key: String, value: A): AppResult<PropertyRow> =
         get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
 
     fun import(tx: TransactionalSession, data: DataExport) = either {
@@ -65,7 +64,7 @@ class PropertyRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    fun store(key: String, jsonValue: String) =
+    suspend fun store(key: String, jsonValue: String) =
         db.use {
             it.exec(
                 queryOf(

@@ -7,12 +7,12 @@ import party.jml.partyboi.auth.UserCredentials
 class SocketAuthMenu : SocketMenu {
     override fun getTitle(): String = "Welcome!"
 
-    override fun getItems(state: SocketState, app: AppServices): Map<String, String> = mapOf(
+    override suspend fun getItems(state: SocketState, app: AppServices): Map<String, String> = mapOf(
         "L" to "Login",
         "R" to "Register",
     )
 
-    override fun input(query: String, state: SocketState, app: AppServices): SocketState? =
+    override suspend fun input(query: String, state: SocketState, app: AppServices): SocketState? =
         when (formattedQuery(query)) {
             "L" -> state.goto(SocketLogin())
             "R" -> state.goto(SocketRegistration())
@@ -27,7 +27,7 @@ data class SocketLogin(
 ) : SocketPage {
     override fun getTitle(): String = "Login"
 
-    override fun print(state: SocketState, app: AppServices): String =
+    override suspend fun print(state: SocketState, app: AppServices): String =
         if (username == null) {
             listOfNotNull(
                 err?.let { "\n$it\n\n" },
@@ -37,7 +37,7 @@ data class SocketLogin(
             "Password: "
         }
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices
@@ -71,7 +71,7 @@ data class SocketRegistration(
 ) : SocketPage {
     override fun getTitle(): String = "Registration"
 
-    override fun print(state: SocketState, app: AppServices): String =
+    override suspend fun print(state: SocketState, app: AppServices): String =
         if (username == null) {
             listOfNotNull(
                 err?.let { "\n$it\n\n" },
@@ -81,7 +81,7 @@ data class SocketRegistration(
             "Password: "
         }
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices

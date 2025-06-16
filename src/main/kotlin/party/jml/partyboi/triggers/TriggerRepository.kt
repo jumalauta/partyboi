@@ -26,7 +26,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         app.signals.flow.collect { execute(it) }
     }
 
-    fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): AppResult<TriggerRow> =
+    suspend fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): AppResult<TriggerRow> =
         db.use(tx) {
             either {
                 it.one(
@@ -45,11 +45,11 @@ class TriggerRepository(val app: AppServices) : Logging() {
             }.flatten()
         }
 
-    fun setEnabled(triggerId: Int, enabled: Boolean) = db.use {
+    suspend fun setEnabled(triggerId: Int, enabled: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET enabled = ? WHERE id = ?", enabled, triggerId))
     }
 
-    fun getTriggersForSignal(signal: Signal) = db.use {
+    suspend fun getTriggersForSignal(signal: Signal) = db.use {
         it.many(
             queryOf(
                 """
@@ -63,11 +63,11 @@ class TriggerRepository(val app: AppServices) : Logging() {
         )
     }
 
-    fun getAllTriggers() = db.use {
+    suspend fun getAllTriggers() = db.use {
         it.many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
     }
 
-    fun reset(signal: Signal, tx: TransactionalSession? = null): AppResult<Unit> = db.use(tx) {
+    suspend fun reset(signal: Signal, tx: TransactionalSession? = null): AppResult<Unit> = db.use(tx) {
         it.exec(
             queryOf(
                 """
@@ -97,15 +97,15 @@ class TriggerRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {
+    private suspend fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
     }
 
-    private fun setFailed(triggerId: Int, time: LocalDateTime, error: String) = db.use {
+    private suspend fun setFailed(triggerId: Int, time: LocalDateTime, error: String) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
     }
 
-    private fun execute(signal: Signal): AppResult<Unit> = either {
+    private suspend fun execute(signal: Signal): AppResult<Unit> = either {
         val now = app.time.localTimeSync()
         getTriggers(signal.toString()).bind().forEach {
             val result = executeTrigger(it, now)
@@ -118,14 +118,14 @@ class TriggerRepository(val app: AppServices) : Logging() {
         }
     }
 
-    private fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): AppResult<Unit> {
+    private suspend fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): AppResult<Unit> {
         return trigger.getAction().apply(app).fold(
             { error -> setFailed(trigger.triggerId, logTime, error.message) },
             { _ -> setSuccessful(trigger.triggerId, logTime) }
         )
     }
 
-    private fun getTriggers(signal: String) = db.use {
+    private suspend fun getTriggers(signal: String) = db.use {
         it.many(
             queryOf(
                 """

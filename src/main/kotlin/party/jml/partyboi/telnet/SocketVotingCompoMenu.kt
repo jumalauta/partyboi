@@ -10,7 +10,7 @@ import party.jml.partyboi.entries.VotableEntry
 class SocketVotingCompoMenu : AuthorizedSocketPage, SocketMenu {
     override fun getTitle(): String = "Voting"
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices
@@ -23,10 +23,10 @@ class SocketVotingCompoMenu : AuthorizedSocketPage, SocketMenu {
         }
     }
 
-    override fun getItems(state: SocketState, app: AppServices): Map<String, String> =
+    override suspend fun getItems(state: SocketState, app: AppServices): Map<String, String> =
         getCompoList(app).mapValues { (_, compo) -> compo.name }
 
-    private fun getCompoList(app: AppServices): Map<String, Compo> =
+    private suspend fun getCompoList(app: AppServices): Map<String, Compo> =
         either {
             app.compos
                 .getAllCompos()
@@ -40,7 +40,7 @@ class SocketVotingCompoMenu : AuthorizedSocketPage, SocketMenu {
 class SocketVotingRegisterVotekey(val err: String?) : AuthorizedSocketPage {
     override fun getTitle(): String = "Register votekey"
 
-    override fun print(
+    override suspend fun print(
         state: SocketState,
         app: AppServices
     ): String = listOfNotNull(
@@ -48,7 +48,7 @@ class SocketVotingRegisterVotekey(val err: String?) : AuthorizedSocketPage {
         "Enter your votekey (you probably got it with your badge):"
     ).joinToString("\n")
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices
@@ -60,7 +60,7 @@ class SocketVotingRegisterVotekey(val err: String?) : AuthorizedSocketPage {
 }
 
 data class SocketVotingEntryMenu(val compo: Compo) : SocketMenu, AuthorizedSocketPage {
-    override fun getItems(state: SocketState, app: AppServices): Map<String, String> {
+    override suspend fun getItems(state: SocketState, app: AppServices): Map<String, String> {
         val entries = getEntries(state.user!!, app)
             .mapValues { "${it.value.author} - ${it.value.title}" to it.value.points }
         val maxLength = entries.map { it.value.first.length }.max()
@@ -73,7 +73,7 @@ data class SocketVotingEntryMenu(val compo: Compo) : SocketMenu, AuthorizedSocke
 
     override fun getTitle(): String = "${compo.name} compo: Select entry to vote"
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices
@@ -89,7 +89,7 @@ data class SocketVotingEntryMenu(val compo: Compo) : SocketMenu, AuthorizedSocke
             }
         }
 
-    private fun getEntries(user: User, app: AppServices): Map<String, VotableEntry> =
+    private suspend fun getEntries(user: User, app: AppServices): Map<String, VotableEntry> =
         either {
             app.entries
                 .getVotableEntries(user.id)
@@ -102,7 +102,7 @@ data class SocketVotingEntryMenu(val compo: Compo) : SocketMenu, AuthorizedSocke
 }
 
 data class SocketVotingCastVote(val compo: Compo, val entry: VotableEntry) : SocketMenu, AuthorizedSocketPage {
-    override fun getItems(
+    override suspend fun getItems(
         state: SocketState,
         app: AppServices
     ): Map<String, String> = mapOf(
@@ -116,7 +116,7 @@ data class SocketVotingCastVote(val compo: Compo, val entry: VotableEntry) : Soc
 
     override fun getTitle(): String = "Vote ${entry.author} - ${entry.title}"
 
-    override fun input(
+    override suspend fun input(
         query: String,
         state: SocketState,
         app: AppServices

@@ -13,8 +13,8 @@ class EventSignalEmitter(app: AppServices) : StoredProperties(app) {
     private val scheduler: TimerTask = Timer().schedule(1000, 1000) {
         val now = app.time.localTimeSync()
         val lastCheckTime = lastCheck.getSync().getOrElse { app.time.fallbackTime }
-        app.events.getBetween(lastCheckTime, now).map {
-            runBlocking {
+        runBlocking {
+            app.events.getBetween(lastCheckTime, now).map {
                 it.forEach { event ->
                     log.info("${event.name} begins")
                     app.signals.emit(event.signal())

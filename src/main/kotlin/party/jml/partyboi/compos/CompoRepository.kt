@@ -28,19 +28,19 @@ class CompoRepository(private val app: AppServices) : Logging() {
 
     val generalRules = app.properties.property("CompoRepository.GeneralRules", GeneralRules(""))
 
-    fun getById(id: Int, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
+    suspend fun getById(id: Int, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
     }
 
-    fun getAllCompos(): AppResult<List<Compo>> = db.use {
+    suspend fun getAllCompos(): AppResult<List<Compo>> = db.use {
         it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
 
-    fun getOpenCompos(): AppResult<List<Compo>> = db.use {
+    suspend fun getOpenCompos(): AppResult<List<Compo>> = db.use {
         it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
     }
 
-    fun add(compo: NewCompo): AppResult<Compo> = db.use {
+    suspend fun add(compo: NewCompo): AppResult<Compo> = db.use {
         it.one(
             queryOf(
                 "insert into compo(name, rules, visible) values(?, ?, false) returning *",
@@ -50,7 +50,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun update(compo: Compo): AppResult<Unit> =
+    suspend fun update(compo: Compo): AppResult<Unit> =
         db.use {
             it.updateOne(
                 queryOf(
@@ -75,11 +75,11 @@ class CompoRepository(private val app: AppServices) : Logging() {
         }
 
 
-    fun setVisible(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun setVisible(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
     }
 
-    fun allowSubmit(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun allowSubmit(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)",
@@ -90,7 +90,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun allowVoting(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun allowVoting(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)",
@@ -105,7 +105,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun publishResults(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun publishResults(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set public_results = ? where id = ?",
@@ -115,11 +115,11 @@ class CompoRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun isVotingOpen(compoId: Int): AppResult<Boolean> = db.use {
+    suspend fun isVotingOpen(compoId: Int): AppResult<Boolean> = db.use {
         it.one(queryOf("SELECT allow_vote FROM compo WHERE id = ?", compoId).map(asBoolean))
     }
 
-    fun assertCanSubmit(compoId: Int, isAdmin: Boolean): AppResult<Unit> = db.use {
+    suspend fun assertCanSubmit(compoId: Int, isAdmin: Boolean): AppResult<Unit> = db.use {
         it.one(
             queryOf(
                 "select ? or (visible and allow_submit) from compo where id = ?",
@@ -148,7 +148,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    fun deleteAll(): AppResult<Unit> =
+    suspend fun deleteAll(): AppResult<Unit> =
         app.entries.deleteAll().flatMap {
             db.use { it.exec(queryOf("DELETE FROM compo")) }
         }

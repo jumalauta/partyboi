@@ -5,6 +5,7 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.raise.either
 import arrow.core.toNonEmptyListOrNone
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
@@ -29,11 +30,13 @@ class ScreenRepository(private val app: AppServices) : Logging() {
     val db = app.db
 
     init {
-        upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt").throwOnError()
-        upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info").throwOnError()
+        runBlocking {
+            upsertSlideSet(SlideSetRow.ADHOC, "Ad hoc", "bolt").throwOnError()
+            upsertSlideSet(SlideSetRow.DEFAULT, "Default", "circle-info").throwOnError()
+        }
     }
 
-    fun upsertSlideSet(id: String, name: String, icon: String) = db.use {
+    suspend fun upsertSlideSet(id: String, name: String, icon: String) = db.use {
         it.exec(
             queryOf(
                 """
@@ -50,27 +53,27 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getSlideSets(): AppResult<List<SlideSetRow>> = db.use {
+    suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = db.use {
         it.many(queryOf("SELECT * FROM slideset ORDER BY name").map(SlideSetRow.fromRow))
     }
 
-    fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
+    suspend fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
         it.one(queryOf("SELECT count(*) FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
     }
 
-    fun getAdHoc(): AppResult<Option<ScreenRow>> = db.use {
+    suspend fun getAdHoc(): AppResult<Option<ScreenRow>> = db.use {
         it.option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
     }
 
-    fun getSlide(id: Int): AppResult<ScreenRow> = db.use {
+    suspend fun getSlide(id: Int): AppResult<ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
     }
 
-    fun getAllSlides(): AppResult<List<ScreenRow>> = db.use {
+    suspend fun getAllSlides(): AppResult<List<ScreenRow>> = db.use {
         it.many(queryOf("SELECT * FROM screen").map(ScreenRow.fromRow))
     }
 
-    fun getSlideSetSlides(name: String): AppResult<List<ScreenRow>> = db.use {
+    suspend fun getSlideSetSlides(name: String): AppResult<List<ScreenRow>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM screen WHERE slideset_id = ? ORDER BY run_order, id",
@@ -79,7 +82,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun setAdHoc(slide: Slide<*>): AppResult<ScreenRow> = db.transaction {
+    suspend fun setAdHoc(slide: Slide<*>): AppResult<ScreenRow> = db.transaction {
         either {
             val (type, content) = getTypeAndJson(slide)
             val query = if (adHocExists(it).bind()) {
@@ -91,7 +94,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun add(
+    suspend fun add(
         slideSet: String,
         slide: Slide<*>,
         makeVisible: Boolean,
@@ -111,7 +114,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun update(id: Int, slide: Slide<*>): AppResult<ScreenRow> = db.use {
+    suspend fun update(id: Int, slide: Slide<*>): AppResult<ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
@@ -123,15 +126,15 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun delete(id: Int): AppResult<Unit> = db.use {
+    suspend fun delete(id: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
     }
 
-    fun deleteAll(): AppResult<Unit> = db.use {
+    suspend fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM screen"))
     }
 
-    fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<ScreenRow>> =
+    suspend fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<ScreenRow>> =
         db.transaction {
             either {
                 val tx = it
@@ -140,7 +143,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
             }
         }
 
-    fun getFirstSlide(slideSet: String): AppResult<ScreenRow> = db.use {
+    suspend fun getFirstSlide(slideSet: String): AppResult<ScreenRow> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM screen WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
@@ -149,7 +152,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getNext(slideSet: String, currentId: Int): AppResult<ScreenRow> = either {
+    suspend fun getNext(slideSet: String, currentId: Int): AppResult<ScreenRow> = either {
         val screens = getSlideSetSlides(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
@@ -162,15 +165,15 @@ class ScreenRepository(private val app: AppServices) : Logging() {
             .bind()
     }
 
-    fun setVisible(id: Int, visible: Boolean): AppResult<Unit> = db.use {
+    suspend fun setVisible(id: Int, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
     }
 
-    fun showOnInfo(id: Int, visible: Boolean): AppResult<Unit> = db.use {
+    suspend fun showOnInfo(id: Int, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET show_on_info = ? WHERE id = ?", visible, id))
     }
 
-    fun setRunOrder(id: Int, order: Int): AppResult<Unit> = db.use {
+    suspend fun setRunOrder(id: Int, order: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 

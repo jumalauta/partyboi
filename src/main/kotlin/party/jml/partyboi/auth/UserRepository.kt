@@ -1,7 +1,10 @@
 package party.jml.partyboi.auth
 
-import arrow.core.*
+import arrow.core.Option
+import arrow.core.left
+import arrow.core.none
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -17,6 +20,7 @@ import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.suspendEither
 import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
@@ -24,10 +28,12 @@ class UserRepository(private val app: AppServices) : Logging() {
     private val userSessionReloadRequests = mutableSetOf<Int>()
 
     init {
-        createAdminUser().throwOnError()
+        runBlocking {
+            createAdminUser().throwOnError()
+        }
     }
 
-    fun getUsers(): AppResult<List<User>> = db.use {
+    suspend fun getUsers(): AppResult<List<User>> = db.use {
         it.many(
             queryOf(
                 """
@@ -45,7 +51,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getUser(name: String): AppResult<User> = db.use {
+    suspend fun getUser(name: String): AppResult<User> = db.use {
         it.one(
             queryOf(
                 """
@@ -65,7 +71,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getUser(id: Int): AppResult<User> = db.use {
+    suspend fun getUser(id: Int): AppResult<User> = db.use {
         it.one(
             queryOf(
                 """
@@ -85,8 +91,8 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun addUser(user: UserCredentials, ip: String): AppResult<User> = db.use {
-        either {
+    suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> = db.use {
+        suspendEither {
             val createdUser = it.one(
                 queryOf(
                     """
@@ -101,11 +107,11 @@ class UserRepository(private val app: AppServices) : Logging() {
                 ).map(User.fromRow)
             ).bind()
 
-            fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
+            suspend fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
                 votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
             )
 
-            when (app.settings.automaticVoteKeys.getSync().bind()) {
+            when (app.settings.automaticVoteKeys.get().bind()) {
                 AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
                 AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
                 AutomaticVoteKeys.PER_EMAIL ->
@@ -125,7 +131,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = db.transaction {
+    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = db.transaction {
         either {
             if (user.password.isNotEmpty()) {
                 it.updateOne(
@@ -147,11 +153,11 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun deleteUserByName(name: String) = db.use {
+    suspend fun deleteUserByName(name: String) = db.use {
         it.exec(queryOf("DELETE FROM appuser WHERE name = ?", name))
     }
 
-    fun deleteAll() = db.use {
+    suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM appuser"))
     }
 
@@ -170,7 +176,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    fun makeAdmin(userId: Int, state: Boolean) = db.use {
+    suspend fun makeAdmin(userId: Int, state: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
 
@@ -178,7 +184,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         userSessionReloadRequests.add(userId)
     }
 
-    fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
+    suspend fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
         if (userSessionReloadRequests.contains(userId)) {
             userSessionReloadRequests.remove(userId)
             getUser(userId).getOrNone()
@@ -186,7 +192,7 @@ class UserRepository(private val app: AppServices) : Logging() {
             none()
         }
 
-    private fun createAdminUser() = db.use {
+    private suspend fun createAdminUser() = db.use {
         val password = app.config.adminPassword
         val admin = UserCredentials(app.config.adminUsername, password, password, "")
         it.exec(

@@ -24,7 +24,7 @@ data class TextSlide(
     @property:Field(order = 2, label = "Variant", presentation = FieldPresentation.hidden)
     val variant: String? = null,
 ) : Slide<TextSlide>, Validateable<TextSlide>, AutoRunHalting {
-    override fun render(ctx: FlowContent, app: AppServices) {
+    override suspend fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
             h1 { +title }
             markdown(content)

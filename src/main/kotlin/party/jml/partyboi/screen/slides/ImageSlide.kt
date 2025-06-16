@@ -17,7 +17,7 @@ data class ImageSlide(
     @property:Field(order = 0, label = "Image")
     val assetImage: String,
 ) : Slide<ImageSlide>, Validateable<ImageSlide> {
-    override fun render(ctx: FlowContent, app: AppServices) {
+    override suspend fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
             div(classes = "image") {
                 attributes["style"] = "background-image: url(\"/assets/uploaded/$assetImage\")"

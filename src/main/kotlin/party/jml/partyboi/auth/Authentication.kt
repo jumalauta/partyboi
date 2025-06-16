@@ -66,7 +66,7 @@ suspend fun ApplicationCall.forwardToLogin() {
     respondRedirect("/login")
 }
 
-fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
+suspend fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
     principal<User>()
         .toOption()
         .flatMap { user ->
@@ -75,7 +75,7 @@ fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
                 .recover { user }
         }
 
-fun ApplicationCall.userSession(app: AppServices?): AppResult<User> =
+suspend fun ApplicationCall.userSession(app: AppServices?): AppResult<User> =
     optionalUserSession(app).toEither { RedirectInterruption("/login") }
 
 fun Application.publicRouting(block: Route.() -> Unit) {

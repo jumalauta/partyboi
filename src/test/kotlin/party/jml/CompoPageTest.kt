@@ -87,7 +87,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
-    private fun setupCompos(app: AppServices, addCompos: Boolean = true): AppResult<Int?> = either {
+    private suspend fun setupCompos(app: AppServices, addCompos: Boolean = true): AppResult<Int?> = either {
         if (addCompos) {
             val demoCompo = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
             app.compos.setVisible(demoCompo.id, true).bind()
