@@ -46,8 +46,8 @@ class ScreenService(private val app: AppServices) : Logging() {
         }
     }
 
-    fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
-    fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
+    suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
+    suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
 
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
@@ -57,7 +57,7 @@ class ScreenService(private val app: AppServices) : Logging() {
         return state.drop(1).take(1)
     }
 
-    fun getAddHoc() = repository.getAdHoc()
+    suspend fun getAddHoc() = repository.getAdHoc()
 
     suspend fun addAdHoc(screen: TextSlide): AppResult<Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
@@ -65,15 +65,15 @@ class ScreenService(private val app: AppServices) : Logging() {
         state.emit(newState)
     }
 
-    fun getSlide(slideId: Int): AppResult<ScreenRow> = repository.getSlide(slideId)
-    fun getAllSlides(): AppResult<List<ScreenRow>> = repository.getAllSlides()
+    suspend fun getSlide(slideId: Int): AppResult<ScreenRow> = repository.getSlide(slideId)
+    suspend fun getAllSlides(): AppResult<List<ScreenRow>> = repository.getAllSlides()
 
-    fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
+    suspend fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
-    fun addSlide(slideSet: String, slide: Slide<*>) =
+    suspend fun addSlide(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false, readOnly = false)
 
-    fun update(id: Int, slide: Slide<*>) = either {
+    suspend fun update(id: Int, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
         if (state.value.id == id) {
             show(updatedRow)
@@ -81,48 +81,50 @@ class ScreenService(private val app: AppServices) : Logging() {
         updatedRow
     }
 
-    fun delete(id: Int) = repository.delete(id)
+    suspend fun delete(id: Int) = repository.delete(id)
 
-    fun deleteAll() = repository.deleteAll()
+    suspend fun deleteAll() = repository.deleteAll()
 
-    fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
+    suspend fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
 
-    fun showOnInfo(id: Int, visible: Boolean) = repository.showOnInfo(id, visible)
+    suspend fun showOnInfo(id: Int, visible: Boolean) = repository.showOnInfo(id, visible)
 
-    fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
+    suspend fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
     fun stopSlideSet() {
         scheduler?.cancel()
         scheduler = null
     }
 
-    fun startSlideSet(slideSetName: String): AppResult<Unit> =
+    suspend fun startSlideSet(slideSetName: String): AppResult<Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
             scheduler = Timer().schedule(10000, 10000) {
-                showNext()
+                runBlocking {
+                    showNext()
+                }
             }
         }
 
-    fun show(slideId: Int) = either {
+    suspend fun show(slideId: Int) = either {
         show(repository.getSlide(slideId).bind())
     }
 
-    fun showNext() {
+    suspend fun showNext() {
         repository.getNext(state.value.slideSet, state.value.id).fold(
             { stopSlideSet() },
             { show(it) }
         )
     }
 
-    fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
+    suspend fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
         if (state.value.slideSet == slideSetName) {
             showNext().right()
         } else {
             repository.getFirstSlide(slideSetName).map { show(it) }
         }
 
-    fun generateSlidesForCompo(compoId: Int): AppResult<String> = either {
+    suspend fun generateSlidesForCompo(compoId: Int): AppResult<String> = either {
         val slideSet = "compo-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
@@ -163,7 +165,7 @@ class ScreenService(private val app: AppServices) : Logging() {
         "/admin/screen/${slideSet}"
     }
 
-    fun generateResultSlidesForCompo(compoId: Int): AppResult<String> = either {
+    suspend fun generateResultSlidesForCompo(compoId: Int): AppResult<String> = either {
         val slideSet = "results-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Results: ${compo.name}", "square-poll-horizontal")
@@ -239,7 +241,7 @@ data class ScreenState(
 }
 
 interface Slide<A : Validateable<A>> {
-    fun render(ctx: FlowContent, app: AppServices)
+    suspend fun render(ctx: FlowContent, app: AppServices)
     fun variant(): String? = null
     fun getForm(): Form<A>
     fun toJson(): String

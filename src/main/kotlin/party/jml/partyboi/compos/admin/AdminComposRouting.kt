@@ -34,7 +34,7 @@ import kotlin.io.path.name
 
 fun Application.configureAdminComposRouting(app: AppServices) {
 
-    fun renderAdminComposPage(
+    suspend fun renderAdminComposPage(
         newCompoForm: Form<NewCompo>? = null,
         generalRulesForm: Form<GeneralRules>? = null,
     ) = either {
@@ -50,7 +50,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         )
     }
 
-    fun renderAdminEditCompoPage(
+    suspend fun renderAdminEditCompoPage(
         compoId: AppResult<Int>,
         compoForm: Form<Compo>? = null,
     ) = either {

@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.days
 data class ScheduleSlide(
     val date: LocalDate,
 ) : Slide<ScheduleSlide>, Validateable<ScheduleSlide>, NonEditable {
-    override fun render(ctx: FlowContent, app: AppServices) {
+    override suspend fun render(ctx: FlowContent, app: AppServices) {
         val tz = app.time.timeZone.getSync().getOrNull()!!
         val from = LocalDateTime(date, SplitDateAt)
         val eventsE = app.events.getBetween(from, app.time.addSync(from, 1.days))

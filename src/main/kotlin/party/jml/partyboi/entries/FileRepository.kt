@@ -36,7 +36,7 @@ import kotlin.io.path.pathString
 class FileRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
-    fun makeStorageFilename(
+    suspend fun makeStorageFilename(
         entry: Entry,
         originalFilename: String,
         tx: TransactionalSession? = null
@@ -96,15 +96,15 @@ class FileRepository(private val app: AppServices) : Logging() {
         return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
     }
 
-    fun latestVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Option<Int>> =
+    suspend fun latestVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Option<Int>> =
         db.use(tx) {
             it.option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))
         }
 
-    fun nextVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Int> =
+    suspend fun nextVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Int> =
         latestVersion(entryId, tx).map { it.getOrElse { 0 } + 1 }
 
-    fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
+    suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
         db.use(tx) {
             it.one(
@@ -122,7 +122,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         }.bind()
     }
 
-    fun getLatest(entryId: Int): AppResult<FileDesc> = db.use {
+    suspend fun getLatest(entryId: Int): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1",
@@ -131,7 +131,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getVersion(entryId: Int, version: Int): AppResult<FileDesc> = db.use {
+    suspend fun getVersion(entryId: Int, version: Int): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM file WHERE entry_id = ? AND version = ?",
@@ -141,11 +141,11 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getAllVersions(entryId: Int): AppResult<List<FileDesc>> = db.use {
+    suspend fun getAllVersions(entryId: Int): AppResult<List<FileDesc>> = db.use {
         it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
     }
 
-    fun getUserVersion(entryId: Int, version: Int, userId: Int) = db.use {
+    suspend fun getUserVersion(entryId: Int, version: Int, userId: Int) = db.use {
         it.one(
             queryOf(
                 """
@@ -173,7 +173,7 @@ class FileRepository(private val app: AppServices) : Logging() {
     fun getStorageFile(name: Path): File =
         app.config.entryDir.resolve(name).toFile()
 
-    fun getAll() = db.use {
+    suspend fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
     }
 

@@ -21,7 +21,7 @@ import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureEntriesRouting(app: AppServices) {
-    fun renderEntriesPage(
+    suspend fun renderEntriesPage(
         userSession: AppResult<User>,
         newEntryForm: Form<NewEntry>? = null,
     ) = either {
@@ -37,7 +37,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
         )
     }
 
-    fun renderEditEntryPage(
+    suspend fun renderEditEntryPage(
         entryId: AppResult<Int>,
         user: AppResult<User>,
         entryUpdateForm: Form<EntryUpdate>? = null,

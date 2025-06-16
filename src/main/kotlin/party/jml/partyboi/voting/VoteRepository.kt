@@ -13,7 +13,7 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 
 class VoteRepository(private val db: DatabasePool) : Logging() {
-    fun castVote(userId: Int, entryId: Int, points: Int): AppResult<Unit> = db.use {
+    suspend fun castVote(userId: Int, entryId: Int, points: Int): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """
@@ -29,7 +29,7 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
         )
     }
 
-    fun getUserVotes(userId: Int): AppResult<List<VoteRow>> = db.use {
+    suspend fun getUserVotes(userId: Int): AppResult<List<VoteRow>> = db.use {
         it.many(
             queryOf(
                 """
@@ -42,11 +42,11 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
         )
     }
 
-    fun getAllVotes(): AppResult<List<VoteRow>> = db.use {
+    suspend fun getAllVotes(): AppResult<List<VoteRow>> = db.use {
         it.many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
     }
 
-    fun getResults(onlyPublic: Boolean): AppResult<List<CompoResult>> = db.use {
+    suspend fun getResults(onlyPublic: Boolean): AppResult<List<CompoResult>> = db.use {
         it.many(
             queryOf(
                 """
@@ -83,7 +83,7 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
         }.bindAll()
     }
 
-    fun deleteAll() = db.use {
+    suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM vote"))
     }
 }

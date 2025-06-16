@@ -1,6 +1,5 @@
 package party.jml.partyboi.system
 
-import arrow.core.Either
 import arrow.core.toOption
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
@@ -8,7 +7,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
@@ -26,7 +24,7 @@ class ErrorRepository(private val app: AppServices) {
         errorCounter.set(0)
     }
 
-    inline fun <reified T> saveSafely(error: Throwable, context: T? = null): String? {
+    suspend inline fun <reified T> saveSafely(error: Throwable, context: T? = null): String? {
         val key = randomShortId()
         val jsonContext = try {
             context?.let { Json.encodeToString(it) }
@@ -36,7 +34,7 @@ class ErrorRepository(private val app: AppServices) {
         return save(key, error, jsonContext).toOption().map { key }.getOrNull()
     }
 
-    fun save(key: String, error: Throwable, context: String? = null): AppResult<Unit> = db.use {
+    suspend fun save(key: String, error: Throwable, context: String? = null): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """INSERT INTO error ("key", "message", "trace", "context") VALUES (?, ?, ?, ?::jsonb)""".trimIndent(),
@@ -50,11 +48,11 @@ class ErrorRepository(private val app: AppServices) {
         }
     }
 
-    fun getError(id: Int): AppResult<ErrorRow> = db.use {
+    suspend fun getError(id: Int): AppResult<ErrorRow> = db.use {
         it.one(queryOf("SELECT * FROM error WHERE id = ?", id).map(ErrorRow.fromRow))
     }
 
-    fun getErrors(limit: Int, pageIndex: Int): AppResult<List<ErrorRow>> = db.use {
+    suspend fun getErrors(limit: Int, pageIndex: Int): AppResult<List<ErrorRow>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM error ORDER BY time DESC LIMIT ? OFFSET ?",

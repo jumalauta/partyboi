@@ -21,7 +21,7 @@ interface ICachedValue<T> {
 
 class CachedValue<T>(
     val ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
-    val fetchValue: () -> AppResult<T>
+    val fetchValue: suspend () -> AppResult<T>
 ) :
     ICachedValue<T> {
     private val state = MutableStateFlow<Value<T>?>(null)
@@ -57,8 +57,8 @@ class CachedValue<T>(
 
 class PersistentCachedValue<T>(
     ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
-    fetchValue: () -> AppResult<T>,
-    val storeValue: (T) -> AppResult<Unit>
+    fetchValue: suspend () -> AppResult<T>,
+    val storeValue: suspend (T) -> AppResult<Unit>
 ) : ICachedValue<T> {
     private val cache = CachedValue(ttl, fetchValue)
 

@@ -29,11 +29,11 @@ import party.jml.partyboi.triggers.TriggerRow
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
-    fun get(eventId: Int): AppResult<Event> = db.use {
+    suspend fun get(eventId: Int): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
-    fun getBetween(since: LocalDateTime, until: LocalDateTime): AppResult<List<Event>> = db.use {
+    suspend fun getBetween(since: LocalDateTime, until: LocalDateTime): AppResult<List<Event>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
@@ -43,15 +43,15 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getAll(): AppResult<List<Event>> = db.use {
+    suspend fun getAll(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
     }
 
-    fun getPublic(): AppResult<List<Event>> = db.use {
+    suspend fun getPublic(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
     }
 
-    fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
+    suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
         it.one(
             queryOf(
                 """
@@ -65,7 +65,7 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
+    suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
         db.transaction { tx ->
             either {
                 val createdEvent = add(event, tx).bind()
@@ -76,7 +76,7 @@ class EventRepository(private val app: AppServices) : Logging() {
             }
         }
 
-    fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
+    suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
         app.triggers.reset(event.signal(), tx)
         it.one(
             queryOf(
@@ -96,11 +96,11 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun delete(eventId: Int): AppResult<Unit> = db.use {
+    suspend fun delete(eventId: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
-    fun deleteAll(): AppResult<Unit> = db.use {
+    suspend fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM event"))
     }
 

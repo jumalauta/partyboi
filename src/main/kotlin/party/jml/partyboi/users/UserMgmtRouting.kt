@@ -15,12 +15,12 @@ import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.voting.VoteKey
 
 fun Application.configureUserMgmtRouting(app: AppServices) {
-    fun renderUsersPage() = either {
+    suspend fun renderUsersPage() = either {
         val users = app.users.getUsers().bind().sortedBy { it.name.lowercase() }
         UserListPage.render(users)
     }
 
-    fun renderEditPage(
+    suspend fun renderEditPage(
         session: AppResult<User>,
         id: AppResult<Int>,
         currentForm: Form<UserCredentials>? = null

@@ -45,10 +45,10 @@ interface PartyboiTester {
         return BigInteger(1, md.digest(bytes)).toString(16).padStart(32, '0')
     }
 
-    fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): AppResult<User> =
+    suspend fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): AppResult<User> =
         app.users.addUser(UserCredentials(name, password, password, ""), "0.0.0.0")
 
-    fun addTestAdmin(app: AppServices, name: String = "admin", password: String = "password"): AppResult<User> =
+    suspend fun addTestAdmin(app: AppServices, name: String = "admin", password: String = "password"): AppResult<User> =
         either {
             val user = addTestUser(app, name, password).bind()
             app.users.makeAdmin(user.id, true)
@@ -157,22 +157,23 @@ fun ApplicationTestBuilder.setupServices() {
 fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> AppResult<T>) {
     application {
         val app = services()
-
-        either {
-            app.settings.automaticVoteKeys.setSync(AutomaticVoteKeys.DISABLED)
-            app.events.deleteAll().bind()
-            app.screen.deleteAll().bind()
-            app.votes.deleteAll().bind()
-            app.voteKeys.deleteAll().bind()
-            app.entries.deleteAll().bind()
-            app.compos.deleteAll().bind()
-            app.compos.generalRules.setSync(GeneralRules("")).bind()
-            app.users.deleteAll().bind()
-            runBlocking {
-                app.setupForTest().bind()
+        runBlocking {
+            either {
+                app.settings.automaticVoteKeys.setSync(AutomaticVoteKeys.DISABLED)
+                app.events.deleteAll().bind()
+                app.screen.deleteAll().bind()
+                app.votes.deleteAll().bind()
+                app.voteKeys.deleteAll().bind()
+                app.entries.deleteAll().bind()
+                app.compos.deleteAll().bind()
+                app.compos.generalRules.setSync(GeneralRules("")).bind()
+                app.users.deleteAll().bind()
+                runBlocking {
+                    app.setupForTest().bind()
+                }
+            }.onLeft {
+                throw it.throwable ?: RuntimeException(it.message)
             }
-        }.onLeft {
-            throw it.throwable ?: RuntimeException(it.message)
         }
     }
 }

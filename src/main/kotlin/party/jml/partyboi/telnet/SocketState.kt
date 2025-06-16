@@ -54,8 +54,8 @@ interface SocketPage {
     fun requiresAuthorization(): Boolean = false
 
     fun getTitle(): String
-    fun print(state: SocketState, app: AppServices): String
-    fun input(query: String, state: SocketState, app: AppServices): SocketState?
+    suspend fun print(state: SocketState, app: AppServices): String
+    suspend fun input(query: String, state: SocketState, app: AppServices): SocketState?
 
     fun formattedQuery(query: String): String = query.trim().uppercase()
 }
@@ -66,9 +66,9 @@ interface AuthorizedSocketPage : SocketPage {
 
 interface SocketMenu : SocketPage {
     fun getMenuTitle(): String = "Select"
-    fun getItems(state: SocketState, app: AppServices): Map<String, String>
+    suspend fun getItems(state: SocketState, app: AppServices): Map<String, String>
 
-    override fun print(state: SocketState, app: AppServices): String =
+    override suspend fun print(state: SocketState, app: AppServices): String =
         (listOf(getMenuTitle() + ":", "") + getItems(state, app)
             .map { "  ${it.key}) ${it.value}" })
             .joinToString("\n") + "\n\n? "

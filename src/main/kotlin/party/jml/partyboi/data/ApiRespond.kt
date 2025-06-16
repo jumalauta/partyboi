@@ -16,7 +16,7 @@ import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 import java.nio.file.Path
 
-suspend fun ApplicationCall.apiRespond(block: () -> AppResult<Unit>) {
+suspend fun ApplicationCall.apiRespond(block: suspend () -> AppResult<Unit>) {
     Either.catch {
         apiRespond(block())
     }.mapLeft {
@@ -73,7 +73,7 @@ fun ApplicationCall.parameterPath(name: String, nameToPath: (String) -> Path) =
         nameToPath(it.joinToString("/"))
     } ?: MissingInput(name).left()
 
-suspend fun ApplicationCall.switchApi(block: (id: Int, state: Boolean) -> AppResult<Unit>) {
+suspend fun ApplicationCall.switchApi(block: suspend (id: Int, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {
             userSession(null).bind()

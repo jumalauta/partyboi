@@ -26,7 +26,7 @@ data class QrCodeSlide(
     @property:Field(order = 2, label = "Description", presentation = FieldPresentation.large)
     val description: String,
 ) : Slide<QrCodeSlide>, Validateable<QrCodeSlide> {
-    override fun render(ctx: FlowContent, app: AppServices) {
+    override suspend fun render(ctx: FlowContent, app: AppServices) {
         val myTitle = title
         with(ctx) {
             h1 { +myTitle }

@@ -34,7 +34,7 @@ class VoteService(val app: AppServices) {
         }
     }
 
-    fun castVote(user: User, entryId: Int, points: Int): AppResult<Unit> =
+    suspend fun castVote(user: User, entryId: Int, points: Int): AppResult<Unit> =
         if (user.votingEnabled) {
             either {
                 val validPoints = validatePoints(points).bind()
@@ -69,7 +69,7 @@ class VoteService(val app: AppServices) {
 
     fun getLiveVoteState(): Option<LiveVoteState> = if (live.value.open) live.value.some() else none()
 
-    fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> =
+    suspend fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> =
         either {
             val normalVoting = app.entries.getVotableEntries(userId).bind()
             val liveVoting = if (live.value.open) {
@@ -88,12 +88,12 @@ class VoteService(val app: AppServices) {
             liveVoting + normalVoting
         }
 
-    fun getAllVotes(): AppResult<List<VoteRow>> = repository.getAllVotes()
+    suspend fun getAllVotes(): AppResult<List<VoteRow>> = repository.getAllVotes()
 
-    fun getResults(): AppResult<List<CompoResult>> =
+    suspend fun getResults(): AppResult<List<CompoResult>> =
         repository.getResults(onlyPublic = false)
 
-    fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
+    suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
     suspend fun getResultsFileContent(): AppResult<String> = either {
@@ -104,9 +104,9 @@ class VoteService(val app: AppServices) {
 
     fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
-    fun deleteAll() = repository.deleteAll()
+    suspend fun deleteAll() = repository.deleteAll()
 
-    private fun isVotingOpen(entry: Entry): AppResult<Boolean> =
+    private suspend fun isVotingOpen(entry: Entry): AppResult<Boolean> =
         if (!entry.qualified) {
             false.right()
         } else if (live.value.openFor(entry)) {

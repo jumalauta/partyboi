@@ -103,7 +103,7 @@ class VotingTest : PartyboiTester {
         it.buttonClick("/vote/${entry!!.id}/3")
     }
 
-    private fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {
+    private suspend fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {
         val demoCompo = app.compos.add(NewCompo("Demo", "")).bind()
         app.compos.setVisible(demoCompo.id, true).bind()
         app.compos.allowSubmit(demoCompo.id, false).bind()
