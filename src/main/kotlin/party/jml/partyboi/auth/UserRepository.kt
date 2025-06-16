@@ -34,6 +34,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     name,
                     password,
                     is_admin,
+                    email,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -51,6 +52,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     name,
                     password,
                     is_admin,
+                    email,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -70,6 +72,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     name,
                     password,
                     is_admin,
+                    email,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -84,9 +87,15 @@ class UserRepository(private val app: AppServices) : Logging() {
         either {
             val createdUser = it.one(
                 queryOf(
-                    "insert into appuser(name, password) values (?, ?) returning *, false as voting_enabled",
+                    """
+                        INSERT INTO appuser (name, password, email)
+                        	VALUES (?, ?, ?)
+                        RETURNING
+                        	*, FALSE AS voting_enabled
+                    """.trimIndent(),
                     user.name,
                     user.hashedPassword(),
+                    user.email.nonEmptyString()
                 ).map(User.fromRow)
             ).bind()
 
@@ -165,7 +174,7 @@ class UserRepository(private val app: AppServices) : Logging() {
 
     private fun createAdminUser() = db.use {
         val password = app.config.adminPassword
-        val admin = UserCredentials(app.config.adminUsername, password, password)
+        val admin = UserCredentials(app.config.adminUsername, password, password, "")
         it.exec(
             queryOf(
                 "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",
@@ -183,6 +192,7 @@ data class User(
     val hashedPassword: String,
     val isAdmin: Boolean,
     val votingEnabled: Boolean,
+    val email: String?,
 ) : Principal {
     fun authenticate(plainPassword: String): Either<AppError, User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
@@ -199,6 +209,7 @@ data class User(
                 hashedPassword = row.string("password"),
                 isAdmin = row.boolean("is_admin"),
                 votingEnabled = row.boolean("voting_enabled"),
+                email = row.stringOrNull("email"),
             )
         }
 
@@ -208,12 +219,34 @@ data class User(
 }
 
 data class UserCredentials(
-    @property:Field(1, "User name")
+    @property:Field(
+        order = 1,
+        label = "User name"
+    )
     val name: String,
-    @property:Field(2, "Password", presentation = FieldPresentation.secret)
+
+    @property:Field(
+        order = 2,
+        label = "Password",
+        presentation = FieldPresentation.secret
+    )
     val password: String,
-    @property:Field(3, "Password again", presentation = FieldPresentation.secret)
+
+    @property:Field(
+        order = 3,
+        label = "Password again",
+        presentation = FieldPresentation.secret
+    )
     val password2: String,
+
+    @property:Field(
+        order = 4,
+        label = "Email",
+        presentation = FieldPresentation.email,
+        description = "Optional but recommended"
+    )
+    val email: String,
+
     @property:Field(presentation = FieldPresentation.hidden)
     val isUpdate: Boolean = false,
 ) : Validateable<UserCredentials> {
@@ -229,13 +262,14 @@ data class UserCredentials(
     fun hashedPassword(): String = BCrypt.hashpw(password, BCrypt.gensalt())
 
     companion object {
-        val Empty = UserCredentials("", "", "")
+        val Empty = UserCredentials("", "", "", "")
 
         fun fromUser(user: User): UserCredentials = UserCredentials(
             name = user.name,
             password = "",
             password2 = "",
             isUpdate = true,
+            email = user.email ?: "",
         )
     }
 }

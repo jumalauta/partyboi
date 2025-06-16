@@ -16,6 +16,7 @@ object UserListPage {
                         th {}
                         th { +"User name" }
                         th { +"Privileges" }
+                        th { +"Email" }
                         th { +"Voting enabled" }
                     }
                 }
@@ -32,6 +33,11 @@ object UserListPage {
                             }
                             td {
                                 if (user.isAdmin) +"Admin" else +"-"
+                            }
+                            td {
+                                user.email?.let { email ->
+                                    a(href = "mailto:$email") { +email }
+                                }
                             }
                             td {
                                 if (user.votingEnabled) +"Yes" else +"No"

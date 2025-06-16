@@ -89,7 +89,7 @@ data class SocketRegistration(
         return if (username == null) {
             state.goto(copy(username = query))
         } else {
-            val credentials = UserCredentials(username, query, query)
+            val credentials = UserCredentials(username, query, query, "")
             app.users.addUser(credentials, "127.0.0.1").fold({
                 state.goto(
                     copy(

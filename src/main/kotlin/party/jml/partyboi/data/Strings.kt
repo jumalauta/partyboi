@@ -1,8 +1,13 @@
 package party.jml.partyboi.data
 
+import arrow.core.Option
+import arrow.core.none
+import arrow.core.some
 import org.apache.commons.lang3.RandomStringUtils
 
 fun String.nonEmptyString(): String? = this.ifEmpty { null }
+
+fun String.nonEmptyStringOption(): Option<String> = if (this.isEmpty()) none<String>() else this.some()
 
 fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? =
     this

@@ -112,6 +112,10 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
     }
 }
 
+fun FlowContent.formDescription(description: Option<String>) {
+    description.map { small(classes = "description") { +it } }
+}
+
 fun FlowContent.formError(error: Option<String>) {
     error.map { small(classes = "error") { +it } }
 }
@@ -127,6 +131,7 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(
             type = data.type
             block()
         }
+        formDescription(data.description)
         formError(data.error)
     }
 }
@@ -142,6 +147,7 @@ fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData, monosp
                 +data.value
             }
         }
+        formDescription(data.description)
         formError(data.error)
     }
 }
@@ -156,6 +162,7 @@ fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
     label {
         span { +data.label }
         fileInput(name = data.key)
+        formDescription(data.description)
         formError(data.error)
     }
 }
@@ -190,6 +197,7 @@ fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: L
                 }
             }
         }
+        formDescription(data.description)
         formError(data.error)
     }
 }

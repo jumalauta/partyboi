@@ -90,9 +90,11 @@ class Form<T : Validateable<T>>(
                             type = when (meta.presentation) {
                                 FieldPresentation.hidden -> InputType.hidden
                                 FieldPresentation.secret -> InputType.password
+                                FieldPresentation.email -> InputType.email
                                 else -> inputType
                             },
                             presentation = meta.presentation,
+                            description = meta.description.nonEmptyStringOption(),
                         )
                     )
                 }
@@ -120,6 +122,7 @@ class Form<T : Validateable<T>>(
         val error: Option<String>,
         val type: InputType,
         val presentation: FieldPresentation,
+        val description: Option<String>,
     )
 
     companion object {
@@ -263,6 +266,7 @@ annotation class Field(
     val order: Int = 0,
     val label: String = "",
     val presentation: FieldPresentation = FieldPresentation.normal,
+    val description: String = "",
 )
 
 enum class FieldPresentation {
@@ -271,6 +275,7 @@ enum class FieldPresentation {
     large,
     monospace,
     secret,
+    email,
     custom,
 }
 
