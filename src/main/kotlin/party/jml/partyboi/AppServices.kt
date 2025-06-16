@@ -3,7 +3,6 @@ package party.jml.partyboi
 import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
-import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.assets.AssetsRepository
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserRepository
@@ -56,12 +55,10 @@ class AppServices(
     }
 }
 
-fun Application.services(): AppServices {
+suspend fun Application.services(): AppServices {
     return AppServices.globalInstance ?: run {
         val db = getDatabasePool()
-        val migration = runBlocking {
-            Migrations.migrate(db).getOrElse { it.throwError() }
-        }
+        val migration = Migrations.migrate(db).getOrElse { it.throwError() }
         val app = AppServices(db, config())
         app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
         AppServices.globalInstance = app

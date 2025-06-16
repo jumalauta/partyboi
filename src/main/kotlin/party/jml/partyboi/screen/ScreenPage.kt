@@ -10,10 +10,8 @@ object ScreenPage {
         createHTML().article(
             classes = classes(slide)
         ) {
-            val self = this
-            runBlocking {
-                slide.render(self, app)
-            }
+            val article = this
+            runBlocking { slide.render(article, app) }
         }
 
     fun render(slide: Slide<*>, theme: ScreenTheme, app: AppServices) =
@@ -26,10 +24,8 @@ object ScreenPage {
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
                     article(classes = classes(slide)) {
-                        val self = this
-                        runBlocking {
-                            slide.render(self, app)
-                        }
+                        val article = this
+                        runBlocking { slide.render(article, app) }
                     }
                 }
                 main {

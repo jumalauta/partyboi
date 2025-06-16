@@ -2,7 +2,6 @@ package party.jml.partyboi.compos
 
 import arrow.core.*
 import arrow.core.raise.either
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotliquery.Row
@@ -71,7 +70,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
                 )
             )
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(compo.id, app.time)) }
+            app.signals.emit(Signal.compoContentUpdated(compo.id, app.time))
         }
 
 
@@ -99,9 +98,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
                 state
             )
         ).onRight {
-            runBlocking {
-                app.signals.emit(if (state) Signal.votingOpened(compoId) else Signal.votingClosed(compoId))
-            }
+            app.signals.emit(if (state) Signal.votingOpened(compoId) else Signal.votingClosed(compoId))
         }
     }
 

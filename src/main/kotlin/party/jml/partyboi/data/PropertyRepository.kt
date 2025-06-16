@@ -2,7 +2,6 @@ package party.jml.partyboi.data
 
 import arrow.core.Option
 import arrow.core.raise.either
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -35,7 +34,7 @@ class PropertyRepository(val app: AppServices) : Logging() {
             },
             storeValue = { value ->
                 store(key, Json.encodeToString(value)).onRight {
-                    runBlocking { app.signals.emit(Signal.propertyUpdated(key)) }
+                    app.signals.emit(Signal.propertyUpdated(key))
                 }
             }
         )

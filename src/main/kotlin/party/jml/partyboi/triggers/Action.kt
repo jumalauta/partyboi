@@ -2,7 +2,6 @@ package party.jml.partyboi.triggers
 
 import arrow.core.raise.either
 import arrow.core.right
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -52,9 +51,8 @@ data class OpenLiveVoting(
         "Open live voting on ${compo.name} compo"
     }
 
-    override suspend fun apply(app: AppServices): AppResult<Unit> = runBlocking {
+    override suspend fun apply(app: AppServices): AppResult<Unit> =
         app.votes.startLiveVoting(compoId).right()
-    }
 
     override fun toJson(): String = Json.encodeToString(this)
 }
@@ -65,9 +63,9 @@ object CloseLiveVoting : Action {
         "Close live voting"
     }
 
-    override suspend fun apply(app: AppServices): AppResult<Unit> = runBlocking {
+    override suspend fun apply(app: AppServices): AppResult<Unit> =
         app.votes.closeLiveVoting().right()
-    }
+
 
     override fun toJson(): String = Json.encodeToString(this)
 }
@@ -82,7 +80,7 @@ data class EnableLiveVotingForEntry(
     }
 
     override suspend fun apply(app: AppServices): AppResult<Unit> =
-        app.entries.get(entryId).map { entry -> runBlocking { app.votes.addEntryToLiveVoting(entry) } }
+        app.entries.get(entryId).map { entry -> app.votes.addEntryToLiveVoting(entry) }
 
     override fun toJson(): String = Json.encodeToString(this)
 }

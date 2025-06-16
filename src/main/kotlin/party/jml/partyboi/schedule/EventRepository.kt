@@ -138,9 +138,9 @@ data class NewEvent(
             return NewEvent("", date.atTime(12, 0, 0), true)
         }
 
-        fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
-            val timeZone = timeService.timeZone.getSync().getOrNull()!!
-            return make(timeService.todaySync(), otherEvents.map { it.time.toLocalDateTime(timeZone).date })
+        suspend fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
+            val timeZone = timeService.timeZone.get().getOrNull()!!
+            return make(timeService.today(), otherEvents.map { it.time.toLocalDateTime(timeZone).date })
         }
     }
 }

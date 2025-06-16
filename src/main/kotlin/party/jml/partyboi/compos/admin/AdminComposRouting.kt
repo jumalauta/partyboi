@@ -8,7 +8,6 @@ import io.ktor.server.html.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.pre
@@ -42,7 +41,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             newCompoForm = newCompoForm ?: Form(NewCompo::class, NewCompo.Empty, initial = true),
             generalRulesForm = generalRulesForm ?: Form(
                 GeneralRules::class,
-                app.compos.generalRules.getSync().bind(),
+                app.compos.generalRules.get().bind(),
                 initial = true
             ),
             compos = app.compos.getAllCompos().bind(),
@@ -212,7 +211,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 runOrder
                     .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
                     .bindAll()
-                runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId, app.time)) }
+                app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
                 call.respondText("OK")
             }
         }

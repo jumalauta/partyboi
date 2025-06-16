@@ -116,14 +116,9 @@ class UserRepository(private val app: AppServices) : Logging() {
                 AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
                 AutomaticVoteKeys.PER_EMAIL ->
                     createdUser.email?.let { email ->
-                        runBlocking {
-                            val emails = app.settings.voteKeyEmailList.get().fold({ emptyList() }, { it })
-                            if (emails.contains(email)) {
-                                registerVoteKey(VoteKey.email(email))
-                            } else {
-                                null
-                            }
-                        }
+                        val emails = app.settings.voteKeyEmailList.get().fold({ emptyList() }, { it })
+                        if (emails.contains(email)) registerVoteKey(VoteKey.email(email))
+                        else null
                     } ?: createdUser
 
                 else -> createdUser

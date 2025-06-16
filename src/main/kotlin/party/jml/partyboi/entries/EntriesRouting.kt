@@ -7,7 +7,6 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.userApiRouting
@@ -156,7 +155,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
                         if (entry.file.isDefined) {
                             val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
-                            runBlocking { entry.file.write(storageFilename).bind() }
+                            entry.file.write(storageFilename).bind()
                             val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
 
                             app.screenshots.scanForScreenshotSource(file).map { source ->

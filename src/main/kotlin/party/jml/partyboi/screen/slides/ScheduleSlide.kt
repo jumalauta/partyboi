@@ -29,9 +29,9 @@ data class ScheduleSlide(
     val date: LocalDate,
 ) : Slide<ScheduleSlide>, Validateable<ScheduleSlide>, NonEditable {
     override suspend fun render(ctx: FlowContent, app: AppServices) {
-        val tz = app.time.timeZone.getSync().getOrNull()!!
+        val tz = app.time.timeZone.get().getOrNull()!!
         val from = LocalDateTime(date, SplitDateAt)
-        val eventsE = app.events.getBetween(from, app.time.addSync(from, 1.days))
+        val eventsE = app.events.getBetween(from, app.time.add(from, 1.days))
         with(ctx) {
             h1 { +"${date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK)}" }
             eventsE.map { events ->

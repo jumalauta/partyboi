@@ -3,7 +3,6 @@ package party.jml.partyboi.data
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.system.AppResult
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -13,10 +12,6 @@ interface ICachedValue<T> {
     suspend fun get(): AppResult<T>
     suspend fun set(value: T): AppResult<Unit>
     suspend fun refresh(): AppResult<T>
-
-    fun getSync(): AppResult<T> = runBlocking { get() }
-    fun setSync(value: T): AppResult<Unit> = runBlocking { set(value) }
-    fun refreshSync(): AppResult<T> = runBlocking { refresh() }
 }
 
 class CachedValue<T>(
