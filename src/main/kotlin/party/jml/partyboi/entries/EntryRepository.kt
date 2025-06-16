@@ -8,7 +8,6 @@ package party.jml.partyboi.entries
 import arrow.core.*
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
 import kotlinx.datetime.toJavaLocalDateTime
@@ -117,7 +116,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                         originalFilename = newEntry.file.name,
                         storageFilename = storageFilename,
                     )
-                    runBlocking { newEntry.file.write(fileDesc.storageFilename).bind() }
+                    newEntry.file.write(fileDesc.storageFilename).bind()
                     val storedFile = app.files.add(fileDesc, it).bind()
 
                     app.screenshots.scanForScreenshotSource(storedFile).map { source ->
@@ -128,7 +127,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                 entry
             }
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time)) }
+            app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time))
         }
 
     suspend fun update(entry: EntryUpdate, userId: Int): AppResult<Entry> = either {
@@ -159,11 +158,9 @@ class EntryRepository(private val app: AppServices) : Logging() {
                 ).map(Entry.fromRow)
             )
         }.onRight {
-            runBlocking {
-                app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
-                if (previousVersion.compoId != entry.compoId) {
-                    app.signals.emit(Signal.compoContentUpdated(previousVersion.compoId, app.time))
-                }
+            app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
+            if (previousVersion.compoId != entry.compoId) {
+                app.signals.emit(Signal.compoContentUpdated(previousVersion.compoId, app.time))
             }
         }.bind()
     }
@@ -173,7 +170,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time)) }
+            app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
@@ -182,7 +179,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.updateOne(queryOf("delete from entry where id = ?", entryId))
         }.onRight {
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time)) }
+            app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
@@ -194,7 +191,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         db.use {
             it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
         }.map { compoId ->
-            runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId, app.time)) }
+            app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
         }
 
     suspend fun allowEdit(entryId: Int, state: Boolean): AppResult<Unit> =

@@ -156,17 +156,17 @@ fun ApplicationTestBuilder.setupServices() {
 
 fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> AppResult<T>) {
     application {
-        val app = services()
         runBlocking {
+            val app = services()
             either {
-                app.settings.automaticVoteKeys.setSync(AutomaticVoteKeys.DISABLED)
+                app.settings.automaticVoteKeys.set(AutomaticVoteKeys.DISABLED)
                 app.events.deleteAll().bind()
                 app.screen.deleteAll().bind()
                 app.votes.deleteAll().bind()
                 app.voteKeys.deleteAll().bind()
                 app.entries.deleteAll().bind()
                 app.compos.deleteAll().bind()
-                app.compos.generalRules.setSync(GeneralRules("")).bind()
+                app.compos.generalRules.set(GeneralRules("")).bind()
                 app.users.deleteAll().bind()
                 runBlocking {
                     app.setupForTest().bind()

@@ -211,15 +211,14 @@ class ScreenService(private val app: AppServices) : Logging() {
 
     fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
-    private fun show(row: ScreenRow): Unit =
-        runBlocking {
-            val slide = row.getSlide()
-            if (slide is AutoRunHalting && slide.haltAutoRun()) {
-                stopSlideSet()
-            }
-            state.emit(ScreenState.fromRow(row))
-            app.signals.emit(Signal.slideShown(row.id))
+    private suspend fun show(row: ScreenRow) {
+        val slide = row.getSlide()
+        if (slide is AutoRunHalting && slide.haltAutoRun()) {
+            stopSlideSet()
         }
+        state.emit(ScreenState.fromRow(row))
+        return app.signals.emit(Signal.slideShown(row.id))
+    }
 }
 
 data class ScreenState(

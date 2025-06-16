@@ -3,6 +3,7 @@ package party.jml.partyboi
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
@@ -18,7 +19,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val app = services()
+    val app = runBlocking { services() }
 
     launch { app.triggers.start() }
     launch { app.votes.start() }

@@ -6,7 +6,6 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toLocalDateTime
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
@@ -148,7 +147,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     call.userSession(app).bind()
                     val slideSetName = call.parameterString("slideSet").bind()
                     val events = app.events.getPublic().bind()
-                    val timeZone = runBlocking { app.time.timeZone.get() }.bind()
+                    val timeZone = app.time.timeZone.get().bind()
                     val allDates = events.map { it.time.toLocalDateTime(timeZone).date }.distinct().sorted()
                     val existingSlides = app.screen.getSlideSet(slideSetName).bind()
                     val existingDates = existingSlides.flatMap {

@@ -106,7 +106,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
     }
 
     private suspend fun execute(signal: Signal): AppResult<Unit> = either {
-        val now = app.time.localTimeSync()
+        val now = app.time.localTime()
         getTriggers(signal.toString()).bind().forEach {
             val result = executeTrigger(it, now)
             log.info(

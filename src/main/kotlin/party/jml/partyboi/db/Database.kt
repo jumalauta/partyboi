@@ -4,7 +4,6 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toJavaLocalDateTime
 import kotliquery.*
 import kotliquery.action.*
@@ -39,12 +38,10 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
             it.exec(queryOf("CREATE SCHEMA $name"))
         }
         val self = this
-        return runBlocking {
-            either {
-                schema.bind()
-                Migrations.migrate(self, name).bind()
-                name
-            }
+        return either {
+            schema.bind()
+            Migrations.migrate(self, name).bind()
+            name
         }
     }
 
