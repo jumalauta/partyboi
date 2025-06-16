@@ -21,6 +21,7 @@ fun Application.module() {
     val app = services()
 
     launch { app.triggers.start() }
+    launch { app.votes.start() }
 
     configureSerialization()
     configureHTTP()

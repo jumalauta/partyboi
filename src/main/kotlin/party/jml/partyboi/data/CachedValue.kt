@@ -66,7 +66,11 @@ class PersistentCachedValue<T>(
         cache.get()
 
     override suspend fun set(value: T): Either<AppError, Unit> =
-        storeValue(value).onRight { cache.set(value) }
+        if (cache.get().fold({ true }) { it != value }) {
+            storeValue(value).onRight { cache.set(value) }
+        } else {
+            Unit.right()
+        }
 
     override suspend fun refresh(): Either<AppError, T> =
         cache.refresh().onRight { storeValue(it) }

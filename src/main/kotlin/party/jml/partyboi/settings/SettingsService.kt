@@ -7,7 +7,6 @@ import party.jml.partyboi.data.StoredProperties
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
-import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 
@@ -44,7 +43,6 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
             colorScheme.set(settings.colorScheme),
             app.time.timeZone.set(settings.timeZone),
         ).bindAll()
-        app.signals.emit(Signal.settingsUpdated())
     }
 
     suspend fun saveSettings(settings: VoteSettings) = either {
@@ -57,7 +55,6 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
                     .filter { it.isNotEmpty() }
             )
         ).bindAll()
-        app.signals.emit(Signal.settingsUpdated())
     }
 }
 

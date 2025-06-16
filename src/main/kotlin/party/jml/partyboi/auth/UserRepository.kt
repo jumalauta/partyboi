@@ -3,6 +3,7 @@ package party.jml.partyboi.auth
 import arrow.core.*
 import arrow.core.raise.either
 import io.ktor.server.auth.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -106,6 +107,18 @@ class UserRepository(private val app: AppServices) : Logging() {
             when (app.settings.automaticVoteKeys.getSync().bind()) {
                 AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
                 AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
+                AutomaticVoteKeys.PER_EMAIL ->
+                    createdUser.email?.let { email ->
+                        runBlocking {
+                            val emails = app.settings.voteKeyEmailList.get().fold({ emptyList() }, { it })
+                            if (emails.contains(email)) {
+                                registerVoteKey(VoteKey.email(email))
+                            } else {
+                                null
+                            }
+                        }
+                    } ?: createdUser
+
                 else -> createdUser
             }
         }

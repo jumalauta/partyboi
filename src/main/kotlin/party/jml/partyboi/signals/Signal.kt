@@ -35,7 +35,7 @@ data class Signal(
     val subType: String? = null,
     val target: String? = null,
 ) {
-    override fun toString(): String = listOf(type, subType, target).filterNotNull().joinToString(".")
+    override fun toString(): String = listOfNotNull(type, subType, target).joinToString(".")
 
     companion object {
         fun initial() = Signal(SignalType.initial)
@@ -46,7 +46,7 @@ data class Signal(
         fun liveVotingOpened(compoId: Int) = Signal(SignalType.liveVote, "open", compoId.toString())
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
-        fun settingsUpdated() = Signal(SignalType.settingsUpdated)
+        fun propertyUpdated(key: String) = Signal(SignalType.propertyUpdated, null, key)
         fun compoContentUpdated(compoId: Int, timeService: TimeService) =
             Signal(SignalType.compoContentUpdated, timeService.isoLocalTimeSync(), compoId.toString())
     }
@@ -58,7 +58,7 @@ enum class SignalType {
     event,
     vote,
     liveVote,
-    settingsUpdated,
+    propertyUpdated,
     compoContentUpdated;
 
     companion object {

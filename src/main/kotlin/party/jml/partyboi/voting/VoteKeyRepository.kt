@@ -70,6 +70,32 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }
     }
 
+    fun grantVotingRightsByEmail() = db.use {
+        it.exec(
+            queryOf(
+                """
+                INSERT INTO votekey (key, appuser_id) (
+                	SELECT
+                		('email:' || email) AS key,
+                		id AS appuser_id
+                	FROM appuser
+                	WHERE
+                		id NOT IN (
+                            SELECT DISTINCT appuser_id
+                			FROM votekey
+                			WHERE appuser_id IS NOT NULL
+                        )
+                        AND EMAIL IN (
+                            SELECT jsonb_array_elements_text(value) AS emails
+                            FROM property
+                            WHERE key = 'SettingsService.voteKeyEmailList'
+                        )
+                )
+            """.trimIndent()
+            )
+        )
+    }
+
     fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.voteKeys.size} vote keys")
         data.voteKeys.map {
@@ -113,6 +139,7 @@ enum class VoteKeyType(val explain: (String?) -> String) {
     IP({ if (it != null) "Created automatically for IP $it" else "Created automatically per IP" }),
     TICKET({ if (it != null) "User entered a ticket: $it" else "Vote key ticket" }),
     MANUAL({ "Manually granted by admin" }),
+    EMAIL({ "Registration email ${it ?: ""}" }),
     OTHER({ "Manually edited to database" }),
 }
 
@@ -127,6 +154,7 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
         fun ipAddr(ipAddr: String) = VoteKey(VoteKeyType.IP, ipAddr)
         fun manual(userId: Int) = VoteKey(VoteKeyType.MANUAL, userId.toString())
         fun ticket(code: String) = VoteKey(VoteKeyType.TICKET, code.lowercase())
+        fun email(email: String) = VoteKey(VoteKeyType.EMAIL, email)
 
         val fromKey: (String) -> VoteKey = { key ->
             val tokens = key.split(":")

@@ -14,11 +14,25 @@ import party.jml.partyboi.data.Unauthorized
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.VotableEntry
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.signals.SignalType
 
 class VoteService(val app: AppServices) {
     private val repository = VoteRepository(app.db)
     private val live = MutableStateFlow(LiveVoteState.Empty)
+
+    suspend fun start() {
+        app.signals.waitFor(SignalType.propertyUpdated) {
+            if (it.target == "SettingsService.voteKeyEmailList") {
+                app.settings.automaticVoteKeys.get().onRight { autoKeys ->
+                    if (autoKeys == AutomaticVoteKeys.PER_EMAIL) {
+                        app.voteKeys.grantVotingRightsByEmail()
+                    }
+                }
+            }
+        }
+    }
 
     fun castVote(user: User, entryId: Int, points: Int): Either<AppError, Unit> =
         if (user.votingEnabled) {

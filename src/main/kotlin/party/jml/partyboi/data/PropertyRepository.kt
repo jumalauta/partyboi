@@ -3,6 +3,7 @@ package party.jml.partyboi.data
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -15,8 +16,9 @@ import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.signals.Signal
 
-class PropertyRepository(app: AppServices) : Logging() {
+class PropertyRepository(val app: AppServices) : Logging() {
     private val db = app.db
 
     inline fun <reified T> property(key: String, defaultValue: T): PersistentCachedValue<T> =
@@ -32,7 +34,9 @@ class PropertyRepository(app: AppServices) : Logging() {
                 }
             },
             storeValue = { value ->
-                store(key, Json.encodeToString(value))
+                store(key, Json.encodeToString(value)).onRight {
+                    runBlocking { app.signals.emit(Signal.propertyUpdated(key)) }
+                }
             }
         )
 
