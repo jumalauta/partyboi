@@ -1,20 +1,19 @@
 package party.jml.partyboi.voting
 
-import arrow.core.Either
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.system.AppResult
 
 class VoteRepository(private val db: DatabasePool) : Logging() {
-    fun castVote(userId: Int, entryId: Int, points: Int): Either<AppError, Unit> = db.use {
+    fun castVote(userId: Int, entryId: Int, points: Int): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """
@@ -30,7 +29,7 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
         )
     }
 
-    fun getUserVotes(userId: Int): Either<AppError, List<VoteRow>> = db.use {
+    fun getUserVotes(userId: Int): AppResult<List<VoteRow>> = db.use {
         it.many(
             queryOf(
                 """
@@ -43,11 +42,11 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
         )
     }
 
-    fun getAllVotes(): Either<AppError, List<VoteRow>> = db.use {
+    fun getAllVotes(): AppResult<List<VoteRow>> = db.use {
         it.many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
     }
 
-    fun getResults(onlyPublic: Boolean): Either<AppError, List<CompoResult>> = db.use {
+    fun getResults(onlyPublic: Boolean): AppResult<List<CompoResult>> = db.use {
         it.many(
             queryOf(
                 """

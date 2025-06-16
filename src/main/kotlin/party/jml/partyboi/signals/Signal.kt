@@ -1,13 +1,12 @@
 package party.jml.partyboi.signals
 
-import arrow.core.Either
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.catchError
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 
 class SignalService : Logging() {
@@ -62,6 +61,6 @@ enum class SignalType {
     compoContentUpdated;
 
     companion object {
-        fun fromString(s: String): Either<AppError, SignalType> = catchError { SignalType.valueOf(s) }
+        fun fromString(s: String): AppResult<SignalType> = catchError { SignalType.valueOf(s) }
     }
 }

@@ -4,7 +4,6 @@
 
 package party.jml.partyboi.schedule
 
-import arrow.core.Either
 import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.datetime.*
@@ -15,7 +14,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
@@ -23,6 +21,7 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
@@ -30,11 +29,11 @@ import party.jml.partyboi.triggers.TriggerRow
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
-    fun get(eventId: Int): Either<AppError, Event> = db.use {
+    fun get(eventId: Int): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
-    fun getBetween(since: LocalDateTime, until: LocalDateTime): Either<AppError, List<Event>> = db.use {
+    fun getBetween(since: LocalDateTime, until: LocalDateTime): AppResult<List<Event>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
@@ -44,15 +43,15 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getAll(): Either<AppError, List<Event>> = db.use {
+    fun getAll(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
     }
 
-    fun getPublic(): Either<AppError, List<Event>> = db.use {
+    fun getPublic(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
     }
 
-    fun add(event: NewEvent, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
+    fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
         it.one(
             queryOf(
                 """
@@ -66,7 +65,7 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun add(event: NewEvent, actions: List<Action>): Either<AppError, Pair<Event, List<TriggerRow>>> =
+    fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
         db.transaction { tx ->
             either {
                 val createdEvent = add(event, tx).bind()
@@ -77,7 +76,7 @@ class EventRepository(private val app: AppServices) : Logging() {
             }
         }
 
-    fun update(event: Event, tx: TransactionalSession? = null): Either<AppError, Event> = db.use(tx) {
+    fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
         app.triggers.reset(event.signal(), tx)
         it.one(
             queryOf(
@@ -97,11 +96,11 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun delete(eventId: Int): Either<AppError, Unit> = db.use {
+    fun delete(eventId: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
-    fun deleteAll(): Either<AppError, Unit> = db.use {
+    fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM event"))
     }
 

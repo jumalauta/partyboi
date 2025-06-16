@@ -1,6 +1,5 @@
 package party.jml.partyboi.compos.admin
 
-import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.http.*
@@ -24,6 +23,7 @@ import party.jml.partyboi.entries.respondFileShow
 import party.jml.partyboi.entries.respondNamedFileDownload
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
@@ -51,7 +51,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
     }
 
     fun renderAdminEditCompoPage(
-        compoId: Either<AppError, Int>,
+        compoId: AppResult<Int>,
         compoForm: Form<Compo>? = null,
     ) = either {
         val id = compoId.bind()

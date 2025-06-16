@@ -1,17 +1,16 @@
 package party.jml
 
-import arrow.core.Either
 import arrow.core.raise.either
 import it.skrape.matchers.toBe
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.system.AppResult
 import kotlin.test.Test
 
 class VotingTest : PartyboiTester {
@@ -104,7 +103,7 @@ class VotingTest : PartyboiTester {
         it.buttonClick("/vote/${entry!!.id}/3")
     }
 
-    private fun setupCompo(app: AppServices): Either<AppError, Pair<Compo, Entry>> = either {
+    private fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {
         val demoCompo = app.compos.add(NewCompo("Demo", "")).bind()
         app.compos.setVisible(demoCompo.id, true).bind()
         app.compos.allowSubmit(demoCompo.id, false).bind()

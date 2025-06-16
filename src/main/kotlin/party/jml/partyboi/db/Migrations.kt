@@ -10,9 +10,10 @@ import org.flywaydb.core.api.output.MigrateResult
 import org.flywaydb.core.api.output.ValidateOutput
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InternalServerError
+import party.jml.partyboi.system.AppResult
 
 object Migrations {
-    suspend fun migrate(db: DatabasePool, schemaName: String = "public"): Either<AppError, MigrateResult> =
+    suspend fun migrate(db: DatabasePool, schemaName: String = "public"): AppResult<MigrateResult> =
         withContext(Dispatchers.IO) {
             val config = Flyway.configure()
                 .dataSource(db.dataSource)

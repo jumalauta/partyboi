@@ -36,7 +36,7 @@ class ErrorRepository(private val app: AppServices) {
         return save(key, error, jsonContext).toOption().map { key }.getOrNull()
     }
 
-    fun save(key: String, error: Throwable, context: String? = null): Either<AppError, Unit> = db.use {
+    fun save(key: String, error: Throwable, context: String? = null): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """INSERT INTO error ("key", "message", "trace", "context") VALUES (?, ?, ?, ?::jsonb)""".trimIndent(),
@@ -50,11 +50,11 @@ class ErrorRepository(private val app: AppServices) {
         }
     }
 
-    fun getError(id: Int): Either<AppError, ErrorRow> = db.use {
+    fun getError(id: Int): AppResult<ErrorRow> = db.use {
         it.one(queryOf("SELECT * FROM error WHERE id = ?", id).map(ErrorRow.fromRow))
     }
 
-    fun getErrors(limit: Int, pageIndex: Int): Either<AppError, List<ErrorRow>> = db.use {
+    fun getErrors(limit: Int, pageIndex: Int): AppResult<List<ErrorRow>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM error ORDER BY time DESC LIMIT ? OFFSET ?",

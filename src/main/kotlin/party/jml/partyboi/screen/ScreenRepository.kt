@@ -1,14 +1,16 @@
 package party.jml.partyboi.screen
 
-import arrow.core.*
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.Some
 import arrow.core.raise.either
+import arrow.core.toNonEmptyListOrNone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.data.throwOnError
@@ -20,6 +22,7 @@ import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
 
 class ScreenRepository(private val app: AppServices) : Logging() {
@@ -47,7 +50,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getSlideSets(): Either<AppError, List<SlideSetRow>> = db.use {
+    fun getSlideSets(): AppResult<List<SlideSetRow>> = db.use {
         it.many(queryOf("SELECT * FROM slideset ORDER BY name").map(SlideSetRow.fromRow))
     }
 
@@ -55,19 +58,19 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         it.one(queryOf("SELECT count(*) FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
     }
 
-    fun getAdHoc(): Either<AppError, Option<ScreenRow>> = db.use {
+    fun getAdHoc(): AppResult<Option<ScreenRow>> = db.use {
         it.option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
     }
 
-    fun getSlide(id: Int): Either<AppError, ScreenRow> = db.use {
+    fun getSlide(id: Int): AppResult<ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
     }
 
-    fun getAllSlides(): Either<AppError, List<ScreenRow>> = db.use {
+    fun getAllSlides(): AppResult<List<ScreenRow>> = db.use {
         it.many(queryOf("SELECT * FROM screen").map(ScreenRow.fromRow))
     }
 
-    fun getSlideSetSlides(name: String): Either<AppError, List<ScreenRow>> = db.use {
+    fun getSlideSetSlides(name: String): AppResult<List<ScreenRow>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM screen WHERE slideset_id = ? ORDER BY run_order, id",
@@ -76,7 +79,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun setAdHoc(slide: Slide<*>): Either<AppError, ScreenRow> = db.transaction {
+    fun setAdHoc(slide: Slide<*>): AppResult<ScreenRow> = db.transaction {
         either {
             val (type, content) = getTypeAndJson(slide)
             val query = if (adHocExists(it).bind()) {
@@ -94,7 +97,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         makeVisible: Boolean,
         readOnly: Boolean,
         tx: TransactionalSession? = null
-    ): Either<AppError, ScreenRow> = db.use(tx) {
+    ): AppResult<ScreenRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
@@ -108,7 +111,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun update(id: Int, slide: Slide<*>): Either<AppError, ScreenRow> = db.use {
+    fun update(id: Int, slide: Slide<*>): AppResult<ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
@@ -120,15 +123,15 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun delete(id: Int): Either<AppError, Unit> = db.use {
+    fun delete(id: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
     }
 
-    fun deleteAll(): Either<AppError, Unit> = db.use {
+    fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM screen"))
     }
 
-    fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): Either<AppError, List<ScreenRow>> =
+    fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<ScreenRow>> =
         db.transaction {
             either {
                 val tx = it
@@ -137,7 +140,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
             }
         }
 
-    fun getFirstSlide(slideSet: String): Either<AppError, ScreenRow> = db.use {
+    fun getFirstSlide(slideSet: String): AppResult<ScreenRow> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM screen WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
@@ -146,7 +149,7 @@ class ScreenRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getNext(slideSet: String, currentId: Int): Either<AppError, ScreenRow> = either {
+    fun getNext(slideSet: String, currentId: Int): AppResult<ScreenRow> = either {
         val screens = getSlideSetSlides(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
@@ -159,15 +162,15 @@ class ScreenRepository(private val app: AppServices) : Logging() {
             .bind()
     }
 
-    fun setVisible(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
+    fun setVisible(id: Int, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
     }
 
-    fun showOnInfo(id: Int, visible: Boolean): Either<AppError, Unit> = db.use {
+    fun showOnInfo(id: Int, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET show_on_info = ? WHERE id = ?", visible, id))
     }
 
-    fun setRunOrder(id: Int, order: Int): Either<AppError, Unit> = db.use {
+    fun setRunOrder(id: Int, order: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 

@@ -1,6 +1,5 @@
 package party.jml.partyboi.triggers
 
-import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
 import kotlinx.datetime.LocalDateTime
@@ -11,7 +10,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
@@ -19,6 +17,7 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db
@@ -27,7 +26,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         app.signals.flow.collect { execute(it) }
     }
 
-    fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): Either<AppError, TriggerRow> =
+    fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): AppResult<TriggerRow> =
         db.use(tx) {
             either {
                 it.one(
@@ -68,7 +67,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         it.many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
     }
 
-    fun reset(signal: Signal, tx: TransactionalSession? = null): Either<AppError, Unit> = db.use(tx) {
+    fun reset(signal: Signal, tx: TransactionalSession? = null): AppResult<Unit> = db.use(tx) {
         it.exec(
             queryOf(
                 """
@@ -106,7 +105,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         it.updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
     }
 
-    private fun execute(signal: Signal): Either<AppError, Unit> = either {
+    private fun execute(signal: Signal): AppResult<Unit> = either {
         val now = app.time.localTimeSync()
         getTriggers(signal.toString()).bind().forEach {
             val result = executeTrigger(it, now)
@@ -119,7 +118,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         }
     }
 
-    private fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): Either<AppError, Unit> {
+    private fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): AppResult<Unit> {
         return trigger.getAction().apply(app).fold(
             { error -> setFailed(trigger.triggerId, logTime, error.message) },
             { _ -> setSuccessful(trigger.triggerId, logTime) }

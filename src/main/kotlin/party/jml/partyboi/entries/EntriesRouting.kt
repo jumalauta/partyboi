@@ -2,7 +2,6 @@
 
 package party.jml.partyboi.entries
 
-import arrow.core.Either
 import arrow.core.raise.either
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -16,13 +15,14 @@ import party.jml.partyboi.auth.userRouting
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureEntriesRouting(app: AppServices) {
     fun renderEntriesPage(
-        userSession: Either<AppError, User>,
+        userSession: AppResult<User>,
         newEntryForm: Form<NewEntry>? = null,
     ) = either {
         val user = userSession.bind()
@@ -38,8 +38,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
     }
 
     fun renderEditEntryPage(
-        entryId: Either<AppError, Int>,
-        user: Either<AppError, User>,
+        entryId: AppResult<Int>,
+        user: AppResult<User>,
         entryUpdateForm: Form<EntryUpdate>? = null,
         screenshotForm: Form<NewScreenshot>? = null,
     ) = either {

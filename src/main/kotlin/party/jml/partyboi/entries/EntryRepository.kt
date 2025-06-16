@@ -27,26 +27,27 @@ import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 
 class EntryRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
-    fun getAllEntries(): Either<AppError, List<Entry>> = db.use {
+    fun getAllEntries(): AppResult<List<Entry>> = db.use {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
     }
 
-    fun getAllEntriesByCompo(): Either<AppError, Map<Int, List<Entry>>> =
+    fun getAllEntriesByCompo(): AppResult<Map<Int, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
-    fun getEntriesForCompo(compoId: Int): Either<AppError, List<Entry>> = db.use {
+    fun getEntriesForCompo(compoId: Int): AppResult<List<Entry>> = db.use {
         it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
     }
 
-    fun get(entryId: Int): Either<AppError, Entry> = db.use {
+    fun get(entryId: Int): AppResult<Entry> = db.use {
         it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
     }
 
-    fun get(entryId: Int, userId: Int): Either<AppError, Entry> = db.use {
+    fun get(entryId: Int, userId: Int): AppResult<Entry> = db.use {
         it.one(
             queryOf(
                 """
@@ -65,7 +66,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getUserEntries(userId: Int): Either<AppError, List<EntryWithLatestFile>> = db.use {
+    fun getUserEntries(userId: Int): AppResult<List<EntryWithLatestFile>> = db.use {
         it.many(
             query = queryOf(
                 """
@@ -88,7 +89,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun add(newEntry: NewEntry): Either<AppError, Entry> =
+    fun add(newEntry: NewEntry): AppResult<Entry> =
         db.transaction {
             either {
                 val compo = app.compos.getById(newEntry.compoId, it).bind()
@@ -130,7 +131,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
             runBlocking { app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time)) }
         }
 
-    fun update(entry: EntryUpdate, userId: Int): Either<AppError, Entry> = either {
+    fun update(entry: EntryUpdate, userId: Int): AppResult<Entry> = either {
         val previousVersion = get(entry.id).bind()
         db.use {
             it.one(
@@ -167,7 +168,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         }.bind()
     }
 
-    fun delete(entryId: Int, userId: Int): Either<AppError, Unit> = either {
+    fun delete(entryId: Int, userId: Int): AppResult<Unit> = either {
         val entry = get(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
@@ -176,7 +177,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun delete(entryId: Int): Either<AppError, Unit> = either {
+    fun delete(entryId: Int): AppResult<Unit> = either {
         val entry = get(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ?", entryId))
@@ -185,18 +186,18 @@ class EntryRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun deleteAll(): Either<AppError, Unit> = db.use {
+    fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("delete from entry"))
     }
 
-    fun setQualified(entryId: Int, state: Boolean): Either<AppError, Unit> =
+    fun setQualified(entryId: Int, state: Boolean): AppResult<Unit> =
         db.use {
             it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
         }.map { compoId ->
             runBlocking { app.signals.emit(Signal.compoContentUpdated(compoId, app.time)) }
         }
 
-    fun allowEdit(entryId: Int, state: Boolean): Either<AppError, Unit> =
+    fun allowEdit(entryId: Int, state: Boolean): AppResult<Unit> =
         db.use {
             it.updateOne(
                 queryOf(
@@ -207,7 +208,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
             )
         }
 
-    fun assertCanSubmit(entryId: Int, isAdmin: Boolean): Either<AppError, Unit> = db.use {
+    fun assertCanSubmit(entryId: Int, isAdmin: Boolean): AppResult<Unit> = db.use {
         it.one(
             queryOf(
                 "select ? or allow_edit from entry where id = ?",
@@ -217,12 +218,12 @@ class EntryRepository(private val app: AppServices) : Logging() {
             .flatMap { if (it) Unit.right() else Forbidden().left() }
     }
 
-    fun setRunOrder(entryId: Int, order: Int): Either<AppError, Unit> =
+    fun setRunOrder(entryId: Int, order: Int): AppResult<Unit> =
         db.use {
             it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
         }
 
-    fun getVotableEntries(userId: Int): Either<AppError, List<VotableEntry>> = db.use {
+    fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> = db.use {
         it.many(
             queryOf(
                 """

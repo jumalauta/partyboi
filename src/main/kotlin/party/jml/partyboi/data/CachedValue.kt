@@ -1,32 +1,32 @@
 package party.jml.partyboi.data
 
-import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import party.jml.partyboi.system.AppResult
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAmount
 
 interface ICachedValue<T> {
-    suspend fun get(): Either<AppError, T>
-    suspend fun set(value: T): Either<AppError, Unit>
-    suspend fun refresh(): Either<AppError, T>
+    suspend fun get(): AppResult<T>
+    suspend fun set(value: T): AppResult<Unit>
+    suspend fun refresh(): AppResult<T>
 
-    fun getSync(): Either<AppError, T> = runBlocking { get() }
-    fun setSync(value: T): Either<AppError, Unit> = runBlocking { set(value) }
-    fun refreshSync(): Either<AppError, T> = runBlocking { refresh() }
+    fun getSync(): AppResult<T> = runBlocking { get() }
+    fun setSync(value: T): AppResult<Unit> = runBlocking { set(value) }
+    fun refreshSync(): AppResult<T> = runBlocking { refresh() }
 }
 
 class CachedValue<T>(
     val ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
-    val fetchValue: () -> Either<AppError, T>
+    val fetchValue: () -> AppResult<T>
 ) :
     ICachedValue<T> {
     private val state = MutableStateFlow<Value<T>?>(null)
 
-    override suspend fun get(): Either<AppError, T> {
+    override suspend fun get(): AppResult<T> {
         val value = state.value
         return if (value == null || value.isExpired(ttl)) {
             refresh()
@@ -35,10 +35,10 @@ class CachedValue<T>(
         }
     }
 
-    override suspend fun set(value: T): Either<AppError, Unit> =
+    override suspend fun set(value: T): AppResult<Unit> =
         state.emit(Value(value)).right()
 
-    override suspend fun refresh(): Either<AppError, T> = either {
+    override suspend fun refresh(): AppResult<T> = either {
         val value = Value(fetchValue().bind())
         state.emit(value)
         return value.data.right()
@@ -57,21 +57,21 @@ class CachedValue<T>(
 
 class PersistentCachedValue<T>(
     ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
-    fetchValue: () -> Either<AppError, T>,
-    val storeValue: (T) -> Either<AppError, Unit>
+    fetchValue: () -> AppResult<T>,
+    val storeValue: (T) -> AppResult<Unit>
 ) : ICachedValue<T> {
     private val cache = CachedValue(ttl, fetchValue)
 
-    override suspend fun get(): Either<AppError, T> =
+    override suspend fun get(): AppResult<T> =
         cache.get()
 
-    override suspend fun set(value: T): Either<AppError, Unit> =
+    override suspend fun set(value: T): AppResult<Unit> =
         if (cache.get().fold({ true }) { it != value }) {
             storeValue(value).onRight { cache.set(value) }
         } else {
             Unit.right()
         }
 
-    override suspend fun refresh(): Either<AppError, T> =
+    override suspend fun refresh(): AppResult<T> =
         cache.refresh().onRight { storeValue(it) }
 }

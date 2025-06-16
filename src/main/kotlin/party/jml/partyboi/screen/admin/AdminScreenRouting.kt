@@ -1,6 +1,5 @@
 package party.jml.partyboi.screen.admin
 
-import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.raise.either
 import io.ktor.server.application.*
@@ -22,13 +21,14 @@ import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
-    fun renderAdHocEdit(form: Form<*>? = null): Either<AppError, Page> = either {
+    fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
         AdminScreenPage.renderAdHocForm(
             form = form ?: app.screen.getAddHoc().bind()
                 .map { it.getSlide().getForm() }
@@ -37,7 +37,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
-    fun renderSlideSetPage(slideSetName: Either<AppError, String>) = either {
+    fun renderSlideSetPage(slideSetName: AppResult<String>) = either {
         val slides = app.screen.getSlideSet(slideSetName.bind()).bind()
         val (state, isRunning) = app.screen.currentState()
         AdminScreenPage.renderSlideSetForms(
@@ -50,8 +50,8 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
     }
 
     fun renderSlideEdit(
-        slideSetName: Either<AppError, String>,
-        slideId: Either<AppError, Int>,
+        slideSetName: AppResult<String>,
+        slideId: AppResult<Int>,
         errors: AppError? = null,
     ) = either {
         val slide = app.screen.getSlide(slideId.bind()).bind()
@@ -267,7 +267,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
 suspend inline fun <reified T> ApplicationCall.updateSlide(
     app: AppServices,
-    crossinline onError: (Either<AppError, String>, Either<AppError, Int>, AppError?) -> Either<AppError, Renderable>
+    crossinline onError: (AppResult<String>, AppResult<Int>, AppError?) -> AppResult<Renderable>
 ) where
         T : Slide<T>,
         T : Validateable<T> {

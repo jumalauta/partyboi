@@ -9,6 +9,7 @@ import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.InputType
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
+import party.jml.partyboi.system.AppResult
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -126,7 +127,7 @@ class Form<T : Validateable<T>>(
     )
 
     companion object {
-        suspend inline fun <reified T : Validateable<T>> fromParameters(parameters: MultiPartData): Either<AppError, Form<T>> {
+        suspend inline fun <reified T : Validateable<T>> fromParameters(parameters: MultiPartData): AppResult<Form<T>> {
             return try {
                 val ctor = T::class.primaryConstructor ?: throw NotImplementedError("Primary constructor missing")
 
@@ -283,7 +284,7 @@ data class FileUpload(
     val name: String,
     val fileItem: PartData.FileItem,
 ) {
-    fun write(storageFilename: Path): Either<AppError, Unit> {
+    fun write(storageFilename: Path): AppResult<Unit> {
         return try {
             val source = fileItem.streamProvider()
             val file = Config.get().entryDir.resolve(storageFilename).toFile()

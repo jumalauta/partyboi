@@ -4,7 +4,6 @@
 
 package party.jml.partyboi.voting
 
-import arrow.core.Either
 import arrow.core.NonEmptyList
 import arrow.core.Option
 import arrow.core.raise.either
@@ -15,25 +14,25 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.system.AppResult
 import kotlin.random.Random
 
 class VoteKeyRepository(val app: AppServices) : Logging() {
     val db = app.db
 
-    fun getAllVoteKeys(): Either<AppError, List<VoteKeyRow>> = app.db.use {
+    fun getAllVoteKeys(): AppResult<List<VoteKeyRow>> = app.db.use {
         it.many(queryOf("SELECT * FROM votekey").map(VoteKeyRow.fromRow))
     }
 
-    fun getVoteKeySet(keySet: String): Either<AppError, NonEmptyList<VoteKeyRow>> = app.db.use {
+    fun getVoteKeySet(keySet: String): AppResult<NonEmptyList<VoteKeyRow>> = app.db.use {
         it.atLeastOne(queryOf("SELECT * FROM votekey WHERE key_set = ?", keySet).map(VoteKeyRow.fromRow))
     }
 
-    fun getUserVoteKeys(userId: Int): Either<AppError, List<VoteKey>> = db.use {
+    fun getUserVoteKeys(userId: Int): AppResult<List<VoteKey>> = db.use {
         it.many(queryOf("SELECT key FROM votekey WHERE appuser_id = ?", userId).map(asString))
     }.map { it.map(VoteKey.fromKey) }
 
@@ -52,7 +51,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         )
     }
 
-    fun registerTicket(userId: Int, code: String): Either<AppError, Unit> = db.use {
+    fun registerTicket(userId: Int, code: String): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
@@ -109,7 +108,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private fun generateTicket(tx: TransactionalSession, keySet: String?): Either<AppError, Unit> = either {
+    private fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {
         val voteKey = VoteKey.ticket(generateTicketCode())
         val exists = tx
             .one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean))

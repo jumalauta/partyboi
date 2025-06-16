@@ -1,6 +1,5 @@
 package party.jml.partyboi.screen
 
-import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.right
 import arrow.core.some
@@ -13,13 +12,13 @@ import kotlinx.html.FlowContent
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.triggers.*
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
@@ -47,8 +46,8 @@ class ScreenService(private val app: AppServices) : Logging() {
         }
     }
 
-    fun getSlideSets(): Either<AppError, List<SlideSetRow>> = repository.getSlideSets()
-    fun upsertSlideSet(id: String, name: String, icon: String): Either<AppError, Unit> =
+    fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
+    fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
 
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
@@ -60,16 +59,16 @@ class ScreenService(private val app: AppServices) : Logging() {
 
     fun getAddHoc() = repository.getAdHoc()
 
-    suspend fun addAdHoc(screen: TextSlide): Either<AppError, Unit> = either {
+    suspend fun addAdHoc(screen: TextSlide): AppResult<Unit> = either {
         val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
         stopSlideSet()
         state.emit(newState)
     }
 
-    fun getSlide(slideId: Int): Either<AppError, ScreenRow> = repository.getSlide(slideId)
-    fun getAllSlides(): Either<AppError, List<ScreenRow>> = repository.getAllSlides()
+    fun getSlide(slideId: Int): AppResult<ScreenRow> = repository.getSlide(slideId)
+    fun getAllSlides(): AppResult<List<ScreenRow>> = repository.getAllSlides()
 
-    fun getSlideSet(slideSet: String): Either<AppError, List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
+    fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
     fun addSlide(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false, readOnly = false)
@@ -97,7 +96,7 @@ class ScreenService(private val app: AppServices) : Logging() {
         scheduler = null
     }
 
-    fun startSlideSet(slideSetName: String): Either<AppError, Unit> =
+    fun startSlideSet(slideSetName: String): AppResult<Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
             scheduler = Timer().schedule(10000, 10000) {
@@ -116,14 +115,14 @@ class ScreenService(private val app: AppServices) : Logging() {
         )
     }
 
-    fun showNextSlideFromSet(slideSetName: String): Either<AppError, Unit> =
+    fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
         if (state.value.slideSet == slideSetName) {
             showNext().right()
         } else {
             repository.getFirstSlide(slideSetName).map { show(it) }
         }
 
-    fun generateSlidesForCompo(compoId: Int): Either<AppError, String> = either {
+    fun generateSlidesForCompo(compoId: Int): AppResult<String> = either {
         val slideSet = "compo-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
@@ -164,7 +163,7 @@ class ScreenService(private val app: AppServices) : Logging() {
         "/admin/screen/${slideSet}"
     }
 
-    fun generateResultSlidesForCompo(compoId: Int): Either<AppError, String> = either {
+    fun generateResultSlidesForCompo(compoId: Int): AppResult<String> = either {
         val slideSet = "results-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Results: ${compo.name}", "square-poll-horizontal")

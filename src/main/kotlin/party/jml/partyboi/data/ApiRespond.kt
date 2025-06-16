@@ -10,12 +10,13 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 import java.nio.file.Path
 
-suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
+suspend fun ApplicationCall.apiRespond(block: () -> AppResult<Unit>) {
     Either.catch {
         apiRespond(block())
     }.mapLeft {
@@ -23,7 +24,7 @@ suspend fun ApplicationCall.apiRespond(block: () -> Either<AppError, Unit>) {
     }
 }
 
-suspend fun ApplicationCall.apiRespond(result: Either<AppError, Unit>) {
+suspend fun ApplicationCall.apiRespond(result: AppResult<Unit>) {
     result.fold(
         { respond(it.statusCode, it.message) },
         { respondText("OK") }
@@ -35,8 +36,8 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm() =
     Form.fromParameters<T>(receiveMultipart())
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
-    handleForm: suspend (data: T) -> Either<AppError, Renderable>,
-    crossinline handleError: suspend (formWithErrors: Form<T>) -> Either<AppError, Renderable>
+    handleForm: suspend (data: T) -> AppResult<Renderable>,
+    crossinline handleError: suspend (formWithErrors: Form<T>) -> AppResult<Renderable>
 ) {
     receiveForm<T>().fold(
         { respondPage(it) },
@@ -50,17 +51,17 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
     )
 }
 
-fun ApplicationCall.parameterString(name: String): Either<AppError, String> =
+fun ApplicationCall.parameterString(name: String): AppResult<String> =
     parameters[name]?.right() ?: MissingInput(name).left()
 
-fun ApplicationCall.parameterInt(name: String): Either<AppError, Int> =
+fun ApplicationCall.parameterInt(name: String): AppResult<Int> =
     try {
         parameters[name]?.toInt()?.right() ?: MissingInput(name).left()
     } catch (_: NumberFormatException) {
         InvalidInput(name).left()
     }
 
-fun ApplicationCall.parameterBoolean(name: String): Either<AppError, Boolean> =
+fun ApplicationCall.parameterBoolean(name: String): AppResult<Boolean> =
     try {
         parameters[name]?.toBooleanStrict()?.right() ?: MissingInput(name).left()
     } catch (_: IllegalArgumentException) {
@@ -72,7 +73,7 @@ fun ApplicationCall.parameterPath(name: String, nameToPath: (String) -> Path) =
         nameToPath(it.joinToString("/"))
     } ?: MissingInput(name).left()
 
-suspend fun ApplicationCall.switchApi(block: (id: Int, state: Boolean) -> Either<AppError, Unit>) {
+suspend fun ApplicationCall.switchApi(block: (id: Int, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {
             userSession(null).bind()

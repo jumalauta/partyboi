@@ -8,7 +8,6 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ResultsFileGenerator
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Unauthorized
 import party.jml.partyboi.entries.Entry
@@ -17,6 +16,7 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
+import party.jml.partyboi.system.AppResult
 
 class VoteService(val app: AppServices) {
     private val repository = VoteRepository(app.db)
@@ -34,7 +34,7 @@ class VoteService(val app: AppServices) {
         }
     }
 
-    fun castVote(user: User, entryId: Int, points: Int): Either<AppError, Unit> =
+    fun castVote(user: User, entryId: Int, points: Int): AppResult<Unit> =
         if (user.votingEnabled) {
             either {
                 val validPoints = validatePoints(points).bind()
@@ -69,7 +69,7 @@ class VoteService(val app: AppServices) {
 
     fun getLiveVoteState(): Option<LiveVoteState> = if (live.value.open) live.value.some() else none()
 
-    fun getVotableEntries(userId: Int): Either<AppError, List<VotableEntry>> =
+    fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> =
         either {
             val normalVoting = app.entries.getVotableEntries(userId).bind()
             val liveVoting = if (live.value.open) {
@@ -88,15 +88,15 @@ class VoteService(val app: AppServices) {
             liveVoting + normalVoting
         }
 
-    fun getAllVotes(): Either<AppError, List<VoteRow>> = repository.getAllVotes()
+    fun getAllVotes(): AppResult<List<VoteRow>> = repository.getAllVotes()
 
-    fun getResults(): Either<AppError, List<CompoResult>> =
+    fun getResults(): AppResult<List<CompoResult>> =
         repository.getResults(onlyPublic = false)
 
-    fun getResultsForUser(user: Option<User>): Either<AppError, List<CompoResult>> =
+    fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
-    suspend fun getResultsFileContent(): Either<AppError, String> = either {
+    suspend fun getResultsFileContent(): AppResult<String> = either {
         val header = app.settings.resultsFileHeader.get().bind()
         val results = getResults().bind()
         ResultsFileGenerator.generate(header, results)
@@ -106,7 +106,7 @@ class VoteService(val app: AppServices) {
 
     fun deleteAll() = repository.deleteAll()
 
-    private fun isVotingOpen(entry: Entry): Either<AppError, Boolean> =
+    private fun isVotingOpen(entry: Entry): AppResult<Boolean> =
         if (!entry.qualified) {
             false.right()
         } else if (live.value.openFor(entry)) {
@@ -115,7 +115,7 @@ class VoteService(val app: AppServices) {
             app.compos.isVotingOpen(entry.compoId)
         }
 
-    private fun validatePoints(points: Int): Either<AppError, Int> =
+    private fun validatePoints(points: Int): AppResult<Int> =
         if (points < MIN_POINTS || points > MAX_POINTS) {
             InvalidInput("Invalid points").left()
         } else {

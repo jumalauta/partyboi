@@ -13,6 +13,7 @@ import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.getAny
 import party.jml.partyboi.services
+import party.jml.partyboi.system.AppResult
 
 interface Renderable {
     fun getHTML(user: User?, path: String): String
@@ -25,7 +26,7 @@ interface Themeable {
 }
 
 
-private suspend fun safely(block: suspend () -> Either<AppError, Renderable>) =
+private suspend fun safely(block: suspend () -> AppResult<Renderable>) =
     try {
         block()
     } catch (err: Error) {
@@ -33,8 +34,8 @@ private suspend fun safely(block: suspend () -> Either<AppError, Renderable>) =
     }
 
 suspend fun ApplicationCall.respondEither(
-    block: suspend () -> Either<AppError, Renderable>,
-    vararg retries: suspend (AppError) -> Either<AppError, Renderable>
+    block: suspend () -> AppResult<Renderable>,
+    vararg retries: suspend (AppError) -> AppResult<Renderable>
 ) {
     var result = safely { block() }
     for (retry in retries) {

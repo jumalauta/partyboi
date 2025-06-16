@@ -1,13 +1,12 @@
 package party.jml
 
-import arrow.core.Either
 import arrow.core.raise.either
 import it.skrape.matchers.toBe
 import it.skrape.matchers.toBeEmpty
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.data.AppError
+import party.jml.partyboi.system.AppResult
 import kotlin.test.Test
 
 class CompoPageTest : PartyboiTester {
@@ -88,7 +87,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
-    private fun setupCompos(app: AppServices, addCompos: Boolean = true): Either<AppError, Int?> = either {
+    private fun setupCompos(app: AppServices, addCompos: Boolean = true): AppResult<Int?> = either {
         if (addCompos) {
             val demoCompo = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
             app.compos.setVisible(demoCompo.id, true).bind()
