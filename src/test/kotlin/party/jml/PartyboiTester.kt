@@ -47,7 +47,7 @@ interface PartyboiTester {
     }
 
     fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): Either<AppError, User> =
-        app.users.addUser(UserCredentials(name, password, password), "0.0.0.0")
+        app.users.addUser(UserCredentials(name, password, password, ""), "0.0.0.0")
 
     fun addTestAdmin(app: AppServices, name: String = "admin", password: String = "password"): Either<AppError, User> =
         either {

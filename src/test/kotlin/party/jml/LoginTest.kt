@@ -78,7 +78,7 @@ class LoginTest : PartyboiTester {
                 append("isUpdate", "")
             }
         ) {
-            findFirst(".error") { text.toBe("The user name has already been registered") }
+            findFirst(".error") { text.toBe("The user name or email has already been registered") }
         }
     }
 
