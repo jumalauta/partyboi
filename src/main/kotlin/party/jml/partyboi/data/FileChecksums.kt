@@ -6,6 +6,7 @@ import arrow.core.getOrElse
 import io.ktor.http.*
 import io.ktor.server.application.*
 import org.apache.commons.codec.digest.MessageDigestAlgorithms
+import party.jml.partyboi.system.AppResult
 import java.io.FileInputStream
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -13,7 +14,7 @@ import java.security.MessageDigest
 object FileChecksums {
     private val checksumCache = EitherCache<Path, AppError, String>()
 
-    fun get(path: Path): Either<AppError, String> =
+    fun get(path: Path): AppResult<String> =
         checksumCache.memoize(path) {
             Either.catch {
                 val bufferLength = 1024
@@ -32,7 +33,7 @@ object FileChecksums {
         }
 }
 
-suspend fun ApplicationCall.processFileETag(path: Either<AppError, Path>, block: suspend ApplicationCall.() -> Unit) {
+suspend fun ApplicationCall.processFileETag(path: AppResult<Path>, block: suspend ApplicationCall.() -> Unit) {
     val tag = request.headers["ETag"]
     if (tag != null) {
         if (path

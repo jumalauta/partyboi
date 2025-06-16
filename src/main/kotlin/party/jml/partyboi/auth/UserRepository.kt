@@ -16,6 +16,7 @@ import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
@@ -26,7 +27,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         createAdminUser().throwOnError()
     }
 
-    fun getUsers(): Either<AppError, List<User>> = db.use {
+    fun getUsers(): AppResult<List<User>> = db.use {
         it.many(
             queryOf(
                 """
@@ -44,7 +45,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getUser(name: String): Either<AppError, User> = db.use {
+    fun getUser(name: String): AppResult<User> = db.use {
         it.one(
             queryOf(
                 """
@@ -64,7 +65,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getUser(id: Int): Either<AppError, User> = db.use {
+    fun getUser(id: Int): AppResult<User> = db.use {
         it.one(
             queryOf(
                 """
@@ -84,7 +85,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun addUser(user: UserCredentials, ip: String): Either<AppError, User> = db.use {
+    fun addUser(user: UserCredentials, ip: String): AppResult<User> = db.use {
         either {
             val createdUser = it.one(
                 queryOf(
@@ -124,7 +125,7 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    fun updateUser(userId: Int, user: UserCredentials): Either<AppError, Unit> = db.transaction {
+    fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = db.transaction {
         either {
             if (user.password.isNotEmpty()) {
                 it.updateOne(
@@ -207,7 +208,7 @@ data class User(
     val votingEnabled: Boolean,
     val email: String?,
 ) : Principal {
-    fun authenticate(plainPassword: String): Either<AppError, User> =
+    fun authenticate(plainPassword: String): AppResult<User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
             this.right()
         } else {

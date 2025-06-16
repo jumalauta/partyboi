@@ -1,6 +1,5 @@
 package party.jml
 
-import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.client.*
@@ -21,11 +20,11 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.compos.GeneralRules
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.services
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.system.AppResult
 import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties
@@ -46,10 +45,10 @@ interface PartyboiTester {
         return BigInteger(1, md.digest(bytes)).toString(16).padStart(32, '0')
     }
 
-    fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): Either<AppError, User> =
+    fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): AppResult<User> =
         app.users.addUser(UserCredentials(name, password, password, ""), "0.0.0.0")
 
-    fun addTestAdmin(app: AppServices, name: String = "admin", password: String = "password"): Either<AppError, User> =
+    fun addTestAdmin(app: AppServices, name: String = "admin", password: String = "password"): AppResult<User> =
         either {
             val user = addTestUser(app, name, password).bind()
             app.users.makeAdmin(user.id, true)
@@ -155,7 +154,7 @@ fun ApplicationTestBuilder.setupServices() {
     Unit.right()
 }
 
-fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> Either<AppError, T>) {
+fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> AppResult<T>) {
     application {
         val app = services()
 

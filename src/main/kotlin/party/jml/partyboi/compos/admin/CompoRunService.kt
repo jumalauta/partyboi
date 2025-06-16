@@ -9,6 +9,7 @@ import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
+import party.jml.partyboi.system.AppResult
 import java.io.*
 import java.nio.file.Path
 import java.util.zip.ZipEntry
@@ -19,7 +20,7 @@ import kotlin.io.path.createTempDirectory
 class CompoRunService(val app: AppServices) : Logging() {
     private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
 
-    fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): Either<AppError, Path> = either {
+    fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<Path> = either {
         val tempDir = createTempDirectory()
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind()
@@ -47,7 +48,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         tempDir
     }
 
-    fun compressDirectory(sourceDir: Path): Either<AppError, Path> =
+    fun compressDirectory(sourceDir: Path): AppResult<Path> =
         Either.catch {
             val outputFile = kotlin.io.path.createTempFile()
             ZipOutputStream(FileOutputStream(outputFile.toFile())).use { zipFile ->
@@ -56,7 +57,7 @@ class CompoRunService(val app: AppServices) : Logging() {
             outputFile
         }.mapLeft { InternalServerError(it) }
 
-    fun extractEntryFiles(entryId: Int, version: Int): Either<AppError, ExtractedEntry> = either {
+    fun extractEntryFiles(entryId: Int, version: Int): AppResult<ExtractedEntry> = either {
         val file = app.files.getVersion(entryId, version).bind()
         val entry = app.entries.get(entryId).bind()
         val compo = app.compos.getById(entry.compoId).bind()
@@ -89,7 +90,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         }
     }
 
-    suspend fun compressAllEntries(): Either<AppError, Path> = either {
+    suspend fun compressAllEntries(): AppResult<Path> = either {
         val dir = createTempDirectory()
 
         // Write results
@@ -151,7 +152,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         source.getStorageFile().copyTo(target.toFile())
     }
 
-    private fun extractZip(source: FileDesc, target: Path): Either<AppError, Unit> =
+    private fun extractZip(source: FileDesc, target: Path): AppResult<Unit> =
         catchError {
             ZipFile.builder()
                 .setFile(source.getStorageFile())

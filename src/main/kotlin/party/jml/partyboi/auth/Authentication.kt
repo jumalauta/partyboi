@@ -1,6 +1,9 @@
 package party.jml.partyboi.auth
 
-import arrow.core.*
+import arrow.core.Option
+import arrow.core.none
+import arrow.core.recover
+import arrow.core.toOption
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -9,8 +12,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.RedirectInterruption
+import party.jml.partyboi.system.AppResult
 import kotlin.time.Duration.Companion.days
 
 fun Application.configureAuthentication(app: AppServices) {
@@ -72,7 +75,7 @@ fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
                 .recover { user }
         }
 
-fun ApplicationCall.userSession(app: AppServices?): Either<AppError, User> =
+fun ApplicationCall.userSession(app: AppServices?): AppResult<User> =
     optionalUserSession(app).toEither { RedirectInterruption("/login") }
 
 fun Application.publicRouting(block: Route.() -> Unit) {

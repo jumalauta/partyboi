@@ -17,6 +17,7 @@ import party.jml.partyboi.db.option
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
+import party.jml.partyboi.system.AppResult
 
 class PropertyRepository(val app: AppServices) : Logging() {
     private val db = app.db
@@ -40,15 +41,15 @@ class PropertyRepository(val app: AppServices) : Logging() {
             }
         )
 
-    fun get(key: String): Either<AppError, Option<PropertyRow>> = db.use {
+    fun get(key: String): AppResult<Option<PropertyRow>> = db.use {
         it.option(queryOf("SELECT * FROM property WHERE key = ?", key).map(PropertyRow.fromRow))
     }
 
-    fun getAll(): Either<AppError, List<PropertyRow>> = db.use {
+    fun getAll(): AppResult<List<PropertyRow>> = db.use {
         it.many(queryOf("SELECT * FROM property").map(PropertyRow.fromRow))
     }
 
-    inline fun <reified A> getOrElse(key: String, value: A): Either<AppError, PropertyRow> =
+    inline fun <reified A> getOrElse(key: String, value: A): AppResult<PropertyRow> =
         get(key).map { it.fold({ PropertyRow(key, Json.encodeToString(value)) }, { it }) }
 
     fun import(tx: TransactionalSession, data: DataExport) = either {

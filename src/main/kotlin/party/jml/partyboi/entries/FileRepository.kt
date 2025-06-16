@@ -19,13 +19,13 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.toFilenameToken
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.system.AppResult
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -40,7 +40,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         entry: Entry,
         originalFilename: String,
         tx: TransactionalSession? = null
-    ): Either<AppError, Path> = either {
+    ): AppResult<Path> = either {
         val version = nextVersion(entry.id, tx).bind()
         val compo = app.compos.getById(entry.compoId, tx).bind()
         buildStorageFilename(
@@ -96,15 +96,15 @@ class FileRepository(private val app: AppServices) : Logging() {
         return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
     }
 
-    fun latestVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Option<Int>> =
+    fun latestVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Option<Int>> =
         db.use(tx) {
             it.option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))
         }
 
-    fun nextVersion(entryId: Int, tx: TransactionalSession? = null): Either<AppError, Int> =
+    fun nextVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Int> =
         latestVersion(entryId, tx).map { it.getOrElse { 0 } + 1 }
 
-    fun add(file: NewFileDesc, tx: TransactionalSession? = null): Either<AppError, FileDesc> = either {
+    fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
         db.use(tx) {
             it.one(
@@ -122,7 +122,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         }.bind()
     }
 
-    fun getLatest(entryId: Int): Either<AppError, FileDesc> = db.use {
+    fun getLatest(entryId: Int): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1",
@@ -131,7 +131,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getVersion(entryId: Int, version: Int): Either<AppError, FileDesc> = db.use {
+    fun getVersion(entryId: Int, version: Int): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM file WHERE entry_id = ? AND version = ?",
@@ -141,7 +141,7 @@ class FileRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    fun getAllVersions(entryId: Int): Either<AppError, List<FileDesc>> = db.use {
+    fun getAllVersions(entryId: Int): AppResult<List<FileDesc>> = db.use {
         it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
     }
 
@@ -225,7 +225,7 @@ data class NewFileDesc(
     fun size(): Either<InternalServerError, Long> =
         Either.catch { Files.size(absolutePath) }.mapLeft { InternalServerError(it) }
 
-    fun checksum(): Either<AppError, String> =
+    fun checksum(): AppResult<String> =
         FileChecksums.get(absolutePath)
 
 }

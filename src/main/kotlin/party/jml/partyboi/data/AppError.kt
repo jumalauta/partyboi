@@ -8,9 +8,9 @@ import kotlinx.html.article
 import kotlinx.html.h1
 import kotlinx.html.p
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
-import java.lang.RuntimeException
 
 interface AppError : Renderable {
     val message: String
@@ -117,7 +117,7 @@ class InvalidSchemaVersion : AppError {
     override val throwable: Throwable? = null
 }
 
-fun <A> catchError(f: () -> A): Either<AppError, A> =
+fun <A> catchError(f: () -> A): AppResult<A> =
     Either.catch { f() }.mapLeft {
         InternalServerError(it)
     }

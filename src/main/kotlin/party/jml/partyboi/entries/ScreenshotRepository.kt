@@ -4,19 +4,14 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
-import io.ktor.client.statement.*
-import io.ktor.util.*
-import io.ktor.util.cio.*
-import io.ktor.utils.io.*
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Config
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FileUpload
+import party.jml.partyboi.system.AppResult
 import java.nio.file.Path
 import kotlin.io.path.exists
 
@@ -58,7 +53,7 @@ class ScreenshotRepository(val app: AppServices) {
         inputImage.scaleToHeight(400).output(writer, outputImage)
     }
 
-    fun store(entryId: Int, upload: FileUpload): Either<AppError, Unit> = either {
+    fun store(entryId: Int, upload: FileUpload): AppResult<Unit> = either {
         val tempFile = kotlin.io.path.createTempFile()
         upload.write(tempFile).bind()
         store(entryId, tempFile)
@@ -77,7 +72,7 @@ class ScreenshotRepository(val app: AppServices) {
     fun getFile(entryId: Int): Path =
         app.config.screenshotsDir.resolve("screenshot-$entryId.jpg")
 
-    fun getChecksum(entryId: Int): Either<AppError, String> =
+    fun getChecksum(entryId: Int): AppResult<String> =
         FileChecksums.get(getFile(entryId))
 
     private fun heuristicsScore(filename: String): Int {

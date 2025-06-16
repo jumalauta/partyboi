@@ -13,6 +13,7 @@ import party.jml.partyboi.config
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.DatabaseError
 import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.system.AppResult
 import java.nio.file.Path
 import java.sql.Timestamp
 
@@ -26,14 +27,14 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
 
     fun <A> transaction(
         schema: String? = null,
-        block: (TransactionalSession) -> Either<AppError, A>
-    ): Either<AppError, A> =
+        block: (TransactionalSession) -> AppResult<A>
+    ): AppResult<A> =
         sessionOf(dataSource).use { it.transactionEither(schema) { tx -> block(tx) } }
 
     fun <A> useUnsafe(block: (Session) -> A): A =
         sessionOf(dataSource).use { block(it) }
 
-    fun createSchema(name: String): Either<AppError, String> {
+    fun createSchema(name: String): AppResult<String> {
         val schema = transaction {
             dropSchema(it, name)
             it.exec(queryOf("CREATE SCHEMA $name"))
@@ -66,40 +67,40 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
 
 }
 
-fun Session.runSafely(query: ExecuteQueryAction): Either<AppError, Boolean> =
+fun Session.runSafely(query: ExecuteQueryAction): AppResult<Boolean> =
     Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun Session.runSafely(query: UpdateQueryAction): Either<AppError, Int> =
+fun Session.runSafely(query: UpdateQueryAction): AppResult<Int> =
     Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun Session.runSafely(query: UpdateAndReturnGeneratedKeyQueryAction): Either<AppError, Option<Long>> =
+fun Session.runSafely(query: UpdateAndReturnGeneratedKeyQueryAction): AppResult<Option<Long>> =
     Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
 
-fun <A> Session.runSafely(query: ListResultQueryAction<A>): Either<AppError, List<A>> =
+fun <A> Session.runSafely(query: ListResultQueryAction<A>): AppResult<List<A>> =
     Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun <A> Session.runSafely(query: NullableResultQueryAction<A>): Either<AppError, Option<A>> =
+fun <A> Session.runSafely(query: NullableResultQueryAction<A>): AppResult<Option<A>> =
     Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
 
-fun <A> Session.option(query: ResultQueryActionBuilder<A>): Either<AppError, Option<A>> =
+fun <A> Session.option(query: ResultQueryActionBuilder<A>): AppResult<Option<A>> =
     runSafely(query.asSingle)
 
-fun <A> Session.one(query: ResultQueryActionBuilder<A>): Either<AppError, A> =
+fun <A> Session.one(query: ResultQueryActionBuilder<A>): AppResult<A> =
     option(query).flatMap { it.toEither { NotFound("Not found") } }
 
-fun <A> Session.many(query: ResultQueryActionBuilder<A>): Either<AppError, List<A>> =
+fun <A> Session.many(query: ResultQueryActionBuilder<A>): AppResult<List<A>> =
     runSafely(query.asList)
 
-fun <A> Session.atLeastOne(query: ResultQueryActionBuilder<A>): Either<AppError, NonEmptyList<A>> =
+fun <A> Session.atLeastOne(query: ResultQueryActionBuilder<A>): AppResult<NonEmptyList<A>> =
     many(query).flatMap { it.toNonEmptyListOrNone().toEither { NotFound("Not found") } }
 
-fun Session.exec(query: Query): Either<AppError, Unit> =
+fun Session.exec(query: Query): AppResult<Unit> =
     runSafely(query.asExecute).map {}
 
-fun Session.updateAny(query: Query): Either<AppError, Int> =
+fun Session.updateAny(query: Query): AppResult<Int> =
     runSafely(query.asUpdate)
 
-fun Session.updateOne(query: Query): Either<AppError, Unit> =
+fun Session.updateOne(query: Query): AppResult<Unit> =
     updateAny(query).flatMap { if (it != 1) NotFound("Not found").left() else Unit.right() }
 
 object DbBasicMappers {
@@ -111,8 +112,8 @@ object DbBasicMappers {
 
 inline fun <A> Session.transactionEither(
     schema: String?,
-    operation: (TransactionalSession) -> Either<AppError, A>
-): Either<AppError, A> {
+    operation: (TransactionalSession) -> AppResult<A>
+): AppResult<A> {
     try {
         connection.begin()
         transactional = true

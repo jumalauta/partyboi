@@ -18,7 +18,6 @@ import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Config
 import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
@@ -32,6 +31,7 @@ import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.screen.ScreenRow
 import party.jml.partyboi.screen.SlideSetRow
+import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.voting.VoteKeyRow
 import party.jml.partyboi.voting.VoteRow
@@ -69,7 +69,7 @@ class ReplicationService(val app: AppServices) : Logging() {
 
     val isReadReplica: Boolean = importConfig.isSome()
 
-    suspend fun sync(): Either<AppError, Unit> = either {
+    suspend fun sync(): AppResult<Unit> = either {
         val response = makeRequest("export").bind()
         val data = response.body<DataExport>()
         import(data).bind()
@@ -83,7 +83,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         schemaVersion = version
     }
 
-    fun export(): Either<AppError, DataExport> {
+    fun export(): AppResult<DataExport> {
         val version = schemaVersion
         return if (version == null) {
             log.error("Cannot export data because schema version is unknown. Database migration not ready?")
@@ -109,7 +109,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         }
     }
 
-    fun import(data: DataExport): Either<AppError, Unit> =
+    fun import(data: DataExport): AppResult<Unit> =
         if (data.schemaVersion != schemaVersion) {
             log.error("Cannot import data because the schema version mismatches. Own version: $schemaVersion, their version: ${data.schemaVersion}")
             InvalidSchemaVersion().left()
@@ -139,7 +139,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         }
 
     @OptIn(InternalAPI::class)
-    suspend fun downloadFile(path: String, checksum: String?, target: File): Either<AppError, Unit> = either {
+    suspend fun downloadFile(path: String, checksum: String?, target: File): AppResult<Unit> = either {
         log.info("Check file $path (checksum: $checksum)")
         val response = makeRequest(path, checksum).bind()
         if (response.status == HttpStatusCode.OK) {
@@ -153,7 +153,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         }
     }
 
-    suspend fun syncEntries(files: List<FileDesc>): Either<AppError, Unit> = either {
+    suspend fun syncEntries(files: List<FileDesc>): AppResult<Unit> = either {
         val newFiles = files.filterNot { it.storageFilename.exists() }
         log.info("Sync ${newFiles.size} of ${files.size} entry files")
         newFiles.map {
@@ -165,7 +165,7 @@ class ReplicationService(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    suspend fun syncScreenShots(files: List<FileDesc>): Either<AppError, Unit> = either {
+    suspend fun syncScreenShots(files: List<FileDesc>): AppResult<Unit> = either {
         log.info("Sync ${files.size} screenshots")
         files
             .map {
@@ -178,7 +178,7 @@ class ReplicationService(val app: AppServices) : Logging() {
             .bindAll()
     }
 
-    suspend fun syncAssets(assets: List<String>): Either<AppError, Unit> = either {
+    suspend fun syncAssets(assets: List<String>): AppResult<Unit> = either {
         log.info("Sync ${assets.size} assets")
         assets
             .map {
@@ -194,7 +194,7 @@ class ReplicationService(val app: AppServices) : Logging() {
     private suspend fun makeRequest(
         replicationRoute: String,
         checksum: String? = null
-    ): Either<AppError, HttpResponse> =
+    ): AppResult<HttpResponse> =
         importConfig
             .toEither { Notice("This is not a read replica") }
             .flatMap { config ->
