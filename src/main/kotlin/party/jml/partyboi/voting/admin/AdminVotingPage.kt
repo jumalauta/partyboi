@@ -1,20 +1,43 @@
 package party.jml.partyboi.voting.admin
 
 import arrow.core.toOption
-import party.jml.partyboi.voting.VoteKeyRow
-import party.jml.partyboi.templates.Page
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.form.DropdownOption
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.settings.VoteSettings
+import party.jml.partyboi.templates.Page
+import party.jml.partyboi.voting.VoteKeyRow
 
 object AdminVotingPage {
-    fun render(voteKeys: List<VoteKeyRow>, users: List<User>) = Page("Voting settings") {
-        voteKeys.groupBy { it.key.keyType.explain(null) }.forEach { (keyType, keys) ->
-            renderVoteKeyTable("$keyType (${keys.size})", keys, users)
-        }
+    fun render(
+        voteKeys: List<VoteKeyRow>,
+        users: List<User>,
+        settings: Form<VoteSettings>
+    ) = Page("Voting settings") {
+        renderForm(
+            url = "/admin/voting/settings",
+            form = settings,
+            title = "Settings",
+            options = mapOf(
+                "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label }
+            )
+        )
+
         article {
+            header { +"Create new vote keys" }
             a("/admin/voting/generate") {
                 role = "button"
                 +"Generate new vote key tickets"
+            }
+        }
+
+        article {
+            header { +"Browse existing vote keys" }
+            voteKeys.groupBy { it.key.keyType.explain(null) }.forEach { (keyType, keys) ->
+                renderVoteKeyTable("$keyType (${keys.size})", keys, users)
             }
         }
     }
@@ -36,7 +59,7 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
     val includePrintLinks = keySets.isNotEmpty()
 
     details {
-        summary {
+        summary(classes = "outline") {
             role = "button"
             +title
         }

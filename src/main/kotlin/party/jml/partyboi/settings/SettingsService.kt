@@ -13,15 +13,22 @@ import party.jml.partyboi.templates.Theme
 
 class SettingsService(app: AppServices) : StoredProperties(app) {
     val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
+    val voteKeyEmailList = property("voteKeyEmailList", emptyList<String>())
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
 
-    suspend fun getSettings() = either {
-        PartyboiSettings(
-            automaticVoteKeys = automaticVoteKeys.get().bind(),
+    suspend fun getGeneralSettings() = either {
+        GeneralSettings(
             resultsFileHeader = resultsFileHeader.get().bind(),
             colorScheme = colorScheme.get().bind(),
             timeZone = app.time.timeZone.get().bind()
+        )
+    }
+
+    suspend fun getVoteSettings() = either {
+        VoteSettings(
+            automaticVoteKeys = automaticVoteKeys.get().bind(),
+            listOfEmails = voteKeyEmailList.get().bind().joinToString("\n")
         )
     }
 
@@ -31,30 +38,48 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
         )
     }
 
-    suspend fun saveSettings(settings: PartyboiSettings) = either {
+    suspend fun saveSettings(settings: GeneralSettings) = either {
         listOf(
-            automaticVoteKeys.set(settings.automaticVoteKeys),
             resultsFileHeader.set(settings.resultsFileHeader.trimEnd()),
             colorScheme.set(settings.colorScheme),
             app.time.timeZone.set(settings.timeZone),
         ).bindAll()
         app.signals.emit(Signal.settingsUpdated())
     }
+
+    suspend fun saveSettings(settings: VoteSettings) = either {
+        listOf(
+            automaticVoteKeys.set(settings.automaticVoteKeys),
+            voteKeyEmailList.set(
+                settings.listOfEmails
+                    .split(Regex("\\s+"))
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+            )
+        ).bindAll()
+        app.signals.emit(Signal.settingsUpdated())
+    }
 }
 
-data class PartyboiSettings(
-    @property:Field(order = 1, label = "Automatic vote keys")
-    val automaticVoteKeys: AutomaticVoteKeys,
+data class GeneralSettings(
     @property:Field(order = 3, label = "results.txt header", presentation = FieldPresentation.monospace)
     val resultsFileHeader: String,
     @property:Field(order = 2, label = "Color scheme")
     val colorScheme: ColorScheme,
     @property:Field(order = 4, label = "Time zone")
     val timeZone: TimeZone,
-) : Validateable<PartyboiSettings>
+) : Validateable<GeneralSettings>
+
+data class VoteSettings(
+    @property:Field(order = 1, label = "Automatic vote keys")
+    val automaticVoteKeys: AutomaticVoteKeys,
+    @property:Field(order = 2, label = "Email list", presentation = FieldPresentation.large)
+    val listOfEmails: String,
+) : Validateable<VoteSettings>
 
 enum class AutomaticVoteKeys(val label: String) {
-    DISABLED("Disabled"),
-    PER_USER("Per user"),
-    PER_IP_ADDRESS("Per IP address"),
+    DISABLED("Vote keys only"),
+    PER_USER("Every new user gets voting rights automatically"),
+    PER_IP_ADDRESS("Every new user from distinct IP address gets voting rights automatically"),
+    PER_EMAIL("Voting rights are granted according to an email list"),
 }

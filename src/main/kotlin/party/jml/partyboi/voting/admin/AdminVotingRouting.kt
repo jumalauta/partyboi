@@ -9,6 +9,7 @@ import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.processForm
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.settings.VoteSettings
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
@@ -20,9 +21,27 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
                 either {
                     val voteKeys = app.voteKeys.getAllVoteKeys().bind()
                     val users = app.users.getUsers().bind()
-                    AdminVotingPage.render(voteKeys, users)
+                    val settings = Form(
+                        VoteSettings::class,
+                        app.settings.getVoteSettings().bind(),
+                        initial = false
+                    )
+                    AdminVotingPage.render(voteKeys, users, settings)
                 }
             })
+        }
+
+        post("/admin/voting/settings") {
+            call.processForm<VoteSettings>(
+                { app.settings.saveSettings(it).map { Redirection("/admin/voting") } },
+                { settings ->
+                    either {
+                        val voteKeys = app.voteKeys.getAllVoteKeys().bind()
+                        val users = app.users.getUsers().bind()
+                        AdminVotingPage.render(voteKeys, users, settings)
+                    }
+                }
+            )
         }
 
         get("/admin/voting/generate") {

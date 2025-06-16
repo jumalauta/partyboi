@@ -9,14 +9,13 @@ import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Page
 
 object AdminSettingsPage {
-    fun render(settings: Form<PartyboiSettings>): Page = Page("Settings") {
+    fun render(settings: Form<GeneralSettings>): Page = Page("Settings") {
         h1 { +"Settings" }
 
         renderForm(
             url = "/admin/settings",
             form = settings,
             options = mapOf(
-                "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label },
                 "colorScheme" to DropdownOption.fromEnum<ColorScheme> { it.displayName },
                 "timeZone" to TimeZone.availableZoneIds
                     .toList()

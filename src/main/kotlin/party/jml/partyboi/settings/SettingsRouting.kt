@@ -14,9 +14,13 @@ import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureSettingsRouting(app: AppServices) {
-    suspend fun renderSettings(settingsForm: Form<PartyboiSettings>? = null): Either<AppError, Page> = either {
+    suspend fun renderSettings(settingsForm: Form<GeneralSettings>? = null): Either<AppError, Page> = either {
         AdminSettingsPage.render(
-            settings = settingsForm ?: Form(PartyboiSettings::class, app.settings.getSettings().bind(), initial = false)
+            settings = settingsForm ?: Form(
+                GeneralSettings::class,
+                app.settings.getGeneralSettings().bind(),
+                initial = false
+            )
         )
     }
 
@@ -26,7 +30,7 @@ fun Application.configureSettingsRouting(app: AppServices) {
         }
 
         post("/admin/settings") {
-            call.processForm<PartyboiSettings>(
+            call.processForm<GeneralSettings>(
                 { app.settings.saveSettings(it).map { Redirection("/admin/settings") } },
                 { renderSettings(it) }
             )
