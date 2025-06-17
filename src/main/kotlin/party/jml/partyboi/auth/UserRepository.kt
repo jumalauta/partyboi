@@ -1,12 +1,13 @@
 package party.jml.partyboi.auth
 
-import arrow.core.Option
-import arrow.core.left
-import arrow.core.none
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.html.a
+import kotlinx.html.body
+import kotlinx.html.h1
+import kotlinx.html.p
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -15,6 +16,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asOptionalString
+import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
@@ -111,7 +114,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                 votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
             )
 
-            when (app.settings.automaticVoteKeys.get().bind()) {
+            val assignedUser = when (app.settings.automaticVoteKeys.get().bind()) {
                 AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
                 AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
                 AutomaticVoteKeys.PER_EMAIL ->
@@ -123,6 +126,10 @@ class UserRepository(private val app: AppServices) : Logging() {
 
                 else -> createdUser
             }
+
+            sendVerificationEmail(assignedUser)
+
+            assignedUser
         }
     }
 
@@ -154,6 +161,89 @@ class UserRepository(private val app: AppServices) : Logging() {
 
     suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM appuser"))
+    }
+
+    suspend fun sendVerificationEmail(user: User): Either<AppError, Unit>? = (db.use {
+        user.email?.let { email ->
+            either {
+                if (app.email.isConfigured()) {
+                    val verificationCode = generateVerificationCode(user.id).bind()
+                    val instanceName = app.config.instanceName
+                    val sender = listOf(instanceName, "Partyboi").distinct().joinToString(" / ")
+
+                    app.email.sendMail(email, "Verify your email to $instanceName") {
+                        body {
+                            h1 { +"Hello, ${user.name}!" }
+                            p { +"Welcome to the $instanceName!" }
+                            p { +"To ensure your maximal enjoyment, please verify your email by clicking the following link." }
+                            p {
+                                a(href = "${app.config.hostName}/verify/${user.id}/$verificationCode") {
+                                    +"Verify your email"
+                                }
+                            }
+                            p {
+                                +"Br, $sender team"
+                            }
+                        }
+                    }.bind()
+                } else {
+                    setEmailVerified(user.id).bind()
+                }
+            }
+        }
+    })?.onLeft { error ->
+        app.errors.saveSafely(
+            error = error.throwable ?: Error("Sending verification email failed due to an unexpected error"),
+            context = user
+        )
+    }
+
+    suspend fun verifyEmail(userId: Int, verificationCode: String): Either<AppError, Unit> = db.use {
+        either {
+            val expectedCode = it.one(
+                queryOf(
+                    "SELECT verification_code FROM appuser WHERE id = ?",
+                    userId
+                ).map(asOptionalString)
+            ).bind()
+
+            if (verificationCode == expectedCode) {
+                setEmailVerified(userId).bind()
+            } else {
+                InvalidInput("Invalid verification code")
+            }
+        }
+    }
+
+    suspend fun setEmailVerified(userId: Int): AppResult<Unit> = db.use {
+        it.exec(
+            queryOf(
+                """
+                    UPDATE appuser
+                    SET
+                        verification_code = NULL,
+                        email_verified = true
+                    WHERE id = ?
+                """.trimIndent(),
+                userId
+            )
+        )
+    }
+
+    suspend fun generateVerificationCode(userId: Int): AppResult<String> = db.use {
+        val code = randomStringId(32)
+        it.one(
+            queryOf(
+                """
+            UPDATE appuser
+            SET verification_code = ?
+            WHERE id = ?
+            RETURNING verification_code
+        """.trimIndent(),
+                code,
+                userId
+            ).map(asString)
+        )
     }
 
     fun import(tx: TransactionalSession, data: DataExport) = either {

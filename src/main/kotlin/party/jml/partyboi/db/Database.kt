@@ -101,6 +101,7 @@ fun Session.updateOne(query: Query): AppResult<Unit> =
 
 object DbBasicMappers {
     val asString: (Row) -> String = { it.string(1) }
+    val asOptionalString: (Row) -> String? = { it.stringOrNull(1) }
     val asBoolean: (Row) -> Boolean = { it.boolean(1) }
     val asInt: (Row) -> Int = { it.int(1) }
     val asIntOrNull: (Row) -> Int? = { it.intOrNull(1) }

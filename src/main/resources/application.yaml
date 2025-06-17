@@ -28,6 +28,10 @@ files:
   assets: "$FILES_ASSETS:/assets"
   screenshots: "$FILES_SCREENSHOTS:/screenshots"
 
+email:
+  brevo:
+    apiKey: "$BREVO_APIKEY:"
+
 replication:
   import:
     source: "$REPLICATION_IMPORT_SOURCE:"
