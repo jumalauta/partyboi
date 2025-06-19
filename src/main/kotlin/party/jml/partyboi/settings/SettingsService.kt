@@ -5,6 +5,7 @@ import kotlinx.datetime.TimeZone
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.StoredProperties
 import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.templates.ColorScheme
@@ -13,6 +14,7 @@ import party.jml.partyboi.templates.Theme
 class SettingsService(app: AppServices) : StoredProperties(app) {
     val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
     val voteKeyEmailList = property("voteKeyEmailList", emptyList<String>())
+    val verifiedEmailsOnly = property("verifiedEmailsOnly", true)
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
 
@@ -27,7 +29,8 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
     suspend fun getVoteSettings() = either {
         VoteSettings(
             automaticVoteKeys = automaticVoteKeys.get().bind(),
-            listOfEmails = voteKeyEmailList.get().bind().joinToString("\n")
+            listOfEmails = voteKeyEmailList.get().bind().joinToString("\n"),
+            verifiedEmailsOnly = verifiedEmailsOnly.get().bind()
         )
     }
 
@@ -46,6 +49,16 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
     }
 
     suspend fun saveSettings(settings: VoteSettings) = either {
+        if (settings.automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL && !app.email.isConfigured()) {
+            raise(
+                ValidationError(
+                    "automaticVoteKeys",
+                    "This option cannot be selected because email service has not been configured",
+                    ""
+                )
+            )
+        }
+
         listOf(
             automaticVoteKeys.set(settings.automaticVoteKeys),
             voteKeyEmailList.set(
@@ -53,7 +66,8 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
                     .split(Regex("\\s+"))
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
-            )
+            ),
+            verifiedEmailsOnly.set(settings.verifiedEmailsOnly),
         ).bindAll()
     }
 }
@@ -72,6 +86,8 @@ data class VoteSettings(
     val automaticVoteKeys: AutomaticVoteKeys,
     @property:Field(order = 2, label = "Email list", presentation = FieldPresentation.large)
     val listOfEmails: String,
+    @property:Field(order = 3, label = "Accept only verified email addresses")
+    val verifiedEmailsOnly: Boolean,
 ) : Validateable<VoteSettings>
 
 enum class AutomaticVoteKeys(val label: String) {

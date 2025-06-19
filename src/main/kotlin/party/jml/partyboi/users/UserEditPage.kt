@@ -1,15 +1,22 @@
 package party.jml.partyboi.users
 
 import kotlinx.html.*
-import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.form.*
+import party.jml.partyboi.auth.UserCredentials
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.voting.VoteKey
 
 object UserEditPage {
-    fun render(session: User, user: User, credentials: Form<UserCredentials>, voteKeys: List<VoteKey>) =
+    fun render(
+        session: User,
+        user: User,
+        credentials: Form<UserCredentials>,
+        voteKeys: List<VoteKey>,
+        status: UserEditStatus?
+    ) =
         Page("Edit user") {
             h1 { +"Edit user #${user.id}" }
 
@@ -56,7 +63,40 @@ object UserEditPage {
                             )
                         }
                     }
+                    article {
+                        cardHeader("Verification")
+                        section {
+                            if (user.email == null) {
+                                +"User does not have an email address"
+                            } else {
+                                if (user.emailVerified) {
+                                    +"User has a verified email address "
+                                    a(href = "mailto:${user.email}") { +user.email }
+                                } else {
+                                    p {
+                                        +"User has an email address "
+                                        a(href = "mailto:${user.email}") { +user.email }
+                                        +" but it is not verified"
+                                    }
+                                    p {
+                                        a(href = "/admin/users/${user.id}/send-verification") {
+                                            attributes.put("role", "button")
+                                            +"Send verification email"
+                                        }
+                                    }
+                                    status?.let {
+                                        p { small { +it.message } }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             )
         }
+
+    enum class UserEditStatus(val message: String) {
+        VERIFICATION_EMAIL_SENT("Verification email sent"),
+        VERIFICATION_EMAIL_FAILED("Sending verification email failed"),
+    }
 }

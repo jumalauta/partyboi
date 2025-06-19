@@ -12,6 +12,7 @@ import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.Migrations
 import party.jml.partyboi.db.getDatabasePool
+import party.jml.partyboi.email.EmailServiceFacade
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
@@ -49,6 +50,7 @@ class AppServices(
     val assets = AssetsRepository(this)
     val replication = ReplicationService(this)
     val errors = ErrorRepository(this)
+    val email = EmailServiceFacade(this)
 
     companion object {
         var globalInstance: AppServices? = null

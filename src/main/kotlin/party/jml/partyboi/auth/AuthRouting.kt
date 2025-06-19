@@ -9,10 +9,9 @@ import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.util.date.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.NotFound
-import party.jml.partyboi.data.Notice
-import party.jml.partyboi.data.processForm
+import party.jml.partyboi.data.*
 import party.jml.partyboi.templates.Redirection
+import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureLoginRouting(app: AppServices) {
@@ -74,6 +73,17 @@ fun Application.configureLoginRouting(app: AppServices) {
                     ).right()
                 }
             )
+        }
+
+        get("/verify/{userId}/{verificationCode}") {
+            call.respondEither({
+                either {
+                    val userId = call.parameterInt("userId").bind()
+                    val verificationCode = call.parameterString("verificationCode").bind()
+                    app.users.verifyEmail(userId, verificationCode).bind()
+                    Redirection("/")
+                }
+            })
         }
 
         get("/logout") {

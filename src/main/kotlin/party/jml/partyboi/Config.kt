@@ -28,8 +28,11 @@ fun ApplicationConfigValue.getPath(): Path = Paths.get(getString())
 fun ApplicationConfigValue.getInt(): Int = getString().toInt()
 
 class ConfigReader(private val config: ApplicationConfig) {
-    // Data initialization
+    // Instance
     val instanceName: String by lazy { config.property("instance.name").getString() }
+    val hostName: String by lazy { config.property("instance.host").getString() }
+
+    // Data initialization
     val adminUsername: String by lazy { config.property("init.admin.username").getString() }
     val adminPassword: String by lazy { config.property("init.admin.password").getString() }
 
@@ -47,6 +50,9 @@ class ConfigReader(private val config: ApplicationConfig) {
     val dbDatabase: String by lazy { config.property("db.database").getString() }
     val dbUser: String by lazy { config.property("db.user").getString() }
     val dbPassword: String by lazy { config.property("db.password").getString() }
+
+    // Email
+    val brevoApiKey: String? by lazy { config.propertyOrNull("email.brevo.apiKey")?.getString()?.nonEmptyString() }
 
     // Replication
     val replicationExportApiKey: String? by lazy {
