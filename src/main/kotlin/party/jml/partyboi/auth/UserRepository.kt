@@ -386,7 +386,13 @@ data class UserCredentials(
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectNotEmpty("name", name),
         expectMaxLength("name", name, 64),
-        expectEqual("password2", password2, password)
+        expectEqual("password2", password2, password),
+        cond(
+            target = "email",
+            value = email,
+            errorCondition = email.isNotEmpty() && !email.isValidEmailAddress(),
+            message = "Not a valid email address"
+        )
     ) + (if (isUpdate && password.isEmpty()) emptyList() else listOf(
         expectMinLength("password", password, 8),
         expectMinLength("password2", password2, 8),

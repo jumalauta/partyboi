@@ -1,6 +1,7 @@
 package party.jml.partyboi.data
 
 import arrow.core.*
+import java.util.regex.Pattern
 
 interface Validateable<T : Validateable<T>> {
     fun validationErrors(): List<Option<ValidationError.Message>> = emptyList()
@@ -38,3 +39,12 @@ interface Validateable<T : Validateable<T>> {
     fun cond(target: String, value: String, errorCondition: Boolean, message: String): Option<ValidationError.Message> =
         if (errorCondition) Some(ValidationError.Message(target, message, value)) else None
 }
+
+fun String.isValidEmailAddress(): Boolean = Pattern.compile(
+    "^(([\\w-]+\\.)+[\\w-]+|([a-zA-Z]|[\\w-]{2,}))@"
+            + "((([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+            + "[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\."
+            + "([0-1]?[0-9]{1,2}|25[0-5]|2[0-4][0-9])\\.([0-1]?"
+            + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
+            + "([a-zA-Z]+[\\w-]+\\.)+[a-zA-Z]{2,4})$"
+).matcher(this).matches()
