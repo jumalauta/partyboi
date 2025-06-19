@@ -46,6 +46,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     password,
                     is_admin,
                     email,
+                    email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -64,6 +65,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     password,
                     is_admin,
                     email,
+                    email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -84,6 +86,7 @@ class UserRepository(private val app: AppServices) : Logging() {
                     password,
                     is_admin,
                     email,
+                    email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
                 LEFT JOIN votekey ON votekey.appuser_id = appuser.id
@@ -115,14 +118,17 @@ class UserRepository(private val app: AppServices) : Logging() {
             )
 
             val assignedUser = when (app.settings.automaticVoteKeys.get().bind()) {
-                AutomaticVoteKeys.PER_USER -> registerVoteKey(VoteKey.user(createdUser.id))
-                AutomaticVoteKeys.PER_IP_ADDRESS -> registerVoteKey(VoteKey.ipAddr(ip))
-                AutomaticVoteKeys.PER_EMAIL ->
-                    createdUser.email?.let { email ->
-                        val emails = app.settings.voteKeyEmailList.get().fold({ emptyList() }, { it })
-                        if (emails.contains(email)) registerVoteKey(VoteKey.email(email))
-                        else null
-                    } ?: createdUser
+                AutomaticVoteKeys.PER_USER -> {
+                    registerVoteKey(VoteKey.user(createdUser.id))
+                }
+
+                AutomaticVoteKeys.PER_IP_ADDRESS -> {
+                    registerVoteKey(VoteKey.ipAddr(ip))
+                }
+
+                AutomaticVoteKeys.PER_EMAIL -> {
+                    createdUser.copy(votingEnabled = processAutomaticVoteKeyByEmail(createdUser.id).bind())
+                }
 
                 else -> createdUser
             }
@@ -186,8 +192,6 @@ class UserRepository(private val app: AppServices) : Logging() {
                             }
                         }
                     }.bind()
-                } else {
-                    setEmailVerified(user.id).bind()
                 }
             }
         }
@@ -209,9 +213,31 @@ class UserRepository(private val app: AppServices) : Logging() {
 
             if (verificationCode == expectedCode) {
                 setEmailVerified(userId).bind()
+                processAutomaticVoteKeyByEmail(userId).bind()
             } else {
                 InvalidInput("Invalid verification code")
             }
+        }
+    }
+
+    suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
+        val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
+
+        if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
+            val email = getUser(userId).bind().email
+            val verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().bind()
+
+            val eligible = !verifiedEmailsOnly || either {
+                val emails = app.settings.voteKeyEmailList.get().bind()
+                emails.contains(email)
+            }.bind()
+
+            if (email != null && eligible) {
+                app.voteKeys.insertVoteKey(userId, VoteKey.email(email), null).bind()
+                true
+            } else false
+        } else {
+            false
         }
     }
 
@@ -298,6 +324,7 @@ data class User(
     val isAdmin: Boolean,
     val votingEnabled: Boolean,
     val email: String?,
+    val emailVerified: Boolean,
 ) : Principal {
     fun authenticate(plainPassword: String): AppResult<User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
@@ -315,6 +342,7 @@ data class User(
                 isAdmin = row.boolean("is_admin"),
                 votingEnabled = row.boolean("voting_enabled"),
                 email = row.stringOrNull("email"),
+                emailVerified = row.boolean("email_verified"),
             )
         }
 

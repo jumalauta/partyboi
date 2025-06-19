@@ -52,7 +52,7 @@ class ConfigReader(private val config: ApplicationConfig) {
     val dbPassword: String by lazy { config.property("db.password").getString() }
 
     // Email
-    val brevoApiKey: String? by lazy { config.propertyOrNull("email.brevo.apiKey")?.getString() }
+    val brevoApiKey: String? by lazy { config.propertyOrNull("email.brevo.apiKey")?.getString()?.nonEmptyString() }
 
     // Replication
     val replicationExportApiKey: String? by lazy {
