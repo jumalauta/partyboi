@@ -15,7 +15,6 @@ object UserEditPage {
         user: User,
         credentials: Form<UserCredentials>,
         voteKeys: List<VoteKey>,
-        status: UserEditStatus?
     ) =
         Page("Edit user") {
             h1 { +"Edit user #${user.id}" }
@@ -84,9 +83,6 @@ object UserEditPage {
                                             +"Send verification email"
                                         }
                                     }
-                                    status?.let {
-                                        p { small { +it.message } }
-                                    }
                                 }
                             }
                         }
@@ -94,9 +90,4 @@ object UserEditPage {
                 }
             )
         }
-
-    enum class UserEditStatus(val message: String) {
-        VERIFICATION_EMAIL_SENT("Verification email sent"),
-        VERIFICATION_EMAIL_FAILED("Sending verification email failed"),
-    }
 }
