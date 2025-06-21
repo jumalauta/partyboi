@@ -16,7 +16,9 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
+import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asString
+import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import kotlin.random.Random
@@ -50,17 +52,22 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
                     keySet
                 )
             )
+        }.onRight {
+            userId?.let { notifyUserOfVotingRights(it) }
         }
 
-    suspend fun registerTicket(userId: Int, code: String): AppResult<Unit> = db.use {
-        it.updateOne(
-            queryOf(
-                "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
-                userId,
-                VoteKey.ticket(code).toString()
+    suspend fun registerTicket(userId: Int, code: String): AppResult<Unit> =
+        db.use {
+            it.updateOne(
+                queryOf(
+                    "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
+                    userId,
+                    VoteKey.ticket(code).toString()
+                )
             )
-        )
-    }
+        }.onRight {
+            notifyUserOfVotingRights(userId)
+        }
 
     suspend fun createTickets(count: Int, keySet: String?) = db.transaction { tx ->
         either {
@@ -71,7 +78,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
     }
 
     suspend fun grantVotingRightsByEmail() = db.use {
-        it.exec(
+        it.many(
             queryOf(
                 """
                 INSERT INTO votekey (key, appuser_id) (
@@ -91,9 +98,12 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
                             WHERE key = 'SettingsService.voteKeyEmailList'
                         )
                 )
+                RETURNING appuser_id
             """.trimIndent()
-            )
-        )
+            ).map(asInt)
+        ).map { userIds ->
+            userIds.forEach { userId -> notifyUserOfVotingRights(userId) }
+        }
     }
 
     fun import(tx: TransactionalSession, data: DataExport) = either {
@@ -127,6 +137,14 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
 
     private fun generateTicketCode(): String =
         (0..7).map { getRandomTicketChar() }.joinToString("")
+
+    suspend private fun notifyUserOfVotingRights(userId: Int) {
+        app.messages.sendMessage(
+            userId,
+            MessageType.INFO,
+            "You have been granted rights to vote."
+        )
+    }
 
     companion object {
         val TICKET_CHARS = "ABCDEFHJKLMNPRSTUVWXY2346789".toList()

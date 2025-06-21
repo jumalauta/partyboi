@@ -80,7 +80,7 @@ fun Application.configureLoginRouting(app: AppServices) {
                 either {
                     val userId = call.parameterInt("userId").bind()
                     val verificationCode = call.parameterString("verificationCode").bind()
-                    app.users.verifyEmail(userId, verificationCode).bind()
+                    app.users.verifyEmail(userId, verificationCode)
                     Redirection("/")
                 }
             })

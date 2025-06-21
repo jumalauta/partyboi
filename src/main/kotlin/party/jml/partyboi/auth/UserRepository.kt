@@ -20,6 +20,7 @@ import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
@@ -133,7 +134,19 @@ class UserRepository(private val app: AppServices) : Logging() {
                 else -> createdUser
             }
 
-            sendVerificationEmail(assignedUser)
+            sendVerificationEmail(assignedUser)?.let { result ->
+                if (result.isRight()) {
+                    app.messages.sendMessage(
+                        assignedUser.id, MessageType.INFO,
+                        "To finish creating your account, please verify your email address by following the instructions sent to ${assignedUser.email}"
+                    )
+                } else {
+                    app.messages.sendMessage(
+                        assignedUser.id, MessageType.WARNING,
+                        "Sending verification email failed. Some features may not be enabled. Contact the organizers."
+                    )
+                }
+            }
 
             assignedUser
         }
@@ -209,12 +222,28 @@ class UserRepository(private val app: AppServices) : Logging() {
                     "SELECT verification_code FROM appuser WHERE id = ?",
                     userId
                 ).map(asOptionalString)
-            ).bind()
+            ).onLeft {
+                app.messages.sendMessage(
+                    userId,
+                    MessageType.ERROR,
+                    "Invalid verification."
+                )
+            }.bind()
 
             if (verificationCode == expectedCode) {
                 setEmailVerified(userId).bind()
+                app.messages.sendMessage(
+                    userId,
+                    MessageType.SUCCESS,
+                    "Your email has been verified successfully."
+                )
                 processAutomaticVoteKeyByEmail(userId).bind()
             } else {
+                app.messages.sendMessage(
+                    userId,
+                    MessageType.ERROR,
+                    "Invalid verification."
+                )
                 InvalidInput("Invalid verification code")
             }
         }
