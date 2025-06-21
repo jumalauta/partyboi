@@ -19,7 +19,7 @@ import party.jml.partyboi.email.EmailService
 import party.jml.partyboi.system.AppResult
 
 class BrevoEmailService(val app: AppServices, val apiKey: String) : EmailService {
-    private val client = HttpClient(CIO)
+    private val client: HttpClient get() = HttpClient(CIO)
 
     override suspend fun sendMail(
         to: String,

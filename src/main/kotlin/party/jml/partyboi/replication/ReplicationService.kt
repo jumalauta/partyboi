@@ -43,20 +43,21 @@ import kotlin.io.path.exists
 class ReplicationService(val app: AppServices) : Logging() {
     private var schemaVersion: String? = null
     private val importConfig = app.config.replicationImport
-    private val client = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json()
-        }
-        importConfig.onSome {
-            if (it.source == "https://localhost") {
-                engine {
-                    https {
-                        trustManager = TrustAllX509TrustManager()
+    private val client: HttpClient
+        get() = HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json()
+            }
+            importConfig.onSome {
+                if (it.source == "https://localhost") {
+                    engine {
+                        https {
+                            trustManager = TrustAllX509TrustManager()
+                        }
                     }
                 }
             }
         }
-    }
 
     init {
         app.config.replicationExportApiKey.toOption().onSome {
