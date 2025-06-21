@@ -174,10 +174,6 @@ class UserRepository(private val app: AppServices) : Logging() {
         }
     }
 
-    suspend fun deleteUserByName(name: String) = db.use {
-        it.exec(queryOf("DELETE FROM appuser WHERE name = ?", name))
-    }
-
     suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM appuser"))
     }
@@ -376,7 +372,6 @@ data class User(
         }
 
         val LoginError = ValidationError("name", "Invalid user name or password", "")
-        val InvalidSessionError = RedirectInterruption("/login")
     }
 }
 

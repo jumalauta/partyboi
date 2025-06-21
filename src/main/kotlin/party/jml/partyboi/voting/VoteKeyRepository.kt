@@ -71,7 +71,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
 
     suspend fun createTickets(count: Int, keySet: String?) = db.transaction { tx ->
         either {
-            for (i in 1..count) {
+            (1..count).forEach { i ->
                 generateTicket(tx, keySet).bind()
             }
         }
