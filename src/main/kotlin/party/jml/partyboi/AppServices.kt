@@ -16,6 +16,7 @@ import party.jml.partyboi.email.EmailServiceFacade
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.ScreenService
@@ -51,6 +52,7 @@ class AppServices(
     val replication = ReplicationService(this)
     val errors = ErrorRepository(this)
     val email = EmailServiceFacade(this)
+    val messages = MessageRepository(this)
 
     companion object {
         var globalInstance: AppServices? = null

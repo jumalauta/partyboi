@@ -5,17 +5,23 @@ import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
+import party.jml.partyboi.messages.Message
 import party.jml.partyboi.templates.components.icon
 
 data class Page(
     val title: String,
     val subLinks: List<NavItem> = emptyList(),
     val children: DIV.() -> Unit,
-) : Renderable, Themeable {
+) : Renderable, Themeable, Messaging {
     private var theme = Theme.Default
+    private var messages: List<Message> = emptyList()
 
     override fun setTheme(theme: Theme) {
         this.theme = theme
+    }
+
+    override fun setMessages(messages: List<Message>) {
+        this.messages = messages
     }
 
     override fun getHTML(user: User?, path: String): String {
@@ -62,6 +68,20 @@ data class Page(
                         navigation(user, path, subLinks)
                         div(classes = "content") {
                             children()
+                        }
+                    }
+                }
+                if (messages.isNotEmpty()) {
+                    aside(classes = "snackbars") {
+                        section(classes = "container") {
+                            ul {
+                                messages.forEach { message ->
+                                    li(classes = message.type.name.lowercase()) {
+                                        span { +message.text }
+                                        a(href = "#") { +"Dismiss" }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

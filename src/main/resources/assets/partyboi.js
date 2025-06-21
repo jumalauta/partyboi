@@ -85,6 +85,15 @@ function initInteractions(target) {
             link.setAttribute("href", link.getAttribute("href") + "?win=true");
         });
     }
+
+    // Snackbars
+    target.querySelectorAll(".snackbars li").forEach((snackbar) => {
+        const dismiss = snackbar.querySelector("a");
+        dismiss.addEventListener("click", () => {
+            snackbar.classList.add("disappear");
+            setTimeout(() => snackbar.remove(), 200)
+        })
+    })
 }
 
 // Smooth page reload

@@ -450,3 +450,86 @@ table.compact {
 table.compact th, table.compact td {
     vertical-align: top;
 }
+
+.snackbars {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    animation: snackbars-appear 200ms 1 ease-out;
+}
+
+.snackbars ul {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.snackbars li {
+    display: flex;
+    gap: var(--pico-spacing);
+    padding: var(--pico-spacing);
+    margin-bottom: var(--pico-spacing);
+    border-radius: var(--pico-border-radius);
+    box-shadow: var(--pico-box-shadow);
+    color: #ffffff;
+}
+
+.snackbars li a {
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.snackbars li.info {
+    background-color: #017FC0;
+}
+
+.snackbars li.success {
+    background-color: #398712;
+}
+
+.snackbars li.warning {
+    background-color: #FFBF00;
+    color: #000000;
+}
+
+.snackbars li.warning a {
+    color: #000000;
+}
+
+.snackbars li.error {
+    background-color: #D24317;
+}
+
+.snackbars li.disappear {
+    opacity: 0;
+    animation: snackbar-disappear 200ms 1 ease-in;
+}
+
+@keyframes snackbars-appear {
+    from {
+        opacity: 0;
+        bottom: -400px;
+    }
+    to {
+        opacity: 1;
+        bottom: 0;
+    }
+}
+
+@keyframes snackbar-disappear {
+    from {
+        margin-left: 0;
+        opacity: 1;
+    }
+    to {
+        margin-left: -400px;
+        opacity: 0;
+    }
+}

@@ -12,6 +12,7 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.getAny
+import party.jml.partyboi.messages.Message
 import party.jml.partyboi.services
 import party.jml.partyboi.system.AppResult
 
@@ -23,6 +24,10 @@ interface Renderable {
 
 interface Themeable {
     fun setTheme(theme: Theme)
+}
+
+interface Messaging {
+    fun setMessages(messages: List<Message>)
 }
 
 
@@ -52,6 +57,15 @@ suspend fun ApplicationCall.respondPage(renderable: Renderable) {
         either {
             val theme = application.services().settings.getTheme().bind()
             renderable.setTheme(theme)
+        }
+    }
+
+    if (renderable is Messaging) {
+        user?.id?.let { userId ->
+            either {
+                val messages = application.services().messages.consumeUnreadMessages(userId).bind()
+                renderable.setMessages(messages)
+            }
         }
     }
 
