@@ -5,15 +5,12 @@ import arrow.core.Option
 import arrow.core.none
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.h1
-import kotlinx.html.p
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.throwOnError
+import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
@@ -82,25 +79,14 @@ class UserService(private val app: AppServices) {
         user.email?.let { email ->
             either {
                 if (app.email.isConfigured()) {
-                    val verificationCode = repository.generateVerificationCode(user.id).bind()
-                    val instanceName = app.config.instanceName
-                    val sender = listOf(instanceName, "Partyboi").distinct().joinToString(" / ")
-
-                    app.email.sendMail(email, "Verify your email to $instanceName") {
-                        body {
-                            h1 { +"Hello, ${user.name}!" }
-                            p { +"Welcome to the $instanceName!" }
-                            p { +"To ensure your maximal enjoyment, please verify your email by clicking the following link." }
-                            p {
-                                a(href = "${app.config.hostName}/verify/${user.id}/$verificationCode") {
-                                    +"Verify your email"
-                                }
-                            }
-                            p {
-                                +"Br, $sender team"
-                            }
-                        }
-                    }.bind()
+                    app.email.sendMail(
+                        EmailTemplates.emailVerification(
+                            recipient = user,
+                            verificationCode = repository.generateVerificationCode(user.id).bind(),
+                            instanceName = app.config.instanceName,
+                            hostName = app.config.hostName
+                        )
+                    ).bind()
                 }
             }
         }?.onLeft { error ->

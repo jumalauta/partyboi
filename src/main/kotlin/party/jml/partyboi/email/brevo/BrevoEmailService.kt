@@ -7,25 +7,19 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.html.HTML
-import kotlinx.html.html
-import kotlinx.html.stream.createHTML
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.AppError
+import party.jml.partyboi.email.EmailMessage
 import party.jml.partyboi.email.EmailService
 import party.jml.partyboi.system.AppResult
 
 class BrevoEmailService(val app: AppServices, val apiKey: String) : EmailService {
     private val client: HttpClient get() = HttpClient(CIO)
 
-    override suspend fun sendMail(
-        to: String,
-        subject: String,
-        content: HTML.() -> Unit
-    ): AppResult<Unit> {
+    override suspend fun sendMail(message: EmailMessage): AppResult<Unit> {
         val response = client.use { client ->
             client.request("https://api.brevo.com/v3/smtp/email") {
                 method = HttpMethod.Post
@@ -38,10 +32,12 @@ class BrevoEmailService(val app: AppServices, val apiKey: String) : EmailService
                     Json.encodeToString(
                         BrevoEmail(
                             sender = BrevoEmail.Contact("donotreply@partyboi.app", "Partyboi"),
-                            to = listOf(BrevoEmail.Contact(to)),
-                            subject = subject,
-                            htmlContent = createHTML().html { content() }
-                        )))
+                            to = listOf(BrevoEmail.Contact(message.recipient)),
+                            subject = message.subject,
+                            htmlContent = message.content,
+                        )
+                    )
+                )
             }
         }
 
