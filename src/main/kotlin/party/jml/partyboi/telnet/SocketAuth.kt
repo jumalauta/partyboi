@@ -47,7 +47,7 @@ data class SocketLogin(
         } else {
             val password = query
 
-            val user = app.users.getUser(username).flatMap {
+            val user = app.users.getUserByName(username).flatMap {
                 it.authenticate(password)
             }.getOrNull()
 

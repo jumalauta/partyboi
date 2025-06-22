@@ -1,13 +1,10 @@
 package party.jml.partyboi.auth
 
-import arrow.core.*
+import arrow.core.Option
+import arrow.core.left
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.auth.*
-import kotlinx.coroutines.runBlocking
-import kotlinx.html.a
-import kotlinx.html.body
-import kotlinx.html.h1
-import kotlinx.html.p
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -20,22 +17,11 @@ import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
-import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
-import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.system.suspendEither
-import party.jml.partyboi.voting.VoteKey
 
 class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
-    private val userSessionReloadRequests = mutableSetOf<Int>()
-
-    init {
-        runBlocking {
-            createAdminUser().throwOnError()
-        }
-    }
 
     suspend fun getUsers(): AppResult<List<User>> = db.use {
         it.many(
@@ -98,58 +84,20 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> = db.use {
-        suspendEither {
-            val createdUser = it.one(
-                queryOf(
-                    """
+    suspend fun createUser(user: UserCredentials) = db.use {
+        it.one(
+            queryOf(
+                """
                         INSERT INTO appuser (name, password, email)
                         	VALUES (?, ?, ?)
                         RETURNING
                         	*, FALSE AS voting_enabled
                     """.trimIndent(),
-                    user.name,
-                    user.hashedPassword(),
-                    user.email.nonEmptyString()
-                ).map(User.fromRow)
-            ).bind()
-
-            suspend fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
-                votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
-            )
-
-            val assignedUser = when (app.settings.automaticVoteKeys.get().bind()) {
-                AutomaticVoteKeys.PER_USER -> {
-                    registerVoteKey(VoteKey.user(createdUser.id))
-                }
-
-                AutomaticVoteKeys.PER_IP_ADDRESS -> {
-                    registerVoteKey(VoteKey.ipAddr(ip))
-                }
-
-                AutomaticVoteKeys.PER_EMAIL -> {
-                    createdUser.copy(votingEnabled = processAutomaticVoteKeyByEmail(createdUser.id).bind())
-                }
-
-                else -> createdUser
-            }
-
-            sendVerificationEmail(assignedUser)?.let { result ->
-                if (result.isRight()) {
-                    app.messages.sendMessage(
-                        assignedUser.id, MessageType.INFO,
-                        "To finish creating your account, please verify your email address by following the instructions sent to ${assignedUser.email}"
-                    )
-                } else {
-                    app.messages.sendMessage(
-                        assignedUser.id, MessageType.WARNING,
-                        "Sending verification email failed. Some features may not be enabled. Contact the organizers."
-                    )
-                }
-            }
-
-            assignedUser
-        }
+                user.name,
+                user.hashedPassword(),
+                user.email.nonEmptyString()
+            ).map(User.fromRow)
+        )
     }
 
     suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = db.transaction {
@@ -178,92 +126,13 @@ class UserRepository(private val app: AppServices) : Logging() {
         it.exec(queryOf("DELETE FROM appuser"))
     }
 
-    suspend fun sendVerificationEmail(user: User): Either<AppError, Unit>? = (db.use {
-        user.email?.let { email ->
-            either {
-                if (app.email.isConfigured()) {
-                    val verificationCode = generateVerificationCode(user.id).bind()
-                    val instanceName = app.config.instanceName
-                    val sender = listOf(instanceName, "Partyboi").distinct().joinToString(" / ")
-
-                    app.email.sendMail(email, "Verify your email to $instanceName") {
-                        body {
-                            h1 { +"Hello, ${user.name}!" }
-                            p { +"Welcome to the $instanceName!" }
-                            p { +"To ensure your maximal enjoyment, please verify your email by clicking the following link." }
-                            p {
-                                a(href = "${app.config.hostName}/verify/${user.id}/$verificationCode") {
-                                    +"Verify your email"
-                                }
-                            }
-                            p {
-                                +"Br, $sender team"
-                            }
-                        }
-                    }.bind()
-                }
-            }
-        }
-    })?.onLeft { error ->
-        app.errors.saveSafely(
-            error = error.throwable ?: Error("Sending verification email failed due to an unexpected error"),
-            context = user
+    suspend fun getEmailVerificationCode(userId: Int) = db.use {
+        it.one(
+            queryOf(
+                "SELECT verification_code FROM appuser WHERE id = ?",
+                userId
+            ).map(asOptionalString)
         )
-    }
-
-    suspend fun verifyEmail(userId: Int, verificationCode: String): Either<AppError, Unit> = db.use {
-        either {
-            val expectedCode = it.one(
-                queryOf(
-                    "SELECT verification_code FROM appuser WHERE id = ?",
-                    userId
-                ).map(asOptionalString)
-            ).onLeft {
-                app.messages.sendMessage(
-                    userId,
-                    MessageType.ERROR,
-                    "Invalid verification."
-                )
-            }.bind()
-
-            if (verificationCode == expectedCode) {
-                setEmailVerified(userId).bind()
-                app.messages.sendMessage(
-                    userId,
-                    MessageType.SUCCESS,
-                    "Your email has been verified successfully."
-                )
-                processAutomaticVoteKeyByEmail(userId).bind()
-            } else {
-                app.messages.sendMessage(
-                    userId,
-                    MessageType.ERROR,
-                    "Invalid verification."
-                )
-                InvalidInput("Invalid verification code")
-            }
-        }
-    }
-
-    suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
-        val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
-
-        if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
-            val email = getUser(userId).bind().email
-            val verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().bind()
-
-            val eligible = !verifiedEmailsOnly || either {
-                val emails = app.settings.voteKeyEmailList.get().bind()
-                emails.contains(email)
-            }.bind()
-
-            if (email != null && eligible) {
-                app.voteKeys.insertVoteKey(userId, VoteKey.email(email), null).bind()
-                true
-            } else false
-        } else {
-            false
-        }
     }
 
     suspend fun setEmailVerified(userId: Int): AppResult<Unit> = db.use {
@@ -316,19 +185,8 @@ class UserRepository(private val app: AppServices) : Logging() {
         it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
 
-    fun requestUserSessionReload(userId: Int) {
-        userSessionReloadRequests.add(userId)
-    }
 
-    suspend fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
-        if (userSessionReloadRequests.contains(userId)) {
-            userSessionReloadRequests.remove(userId)
-            getUser(userId).getOrNone()
-        } else {
-            none()
-        }
-
-    private suspend fun createAdminUser() = db.use {
+    suspend fun createAdminUser() = db.use {
         val password = app.config.adminPassword
         val admin = UserCredentials(app.config.adminUsername, password, password, "")
         it.exec(

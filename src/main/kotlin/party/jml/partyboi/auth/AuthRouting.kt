@@ -26,7 +26,7 @@ fun Application.configureLoginRouting(app: AppServices) {
             call.processForm<LoginPage.UserLogin>(
                 { login ->
                     either {
-                        val user = app.users.getUser(login.name).bind()
+                        val user = app.users.getUserByName(login.name).bind()
                         val session = user.authenticate(login.password).bind()
                         call.sessions.set(session)
                         val redirect = call.request.cookies.get("afterLogin") ?: "/"
