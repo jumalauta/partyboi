@@ -11,10 +11,13 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import io.ktor.util.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.RedirectInterruption
 import party.jml.partyboi.system.AppResult
 import kotlin.time.Duration.Companion.days
+
+val UpdatedUser = AttributeKey<User>("UpdatedUser")
 
 fun Application.configureAuthentication(app: AppServices) {
     install(Authentication) {
@@ -67,11 +70,14 @@ suspend fun ApplicationCall.forwardToLogin() {
 }
 
 suspend fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
-    principal<User>()
+    (attributes.getOrNull(UpdatedUser) ?: principal<User>())
         .toOption()
         .flatMap { user ->
             (app?.users?.consumeUserSessionReloadRequest(user.id) ?: none())
-                .onSome { sessions.set(it) }
+                .onSome {
+                    attributes.put(UpdatedUser, it)
+                    sessions.set(it)
+                }
                 .recover { user }
         }
 
