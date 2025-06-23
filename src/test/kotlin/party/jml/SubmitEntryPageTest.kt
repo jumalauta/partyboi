@@ -48,7 +48,6 @@ class SubmitEntryPageTest : PartyboiTester {
                 append("Content-Disposition", "form-data; name=\"file\"; filename=\"\"")
             })
         }) {
-            println(this.html)
             findFirst(".error") { text.toBe("Value cannot be empty") }
             findSecond(".error") { text.toBe("Value cannot be empty") }
         }

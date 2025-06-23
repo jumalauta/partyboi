@@ -130,16 +130,21 @@ class UserService(private val app: AppServices) {
     suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
         val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
         if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
-            val email = userRepository.getUser(userId).bind().email
+            val user = userRepository.getUser(userId).bind()
             val verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().bind()
 
-            val eligible = !verifiedEmailsOnly || either {
+            val eligible = either {
                 val emails = app.settings.voteKeyEmailList.get().bind()
-                emails.contains(email)
+                if (emails.contains(user.email)) {
+                    if (verifiedEmailsOnly) user.emailVerified else true
+                } else {
+                    false
+                }
             }.bind()
 
-            if (email != null && eligible) {
-                app.voteKeys.insertVoteKey(userId, VoteKey.email(email), null).bind()
+            if (user.email != null && eligible) {
+                app.voteKeys.insertVoteKey(userId, VoteKey.email(user.email), null).bind()
+                requestUserSessionReload(userId)
                 true
             } else false
         } else {

@@ -16,6 +16,7 @@ import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.UserCredentials
@@ -80,6 +81,20 @@ class TestHtmlClient(val client: HttpClient) {
             assertEquals(expectedStatus, status)
             block(bodyAsChannel().toByteArray())
         }
+    }
+
+    suspend inline fun <reified A, T> getJson(
+        urlString: String,
+        expectedStatus: HttpStatusCode = HttpStatusCode.OK,
+        block: (A) -> T
+    ): T {
+        var result: T? = null
+        client.get(urlString).apply {
+            assertEquals(expectedStatus, status)
+            val response = Json.decodeFromString<A>(bodyAsText())
+            result = block(response)
+        }
+        return result!!
     }
 
     suspend fun <T> post(
@@ -168,6 +183,8 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
                 app.compos.deleteAll().bind()
                 app.compos.generalRules.set(GeneralRules("")).bind()
                 app.users.deleteAll().bind()
+                app.email.reset()
+                
                 runBlocking {
                     app.setupForTest().bind()
                 }
