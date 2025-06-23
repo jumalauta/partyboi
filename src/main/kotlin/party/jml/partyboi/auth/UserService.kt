@@ -1,0 +1,221 @@
+package party.jml.partyboi.auth
+
+import arrow.core.Either
+import arrow.core.Option
+import arrow.core.none
+import arrow.core.raise.either
+import kotlinx.coroutines.runBlocking
+import kotliquery.TransactionalSession
+import party.jml.partyboi.AppServices
+import party.jml.partyboi.auth.UserCredentials.Companion.hashPassword
+import party.jml.partyboi.data.*
+import party.jml.partyboi.email.EmailTemplates
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.messages.MessageType
+import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.voting.VoteKey
+
+class UserService(private val app: AppServices) {
+    private val userRepository = UserRepository(app)
+    private val passwordResetRepository = PasswordResetRepository(app)
+    private val userSessionReloadRequests = mutableSetOf<Int>()
+
+    init {
+        runBlocking {
+            userRepository.createAdminUser().throwOnError()
+        }
+    }
+
+    suspend fun getUser(userId: Int): AppResult<User> = userRepository.getUser(userId)
+    suspend fun getUserByName(username: String): AppResult<User> = userRepository.getUser(username)
+    suspend fun getUsers(): AppResult<List<User>> = userRepository.getUsers()
+    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> =
+        userRepository.updateUser(userId, user)
+
+    suspend fun makeAdmin(userId: Int, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
+    suspend fun deleteAll() = userRepository.deleteAll()
+
+    suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> =
+        either {
+            val createdUser = userRepository.createUser(user).bind()
+
+            suspend fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
+                votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
+            )
+
+            val assignedUser = when (app.settings.automaticVoteKeys.get().bind()) {
+                AutomaticVoteKeys.PER_USER -> {
+                    registerVoteKey(VoteKey.user(createdUser.id))
+                }
+
+                AutomaticVoteKeys.PER_IP_ADDRESS -> {
+                    registerVoteKey(VoteKey.ipAddr(ip))
+                }
+
+                AutomaticVoteKeys.PER_EMAIL -> {
+                    createdUser.copy(votingEnabled = processAutomaticVoteKeyByEmail(createdUser.id).bind())
+                }
+
+                else -> createdUser
+            }
+
+            sendVerificationEmail(assignedUser)?.let { result ->
+                if (result.isRight()) {
+                    app.messages.sendMessage(
+                        assignedUser.id, MessageType.INFO,
+                        "To finish creating your account, please verify your email address by following the instructions sent to ${assignedUser.email}"
+                    )
+                } else {
+                    app.messages.sendMessage(
+                        assignedUser.id, MessageType.WARNING,
+                        "Sending verification email failed. Some features may not be enabled. Contact the organizers."
+                    )
+                }
+            }
+
+            assignedUser
+        }
+
+    suspend fun sendVerificationEmail(user: User): Either<AppError, Unit>? =
+        user.email?.let { email ->
+            either {
+                if (app.email.isConfigured()) {
+                    app.email.sendMail(
+                        EmailTemplates.emailVerification(
+                            recipient = user,
+                            verificationCode = userRepository.generateVerificationCode(user.id).bind(),
+                            instanceName = app.config.instanceName,
+                            hostName = app.config.hostName
+                        )
+                    ).bind()
+                }
+            }
+        }?.onLeft { error ->
+            app.errors.saveSafely(
+                error = error.throwable ?: Error("Sending verification email failed due to an unexpected error"),
+                context = user
+            )
+        }
+
+    suspend fun verifyEmail(userId: Int, verificationCode: String): Either<AppError, Unit> = either {
+        val expectedCode = userRepository.getEmailVerificationCode(userId).onLeft {
+            app.messages.sendMessage(
+                userId,
+                MessageType.ERROR,
+                "Invalid verification."
+            )
+        }.bind()
+
+        if (verificationCode == expectedCode) {
+            userRepository.setEmailVerified(userId).bind()
+            app.messages.sendMessage(
+                userId,
+                MessageType.SUCCESS,
+                "Your email has been verified successfully."
+            )
+            processAutomaticVoteKeyByEmail(userId).bind()
+        } else {
+            app.messages.sendMessage(
+                userId,
+                MessageType.ERROR,
+                "Invalid verification."
+            )
+            InvalidInput("Invalid verification code")
+        }
+    }
+
+    suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
+        val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
+        if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
+            val email = userRepository.getUser(userId).bind().email
+            val verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().bind()
+
+            val eligible = !verifiedEmailsOnly || either {
+                val emails = app.settings.voteKeyEmailList.get().bind()
+                emails.contains(email)
+            }.bind()
+
+            if (email != null && eligible) {
+                app.voteKeys.insertVoteKey(userId, VoteKey.email(email), null).bind()
+                true
+            } else false
+        } else {
+            false
+        }
+    }
+
+    fun requestUserSessionReload(userId: Int) {
+        userSessionReloadRequests.add(userId)
+    }
+
+    suspend fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
+        if (userSessionReloadRequests.contains(userId)) {
+            userSessionReloadRequests.remove(userId)
+            userRepository.getUser(userId).getOrNone()
+        } else {
+            none()
+        }
+
+    suspend fun generatePasswordResetCode(email: String): AppResult<String> = either {
+        val user = userRepository.findUserByEmail(email).bind()
+        passwordResetRepository.generatePasswordResetCode(user.id).bind()
+    }
+
+    suspend fun verifyPasswordResetCode(code: String): AppResult<Unit> = either {
+        passwordResetRepository.getPasswordResetUserId(code).bind()
+    }
+
+    suspend fun resetPassword(code: String, newPassword: String): AppResult<Int> = either {
+        val userId = passwordResetRepository.getPasswordResetUserId(code).bind()
+        val hashedPassword = hashPassword(newPassword)
+        userRepository.changePassword(userId, hashedPassword).bind()
+        passwordResetRepository.invalidateCode(code).bind()
+        app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed successfully.").bind()
+        userId
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = userRepository.import(tx, data)
+}
+
+data class PasswordResetForm(
+    @property:Field(label = "Email", presentation = FieldPresentation.email)
+    val email: String,
+) : Validateable<PasswordResetForm> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectValidEmail("email", email),
+    )
+
+    companion object {
+        val Empty = PasswordResetForm("")
+    }
+}
+
+data class NewPasswordForm(
+    @property:Field(presentation = FieldPresentation.hidden)
+    val code: String,
+
+    @property:Field(
+        order = 1,
+        label = "Password",
+        presentation = FieldPresentation.secret
+    )
+    val password: String,
+
+    @property:Field(
+        order = 2,
+        label = "Password again",
+        presentation = FieldPresentation.secret
+    )
+    val password2: String,
+) : Validateable<NewPasswordForm> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectEqual("password2", password2, password),
+    )
+
+    companion object {
+        fun empty(code: String) = NewPasswordForm(code, "", "")
+    }
+}

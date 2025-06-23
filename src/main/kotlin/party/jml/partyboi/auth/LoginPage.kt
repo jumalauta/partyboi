@@ -1,13 +1,20 @@
 package party.jml.partyboi.auth
 
 import arrow.core.Option
+import kotlinx.html.a
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 
 object LoginPage {
-    fun render(formData: Form<UserLogin> = Form(UserLogin::class, UserLogin.Empty, true)) =
+    fun render(
+        formData: Form<UserLogin> = Form(UserLogin::class, UserLogin.Empty, true),
+        emailServiceConfigured: Boolean
+    ) =
         Page("Login") {
             renderForm(
                 url = "/login",
@@ -15,6 +22,11 @@ object LoginPage {
                 title = "Login",
                 submitButtonLabel = "Login"
             )
+            if (emailServiceConfigured) {
+                a(href = "/reset-password") {
+                    +"I forgot my password"
+                }
+            }
         }
 
     data class UserLogin(

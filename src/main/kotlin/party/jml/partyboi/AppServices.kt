@@ -5,7 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.util.logging.*
 import party.jml.partyboi.assets.AssetsRepository
 import party.jml.partyboi.auth.SessionRepository
-import party.jml.partyboi.auth.UserRepository
+import party.jml.partyboi.auth.UserService
 import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.compos.admin.CompoRunService
 import party.jml.partyboi.data.PropertyRepository
@@ -35,7 +35,7 @@ class AppServices(
     val properties = PropertyRepository(this)
     val settings = SettingsService(this)
     val time = TimeService(this)
-    val users = UserRepository(this)
+    val users = UserService(this)
     val sessions = SessionRepository(db)
     val compos = CompoRepository(this)
     val entries = EntryRepository(this)

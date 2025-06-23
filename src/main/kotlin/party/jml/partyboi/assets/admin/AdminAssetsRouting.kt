@@ -1,5 +1,6 @@
 package party.jml.partyboi.assets.admin
 
+import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
@@ -11,7 +12,6 @@ import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.processForm
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.system.suspendEither
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondPage
 
@@ -44,7 +44,7 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
     adminApiRouting {
         delete("/admin/assets/{file}") {
             call.apiRespond {
-                suspendEither {
+                either {
                     call.userSession(app).bind()
                     val file = call.parameterString("file").bind()
                     app.assets.delete(file).bind()
