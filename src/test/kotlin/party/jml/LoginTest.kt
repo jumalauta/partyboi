@@ -2,9 +2,13 @@ package party.jml
 
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
+import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.html5.li
 import it.skrape.selects.text
+import party.jml.partyboi.email.EmailMessage
+import party.jml.partyboi.settings.AutomaticVoteKeys
+import party.jml.partyboi.settings.VoteSettings
 import kotlin.test.Test
 
 class LoginTest : PartyboiTester {
@@ -108,6 +112,70 @@ class LoginTest : PartyboiTester {
             append("password", password)
         }) {
             it.redirectsTo("/")
+        }
+    }
+
+    @Test
+    fun `register with email`() = test {
+        val userName = "zorro"
+        val emailAddr = "zorro@email.com"
+
+        setupServices {
+            settings.saveSettings(
+                VoteSettings(
+                    automaticVoteKeys = AutomaticVoteKeys.PER_EMAIL,
+                    listOfEmails = emailAddr,
+                    verifiedEmailsOnly = true
+                )
+            )
+        }
+
+        // Register with email
+        it.post(
+            "/register",
+            formData {
+                append("name", userName)
+                append("password", "password")
+                append("password2", "password")
+                append("email", emailAddr)
+                append("isUpdate", "")
+            }
+        ) {
+            it.redirectsTo("/entries")
+        }
+
+        // Expect that we cannot vote yet
+        it.get("/") {
+            findFirst("a[href='/vote/register']") {
+                text.toBe("Register vote key")
+            }
+        }
+
+        // Expect that we got mail
+        val verificationLink = it.getJson<List<EmailMessage>, _>("/test/mock-emails") { emails ->
+            emails.last().let {
+                it.recipient.toBe(emailAddr)
+                it.subject.toBe("Verify your email address to Partyboi (test)")
+                // Scrape the verification link
+                htmlDocument(it.content) {
+                    findFirst("a") {
+                        attribute("href").replace("localhost", "")
+                    }
+                }
+            }
+        }
+
+        // Verificate email
+        it.get(verificationLink) {
+            findFirst(".snackbars li span") {
+                text.toBe("Your email has been verified successfully.")
+            }
+            findSecond(".snackbars li span") {
+                text.toBe("You have been granted rights to vote.")
+            }
+            findFirst("a[href='/vote']") {
+                text.toBe("Voting")
+            }
         }
     }
 }

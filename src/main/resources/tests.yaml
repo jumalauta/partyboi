@@ -28,6 +28,9 @@ files:
   assets: "$FILES_ASSETS:./data/test/assets"
   screenshots: "$FILES_SCREENSHOTS:./data/test/screenshots"
 
+email:
+  mock: "true"
+  
 replication:
   import:
     source: "$REPLICATION_IMPORT_SOURCE:"
