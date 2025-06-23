@@ -11,7 +11,10 @@ import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.Validateable
+import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.data.nonEmptyString
+import party.jml.partyboi.data.randomStringId
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
@@ -59,6 +62,27 @@ class UserRepository(private val app: AppServices) : Logging() {
                 WHERE name = ?
                 """,
                 name
+            ).map(User.fromRow)
+        )
+    }
+
+    suspend fun findUserByEmail(email: String): AppResult<User> = db.use {
+        it.one(
+            queryOf(
+                """
+                SELECT
+                    id,
+                    name,
+                    password,
+                    is_admin,
+                    email,
+                    email_verified,
+                    votekey.key is not null as voting_enabled
+                FROM appuser
+                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                WHERE email = ?
+                """,
+                email
             ).map(User.fromRow)
         )
     }
@@ -120,6 +144,16 @@ class UserRepository(private val app: AppServices) : Logging() {
                 )
             ).bind()
         }
+    }
+
+    suspend fun changePassword(userId: Int, hashedPassword: String) = db.use {
+        it.updateOne(
+            queryOf(
+                "UPDATE appuser SET password = ? WHERE id = ?",
+                hashedPassword,
+                userId
+            )
+        )
     }
 
     suspend fun deleteAll() = db.use {
@@ -269,18 +303,13 @@ data class UserCredentials(
         expectNotEmpty("name", name),
         expectMaxLength("name", name, 64),
         expectEqual("password2", password2, password),
-        cond(
-            target = "email",
-            value = email,
-            errorCondition = email.isNotEmpty() && !email.isValidEmailAddress(),
-            message = "Not a valid email address"
-        )
+        expectValidEmail("email", email),
     ) + (if (isUpdate && password.isEmpty()) emptyList() else listOf(
         expectMinLength("password", password, 8),
         expectMinLength("password2", password2, 8),
     ))
 
-    fun hashedPassword(): String = BCrypt.hashpw(password, BCrypt.gensalt())
+    fun hashedPassword(): String = hashPassword(password)
 
     companion object {
         val Empty = UserCredentials("", "", "", "")
@@ -292,6 +321,8 @@ data class UserCredentials(
             isUpdate = true,
             email = user.email ?: "",
         )
+
+        fun hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt())
     }
 }
 

@@ -7,10 +7,11 @@ import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.AppError
-import party.jml.partyboi.data.InvalidInput
-import party.jml.partyboi.data.throwOnError
+import party.jml.partyboi.auth.UserCredentials.Companion.hashPassword
+import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
@@ -18,25 +19,28 @@ import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.voting.VoteKey
 
 class UserService(private val app: AppServices) {
-    private val repository = UserRepository(app)
+    private val userRepository = UserRepository(app)
+    private val passwordResetRepository = PasswordResetRepository(app)
     private val userSessionReloadRequests = mutableSetOf<Int>()
 
     init {
         runBlocking {
-            repository.createAdminUser().throwOnError()
+            userRepository.createAdminUser().throwOnError()
         }
     }
 
-    suspend fun getUser(userId: Int): AppResult<User> = repository.getUser(userId)
-    suspend fun getUserByName(username: String): AppResult<User> = repository.getUser(username)
-    suspend fun getUsers(): AppResult<List<User>> = repository.getUsers()
-    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = repository.updateUser(userId, user)
-    suspend fun makeAdmin(userId: Int, isAdmin: Boolean) = repository.makeAdmin(userId, isAdmin)
-    suspend fun deleteAll() = repository.deleteAll()
+    suspend fun getUser(userId: Int): AppResult<User> = userRepository.getUser(userId)
+    suspend fun getUserByName(username: String): AppResult<User> = userRepository.getUser(username)
+    suspend fun getUsers(): AppResult<List<User>> = userRepository.getUsers()
+    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> =
+        userRepository.updateUser(userId, user)
+
+    suspend fun makeAdmin(userId: Int, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
+    suspend fun deleteAll() = userRepository.deleteAll()
 
     suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> =
         either {
-            val createdUser = repository.createUser(user).bind()
+            val createdUser = userRepository.createUser(user).bind()
 
             suspend fun registerVoteKey(voteKey: VoteKey) = createdUser.copy(
                 votingEnabled = app.voteKeys.insertVoteKey(createdUser.id, voteKey, null).isRight()
@@ -82,7 +86,7 @@ class UserService(private val app: AppServices) {
                     app.email.sendMail(
                         EmailTemplates.emailVerification(
                             recipient = user,
-                            verificationCode = repository.generateVerificationCode(user.id).bind(),
+                            verificationCode = userRepository.generateVerificationCode(user.id).bind(),
                             instanceName = app.config.instanceName,
                             hostName = app.config.hostName
                         )
@@ -97,7 +101,7 @@ class UserService(private val app: AppServices) {
         }
 
     suspend fun verifyEmail(userId: Int, verificationCode: String): Either<AppError, Unit> = either {
-        val expectedCode = repository.getEmailVerificationCode(userId).onLeft {
+        val expectedCode = userRepository.getEmailVerificationCode(userId).onLeft {
             app.messages.sendMessage(
                 userId,
                 MessageType.ERROR,
@@ -106,7 +110,7 @@ class UserService(private val app: AppServices) {
         }.bind()
 
         if (verificationCode == expectedCode) {
-            repository.setEmailVerified(userId).bind()
+            userRepository.setEmailVerified(userId).bind()
             app.messages.sendMessage(
                 userId,
                 MessageType.SUCCESS,
@@ -126,7 +130,7 @@ class UserService(private val app: AppServices) {
     suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
         val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
         if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
-            val email = repository.getUser(userId).bind().email
+            val email = userRepository.getUser(userId).bind().email
             val verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().bind()
 
             val eligible = !verifiedEmailsOnly || either {
@@ -150,10 +154,68 @@ class UserService(private val app: AppServices) {
     suspend fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
         if (userSessionReloadRequests.contains(userId)) {
             userSessionReloadRequests.remove(userId)
-            repository.getUser(userId).getOrNone()
+            userRepository.getUser(userId).getOrNone()
         } else {
             none()
         }
 
-    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
+    suspend fun generatePasswordResetCode(email: String): AppResult<String> = either {
+        val user = userRepository.findUserByEmail(email).bind()
+        passwordResetRepository.generatePasswordResetCode(user.id).bind()
+    }
+
+    suspend fun verifyPasswordResetCode(code: String): AppResult<Unit> = either {
+        passwordResetRepository.getPasswordResetUserId(code).bind()
+    }
+
+    suspend fun resetPassword(code: String, newPassword: String): AppResult<Int> = either {
+        val userId = passwordResetRepository.getPasswordResetUserId(code).bind()
+        val hashedPassword = hashPassword(newPassword)
+        userRepository.changePassword(userId, hashedPassword).bind()
+        passwordResetRepository.invalidateCode(code).bind()
+        app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed successfully.").bind()
+        userId
+    }
+
+    fun import(tx: TransactionalSession, data: DataExport) = userRepository.import(tx, data)
+}
+
+data class PasswordResetForm(
+    @property:Field(label = "Email", presentation = FieldPresentation.email)
+    val email: String,
+) : Validateable<PasswordResetForm> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectValidEmail("email", email),
+    )
+
+    companion object {
+        val Empty = PasswordResetForm("")
+    }
+}
+
+data class NewPasswordForm(
+    @property:Field(presentation = FieldPresentation.hidden)
+    val code: String,
+
+    @property:Field(
+        order = 1,
+        label = "Password",
+        presentation = FieldPresentation.secret
+    )
+    val password: String,
+
+    @property:Field(
+        order = 2,
+        label = "Password again",
+        presentation = FieldPresentation.secret
+    )
+    val password2: String,
+) : Validateable<NewPasswordForm> {
+    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
+        expectEqual("password2", password2, password),
+    )
+
+    companion object {
+        fun empty(code: String) = NewPasswordForm(code, "", "")
+    }
 }

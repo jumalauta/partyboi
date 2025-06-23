@@ -36,6 +36,14 @@ interface Validateable<T : Validateable<T>> {
     fun expectAtMost(name: String, value: Int, maxValue: Int) =
         cond(name, value.toString(), value > maxValue, "Maximum value is $maxValue")
 
+    fun expectValidEmail(name: String, value: String) =
+        cond(
+            target = name,
+            value = value,
+            errorCondition = value.isNotEmpty() && !value.isValidEmailAddress(),
+            message = "Not a valid email address"
+        )
+
     fun cond(target: String, value: String, errorCondition: Boolean, message: String): Option<ValidationError.Message> =
         if (errorCondition) Some(ValidationError.Message(target, message, value)) else None
 }

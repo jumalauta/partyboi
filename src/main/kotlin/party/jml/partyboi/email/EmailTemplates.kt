@@ -23,6 +23,22 @@ object EmailTemplates {
             signature(instanceName)
         }
 
+    fun passwordReset(recipient: String, resetCode: String, instanceName: String, hostName: String) =
+        EmailMessage.build(
+            recipient = recipient,
+            subject = "Reset your $instanceName password",
+        ) {
+            p { +"Hi!" }
+            p { +"We received a request to reset your password. You can create a new one by clicking the link below:" }
+            p {
+                a(href = "$hostName/reset-password/$resetCode") {
+                    +"\uD83D\uDC49 Reset password"
+                }
+            }
+            p { +"This link will expire in 30 minutes. If you didn't request a password reset, you can safely ignore this email." }
+            signature(instanceName)
+        }
+
     private fun FlowContent.signature(instanceName: String) {
         p {
             +"Thanks,"
