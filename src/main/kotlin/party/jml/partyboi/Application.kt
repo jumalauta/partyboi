@@ -36,6 +36,7 @@ fun Application.module() {
     }
 
     configureHealthCheck(app)
+    app.email.configure(this)
 
     launch {
         runSocketServer(9002, app)
