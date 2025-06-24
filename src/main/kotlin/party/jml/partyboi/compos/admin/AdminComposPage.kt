@@ -5,7 +5,8 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.entries.Entry
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
 import party.jml.partyboi.templates.components.buttonGroup
@@ -40,7 +41,7 @@ object AdminComposPage {
                                     tr {
                                         td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
                                         td {
-                                            val count = entries.get(compo.id)?.size ?: 0
+                                            val count = entries[compo.id]?.size ?: 0
                                             +count.toString()
                                         }
                                         td(classes = "settings") {

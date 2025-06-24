@@ -35,7 +35,7 @@ Big greetings to these parties for helping with testing:
 * [Docker Compose](https://docs.docker.com/compose/) (container orchestration)
 * [Docker Hub](https://hub.docker.com/) (image registry)
 * [Ansible](https://docs.ansible.com/ansible/latest/index.html) (automation for [partyboi.app](https://partyboi.aoo))
-* [Github Actions](https://github.com/features/actions) (ci/cd)
+* [GitHub Actions](https://github.com/features/actions) (ci/cd)
 
 ## Getting started
 

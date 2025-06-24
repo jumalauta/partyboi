@@ -1,11 +1,14 @@
 package party.jml.partyboi.assets.admin
 
 import arrow.core.Option
-import party.jml.partyboi.templates.Page
 import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FileUpload
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.deleteButton
 
@@ -43,16 +46,15 @@ object AdminAssetsPage {
                             }
                         }
                     }
-                } else null,
-                {
-                    renderForm(
-                        url = "/admin/assets",
-                        form = addAssetForm,
-                        title = "Add asset",
-                        submitButtonLabel = "Add"
-                    )
-                }
-            )
+                } else null
+            ) {
+                renderForm(
+                    url = "/admin/assets",
+                    form = addAssetForm,
+                    title = "Add asset",
+                    submitButtonLabel = "Add"
+                )
+            }
         }
 
     data class AddAsset(

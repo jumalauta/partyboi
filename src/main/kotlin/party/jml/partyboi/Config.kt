@@ -53,7 +53,7 @@ class ConfigReader(private val config: ApplicationConfig) {
 
     // Email
     val brevoApiKey: String? by lazy { config.propertyOrNull("email.brevo.apiKey")?.getString()?.nonEmptyString() }
-    val mockEmail: Boolean? by lazy { config.property("email.mock").getString() == "true" }
+    val mockEmail: Boolean? by lazy { config.propertyOrNull("email.mock")?.getString() == "true" }
 
     // Replication
     val replicationExportApiKey: String? by lazy {

@@ -152,7 +152,7 @@ data class Event(
     @property:Field(order = 0, label = "Event name")
     val name: String,
     @property:Field(order = 1, label = "Time and date")
-    val time: kotlinx.datetime.Instant,
+    val time: Instant,
     @property:Field(order = 2, label = "Show in public schedule")
     val visible: Boolean,
 ) : Validateable<Event> {

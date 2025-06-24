@@ -16,10 +16,10 @@ class SocketVotingCompoMenu : AuthorizedSocketPage, SocketMenu {
         app: AppServices
     ): SocketState {
         val compo = getCompoList(app)[formattedQuery(query)]
-        if (compo == null) {
-            return state
+        return if (compo == null) {
+            state
         } else {
-            return state.goto(SocketVotingEntryMenu(compo))
+            state.goto(SocketVotingEntryMenu(compo))
         }
     }
 

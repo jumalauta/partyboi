@@ -14,7 +14,7 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import java.util.concurrent.atomic.AtomicInteger
 
-class ErrorRepository(private val app: AppServices) {
+class ErrorRepository(app: AppServices) {
     private val db = app.db
     private val errorCounter = AtomicInteger()
 

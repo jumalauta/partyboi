@@ -218,9 +218,9 @@ class ReplicationService(val app: AppServices) : Logging() {
                 db.many(queryOf("SELECT sequence_name FROM information_schema.sequences").map(asString)).bind()
             sequences.forEach { sequence ->
                 val tokens = sequence.split('_')
-                if (tokens.size == 3 && tokens.get(2) == "seq") {
-                    val table = tokens.get(0)
-                    val column = tokens.get(1)
+                if (tokens.size == 3 && tokens[2] == "seq") {
+                    val table = tokens[0]
+                    val column = tokens[1]
                     db.exec(queryOf("SELECT setval(?, (SELECT coalesce(max($column), 1) FROM $table))", sequence))
                 }
             }

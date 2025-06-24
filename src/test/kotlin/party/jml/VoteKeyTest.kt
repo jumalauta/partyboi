@@ -57,13 +57,13 @@ class VoteKeyTest : PartyboiTester {
         }
 
         // Registration again fails
-        it.post("/vote/register", VoteKeyForm(voteKey!!.key.id!!)) {
+        it.post("/vote/register", VoteKeyForm(voteKey.key.id!!)) {
             findFirst(".error") { text.toBe("You cannot register a vote key because you have voting rights already enabled.") }
         }
 
         // Registration by another user with the same key again fails
         it.login("otherUser")
-        it.post("/vote/register", VoteKeyForm(voteKey!!.key.id!!)) {
+        it.post("/vote/register", VoteKeyForm(voteKey.key.id!!)) {
             findFirst(".error") { text.toBe("The code is invalid or already used") }
         }
     }

@@ -23,7 +23,7 @@ fun Application.configureReplicationRouting(app: AppServices) {
         }
 
         get("/replication/entry/{storageName...}") {
-            val storageName = call.parameterPath("storageName", { app.files.getStoragePath(it) })
+            val storageName = call.parameterPath("storageName") { app.files.getStoragePath(it) }
             call.processFileETag(storageName) {
                 either {
                     app.files.getStorageFile(storageName.bind())
@@ -35,7 +35,7 @@ fun Application.configureReplicationRouting(app: AppServices) {
         }
 
         get("/replication/screenshot/{entryId}") {
-            val file = call.parameterPath("entryId", { app.screenshots.getFile(it.toInt()) })
+            val file = call.parameterPath("entryId") { app.screenshots.getFile(it.toInt()) }
             call.processFileETag(file) {
                 file.fold(
                     { call.respond(it.statusCode, it.message) },
@@ -45,7 +45,7 @@ fun Application.configureReplicationRouting(app: AppServices) {
         }
 
         get("/replication/asset/{name}") {
-            val asset = call.parameterPath("name", { app.assets.getFile(it) })
+            val asset = call.parameterPath("name") { app.assets.getFile(it) }
             call.processFileETag(asset) {
                 asset.fold(
                     { call.respond(it.statusCode, it.message) },
