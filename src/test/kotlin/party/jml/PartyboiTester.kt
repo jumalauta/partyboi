@@ -66,7 +66,6 @@ class TestHtmlClient(val client: HttpClient) {
         client.get(urlString).apply {
             assertEquals(expectedStatus, status)
             return htmlDocument(bodyAsText()) {
-                relaxed = true
                 block()
             }
         }
@@ -184,7 +183,7 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
                 app.compos.generalRules.set(GeneralRules("")).bind()
                 app.users.deleteAll().bind()
                 app.email.reset()
-                
+
                 runBlocking {
                     app.setupForTest().bind()
                 }

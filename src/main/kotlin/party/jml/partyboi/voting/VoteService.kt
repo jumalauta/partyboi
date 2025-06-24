@@ -23,8 +23,8 @@ class VoteService(val app: AppServices) {
     private val live = MutableStateFlow(LiveVoteState.Empty)
 
     suspend fun start() {
-        app.signals.waitFor(SignalType.propertyUpdated) {
-            if (it.target == "SettingsService.voteKeyEmailList") {
+        app.signals.flow.collect {
+            if (it.type == SignalType.propertyUpdated && it.target == "SettingsService.voteKeyEmailList") {
                 app.settings.automaticVoteKeys.get().onRight { autoKeys ->
                     if (autoKeys == AutomaticVoteKeys.PER_EMAIL) {
                         app.voteKeys.grantVotingRightsByEmail()

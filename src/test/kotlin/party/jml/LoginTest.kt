@@ -116,7 +116,7 @@ class LoginTest : PartyboiTester {
     }
 
     @Test
-    fun `register with email`() = test {
+    fun `register with email which has been preregistered for automatic vote key`() = test {
         val userName = "zorro"
         val emailAddr = "zorro@email.com"
 

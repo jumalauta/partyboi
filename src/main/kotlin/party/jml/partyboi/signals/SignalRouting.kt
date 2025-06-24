@@ -17,7 +17,7 @@ fun Application.configureSignalRouting(app: AppServices) {
                 SignalType.fromString(type).bind()
             }.fold(
                 { call.apiRespond { it.left() } },
-                { type -> app.signals.waitFor(type) { signal -> call.respondText(signal.toString()) } }
+                { type -> app.signals.getNext(type) { signal -> call.respondText(signal.toString()) } }
             )
         }
     }

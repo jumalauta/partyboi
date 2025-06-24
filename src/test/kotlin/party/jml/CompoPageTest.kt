@@ -15,6 +15,7 @@ class CompoPageTest : PartyboiTester {
         setupServices { setupCompos(this, addCompos = false) }
 
         it.get("/compos") {
+            relaxed = true
             this.findAll("#generalRules").toBeEmpty
             this.findFirst("#noCompos") { text.toBe("No compos have not been published.") }
         }
@@ -31,6 +32,7 @@ class CompoPageTest : PartyboiTester {
         }
 
         it.get("/compos") {
+            relaxed = true
             findFirst("#generalRules") { text.toBe("General rules Make no harm.") }
             findFirst("article.compo") {
                 findFirst("header") { text.toBe("Demo") }
