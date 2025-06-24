@@ -183,10 +183,7 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
                 app.compos.generalRules.set(GeneralRules("")).bind()
                 app.users.deleteAll().bind()
                 app.email.reset()
-
-                runBlocking {
-                    app.setupForTest().bind()
-                }
+                app.setupForTest().bind()
             }.onLeft {
                 throw it.throwable ?: RuntimeException(it.message)
             }

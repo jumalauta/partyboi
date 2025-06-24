@@ -1,15 +1,16 @@
 package party.jml.partyboi.voting.admin
 
 import arrow.core.Option
-import party.jml.partyboi.templates.Page
+import kotlinx.html.article
+import kotlinx.html.header
+import kotlinx.html.li
+import kotlinx.html.ul
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.voting.VoteKey
-import kotlinx.html.*
+import party.jml.partyboi.templates.Page
 import party.jml.partyboi.voting.VoteKeyRow
 
 object GenerateVoteKeysPage {

@@ -26,7 +26,7 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
 
-class ScreenRepository(private val app: AppServices) : Logging() {
+class ScreenRepository(app: AppServices) : Logging() {
     val db = app.db
 
     init {
@@ -220,8 +220,8 @@ data class SlideSetRow(
     fun toNavItem() = NavItem("/admin/screen/$id", name)
 
     companion object {
-        val ADHOC = "adhoc"
-        val DEFAULT = "default"
+        const val ADHOC = "adhoc"
+        const val DEFAULT = "default"
 
         val fromRow: (Row) -> SlideSetRow = { row ->
             SlideSetRow(

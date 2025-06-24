@@ -6,7 +6,7 @@ import kotlinx.html.stream.createHTML
 import party.jml.partyboi.AppServices
 
 object ScreenPage {
-    suspend fun renderContent(slide: Slide<*>, app: AppServices) =
+    fun renderContent(slide: Slide<*>, app: AppServices) =
         createHTML().article(
             classes = classes(slide)
         ) {

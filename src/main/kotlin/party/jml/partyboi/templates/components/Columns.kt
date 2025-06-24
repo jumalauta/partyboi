@@ -1,6 +1,5 @@
 package party.jml.partyboi.templates.components
 
-import kotlinx.html.DIV
 import kotlinx.html.FlowContent
 import kotlinx.html.div
 import kotlinx.html.section

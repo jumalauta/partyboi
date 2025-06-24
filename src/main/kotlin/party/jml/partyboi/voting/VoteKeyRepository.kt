@@ -138,7 +138,7 @@ class VoteKeyRepository(val app: AppServices) : Logging() {
     private fun generateTicketCode(): String =
         (0..7).map { getRandomTicketChar() }.joinToString("")
 
-    suspend private fun notifyUserOfVotingRights(userId: Int) {
+    private suspend fun notifyUserOfVotingRights(userId: Int) {
         app.messages.sendMessage(
             userId,
             MessageType.INFO,

@@ -53,7 +53,7 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
                 }
             )
         }
-        .sortedBy { it.second.fold({ "" }, { it.name.lowercase() }) }
+        .sortedBy { it.second.fold({ "" }, { user -> user.name.lowercase() }) }
 
     val keySets = sorted.mapNotNull { it.first.set }
     val includePrintLinks = keySets.isNotEmpty()

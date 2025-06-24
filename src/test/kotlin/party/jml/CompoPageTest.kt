@@ -45,6 +45,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
+    @Test
     fun testCompoPageAfterSubmittingClosed() = test {
         setupServices {
             val self = this
@@ -55,10 +56,12 @@ class CompoPageTest : PartyboiTester {
         }
 
         it.get("/compos") {
+            relaxed = true
             findFirst("article.compo .submitEntry").isNotPresent
         }
     }
 
+    @Test
     fun testCompoPageWhenVotingOpened() = test {
         setupServices {
             val self = this
@@ -74,6 +77,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
+    @Test
     fun testCompoPageWhenResultsPublished() = test {
         setupServices {
             val self = this

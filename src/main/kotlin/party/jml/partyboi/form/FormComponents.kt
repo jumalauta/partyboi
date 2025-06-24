@@ -19,7 +19,7 @@ fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
 fun TABLE.readonlyField(label: String, value: String) {
     tr {
         th { small { +label } }
-        td { +if (value.isNotEmpty()) value else "–" }
+        td { +value.ifEmpty { "–" } }
     }
 }
 
@@ -186,11 +186,9 @@ fun FlowOrInteractiveOrPhrasingContent.dropdown(data: Form.FieldData, options: L
                 option {
                     value = ddOpt.value
                     selected = ddOpt.value == data.value
-                    if (ddOpt.dataFields != null) {
-                        ddOpt.dataFields.forEach { (key, value) ->
-                            if (value != null) {
-                                attributes["data-$key"] = value
-                            }
+                    ddOpt.dataFields?.forEach { (key, value) ->
+                        if (value != null) {
+                            attributes["data-$key"] = value
                         }
                     }
                     +ddOpt.label

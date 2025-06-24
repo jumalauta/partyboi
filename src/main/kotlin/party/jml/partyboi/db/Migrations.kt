@@ -40,7 +40,7 @@ object Migrations {
         }
 }
 
-class MigrationError(val migrationErrors: List<ValidateOutput>) : AppError {
+class MigrationError(migrationErrors: List<ValidateOutput>) : AppError {
     override val message: String =
         "Migration failed: ${
             migrationErrors.joinToString(", ") {

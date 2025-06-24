@@ -43,7 +43,7 @@ data class TextSlide(
     companion object {
         val Empty = TextSlide("", "", null)
 
-        val CompoInfoVariant = "compo-info"
-        val CompoEntryVariant = "compo-entry"
+        const val CompoInfoVariant = "compo-info"
+        const val CompoEntryVariant = "compo-entry"
     }
 }

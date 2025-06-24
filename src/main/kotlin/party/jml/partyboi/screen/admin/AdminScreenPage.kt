@@ -219,7 +219,7 @@ object AdminScreenPage {
         title = "Edit slide",
         subLinks = slideSets.map { it.toNavItem() },
     ) {
-        h1 { +"${slide.getName()} / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set ${slideSet}"}" }
+        h1 { +"${slide.getName()} / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
         val form = slide.slide.getForm()
         if (slide.readOnly) {
             article { renderReadonlyFields(form) }
