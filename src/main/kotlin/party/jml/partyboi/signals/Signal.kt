@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import kotlinx.datetime.Clock
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.system.AppResult
@@ -17,15 +18,12 @@ class SignalService : Logging() {
         flow.emit(signal)
     }
 
-    suspend fun waitFor(signalType: SignalType, onSignal: suspend (Signal) -> Unit) {
+    suspend fun getNext(signalType: SignalType, onSignal: suspend (Signal) -> Unit) {
         flow
             .drop(1)
             .filter { it.type == signalType }
             .take(1)
-            .collect {
-                log.info("Collected: $it")
-                onSignal(it)
-            }
+            .collect { onSignal(it) }
     }
 }
 
@@ -33,6 +31,7 @@ data class Signal(
     val type: SignalType,
     val subType: String? = null,
     val target: String? = null,
+    val time: Long = Clock.System.now().toEpochMilliseconds(),
 ) {
     override fun toString(): String = listOfNotNull(type, subType, target).joinToString(".")
 
