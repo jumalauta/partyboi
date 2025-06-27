@@ -4,10 +4,11 @@ import arrow.core.Option
 import arrow.core.none
 import arrow.core.some
 import org.apache.commons.lang3.RandomStringUtils
+import java.util.Locale.getDefault
 
 fun String.nonEmptyString(): String? = this.ifEmpty { null }
 
-fun String.nonEmptyStringOption(): Option<String> = if (this.isEmpty()) none<String>() else this.some()
+fun String?.nonEmptyStringOption(): Option<String> = if (this == null || this.isEmpty()) none() else this.some()
 
 fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? =
     this
@@ -23,3 +24,9 @@ fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? 
 fun randomShortId() = randomStringId(3) + "-" + randomStringId(3)
 
 fun randomStringId(length: Int): String = RandomStringUtils.random(length, true, false).uppercase()
+
+fun String.toLabel(): String {
+    val tokens = split(Regex("(?<=[a-z])(?=[A-Z])"))
+    tokens.joinToString(" ") { it.lowercase() }
+    return replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() }
+}

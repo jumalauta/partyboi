@@ -6,7 +6,10 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.auth.*
+import party.jml.partyboi.auth.userApiRouting
+import party.jml.partyboi.auth.userRouting
+import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.auth.votingRouting
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
@@ -33,7 +36,7 @@ fun Application.configureVotingRouting(app: AppServices) {
     userRouting {
         get("/vote/register") {
             call.respondPage(
-                RegisterVoteKeyPage.render(Form.empty(VoteKeyForm.Empty))
+                RegisterVoteKeyPage.render(Form.of(VoteKeyForm.Empty))
             )
         }
 

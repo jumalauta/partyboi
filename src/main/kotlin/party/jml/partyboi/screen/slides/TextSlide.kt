@@ -7,9 +7,10 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Hidden
+import party.jml.partyboi.form.Label
+import party.jml.partyboi.form.Large
 import party.jml.partyboi.screen.AutoRunHalting
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
@@ -17,11 +18,13 @@ import party.jml.partyboi.templates.components.markdown
 
 @Serializable
 data class TextSlide(
-    @property:Field(order = 0, label = "Title")
+    @Label("Title")
     val title: String,
-    @property:Field(order = 1, label = "Content", presentation = FieldPresentation.large)
+    @Label("Content")
+    @Large
     val content: String,
-    @property:Field(order = 2, label = "Variant", presentation = FieldPresentation.hidden)
+    @Label("Variant")
+    @Hidden
     val variant: String? = null,
 ) : Slide<TextSlide>, Validateable<TextSlide>, AutoRunHalting {
     override suspend fun render(ctx: FlowContent, app: AppServices) {

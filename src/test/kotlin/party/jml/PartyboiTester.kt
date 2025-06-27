@@ -150,6 +150,7 @@ class TestHtmlClient(val client: HttpClient) {
             append("name", username)
             append("password", password)
             append("password2", password)
+            append("email", "")
             append("isUpdate", "")
         }) {}
 

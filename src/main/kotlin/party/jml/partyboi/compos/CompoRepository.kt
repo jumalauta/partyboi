@@ -13,10 +13,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
-import party.jml.partyboi.form.DropdownOption
-import party.jml.partyboi.form.DropdownOptionSupport
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.*
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
@@ -153,20 +150,21 @@ class CompoRepository(private val app: AppServices) : Logging() {
 
 @Serializable
 data class Compo(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Hidden
     val id: Int,
-    @property:Field(order = 0, label = "Name")
+    @Label("Name")
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
+    @Label("Description / rules")
+    @Large
     val rules: String,
     val visible: Boolean,
     val allowSubmit: Boolean,
     val allowVote: Boolean,
     val publicResults: Boolean,
-    @property:Field(presentation = FieldPresentation.custom)
+    @Custom
     @Contextual
     val requireFile: Option<Boolean>,
-    @property:Field(presentation = FieldPresentation.custom)
+    @Custom
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
@@ -222,9 +220,9 @@ data class Compo(
 }
 
 data class NewCompo(
-    @property:Field(order = 0, label = "Name")
+    @Label("Name")
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
+    @Field(label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
 ) : Validateable<NewCompo> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -239,6 +237,6 @@ data class NewCompo(
 
 @Serializable
 data class GeneralRules(
-    @property:Field(label = "General compo rules", presentation = FieldPresentation.large)
+    @Field(label = "General compo rules", presentation = FieldPresentation.large)
     val rules: String
 ) : Validateable<GeneralRules>

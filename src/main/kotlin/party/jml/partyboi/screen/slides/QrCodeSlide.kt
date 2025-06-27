@@ -9,9 +9,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Label
+import party.jml.partyboi.form.Large
 import party.jml.partyboi.qrcode.QrCode
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
@@ -19,11 +19,12 @@ import party.jml.partyboi.templates.components.markdown
 
 @Serializable
 data class QrCodeSlide(
-    @property:Field(order = 0, label = "Title")
+    @Label("Title")
     val title: String,
-    @property:Field(order = 1, label = "QR Code URI")
+    @Label("QR Code URI")
     val qrcode: String,
-    @property:Field(order = 2, label = "Description", presentation = FieldPresentation.large)
+    @Label("Description")
+    @Large
     val description: String,
 ) : Slide<QrCodeSlide>, Validateable<QrCodeSlide> {
     override suspend fun render(ctx: FlowContent, app: AppServices) {

@@ -19,6 +19,7 @@ import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
@@ -55,11 +56,12 @@ class EventRepository(private val app: AppServices) : Logging() {
         it.one(
             queryOf(
                 """
-            INSERT INTO event (name, time, visible) 
-            VALUES (?, ?, ?) 
+            INSERT INTO event (name, time, end_time, visible) 
+            VALUES (?, ?, ?, ?) 
             RETURNING *""",
                 event.name,
-                event.time,
+                event.startTime,
+                event.endTime,
                 event.visible,
             ).map(Event.fromRow)
         )
@@ -89,7 +91,7 @@ class EventRepository(private val app: AppServices) : Logging() {
             WHERE id = ?
             RETURNING *""",
                 event.name,
-                event.time,
+                event.startTime,
                 event.visible,
                 event.id,
             ).map(Event.fromRow)
@@ -112,7 +114,7 @@ class EventRepository(private val app: AppServices) : Logging() {
                     "INSERT INTO event (id, name, time, visible) VALUES (?, ?, ?, ?)",
                     it.id,
                     it.name,
-                    it.time,
+                    it.startTime,
                     it.visible,
                 )
             )
@@ -121,11 +123,13 @@ class EventRepository(private val app: AppServices) : Logging() {
 }
 
 data class NewEvent(
-    @property:Field(order = 0, label = "Event name")
+    @Label("Event name")
     val name: String,
-    @property:Field(order = 1, label = "Time and date")
-    val time: LocalDateTime,
-    @property:Field(order = 2, label = "Show in public schedule")
+    @Label("Start time and date")
+    val startTime: LocalDateTime,
+    @Label("End time and date")
+    val endTime: LocalDateTime? = null,
+    @Label("Show in public schedule")
     val visible: Boolean,
 ) : Validateable<NewEvent> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -135,25 +139,32 @@ data class NewEvent(
     companion object {
         fun make(today: LocalDate, preferredDates: List<LocalDate>): NewEvent {
             val date = preferredDates.find { it == today } ?: preferredDates.maxOrNull() ?: today
-            return NewEvent("", date.atTime(12, 0, 0), true)
+            return NewEvent(
+                name = "",
+                startTime = date.atTime(12, 0, 0),
+                endTime = null,
+                visible = true
+            )
         }
 
         suspend fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
             val timeZone = timeService.timeZone.get().getOrNull()!!
-            return make(timeService.today(), otherEvents.map { it.time.toLocalDateTime(timeZone).date })
+            return make(timeService.today(), otherEvents.map { it.startTime.toLocalDateTime(timeZone).date })
         }
     }
 }
 
 @Serializable
 data class Event(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val id: Int,
-    @property:Field(order = 0, label = "Event name")
+    @Label("Event name")
     val name: String,
-    @property:Field(order = 1, label = "Time and date")
-    val time: Instant,
-    @property:Field(order = 2, label = "Show in public schedule")
+    @Label("Start time and date")
+    val startTime: Instant,
+    @Label("End time and date")
+    val endTime: Instant?,
+    @Label("Show in public schedule")
     val visible: Boolean,
 ) : Validateable<Event> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -167,7 +178,8 @@ data class Event(
             Event(
                 id = row.int("id"),
                 name = row.string("name"),
-                time = row.instant("time").toKotlinInstant(),
+                startTime = row.instant("time").toKotlinInstant(),
+                endTime = row.instantOrNull("end_time")?.toKotlinInstant(),
                 visible = row.boolean("visible"),
             )
         }

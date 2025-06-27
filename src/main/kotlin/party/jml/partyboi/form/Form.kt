@@ -1,35 +1,25 @@
 package party.jml.partyboi.form
 
-import arrow.core.*
-import io.ktor.http.*
+import arrow.core.Option
+import arrow.core.left
+import arrow.core.right
+import arrow.core.toNonEmptyListOrNone
 import io.ktor.http.content.*
-import io.ktor.utils.io.core.*
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.html.InputType
-import party.jml.partyboi.Config
 import party.jml.partyboi.data.*
 import party.jml.partyboi.system.AppResult
-import java.io.File
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
-import kotlin.reflect.KType
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.full.valueParameters
 
 class Form<T : Validateable<T>>(
     val kclass: KClass<T>,
     val data: T,
-    val initial: Boolean,
+    val initial: Boolean = true,
     val accumulatedValidationErrors: List<ValidationError.Message> = emptyList(),
     val error: AppError? = null,
 ) {
+    val schema = Schema(kclass)
+
     fun validated() = data.validate()
 
     val errors: List<ValidationError.Message> by lazy {
@@ -44,62 +34,28 @@ class Form<T : Validateable<T>>(
     }
 
     fun forEach(block: (FieldData) -> Unit) {
-        kclass.memberProperties
-            .flatMap { prop ->
-                val field = prop.findAnnotation<Field>()
-                if (field == null) emptyList() else listOf(field to prop)
-            }
-            .sortedBy { it.first.order }
-            .forEach { pair ->
-                val (meta, prop) = pair
-                if (meta.presentation != FieldPresentation.custom) {
-                    val key = prop.name
-                    val (inputType, value) =
-                        prop.get(data).toOption()
-                            .map { a ->
-                                when (a) {
-                                    is String -> Pair(InputType.text, a)
-                                    is Int -> Pair(InputType.number, a.toString())
-                                    is Boolean -> Pair(InputType.checkBox, if (a) "on" else "")
-                                    is LocalDateTime -> Pair(
-                                        InputType.dateTimeLocal,
-                                        a.format(DateTimeFormatter.ISO_DATE_TIME)
-                                    )
+        schema.properties.forEach { prop ->
+            val meta = prop.meta
+            if (meta.isDefined() && meta.presentation != FieldPresentation.custom) {
+                val value = kclass.memberProperties.find { it.name == prop.name }?.get(data)
+                val error = errors
+                    .filter { it.target == prop.name }
+                    .toNonEmptyListOrNone()
+                    .map { it.joinToString { it.message } }
 
-                                    is kotlinx.datetime.LocalDateTime -> Pair(
-                                        InputType.dateTimeLocal,
-                                        a.toJavaLocalDateTime().format(DateTimeFormatter.ISO_DATE_TIME)
-                                    )
-
-                                    is FileUpload -> Pair(InputType.file, "")
-                                    is TimeZone -> Pair(InputType.text, a.id)
-                                    is Enum<*> -> Pair(InputType.text, a.name)
-                                    else -> TODO("${a.javaClass.name} not supported as Form property")
-                                }
-                            }
-                            .getOrElse { Pair(InputType.text, "") }
-                    val error = errors
-                        .filter { it.target == key }
-                        .toNonEmptyListOrNone()
-                        .map { it.joinToString { it.message } }
-                    block(
-                        FieldData(
-                            label = meta.label,
-                            key = key,
-                            value = value,
-                            error = error,
-                            type = when (meta.presentation) {
-                                FieldPresentation.hidden -> InputType.hidden
-                                FieldPresentation.secret -> InputType.password
-                                FieldPresentation.email -> InputType.email
-                                else -> inputType
-                            },
-                            presentation = meta.presentation,
-                            description = meta.description.nonEmptyStringOption(),
-                        )
+                block(
+                    FieldData(
+                        label = meta.label ?: prop.name.toLabel(),
+                        key = prop.name,
+                        value = prop.serialize(value),
+                        error = error,
+                        type = prop.getInputType(),
+                        presentation = meta.presentation ?: FieldPresentation.normal,
+                        description = meta.description.nonEmptyStringOption(),
                     )
-                }
+                )
             }
+        }
     }
 
     fun with(error: AppError): Form<T> {
@@ -127,148 +83,26 @@ class Form<T : Validateable<T>>(
     )
 
     companion object {
-        suspend inline fun <reified T : Validateable<T>> fromParameters(parameters: MultiPartData): AppResult<Form<T>> {
-            return try {
-                val ctor = T::class.primaryConstructor ?: throw NotImplementedError("Primary constructor missing")
+        inline fun <reified T : Validateable<T>> of(obj: T): Form<T> = Form(T::class, obj)
 
-                val stringParams = MapCollector<String, String>()
-                val fileParams: MutableMap<String, FileUpload> = mutableMapOf()
+        suspend inline fun <reified T : Validateable<T>> fromParameters(parameters: MultiPartData): AppResult<Form<T>> =
+            try {
+                val schema = Schema(T::class)
+                val (strings, files) = parameters.collect()
 
-                parameters.forEachPart { part ->
-                    val name = part.name ?: throw Error("Anonymous parameters not supported")
-                    when (part) {
-                        is PartData.FormItem -> {
-                            stringParams.add(name, part.value)
-                            part.dispose()
-                        }
+                val data = schema.constructWith {
+                    it.parse(
+                        strings[it.name] ?: emptyList(),
+                        files[it.name]?.map { it.fileItem } ?: emptyList(),
+                    )
+                } as T
 
-                        is PartData.FileItem -> {
-                            fileParams[name] = FileUpload(
-                                name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
-                                fileItem = part,
-                            )
-                        }
-
-                        else -> part.dispose()
-                    }
-                }
-
-                val args: List<Any?> = ctor.valueParameters.map { param ->
-                    val name = param.name ?: throw Error("Anonymous parameters not supported")
-                    try {
-                        val prop = T::class.memberProperties.find { it.name == name }
-                        val isFormFieldProperty = prop?.findAnnotation<Field>() != null
-
-                        deserializeValue(
-                            kType = param.type,
-                            optional = param.isOptional,
-                            isFormFieldProperty = isFormFieldProperty,
-                            values = stringParams.all(name),
-                            fileUpload = fileParams[name]
-                        )
-                    } catch (e: Throwable) {
-                        throw Error("Could not parse $name: ${e.message}")
-                    }
-                }
-
-                val data = ctor.call(*args.toTypedArray())
-                Form(T::class, data, initial = false).right()
+                of(data).right()
             } catch (e: Error) {
                 FormError(e.message ?: e.toString()).left()
             }
-        }
-
-        fun deserializeValue(
-            kType: KType,
-            optional: Boolean,
-            isFormFieldProperty: Boolean,
-            values: List<String>,
-            fileUpload: FileUpload?
-        ): Any? {
-            fun firstValue(default: String? = null): String? =
-                if (isFormFieldProperty) {
-                    if (optional) values.firstOrNull()
-                    else if (default != null) values.firstOrNull() ?: default
-                    else values.first()
-                } else {
-                    if (optional) null
-                    else default
-                }
-
-            val firstArgType by lazy { kType.arguments.first().type!! }
-
-            return when (kType.classifier) {
-                String::class ->
-                    firstValue("")
-
-                Int::class ->
-                    firstValue("-1")?.toInt()
-
-                Boolean::class ->
-                    firstValue("false")?.let {
-                        when (it) {
-                            "true" -> true
-                            "false" -> false
-                            "none" -> null
-                            else -> it.isNotEmpty()
-                        }
-                    }
-
-                LocalDate::class ->
-                    firstValue("1000-01-01")?.let { LocalDateTime.parse(it) }
-
-                kotlinx.datetime.LocalDateTime::class -> firstValue("1000-01-01")?.let {
-                    kotlinx.datetime.LocalDateTime.parse(
-                        it
-                    )
-                }
-
-                Option::class ->
-                    deserializeValue(
-                        kType = firstArgType,
-                        optional = true,
-                        isFormFieldProperty = isFormFieldProperty,
-                        values = values,
-                        fileUpload = fileUpload
-                    ).let {
-                        it?.some() ?: none()
-                    }
-
-                FileUpload::class -> fileUpload
-
-                TimeZone::class -> firstValue(TimeZone.currentSystemDefault().id)?.let { TimeZone.of(it) }
-
-                List::class -> values.map {
-                    deserializeValue(
-                        kType = firstArgType,
-                        optional = optional,
-                        isFormFieldProperty = isFormFieldProperty,
-                        values = listOf(it),
-                        fileUpload = fileUpload
-                    )
-                }
-
-                else -> {
-                    val klass = kType.classifier as KClass<*>
-                    if (klass.java.isEnum) {
-                        val value = firstValue()
-                        klass.java.enumConstants.firstOrNull { (it as Enum<*>).name == value }
-                    } else TODO("Unsupported type $kType")
-                }
-            }
-        }
-
-        inline fun <reified T : Validateable<T>> empty(emptyData: T): Form<T> =
-            Form(T::class, emptyData, initial = true)
     }
 }
-
-annotation class Field(
-    val order: Int = 0,
-    val label: String = "",
-    val presentation: FieldPresentation = FieldPresentation.normal,
-    val description: String = "",
-)
 
 enum class FieldPresentation {
     normal,
@@ -280,61 +114,3 @@ enum class FieldPresentation {
     custom,
 }
 
-data class FileUpload(
-    val name: String,
-    val fileItem: PartData.FileItem,
-) {
-    fun write(storageFilename: Path): AppResult<Unit> {
-        return try {
-            val source = fileItem.streamProvider()
-            val file = Config.get().entryDir.resolve(storageFilename).toFile()
-            File(file.parent).mkdirs()
-            file.outputStream().use { out ->
-                while (true) {
-                    val bytes = source.readNBytes(1024)
-                    if (bytes.isEmpty()) break
-                    out.write(bytes)
-                }
-                source.close()
-            }
-            fileItem.dispose()
-            Unit.right()
-        } catch (err: Error) {
-            InternalServerError(err).left()
-        }
-    }
-
-    fun toByteArray(): ByteArray {
-        val source = fileItem.streamProvider()
-        val bytes = source.readAllBytes()
-        fileItem.dispose()
-        return bytes
-    }
-
-    val isDefined = name.isNotEmpty()
-
-    companion object {
-        val Empty = createTestData("", 0)
-
-        fun createTestData(filename: String, length: Int) = fromByteArray(
-            filename,
-            ByteArray(length)
-        )
-
-        fun fromResource(self: Any, filename: String) = self::class.java.getResource(filename)?.let {
-            fromByteArray(
-                Paths.get(filename).fileName.toString(),
-                it.readBytes()
-            )
-        }
-
-        fun fromByteArray(filename: String, bytes: ByteArray) = FileUpload(
-            filename,
-            PartData.FileItem(
-                { ByteReadPacket(bytes, 0, bytes.size) },
-                {},
-                Headers.Empty
-            )
-        )
-    }
-}

@@ -38,7 +38,7 @@ data class ScheduleSlide(
                 table {
                     events.forEach { event ->
                         tr {
-                            th { +event.time.toLocalDateTime(tz).time.toString() }
+                            th { +event.startTime.toLocalDateTime(tz).time.toString() }
                             td { +event.name }
                         }
                     }

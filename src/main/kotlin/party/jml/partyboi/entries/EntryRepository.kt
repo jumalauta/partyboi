@@ -345,17 +345,17 @@ data class EntryWithLatestFile(
 }
 
 data class NewEntry(
-    @property:Field(2, "Title")
+    @Field("Title")
     val title: String,
-    @property:Field(3, "Author")
+    @Field("Author")
     val author: String,
-    @property:Field(4, "File")
+    @Field("File")
     val file: FileUpload,
-    @property:Field(1, "Compo")
+    @Field("Compo")
     val compoId: Int,
-    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
+    @Field("Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
+    @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
     val userId: Int,
 ) : Validateable<NewEntry> {
@@ -375,21 +375,21 @@ data class NewEntry(
 }
 
 data class EntryUpdate(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val id: Int,
-    @property:Field(2, "Title")
+    @Field("Title")
     val title: String,
-    @property:Field(3, "Author")
+    @Field("Author")
     val author: String,
-    @property:Field(4, "Upload new version of file")
+    @Field("Upload new version of file")
     val file: FileUpload,
-    @property:Field(1, "Compo")
+    @Field("Compo")
     val compoId: Int,
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val userId: Int,
-    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
+    @Field("Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
+    @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
 ) : Validateable<EntryUpdate> {
     override fun validationErrors(): List<Option<ValidationError.Message>> {

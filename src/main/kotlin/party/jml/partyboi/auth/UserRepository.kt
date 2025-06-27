@@ -18,8 +18,7 @@ import party.jml.partyboi.data.randomStringId
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.*
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 
@@ -268,35 +267,23 @@ data class User(
 }
 
 data class UserCredentials(
-    @property:Field(
-        order = 1,
-        label = "User name"
-    )
+    @Label("User name")
     val name: String,
 
-    @property:Field(
-        order = 2,
-        label = "Password",
-        presentation = FieldPresentation.secret
-    )
+    @Label("Password")
+    @Presentation(FieldPresentation.secret)
     val password: String,
 
-    @property:Field(
-        order = 3,
-        label = "Password again",
-        presentation = FieldPresentation.secret
-    )
+    @Label("Password again")
+    @Presentation(FieldPresentation.secret)
     val password2: String,
 
-    @property:Field(
-        order = 4,
-        label = "Email",
-        presentation = FieldPresentation.email,
-        description = "Optional but recommended"
-    )
+    @Label("Email")
+    @Presentation(FieldPresentation.email)
+    @Description("Optional but recommended")
     val email: String,
 
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Hidden
     val isUpdate: Boolean = false,
 ) : Validateable<UserCredentials> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

@@ -4,9 +4,9 @@ import arrow.core.Option
 import kotlinx.html.*
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
@@ -58,7 +58,7 @@ object AdminAssetsPage {
         }
 
     data class AddAsset(
-        @property:Field(label = "Upload file")
+        @Label("Upload file")
         val file: FileUpload
     ) : Validateable<AddAsset> {
         override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

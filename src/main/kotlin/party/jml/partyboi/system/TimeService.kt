@@ -1,6 +1,7 @@
 package party.jml.partyboi.system
 
 import arrow.core.getOrElse
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.StoredProperties
@@ -30,4 +31,10 @@ class TimeService(app: AppServices) : StoredProperties(app) {
             .get()
             .map { time.toInstant(it).plus(duration).toLocalDateTime(it) }
             .getOrNull()!!
+
+    companion object {
+        fun timeZone(): TimeZone = runBlocking {
+            AppServices.globalInstance?.time?.timeZone?.getOrNull() ?: TimeZone.currentSystemDefault()
+        }
+    }
 }

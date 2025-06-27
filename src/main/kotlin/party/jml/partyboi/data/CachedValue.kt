@@ -10,6 +10,7 @@ import java.time.temporal.TemporalAmount
 
 interface ICachedValue<T> {
     suspend fun get(): AppResult<T>
+    suspend fun getOrNull(): T? = get().getOrNull()
     suspend fun set(value: T): AppResult<Unit>
     suspend fun refresh(): AppResult<T>
 }

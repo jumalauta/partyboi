@@ -7,8 +7,8 @@ import kotlinx.html.li
 import kotlinx.html.ul
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.voting.VoteKeyRow
@@ -35,7 +35,7 @@ object GenerateVoteKeysPage {
     }
 
     data class GenerateVoteKeySettings(
-        @property:Field(label = "Number of keys")
+        @Label("Number of keys")
         val numberOfKeys: Int,
     ) : Validateable<GenerateVoteKeySettings> {
         override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

@@ -236,11 +236,11 @@ data class FailedTriggerRow(
 ) : TriggerRow()
 
 data class NewScheduledTrigger(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val eventId: Int,
-    @property:Field(1, "Action")
+    @Field("Action")
     val action: String,
-    @property:Field(2, "Compo")
+    @Field("Compo")
     val compoId: Int,
 ) : Validateable<NewScheduledTrigger> {
 

@@ -9,8 +9,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FileUpload
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.system.AppResult
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -95,7 +95,7 @@ data class Screenshot(
 }
 
 data class NewScreenshot(
-    @property:Field(label = "Upload file")
+    @Label("Upload file")
     val file: FileUpload
 ) : Validateable<NewScreenshot> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(

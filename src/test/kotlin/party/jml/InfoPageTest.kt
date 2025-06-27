@@ -46,14 +46,14 @@ class InfoPageTest : PartyboiTester {
                 events.add(
                     NewEvent(
                         name = "Foodwave",
-                        time = LocalDateTime(2025, 2, 18, 20, 8),
+                        startTime = LocalDateTime(2025, 2, 18, 20, 8),
                         visible = true
                     )
                 ).bind()
                 events.add(
                     NewEvent(
                         name = "Secret santa",
-                        time = LocalDateTime(2025, 2, 20, 20, 8),
+                        startTime = LocalDateTime(2025, 2, 20, 20, 8),
                         visible = false
                     ),
                 ).bind()

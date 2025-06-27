@@ -1,7 +1,9 @@
 package party.jml.partyboi.voting
 
 import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Label
+import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 
 object RegisterVoteKeyPage {
@@ -16,7 +18,7 @@ object RegisterVoteKeyPage {
 }
 
 data class VoteKeyForm(
-    @property:Field(label = "Vote key")
+    @Label("Vote key")
     val code: String
 ) : Validateable<VoteKeyForm> {
     override fun validationErrors() = listOf(

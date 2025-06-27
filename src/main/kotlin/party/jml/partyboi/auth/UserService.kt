@@ -12,6 +12,8 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.Label
+import party.jml.partyboi.form.Presentation
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
@@ -186,7 +188,8 @@ class UserService(private val app: AppServices) {
 }
 
 data class PasswordResetForm(
-    @property:Field(label = "Email", presentation = FieldPresentation.email)
+    @Label("Email")
+    @Presentation(FieldPresentation.email)
     val email: String,
 ) : Validateable<PasswordResetForm> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
@@ -199,18 +202,16 @@ data class PasswordResetForm(
 }
 
 data class NewPasswordForm(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val code: String,
 
-    @property:Field(
-        order = 1,
+    @Field(
         label = "Password",
         presentation = FieldPresentation.secret
     )
     val password: String,
 
-    @property:Field(
-        order = 2,
+    @Field(
         label = "Password again",
         presentation = FieldPresentation.secret
     )
