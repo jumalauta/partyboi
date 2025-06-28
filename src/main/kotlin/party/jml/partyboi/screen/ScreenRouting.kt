@@ -23,7 +23,7 @@ fun Application.configureScreenRouting(app: AppServices) {
                 .toEither { NotFound("Theme not found") }
                 .map { ScreenPage.render(app.screen.currentSlide(), it, app) }
                 .map { HtmlString(it) }
-            call.respondEither({ page })
+            call.respondEither({ page.bind() })
         }
 
         get("/screen/next") {

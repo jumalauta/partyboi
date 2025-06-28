@@ -13,11 +13,9 @@ fun Application.configureScheduleRouting(app: AppServices) {
     publicRouting {
         get("/schedule") {
             call.respondEither({
-                either {
-                    val events = app.events.getPublic().bind()
-                    val timeZone = app.time.timeZone.get().bind()
-                    SchedulePage.render(events, timeZone)
-                }
+                val events = app.events.getPublic().bind()
+                val timeZone = app.time.timeZone.get().bind()
+                SchedulePage.render(events, timeZone)
             })
         }
 

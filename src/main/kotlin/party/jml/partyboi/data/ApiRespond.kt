@@ -47,7 +47,10 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
                 { handleError(form.with(it)) },
                 { handleForm(it) }
             )
-            respondEither({ result }, { handleError(form.with(it)) })
+            respondEither(
+                { result.bind() },
+                { handleError(form.with(it)).bind() }
+            )
         }
     )
 }

@@ -45,7 +45,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
     adminRouting {
         get("/admin/users") {
-            call.respondEither({ renderUsersPage() })
+            call.respondEither({ renderUsersPage().bind() })
         }
 
         get("/admin/users/{id}") {
@@ -53,34 +53,30 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
                 renderEditPage(
                     call.userSession(app),
                     call.parameterInt("id"),
-                )
+                ).bind()
             })
         }
 
         get("/admin/users/{id}/send-verification") {
             call.respondEither({
-                either {
-                    val userId = call.parameterInt("id").bind()
-                    val user = app.users.getUser(userId).bind()
-                    app.users.sendVerificationEmail(user)?.bind()
+                val userId = call.parameterInt("id").bind()
+                val user = app.users.getUser(userId).bind()
+                app.users.sendVerificationEmail(user)?.bind()
 
-                    app.messages.sendMessage(
-                        userId = call.userSession(app).bind().id,
-                        type = MessageType.SUCCESS,
-                        text = "Verification email sent to ${user.email}"
-                    ).bind()
-                    Redirection("/admin/users/$userId")
-                }
+                app.messages.sendMessage(
+                    userId = call.userSession(app).bind().id,
+                    type = MessageType.SUCCESS,
+                    text = "Verification email sent to ${user.email}"
+                ).bind()
+                Redirection("/admin/users/$userId")
             }, {
-                either {
-                    val userId = call.parameterString("id")
-                    app.messages.sendMessage(
-                        userId = call.userSession(app).bind().id,
-                        type = MessageType.ERROR,
-                        text = "Sending verification email failed"
-                    ).bind()
-                    Redirection("/admin/users/$userId")
-                }
+                val userId = call.parameterString("id")
+                app.messages.sendMessage(
+                    userId = call.userSession(app).bind().id,
+                    type = MessageType.ERROR,
+                    text = "Sending verification email failed"
+                ).bind()
+                Redirection("/admin/users/$userId")
             })
         }
 

@@ -18,16 +18,14 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
     adminRouting {
         get("/admin/voting") {
             call.respondEither({
-                either {
-                    val voteKeys = app.voteKeys.getAllVoteKeys().bind()
-                    val users = app.users.getUsers().bind()
-                    val settings = Form(
-                        VoteSettings::class,
-                        app.settings.getVoteSettings().bind(),
-                        initial = false
-                    )
-                    AdminVotingPage.render(voteKeys, users, settings)
-                }
+                val voteKeys = app.voteKeys.getAllVoteKeys().bind()
+                val users = app.users.getUsers().bind()
+                val settings = Form(
+                    VoteSettings::class,
+                    app.settings.getVoteSettings().bind(),
+                    initial = false
+                )
+                AdminVotingPage.render(voteKeys, users, settings)
             })
         }
 
@@ -68,11 +66,9 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
 
         get("/admin/voting/print/{set}") {
             call.respondEither({
-                either {
-                    val keySet = call.parameterString("set").bind()
-                    val tickets = app.voteKeys.getVoteKeySet(keySet).bind()
-                    GenerateVoteKeysPage.renderTickets(tickets)
-                }
+                val keySet = call.parameterString("set").bind()
+                val tickets = app.voteKeys.getVoteKeySet(keySet).bind()
+                GenerateVoteKeysPage.renderTickets(tickets)
             })
         }
     }

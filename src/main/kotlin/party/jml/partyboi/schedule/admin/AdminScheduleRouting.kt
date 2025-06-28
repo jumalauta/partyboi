@@ -55,7 +55,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         fun redirectionToEvent(id: Int) = Redirection("/admin/schedule/events/$id")
 
         get("/admin/schedule") {
-            call.respondEither({ renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!) })
+            call.respondEither({ renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!).bind() })
         }
 
         post("/admin/schedule/events") {
@@ -71,7 +71,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         }
 
         get("/admin/schedule/events/{id}") {
-            call.respondEither({ renderEditSchedulePage(call.parameterInt("id")) })
+            call.respondEither({ renderEditSchedulePage(call.parameterInt("id")).bind() })
         }
 
         post("/admin/schedule/events/{id}") {

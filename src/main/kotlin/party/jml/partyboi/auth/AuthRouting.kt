@@ -79,12 +79,10 @@ fun Application.configureLoginRouting(app: AppServices) {
 
         get("/verify/{userId}/{verificationCode}") {
             call.respondEither({
-                either {
-                    val userId = call.parameterInt("userId").bind()
-                    val verificationCode = call.parameterString("verificationCode").bind()
-                    app.users.verifyEmail(userId, verificationCode)
-                    Redirection("/")
-                }
+                val userId = call.parameterInt("userId").bind()
+                val verificationCode = call.parameterString("verificationCode").bind()
+                app.users.verifyEmail(userId, verificationCode)
+                Redirection("/")
             })
         }
 
@@ -122,18 +120,16 @@ fun Application.configureLoginRouting(app: AppServices) {
             get("/reset-password/{resetCode}") {
                 call.respondEither(
                     {
-                        either {
-                            val code = call.parameterString("resetCode").bind()
-                            app.users.verifyPasswordResetCode(code).bind()
-                            val form = Form(NewPasswordForm::class, NewPasswordForm.empty(code), true)
-                            PasswordResetPage.passwordReset(form)
-                        }
+                        val code = call.parameterString("resetCode").bind()
+                        app.users.verifyPasswordResetCode(code).bind()
+                        val form = Form(NewPasswordForm::class, NewPasswordForm.empty(code), true)
+                        PasswordResetPage.passwordReset(form)
                     }, {
                         val form = Form(PasswordResetForm::class, PasswordResetForm.Empty, true)
                         PasswordResetPage.render(
                             form = form,
                             errorMsg = "The password reset code is invalid or expired. Try again."
-                        ).right()
+                        )
                     }
                 )
             }

@@ -1,6 +1,5 @@
 package party.jml.partyboi.compos
 
-import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
@@ -12,21 +11,17 @@ fun Application.configureComposRouting(app: AppServices) {
     publicRouting {
         get("/compos") {
             call.respondEither({
-                either {
-                    val generalRules = app.compos.generalRules.get().bind()
-                    val compos = app.compos.getAllCompos().bind()
-                    ComposPage.render(generalRules, compos)
-                }
+                val generalRules = app.compos.generalRules.get().bind()
+                val compos = app.compos.getAllCompos().bind()
+                ComposPage.render(generalRules, compos)
             })
         }
 
         get("/results") {
             call.respondEither({
-                either {
-                    val user = call.optionalUserSession(app)
-                    val results = app.votes.getResultsForUser(user).bind()
-                    ResultsPage.render(results)
-                }
+                val user = call.optionalUserSession(app)
+                val results = app.votes.getResultsForUser(user).bind()
+                ResultsPage.render(results)
             })
         }
     }
