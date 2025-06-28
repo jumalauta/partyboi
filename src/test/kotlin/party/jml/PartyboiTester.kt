@@ -1,7 +1,6 @@
 package party.jml
 
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.client.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -11,7 +10,6 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
 import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
@@ -26,8 +24,6 @@ import party.jml.partyboi.services
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.Validateable
-import java.math.BigInteger
-import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -39,11 +35,6 @@ interface PartyboiTester {
             val client = createClient { install(HttpCookies) }
             block(TestHtmlClient(client))
         }
-    }
-
-    fun md5(bytes: ByteArray): String {
-        val md = MessageDigest.getInstance("MD5")
-        return BigInteger(1, md.digest(bytes)).toString(16).padStart(32, '0')
     }
 
     suspend fun addTestUser(app: AppServices, name: String = "user", password: String = "password"): AppResult<User> =
@@ -68,17 +59,6 @@ class TestHtmlClient(val client: HttpClient) {
             return htmlDocument(bodyAsText()) {
                 block()
             }
-        }
-    }
-
-    suspend fun <T> getBinary(
-        urlString: String,
-        expectedStatus: HttpStatusCode = HttpStatusCode.OK,
-        block: (ByteArray) -> T
-    ) {
-        client.get(urlString).apply {
-            assertEquals(expectedStatus, status)
-            block(bodyAsChannel().toByteArray())
         }
     }
 
@@ -163,10 +143,6 @@ class TestHtmlClient(val client: HttpClient) {
 
 fun Headers.redirectsTo(urlString: String) {
     this["Location"]?.trim().toBe(urlString.trim())
-}
-
-fun ApplicationTestBuilder.setupServices() {
-    Unit.right()
 }
 
 fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> AppResult<T>) {

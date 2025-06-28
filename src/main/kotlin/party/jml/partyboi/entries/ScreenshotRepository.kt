@@ -6,7 +6,6 @@ import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.system.AppResult
@@ -71,9 +70,6 @@ class ScreenshotRepository(val app: AppServices) {
 
     fun getFile(entryId: Int): Path =
         app.config.screenshotsDir.resolve("screenshot-$entryId.jpg")
-
-    fun getChecksum(entryId: Int): AppResult<String> =
-        FileChecksums.get(getFile(entryId))
 
     private fun heuristicsScore(filename: String): Int {
         val magicWords = mapOf(

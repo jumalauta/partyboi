@@ -29,7 +29,6 @@ class LoginTest : PartyboiTester {
     @Test
     fun testRegistration() = test {
         val userName = "foobar"
-        setupServices()
 
         // User cannot see the entry page before registration
         it.get("/entries") {

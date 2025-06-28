@@ -11,8 +11,6 @@ import kotlin.test.Test
 class InfoPageTest : PartyboiTester {
     @Test
     fun testEmptyInfoPage() = test {
-        setupServices()
-
         it.get("/") {
             article {
                 findFirst { text.toBe("Nothing to share yet...") }

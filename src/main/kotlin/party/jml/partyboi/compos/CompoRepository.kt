@@ -37,11 +37,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
     suspend fun getAllCompos(): AppResult<List<Compo>> = db.use {
         it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
-
-    suspend fun getOpenCompos(): AppResult<List<Compo>> = db.use {
-        it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
-    }
-
+    
     suspend fun add(compo: NewCompo): AppResult<Compo> = db.use {
         it.one(
             queryOf(
@@ -227,7 +223,7 @@ data class NewCompo(
     @NotEmpty
     @MaxLength(64)
     val name: String,
-    
+
     @Field(label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
 ) : Validateable<NewCompo> {
