@@ -1,9 +1,6 @@
 package party.jml.partyboi.assets.admin
 
-import arrow.core.Option
 import kotlinx.html.*
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Label
@@ -11,6 +8,8 @@ import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.deleteButton
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 object AdminAssetsPage {
     fun render(addAssetForm: Form<AddAsset>, assets: List<String>) =
@@ -59,12 +58,9 @@ object AdminAssetsPage {
 
     data class AddAsset(
         @Label("Upload file")
+        @NotEmpty
         val file: FileUpload
     ) : Validateable<AddAsset> {
-        override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-            expectNotEmpty("file", file.name)
-        )
-
         companion object {
             val Empty = AddAsset(FileUpload.Empty)
         }

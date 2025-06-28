@@ -4,10 +4,10 @@ import arrow.core.Option
 import io.ktor.util.logging.*
 import kotlinx.html.*
 import party.jml.partyboi.data.UserError
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.components.tooltip
+import party.jml.partyboi.validation.Validateable
 import kotlin.enums.enumEntries
 
 fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {

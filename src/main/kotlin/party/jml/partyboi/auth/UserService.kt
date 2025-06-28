@@ -8,7 +8,10 @@ import kotlinx.coroutines.runBlocking
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.UserCredentials.Companion.hashPassword
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.InvalidInput
+import party.jml.partyboi.data.ValidationError
+import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -18,6 +21,9 @@ import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.EmailAddress
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.VoteKey
 
 class UserService(private val app: AppServices) {
@@ -190,12 +196,10 @@ class UserService(private val app: AppServices) {
 data class PasswordResetForm(
     @Label("Email")
     @Presentation(FieldPresentation.email)
+    @NotEmpty
+    @EmailAddress
     val email: String,
 ) : Validateable<PasswordResetForm> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectValidEmail("email", email),
-    )
-
     companion object {
         val Empty = PasswordResetForm("")
     }

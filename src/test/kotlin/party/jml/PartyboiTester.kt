@@ -21,11 +21,11 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.compos.GeneralRules
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.services
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.Validateable
 import java.math.BigInteger
 import java.security.MessageDigest
 import kotlin.reflect.full.memberProperties

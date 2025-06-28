@@ -18,7 +18,10 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.Forbidden
+import party.jml.partyboi.data.FormError
+import party.jml.partyboi.data.isTrue
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.form.Field
@@ -27,6 +30,9 @@ import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.MaxLength
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 class EntryRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -346,10 +352,15 @@ data class EntryWithLatestFile(
 
 data class NewEntry(
     @Field("Title")
+    @NotEmpty
+    @MaxLength(64)
     val title: String,
     @Field("Author")
+    @NotEmpty
+    @MaxLength(64)
     val author: String,
     @Field("File")
+    @MaxLength(128)
     val file: FileUpload,
     @Field("Compo")
     val compoId: Int,
@@ -359,16 +370,6 @@ data class NewEntry(
     val orgComment: String,
     val userId: Int,
 ) : Validateable<NewEntry> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> {
-        return listOf(
-            expectNotEmpty("title", title),
-            expectMaxLength("title", title, 64),
-            expectNotEmpty("author", author),
-            expectMaxLength("author", author, 64),
-            expectMaxLength("file", file.name, 128),
-        )
-    }
-
     companion object {
         val Empty = NewEntry("", "", FileUpload.Empty, 0, "", "", 0)
     }
@@ -377,30 +378,32 @@ data class NewEntry(
 data class EntryUpdate(
     @Field(presentation = FieldPresentation.hidden)
     val id: Int,
+
     @Field("Title")
+    @NotEmpty
+    @MaxLength(64)
     val title: String,
+
     @Field("Author")
+    @NotEmpty
+    @MaxLength(64)
     val author: String,
+
     @Field("Upload new version of file")
     val file: FileUpload,
+
     @Field("Compo")
     val compoId: Int,
+
     @Field(presentation = FieldPresentation.hidden)
     val userId: Int,
+
     @Field("Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
+
     @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
 ) : Validateable<EntryUpdate> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> {
-        return listOf(
-            expectNotEmpty("title", title),
-            expectMaxLength("title", title, 64),
-            expectNotEmpty("author", author),
-            expectMaxLength("author", author, 64),
-        )
-    }
-
     companion object {
         fun fromEntry(e: Entry) = EntryUpdate(
             id = e.id,

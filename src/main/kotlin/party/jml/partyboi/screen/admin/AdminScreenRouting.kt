@@ -25,6 +25,7 @@ import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.validation.Validateable
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     suspend fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {

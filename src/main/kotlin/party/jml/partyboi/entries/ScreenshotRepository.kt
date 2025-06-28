@@ -7,11 +7,11 @@ import com.sksamuel.scrimage.nio.JpegWriter
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.FileChecksums
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
 import kotlin.io.path.exists
 
@@ -96,12 +96,9 @@ data class Screenshot(
 
 data class NewScreenshot(
     @Label("Upload file")
+    @NotEmpty
     val file: FileUpload
 ) : Validateable<NewScreenshot> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("file", file.name)
-    )
-
     companion object {
         val Empty = NewScreenshot(FileUpload.Empty)
     }

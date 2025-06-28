@@ -10,7 +10,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
@@ -18,6 +17,7 @@ import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.Validateable
 
 class TriggerRepository(val app: AppServices) : Logging() {
     private val db = app.db

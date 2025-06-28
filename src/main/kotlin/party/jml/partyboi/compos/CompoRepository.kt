@@ -9,7 +9,10 @@ import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.Forbidden
+import party.jml.partyboi.data.isFalse
+import party.jml.partyboi.data.optionalBoolean
+import party.jml.partyboi.data.toDatabaseEnum
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
@@ -18,6 +21,9 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
+import party.jml.partyboi.validation.MaxLength
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 class CompoRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -153,6 +159,8 @@ data class Compo(
     @Hidden
     val id: Int,
     @Label("Name")
+    @NotEmpty
+    @MaxLength(64)
     val name: String,
     @Label("Description / rules")
     @Large
@@ -168,11 +176,6 @@ data class Compo(
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
-
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64),
-    )
 
     override fun toDropdownOption() = DropdownOption(
         value = id.toString(),
@@ -221,15 +224,13 @@ data class Compo(
 
 data class NewCompo(
     @Label("Name")
+    @NotEmpty
+    @MaxLength(64)
     val name: String,
+    
     @Field(label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
 ) : Validateable<NewCompo> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64),
-    )
-
     companion object {
         val Empty = NewCompo("", "")
     }

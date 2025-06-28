@@ -4,7 +4,6 @@
 
 package party.jml.partyboi.schedule
 
-import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.datetime.*
 import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
@@ -14,8 +13,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -26,6 +23,8 @@ import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -124,6 +123,7 @@ class EventRepository(private val app: AppServices) : Logging() {
 
 data class NewEvent(
     @Label("Event name")
+    @NotEmpty
     val name: String,
     @Label("Start time and date")
     val startTime: LocalDateTime,
@@ -132,10 +132,6 @@ data class NewEvent(
     @Label("Show in public schedule")
     val visible: Boolean,
 ) : Validateable<NewEvent> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-    )
-
     companion object {
         fun make(today: LocalDate, preferredDates: List<LocalDate>): NewEvent {
             val date = preferredDates.find { it == today } ?: preferredDates.maxOrNull() ?: today
@@ -159,6 +155,7 @@ data class Event(
     @Field(presentation = FieldPresentation.hidden)
     val id: Int,
     @Label("Event name")
+    @NotEmpty
     val name: String,
     @Label("Start time and date")
     val startTime: Instant,
@@ -167,10 +164,6 @@ data class Event(
     @Label("Show in public schedule")
     val visible: Boolean,
 ) : Validateable<Event> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name)
-    )
-
     fun signal(): Signal = Signal.eventStarted(id)
 
     companion object {

@@ -11,7 +11,6 @@ import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.data.randomStringId
@@ -21,6 +20,7 @@ import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.*
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.*
 
 class UserRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -268,33 +268,32 @@ data class User(
 
 data class UserCredentials(
     @Label("User name")
+    @NotEmpty
+    @MaxLength(64)
     val name: String,
 
     @Label("Password")
     @Presentation(FieldPresentation.secret)
+    @EmptyOrMinLength(8)
     val password: String,
 
     @Label("Password again")
     @Presentation(FieldPresentation.secret)
+    @EmptyOrMinLength(8)
     val password2: String,
 
     @Label("Email")
     @Presentation(FieldPresentation.email)
     @Description("Optional but recommended")
+    @EmailAddress
     val email: String,
 
     @Hidden
     val isUpdate: Boolean = false,
 ) : Validateable<UserCredentials> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64),
         expectEqual("password2", password2, password),
-        expectValidEmail("email", email),
-    ) + (if (isUpdate && password.isEmpty()) emptyList() else listOf(
-        expectMinLength("password", password, 8),
-        expectMinLength("password2", password2, 8),
-    ))
+    )
 
     fun hashedPassword(): String = hashPassword(password)
 

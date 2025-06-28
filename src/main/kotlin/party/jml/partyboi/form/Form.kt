@@ -8,6 +8,7 @@ import io.ktor.http.content.*
 import kotlinx.html.InputType
 import party.jml.partyboi.data.*
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.Validateable
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
 
@@ -20,13 +21,13 @@ class Form<T : Validateable<T>>(
 ) {
     val schema = Schema(kclass)
 
-    fun validated() = data.validate()
+    fun validated() = data.validate(kclass)
 
     val errors: List<ValidationError.Message> by lazy {
         if (initial) {
             accumulatedValidationErrors
         } else {
-            data.validate().fold(
+            data.validate(kclass).fold(
                 { (accumulatedValidationErrors + it.errors).distinct() },
                 { accumulatedValidationErrors }
             )
