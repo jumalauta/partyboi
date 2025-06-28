@@ -64,7 +64,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         val redirectionToCompos = Redirection("/admin/compos")
 
         get("/admin/compos") {
-            call.respondEither({ renderAdminComposPage().bind() })
+            call.respondEither { renderAdminComposPage().bind() }
         }
 
         post("/admin/compos") {
@@ -85,9 +85,9 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         }
 
         get("/admin/compos/{id}") {
-            call.respondEither({
+            call.respondEither {
                 renderAdminEditCompoPage(call.parameterInt("id")).bind()
-            })
+            }
         }
 
         post("/admin/compos/{id}") {

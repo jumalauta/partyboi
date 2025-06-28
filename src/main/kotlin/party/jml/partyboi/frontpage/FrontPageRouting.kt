@@ -12,14 +12,14 @@ fun Application.configureFrontPageRouting(app: AppServices) {
     publicRouting {
         get("/") {
             call.optionalUserSession(app) // FIXME: this is a hack to ensure that new session gets loaded before rendering
-            call.respondEither({
+            call.respondEither {
                 val events = app.events.getAll().bind().filter { it.visible }
                 val infoScreen = app.screen
                     .getSlideSet(SlideSetRow.DEFAULT).bind()
                     .filter { it.showOnInfoPage }
                 val timeZone = app.time.timeZone.get().bind()
                 FrontPage.render(events, infoScreen, timeZone)
-            })
+            }
         }
     }
 }

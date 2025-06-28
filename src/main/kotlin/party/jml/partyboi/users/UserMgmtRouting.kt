@@ -13,6 +13,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
+import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.voting.VoteKey
 
@@ -45,20 +46,20 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
     adminRouting {
         get("/admin/users") {
-            call.respondEither({ renderUsersPage().bind() })
+            call.respondEither { renderUsersPage().bind() }
         }
 
         get("/admin/users/{id}") {
-            call.respondEither({
+            call.respondEither {
                 renderEditPage(
                     call.userSession(app),
                     call.parameterInt("id"),
                 ).bind()
-            })
+            }
         }
 
         get("/admin/users/{id}/send-verification") {
-            call.respondEither({
+            call.respondAndCatchEither({
                 val userId = call.parameterInt("id").bind()
                 val user = app.users.getUser(userId).bind()
                 app.users.sendVerificationEmail(user)?.bind()

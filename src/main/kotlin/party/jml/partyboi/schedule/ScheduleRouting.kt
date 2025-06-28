@@ -12,11 +12,11 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureScheduleRouting(app: AppServices) {
     publicRouting {
         get("/schedule") {
-            call.respondEither({
+            call.respondEither {
                 val events = app.events.getPublic().bind()
                 val timeZone = app.time.timeZone.get().bind()
                 SchedulePage.render(events, timeZone)
-            })
+            }
         }
 
         get("/schedule/json") {

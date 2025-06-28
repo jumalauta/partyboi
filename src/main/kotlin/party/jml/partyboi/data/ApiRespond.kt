@@ -13,7 +13,7 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Renderable
-import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondPage
 import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
@@ -49,7 +49,7 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
                 { either { handleError(form.with(it)) } },
                 { either { handleForm(it) } }
             )
-            respondEither(
+            respondAndCatchEither(
                 { result.bind() },
                 { handleError(form.with(it)) }
             )

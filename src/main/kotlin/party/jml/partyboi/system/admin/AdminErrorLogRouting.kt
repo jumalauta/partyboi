@@ -10,18 +10,18 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureAdminErrorLogRouting(app: AppServices) {
     adminRouting {
         get("/admin/errors") {
-            call.respondEither({
+            call.respondEither {
                 val errors = app.errors.getErrors(100, 0).bind()
                 AdminErrorLogPage.renderList(errors)
-            })
+            }
         }
 
         get("/admin/errors/{id}") {
-            call.respondEither({
+            call.respondEither {
                 val errorId = call.parameterInt("id").bind()
                 val error = app.errors.getError(errorId).bind()
                 AdminErrorLogPage.renderStackTrace(error)
-            })
+            }
         }
 
         get("/admin/test") {

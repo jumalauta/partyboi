@@ -10,19 +10,19 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureComposRouting(app: AppServices) {
     publicRouting {
         get("/compos") {
-            call.respondEither({
+            call.respondEither {
                 val generalRules = app.compos.generalRules.get().bind()
                 val compos = app.compos.getAllCompos().bind()
                 ComposPage.render(generalRules, compos)
-            })
+            }
         }
 
         get("/results") {
-            call.respondEither({
+            call.respondEither {
                 val user = call.optionalUserSession(app)
                 val results = app.votes.getResultsForUser(user).bind()
                 ResultsPage.render(results)
-            })
+            }
         }
     }
 }

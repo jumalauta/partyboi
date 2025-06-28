@@ -25,7 +25,7 @@ fun Application.configureSettingsRouting(app: AppServices) {
 
     adminRouting {
         get("/admin/settings") {
-            call.respondEither({ renderSettings().bind() })
+            call.respondEither { renderSettings().bind() }
         }
 
         post("/admin/settings") {

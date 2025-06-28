@@ -15,7 +15,7 @@ import party.jml.partyboi.templates.respondPage
 fun Application.configureAdminVotingRouting(app: AppServices) {
     adminRouting {
         get("/admin/voting") {
-            call.respondEither({
+            call.respondEither {
                 val voteKeys = app.voteKeys.getAllVoteKeys().bind()
                 val users = app.users.getUsers().bind()
                 val settings = Form(
@@ -24,7 +24,7 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
                     initial = false
                 )
                 AdminVotingPage.render(voteKeys, users, settings)
-            })
+            }
         }
 
         post("/admin/voting/settings") {
@@ -59,11 +59,11 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
         }
 
         get("/admin/voting/print/{set}") {
-            call.respondEither({
+            call.respondEither {
                 val keySet = call.parameterString("set").bind()
                 val tickets = app.voteKeys.getVoteKeySet(keySet).bind()
                 GenerateVoteKeysPage.renderTickets(tickets)
-            })
+            }
         }
     }
 }

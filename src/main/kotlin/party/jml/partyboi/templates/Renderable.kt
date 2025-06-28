@@ -41,6 +41,13 @@ private suspend fun safely(block: suspend () -> AppResult<Renderable>) =
 
 suspend fun ApplicationCall.respondEither(
     block: suspend Raise<AppError>.() -> Renderable,
+) {
+    val result = safely { either { block() } }
+    respondPage(result.getAny())
+}
+
+suspend fun ApplicationCall.respondAndCatchEither(
+    block: suspend Raise<AppError>.() -> Renderable,
     vararg retries: suspend Raise<AppError>.(AppError) -> Renderable
 ) {
     var result = safely {

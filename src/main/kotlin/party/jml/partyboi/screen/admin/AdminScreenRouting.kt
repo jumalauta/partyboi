@@ -73,7 +73,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         }
 
         get("/admin/screen/adhoc") {
-            call.respondEither({ renderAdHocEdit().bind() })
+            call.respondEither { renderAdHocEdit().bind() }
         }
 
         post("/admin/screen/adhoc") {
@@ -84,18 +84,18 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         }
 
         get("/admin/screen/{slideSet}") {
-            call.respondEither({
+            call.respondEither {
                 renderSlideSetPage(call.parameterString("slideSet")).bind()
-            })
+            }
         }
 
         get("/admin/screen/{slideSet}/{slideId}") {
-            call.respondEither({
+            call.respondEither {
                 renderSlideEdit(
                     call.parameterString("slideSet"),
                     call.parameterInt("slideId"),
                 ).bind()
-            })
+            }
         }
 
         post("/admin/screen/{slideSet}/{slideId}/textslide") {

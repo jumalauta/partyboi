@@ -11,6 +11,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
+import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
@@ -72,12 +73,12 @@ fun Application.configureLoginRouting(app: AppServices) {
         }
 
         get("/verify/{userId}/{verificationCode}") {
-            call.respondEither({
+            call.respondEither {
                 val userId = call.parameterInt("userId").bind()
                 val verificationCode = call.parameterString("verificationCode").bind()
                 app.users.verifyEmail(userId, verificationCode)
                 Redirection("/")
-            })
+            }
         }
 
         if (app.email.isConfigured()) {
@@ -110,7 +111,7 @@ fun Application.configureLoginRouting(app: AppServices) {
             }
 
             get("/reset-password/{resetCode}") {
-                call.respondEither(
+                call.respondAndCatchEither(
                     {
                         val code = call.parameterString("resetCode").bind()
                         app.users.verifyPasswordResetCode(code).bind()

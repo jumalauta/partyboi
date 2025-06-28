@@ -71,15 +71,15 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
     userRouting {
         get("/entries") {
-            call.respondEither({ renderEntriesPage(call.userSession(app)).bind() })
+            call.respondEither { renderEntriesPage(call.userSession(app)).bind() }
         }
 
         get("/entries/submit/{compoId}") {
-            call.respondEither({
+            call.respondEither {
                 val compoId = call.parameterInt("compoId").bind()
                 val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
                 renderEntriesPage(call.userSession(app), form).bind()
-            })
+            }
         }
 
         post("/entries") {
@@ -98,9 +98,9 @@ fun Application.configureEntriesRouting(app: AppServices) {
         }
 
         get("/entries/{id}") {
-            call.respondEither({
+            call.respondEither {
                 renderEditEntryPage(call.parameterInt("id"), call.userSession(app)).bind()
-            })
+            }
         }
 
         get("/entries/{id}/screenshot.jpg") {
