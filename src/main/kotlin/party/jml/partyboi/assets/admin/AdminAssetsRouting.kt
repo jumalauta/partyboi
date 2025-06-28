@@ -1,7 +1,5 @@
 package party.jml.partyboi.assets.admin
 
-import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
@@ -35,8 +33,8 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
 
         post("/admin/assets") {
             call.processForm<AdminAssetsPage.AddAsset>(
-                { app.assets.write(it.file).map { redirectionToAssets } },
-                { renderAdminAssetsPage(addAssetForm = it).right() }
+                { app.assets.write(it.file).map { redirectionToAssets }.bind() },
+                { renderAdminAssetsPage(addAssetForm = it) }
             )
         }
     }
@@ -44,11 +42,9 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
     adminApiRouting {
         delete("/admin/assets/{file}") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val file = call.parameterString("file").bind()
-                    app.assets.delete(file).bind()
-                }
+                call.userSession(app).bind()
+                val file = call.parameterString("file").bind()
+                app.assets.delete(file).bind()
             }
         }
     }

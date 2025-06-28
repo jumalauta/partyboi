@@ -1,7 +1,5 @@
 package party.jml.partyboi.voting.admin
 
-import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
@@ -31,13 +29,11 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
 
         post("/admin/voting/settings") {
             call.processForm<VoteSettings>(
-                { app.settings.saveSettings(it).map { Redirection("/admin/voting") } },
+                { app.settings.saveSettings(it).map { Redirection("/admin/voting") }.bind() },
                 { settings ->
-                    either {
-                        val voteKeys = app.voteKeys.getAllVoteKeys().bind()
-                        val users = app.users.getUsers().bind()
-                        AdminVotingPage.render(voteKeys, users, settings)
-                    }
+                    val voteKeys = app.voteKeys.getAllVoteKeys().bind()
+                    val users = app.users.getUsers().bind()
+                    AdminVotingPage.render(voteKeys, users, settings)
                 }
             )
         }
@@ -54,13 +50,11 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
         post("/admin/voting/generate") {
             call.processForm<GenerateVoteKeysPage.GenerateVoteKeySettings>(
                 {
-                    either {
-                        val keySet = app.time.isoLocalTime()
-                        app.voteKeys.createTickets(it.numberOfKeys, keySet).bind()
-                        Redirection("/admin/voting/print/$keySet")
-                    }
+                    val keySet = app.time.isoLocalTime()
+                    app.voteKeys.createTickets(it.numberOfKeys, keySet).bind()
+                    Redirection("/admin/voting/print/$keySet")
                 },
-                { GenerateVoteKeysPage.renderForm(it).right() }
+                { GenerateVoteKeysPage.renderForm(it) }
             )
         }
 

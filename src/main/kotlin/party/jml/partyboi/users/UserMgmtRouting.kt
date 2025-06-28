@@ -83,18 +83,16 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         post("/admin/users/{id}") {
             call.processForm<UserCredentials>(
                 { credentials ->
-                    either {
-                        val userId = call.parameterInt("id").bind()
-                        app.users.updateUser(userId, credentials).bind()
-                        Redirection("/admin/users/$userId")
-                    }
+                    val userId = call.parameterInt("id").bind()
+                    app.users.updateUser(userId, credentials).bind()
+                    Redirection("/admin/users/$userId")
                 },
                 {
                     renderEditPage(
                         session = call.userSession(app),
                         id = call.parameterInt("id"),
                         currentForm = it
-                    )
+                    ).bind()
                 }
             )
         }
