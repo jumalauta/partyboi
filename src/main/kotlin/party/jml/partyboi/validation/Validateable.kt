@@ -6,6 +6,7 @@ import kotlin.reflect.KClass
 
 interface Validateable<T : Validateable<T>> {
     fun validationErrors(): List<Option<ValidationError.Message>> = emptyList()
+    fun suggestedValues(): Map<String, String> = emptyMap()
 
     fun validate(kclass: KClass<T>): Either<ValidationError, T> {
         val errors = ValidationAnnotations.validate(kclass, this) + validationErrors().flattenOption()

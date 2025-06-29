@@ -8,7 +8,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.serializers.LocalDateIso8601Serializer
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.toInstant
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -19,6 +19,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.NonEditable
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
+import party.jml.partyboi.system.displayTime
 import party.jml.partyboi.validation.Validateable
 import java.time.format.TextStyle
 import java.util.*
@@ -30,15 +31,15 @@ data class ScheduleSlide(
 ) : Slide<ScheduleSlide>, Validateable<ScheduleSlide>, NonEditable {
     override suspend fun render(ctx: FlowContent, app: AppServices) {
         val tz = app.time.timeZone.get().getOrNull()!!
-        val from = LocalDateTime(date, SplitDateAt)
-        val eventsE = app.events.getBetween(from, app.time.add(from, 1.days))
+        val from = LocalDateTime(date, SplitDateAt).toInstant(tz)
+        val eventsE = app.events.getBetween(from, from.plus(1.days))
         with(ctx) {
             h1 { +"${date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK)}" }
             eventsE.map { events ->
                 table {
                     events.forEach { event ->
                         tr {
-                            th { +event.startTime.toLocalDateTime(tz).time.toString() }
+                            th { +event.startTime.displayTime() }
                             td { +event.name }
                         }
                     }

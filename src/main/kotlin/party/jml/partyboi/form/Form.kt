@@ -37,6 +37,7 @@ class Form<T : Validateable<T>>(
     fun forEach(block: (FieldData) -> Unit) {
         schema.properties.forEach { prop ->
             val meta = prop.meta
+            val suggestedValues = data.suggestedValues()
             if (meta.isDefined() && meta.presentation != FieldPresentation.custom) {
                 val value = kclass.memberProperties.find { it.name == prop.name }?.get(data)
                 val error = errors
@@ -53,6 +54,7 @@ class Form<T : Validateable<T>>(
                         type = prop.getInputType(),
                         presentation = meta.presentation ?: FieldPresentation.normal,
                         description = meta.description.nonEmptyStringOption(),
+                        suggestedValue = suggestedValues[prop.name],
                     )
                 )
             }
@@ -81,6 +83,7 @@ class Form<T : Validateable<T>>(
         val type: InputType,
         val presentation: FieldPresentation,
         val description: Option<String>,
+        val suggestedValue: String? = null,
     )
 
     companion object {

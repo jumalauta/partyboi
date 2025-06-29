@@ -3,10 +3,13 @@ package party.jml.partyboi.form
 import arrow.core.Option
 import arrow.core.none
 import io.ktor.http.content.*
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.html.InputType
 import party.jml.partyboi.system.TimeService
-import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
@@ -95,15 +98,7 @@ sealed interface Property {
                 String::class -> TextProp(name, optional, meta)
                 Int::class -> IntProp(name, optional, meta)
                 Boolean::class -> BooleanProp(name, optional, meta)
-                LocalDateTime::class -> LocalDateTimeProp(
-                    name,
-                    optional,
-                    meta,
-                    java.time.LocalDateTime.now().toKotlinLocalDateTime()
-                )
-
-                java.time.LocalDateTime::class -> LocalDateTimeProp(name, optional, meta, java.time.LocalDateTime.now())
-                Instant::class -> LocalDateTimeProp(name, optional, meta, Clock.System.now())
+                Instant::class -> InstantProp(name, optional, meta)
                 FileUpload::class -> FileUploadProp(name, optional, meta)
                 TimeZone::class -> TimeZoneProp(name, optional, meta)
                 Option::class -> type.arguments.first().type?.let {
@@ -198,30 +193,30 @@ data class BooleanProp(
     }
 }
 
-data class LocalDateTimeProp(
+data class InstantProp(
     override val name: String,
     override val optional: Boolean,
     override val meta: PropertyMeta,
-    override val defaultValue: Any
 ) : Property {
-    override val defaultInputType: InputType = InputType.dateTimeLocal
+    val format = DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET
+    override val defaultValue = Clock.System.now()
+    override val defaultInputType: InputType = InputType.dateTime
     override fun serialize(value: Any?): String =
         when (value) {
             null -> ""
-            is java.time.LocalDate -> value.format(DateTimeFormatter.ISO_DATE_TIME)
-            is LocalDateTime -> value.toJavaLocalDateTime().format(DateTimeFormatter.ISO_DATE_TIME)
-            is Instant -> value.toLocalDateTime(TimeService.timeZone()).toJavaLocalDateTime()
-                .format(DateTimeFormatter.ISO_DATE_TIME)
-
-            else -> TODO("Unsupported type $value")
+            is Instant -> value.format(format)
+            else -> TODO("Only Instant supported for datetime values. Unsupported type: $name $value")
         }
 
     override fun parseFormValue(
         values: List<String>,
         files: List<PartData.FileItem>,
+    ): Any? =
+        values.firstOrNull()?.let {
+            if (it.isEmpty()) null
+            else Instant.parse(it, format)
+        }
 
-        ): LocalDateTime? =
-        values.firstOrNull()?.let { LocalDateTime.parse(it) }
 }
 
 data class FileUploadProp(

@@ -94,6 +94,25 @@ function initInteractions(target) {
             setTimeout(() => snackbar.remove(), 200)
         })
     })
+
+    // Date time pickers
+    target.querySelectorAll("input[type=datetime]").forEach(input => {
+        const tz = input.attributes["data-tz"]?.value || "Z"
+        const defaultDate = input.attributes["data-suggested-value"]?.value
+        const self = flatpickr(input, {
+            dateFormat: 'Y-m-d\\TH:i:S' + tz,
+            enableTime: true,
+            time_24hr: true,
+            altInput: true,
+            altFormat: "H:i d.m.Y",
+            allowInput: true,
+            onOpen: (value) => {
+                if (value.length === 0) {
+                    if (defaultDate) self.setDate(defaultDate)
+                }
+            }
+        })
+    })
 }
 
 // Smooth page reload

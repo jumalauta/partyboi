@@ -2,8 +2,9 @@ package party.jml.partyboi.triggers
 
 import arrow.core.flatten
 import arrow.core.raise.either
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
@@ -97,16 +98,16 @@ class TriggerRepository(val app: AppServices) : Logging() {
         }.bindAll()
     }
 
-    private suspend fun setSuccessful(triggerId: Int, time: LocalDateTime) = db.use {
+    private suspend fun setSuccessful(triggerId: Int, time: Instant) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
     }
 
-    private suspend fun setFailed(triggerId: Int, time: LocalDateTime, error: String) = db.use {
+    private suspend fun setFailed(triggerId: Int, time: Instant, error: String) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
     }
 
     private suspend fun execute(signal: Signal): AppResult<Unit> = either {
-        val now = app.time.localTime()
+        val now = Clock.System.now()
         getTriggers(signal.toString()).bind().forEach {
             val result = executeTrigger(it, now)
             log.info(
@@ -118,7 +119,7 @@ class TriggerRepository(val app: AppServices) : Logging() {
         }
     }
 
-    private suspend fun executeTrigger(trigger: TriggerRow, logTime: LocalDateTime): AppResult<Unit> {
+    private suspend fun executeTrigger(trigger: TriggerRow, logTime: Instant): AppResult<Unit> {
         return trigger.getAction().apply(app).fold(
             { error -> setFailed(trigger.triggerId, logTime, error.message) },
             { _ -> setSuccessful(trigger.triggerId, logTime) }
@@ -166,7 +167,7 @@ sealed class TriggerRow {
             val triggerId = row.int("id")
             val signal = row.string("signal")
             val type = row.string("type")
-            val executionTime = row.localDateTimeOrNull("executed_at")
+            val executionTime = row.instantOrNull("executed_at")?.toKotlinInstant()
             val action = row.string("action")
             val error = row.stringOrNull("error")
             val description = row.string("description")
@@ -178,7 +179,7 @@ sealed class TriggerRow {
                         triggerId,
                         signal,
                         type,
-                        executionTime.toKotlinLocalDateTime(),
+                        executionTime,
                         action,
                         error,
                         description,
@@ -189,7 +190,7 @@ sealed class TriggerRow {
                         triggerId,
                         signal,
                         type,
-                        executionTime.toKotlinLocalDateTime(),
+                        executionTime,
                         action,
                         description,
                         enabled
@@ -217,7 +218,7 @@ data class SuccessfulTriggerRow(
     override val triggerId: Int,
     override val signal: String,
     override val triggerType: String,
-    val executionTime: LocalDateTime,
+    val executionTime: Instant,
     override val actionJson: String,
     override val description: String,
     override val enabled: Boolean,
@@ -228,7 +229,7 @@ data class FailedTriggerRow(
     override val triggerId: Int,
     override val signal: String,
     override val triggerType: String,
-    val executionTime: LocalDateTime,
+    val executionTime: Instant,
     override val actionJson: String,
     val error: String,
     override val description: String,

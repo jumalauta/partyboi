@@ -4,8 +4,8 @@ import arrow.core.Either
 import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -239,7 +239,7 @@ data class FileDesc(
     val storageFilename: Path,
     val type: String,
     val size: Long,
-    val uploadedAt: LocalDateTime,
+    val uploadedAt: Instant,
     val checksum: String?,
 ) {
     val isArchive = type == ZIP_ARCHIVE
@@ -256,7 +256,7 @@ data class FileDesc(
                 storageFilename = Paths.get(row.string("storage_filename")),
                 type = row.string("type"),
                 size = row.long("size"),
-                uploadedAt = row.localDateTime("uploaded_at").toKotlinLocalDateTime(),
+                uploadedAt = row.instant("uploaded_at").toKotlinInstant(),
                 checksum = row.stringOrNull("checksum"),
             )
         }

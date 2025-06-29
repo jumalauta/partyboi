@@ -1,6 +1,5 @@
 @file:UseSerializers(
     OptionSerializer::class,
-    LocalDateTimeIso8601Serializer::class,
 )
 
 package party.jml.partyboi.entries
@@ -8,10 +7,8 @@ package party.jml.partyboi.entries
 import arrow.core.*
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
@@ -265,7 +262,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                     it.userId,
                     it.qualified,
                     it.runOrder,
-                    it.timestamp.toJavaLocalDateTime(),
+                    it.timestamp,
                 )
             )
         }.bindAll()
@@ -290,7 +287,7 @@ data class Entry(
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,
     val allowEdit: Boolean,
 ) : EntryBase {
     companion object {
@@ -305,7 +302,7 @@ data class Entry(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp").toKotlinLocalDateTime(),
+                row.instant("timestamp").toKotlinInstant(),
                 row.boolean("allow_edit"),
             )
         }
@@ -322,10 +319,10 @@ data class EntryWithLatestFile(
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,
     val originalFilename: Option<String>,
     val fileVersion: Option<Int>,
-    val uploadedAt: Option<LocalDateTime>,
+    val uploadedAt: Option<Instant>,
     val fileSize: Option<Long>,
 ) : EntryBase {
     companion object {
@@ -340,10 +337,10 @@ data class EntryWithLatestFile(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp").toKotlinLocalDateTime(),
+                row.instant("timestamp").toKotlinInstant(),
                 row.stringOrNull("orig_filename").toOption(),
                 row.intOrNull("version").toOption(),
-                row.localDateTimeOrNull("uploaded_at")?.toKotlinLocalDateTime().toOption(),
+                row.instantOrNull("uploaded_at")?.toKotlinInstant().toOption(),
                 row.longOrNull("size").toOption(),
             )
         }

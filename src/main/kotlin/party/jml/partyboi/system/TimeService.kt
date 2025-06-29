@@ -1,40 +1,60 @@
 package party.jml.partyboi.system
 
-import arrow.core.getOrElse
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
+import kotlinx.datetime.format.DateTimeComponents
+import kotlinx.datetime.format.char
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.StoredProperties
-import kotlin.time.Duration
+import java.time.format.DateTimeFormatter
+import java.util.Locale.getDefault
 
 class TimeService(app: AppServices) : StoredProperties(app) {
-    val fallbackTime = LocalDateTime(1970, 1, 1, 0, 0)
+    val fallbackTime = Instant.DISTANT_PAST
     val timeZone = property("timeZone", TimeZone.currentSystemDefault())
 
-    suspend fun localTime(): LocalDateTime =
-        timeZone
-            .get()
-            .map { Clock.System.now().toLocalDateTime(it) }
-            .getOrElse { fallbackTime }
+    fun localTime(): LocalDateTime =
+        Clock.System.now().toLocalDateTime(timeZone())
 
-    suspend fun isoLocalTime(): String =
+    fun isoLocalTime(): String =
         localTime().format(LocalDateTime.Formats.ISO)
 
-    suspend fun today(): LocalDate =
-        timeZone
-            .get()
-            .map { Clock.System.todayIn(it) }
-            .getOrElse { fallbackTime.date }
-
-    suspend fun add(time: LocalDateTime, duration: Duration): LocalDateTime =
-        timeZone
-            .get()
-            .map { time.toInstant(it).plus(duration).toLocalDateTime(it) }
-            .getOrNull()!!
+    fun today(): LocalDate =
+        Clock.System.todayIn(timeZone())
 
     companion object {
         fun timeZone(): TimeZone = runBlocking {
             AppServices.globalInstance?.time?.timeZone?.getOrNull() ?: TimeZone.currentSystemDefault()
         }
+
+        fun isoOffset(): String = timeZone().offsetAt(Clock.System.now()).toString()
     }
 }
+
+fun LocalDate.displayDate(): String {
+    val nameOfDay = dayOfWeek.name
+        .lowercase()
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() }
+    val dateStr = format(LocalDate.Format {
+        dayOfMonth()
+        char('.')
+        monthNumber()
+        char('.')
+        year()
+    })
+    return "$nameOfDay $dateStr"
+}
+
+
+fun LocalDateTime.displayTime(): String =
+    toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("HH:mm"))
+
+fun Instant.displayTime(): String = format(DateTimeComponents.Format {
+    hour();
+    char(':');
+    minute()
+})
+
+fun Instant.toDate(): LocalDate = toLocalDateTime(TimeService.timeZone()).date
+
+fun Instant.toIsoString(): String = format(DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET)

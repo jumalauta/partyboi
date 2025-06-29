@@ -1,30 +1,27 @@
-@file:UseSerializers(
-    LocalDateTimeIso8601Serializer::class,
-)
-
 package party.jml.partyboi.schedule
 
+import arrow.core.Option
+import arrow.core.Some
 import arrow.core.raise.either
 import kotlinx.datetime.*
-import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
+import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
-import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.system.TimeService
+import party.jml.partyboi.system.*
 import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import kotlin.time.Duration.Companion.hours
 
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -33,7 +30,7 @@ class EventRepository(private val app: AppServices) : Logging() {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
-    suspend fun getBetween(since: LocalDateTime, until: LocalDateTime): AppResult<List<Event>> = db.use {
+    suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
@@ -86,11 +83,13 @@ class EventRepository(private val app: AppServices) : Logging() {
             SET
                 name = ?,
                 time = ?,
+                end_time = ?,
                 visible = ?
             WHERE id = ?
             RETURNING *""",
                 event.name,
                 event.startTime,
+                event.endTime,
                 event.visible,
                 event.id,
             ).map(Event.fromRow)
@@ -121,31 +120,55 @@ class EventRepository(private val app: AppServices) : Logging() {
     }
 }
 
+interface ValidateableEvent<T : Validateable<T>> : Validateable<T> {
+    val startTime: Instant
+    val endTime: Instant?
+
+    override fun validationErrors(): List<Option<ValidationError.Message>> =
+        listOfNotNull(
+            endTime?.let {
+                if (it < startTime) Some(
+                    ValidationError.Message(
+                        "endTime",
+                        "End time must be after start time",
+                        endTime.toString()
+                    )
+                )
+                else null
+            }
+        )
+
+    override fun suggestedValues(): Map<String, String> = mapOf(
+        "endTime" to startTime.plus(1.hours).toIsoString()
+    )
+}
+
 data class NewEvent(
     @Label("Event name")
     @NotEmpty
     val name: String,
     @Label("Start time and date")
-    val startTime: LocalDateTime,
+    override val startTime: Instant,
     @Label("End time and date")
-    val endTime: LocalDateTime? = null,
+    override val endTime: Instant? = null,
     @Label("Show in public schedule")
     val visible: Boolean,
-) : Validateable<NewEvent> {
+) : ValidateableEvent<NewEvent> {
     companion object {
-        fun make(today: LocalDate, preferredDates: List<LocalDate>): NewEvent {
-            val date = preferredDates.find { it == today } ?: preferredDates.maxOrNull() ?: today
+        fun make(today: LocalDate, otherEventTimes: List<Instant>): NewEvent {
+            val time = otherEventTimes.filter { it.toDate() == today }.maxOrNull()
+                ?: otherEventTimes.maxOrNull()
+                ?: today.atTime(12, 0).toInstant(TimeService.timeZone())
             return NewEvent(
                 name = "",
-                startTime = date.atTime(12, 0, 0),
+                startTime = time,
                 endTime = null,
                 visible = true
             )
         }
 
-        suspend fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
-            val timeZone = timeService.timeZone.get().getOrNull()!!
-            return make(timeService.today(), otherEvents.map { it.startTime.toLocalDateTime(timeZone).date })
+        fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
+            return make(timeService.today(), otherEvents.map { it.endTime ?: it.startTime })
         }
     }
 }
@@ -158,13 +181,20 @@ data class Event(
     @NotEmpty
     val name: String,
     @Label("Start time and date")
-    val startTime: Instant,
+    override val startTime: Instant,
     @Label("End time and date")
-    val endTime: Instant?,
+    override val endTime: Instant?,
     @Label("Show in public schedule")
     val visible: Boolean,
-) : Validateable<Event> {
+) : ValidateableEvent<Event> {
     fun signal(): Signal = Signal.eventStarted(id)
+
+    fun formatTime(timeZone: TimeZone): String =
+        listOfNotNull(startTime, endTime)
+            .map { it.toLocalDateTime(timeZone) }
+            .joinToString("-") {
+                it.displayTime()
+            }
 
     companion object {
         val fromRow: (Row) -> Event = { row ->

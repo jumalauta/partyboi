@@ -6,7 +6,6 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.datetime.toLocalDateTime
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -21,6 +20,7 @@ import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
@@ -142,7 +142,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 val slideSetName = call.parameterString("slideSet").bind()
                 val events = app.events.getPublic().bind()
                 val timeZone = app.time.timeZone.get().bind()
-                val allDates = events.map { it.startTime.toLocalDateTime(timeZone).date }.distinct().sorted()
+                val allDates = events.map { it.startTime.toDate() }.distinct().sorted()
                 val existingSlides = app.screen.getSlideSet(slideSetName).bind()
                 val existingDates = existingSlides.flatMap {
                     val slide = it.getSlide()
