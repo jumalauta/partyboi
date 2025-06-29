@@ -1,6 +1,7 @@
 package party.jml.partyboi.templates
 
 import arrow.core.Either
+import arrow.core.raise.Raise
 import arrow.core.raise.either
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -39,13 +40,26 @@ private suspend fun safely(block: suspend () -> AppResult<Renderable>) =
     }
 
 suspend fun ApplicationCall.respondEither(
-    block: suspend () -> AppResult<Renderable>,
-    vararg retries: suspend (AppError) -> AppResult<Renderable>
+    block: suspend Raise<AppError>.() -> Renderable,
 ) {
-    var result = safely { block() }
+    val result = safely { either { block() } }
+    respondPage(result.getAny())
+}
+
+suspend fun ApplicationCall.respondAndCatchEither(
+    block: suspend Raise<AppError>.() -> Renderable,
+    vararg retries: suspend Raise<AppError>.(AppError) -> Renderable
+) {
+    var result = safely {
+        either { block() }
+    }
     for (retry in retries) {
         if (result.isRight()) break
-        result = safely { retry(result.leftOrNull() ?: throw Error("Unexpected")) }
+        result = safely {
+            either {
+                retry(result.leftOrNull() ?: throw Error("Unexpected"))
+            }
+        }
     }
     respondPage(result.getAny())
 }

@@ -4,12 +4,13 @@ import arrow.core.raise.either
 import kotlinx.datetime.TimeZone
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.StoredProperties
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
+import party.jml.partyboi.validation.Validateable
 
 class SettingsService(app: AppServices) : StoredProperties(app) {
     val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
@@ -73,20 +74,20 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
 }
 
 data class GeneralSettings(
-    @property:Field(order = 3, label = "results.txt header", presentation = FieldPresentation.monospace)
+    @Field(label = "results.txt header", presentation = FieldPresentation.monospace)
     val resultsFileHeader: String,
-    @property:Field(order = 2, label = "Color scheme")
+    @Label("Color scheme")
     val colorScheme: ColorScheme,
-    @property:Field(order = 4, label = "Time zone")
+    @Label("Time zone")
     val timeZone: TimeZone,
 ) : Validateable<GeneralSettings>
 
 data class VoteSettings(
-    @property:Field(order = 1, label = "Automatic vote keys")
+    @Label("Automatic vote keys")
     val automaticVoteKeys: AutomaticVoteKeys,
-    @property:Field(order = 2, label = "Email list", presentation = FieldPresentation.large)
+    @Field(label = "Email list", presentation = FieldPresentation.large)
     val listOfEmails: String,
-    @property:Field(order = 3, label = "Accept only verified email addresses")
+    @Label("Accept only verified email addresses")
     val verifiedEmailsOnly: Boolean,
 ) : Validateable<VoteSettings>
 

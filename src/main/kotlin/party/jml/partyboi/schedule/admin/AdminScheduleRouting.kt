@@ -55,36 +55,36 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         fun redirectionToEvent(id: Int) = Redirection("/admin/schedule/events/$id")
 
         get("/admin/schedule") {
-            call.respondEither({ renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!) })
+            call.respondEither { renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!).bind() }
         }
 
         post("/admin/schedule/events") {
             call.processForm<NewEvent>(
-                { app.events.add(it).map { redirectionToSchedules } },
+                { app.events.add(it).map { redirectionToSchedules }.bind() },
                 {
                     renderSchedulesPage(
                         newEventForm = it,
                         timeZone = app.time.timeZone.get().getOrNull()!!
-                    )
+                    ).bind()
                 }
             )
         }
 
         get("/admin/schedule/events/{id}") {
-            call.respondEither({ renderEditSchedulePage(call.parameterInt("id")) })
+            call.respondEither { renderEditSchedulePage(call.parameterInt("id")).bind() }
         }
 
         post("/admin/schedule/events/{id}") {
             call.processForm<Event>(
-                { app.events.update(it).map { redirectionToSchedules } },
-                { renderEditSchedulePage(call.parameterInt("id"), eventForm = it) }
+                { app.events.update(it).map { redirectionToSchedules }.bind() },
+                { renderEditSchedulePage(call.parameterInt("id"), eventForm = it).bind() }
             )
         }
 
         post("/admin/schedule/triggers") {
             call.processForm<NewScheduledTrigger>(
-                { t -> app.triggers.add(t.signal(), t.toAction()).map { redirectionToEvent(t.eventId) } },
-                { renderEditSchedulePage(it.data.eventId.right(), newTriggerForm = it) }
+                { t -> app.triggers.add(t.signal(), t.toAction()).map { redirectionToEvent(t.eventId) }.bind() },
+                { renderEditSchedulePage(it.data.eventId.right(), newTriggerForm = it).bind() }
             )
         }
 
@@ -93,11 +93,9 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
     adminApiRouting {
         delete("/admin/schedule/events/{id}") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val eventId = call.parameterInt("id").bind()
-                    app.events.delete(eventId).bind()
-                }
+                call.userSession(app).bind()
+                val eventId = call.parameterInt("id").bind()
+                app.events.delete(eventId).bind()
             }
         }
 

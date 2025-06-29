@@ -3,19 +3,21 @@ package party.jml.partyboi.data
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import party.jml.partyboi.system.AppResult
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAmount
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 interface ICachedValue<T> {
     suspend fun get(): AppResult<T>
+    suspend fun getOrNull(): T? = get().getOrNull()
     suspend fun set(value: T): AppResult<Unit>
     suspend fun refresh(): AppResult<T>
 }
 
 class CachedValue<T>(
-    val ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
+    val ttl: Duration = 1.hours,
     val fetchValue: suspend () -> AppResult<T>
 ) :
     ICachedValue<T> {
@@ -41,17 +43,15 @@ class CachedValue<T>(
 
     data class Value<A>(
         val data: A,
-        val updatedAt: LocalDateTime = LocalDateTime.now(),
+        val updatedAt: Instant = Clock.System.now(),
     ) {
-        fun isExpired(ttl: TemporalAmount): Boolean =
-            updatedAt
-                .plus(ttl)
-                .isBefore(LocalDateTime.now())
+        fun isExpired(ttl: Duration): Boolean =
+            updatedAt.plus(ttl) < Clock.System.now()
     }
 }
 
 class PersistentCachedValue<T>(
-    ttl: TemporalAmount = java.time.Duration.of(1, ChronoUnit.HOURS),
+    ttl: Duration = 1.hours,
     fetchValue: suspend () -> AppResult<T>,
     val storeValue: suspend (T) -> AppResult<Unit>
 ) : ICachedValue<T> {

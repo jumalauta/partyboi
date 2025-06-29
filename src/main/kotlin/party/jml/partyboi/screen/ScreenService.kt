@@ -12,7 +12,6 @@ import kotlinx.html.FlowContent
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.Validateable
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.TextSlide
@@ -20,6 +19,7 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.triggers.*
+import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule

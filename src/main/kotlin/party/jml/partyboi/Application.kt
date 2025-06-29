@@ -12,7 +12,6 @@ import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.plugins.configureDefaultRouting
 import party.jml.partyboi.plugins.configureHTTP
 import party.jml.partyboi.plugins.configureSerialization
-import party.jml.partyboi.telnet.runSocketServer
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -37,10 +36,6 @@ fun Application.module() {
 
     configureHealthCheck(app)
     app.email.configure(this)
-
-    launch {
-        runSocketServer(9002, app)
-    }
 }
 
 fun Application.configureHealthCheck(app: AppServices) {

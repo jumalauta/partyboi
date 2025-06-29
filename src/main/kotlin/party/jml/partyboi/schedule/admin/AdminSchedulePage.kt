@@ -1,13 +1,14 @@
 package party.jml.partyboi.schedule.admin
 
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
+import party.jml.partyboi.system.displayDate
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.FailedTriggerRow
@@ -28,10 +29,10 @@ object AdminSchedulePage {
                 if (events.isNotEmpty()) {
                     {
                         events
-                            .groupBy { it.time.toLocalDateTime(timeZone).date }
+                            .groupBy { it.startTime.toDate() }
                             .forEach { (date, events) ->
                                 article {
-                                    header { +"Schedule – ${date.dayOfWeek.name} $date" }
+                                    header { +date.displayDate() }
                                     table {
                                         thead {
                                             tr {
@@ -43,7 +44,7 @@ object AdminSchedulePage {
                                         tbody {
                                             events.forEach { event ->
                                                 tr {
-                                                    td { +event.time.toLocalDateTime(timeZone).time.toString() }
+                                                    td { +event.formatTime(timeZone) }
                                                     td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
                                                     td(classes = "settings") {
                                                         deleteButton(
@@ -68,6 +69,7 @@ object AdminSchedulePage {
                     submitButtonLabel = "Add event",
                 )
             }
+            flatpickr()
         }
 
     fun renderEdit(
@@ -133,6 +135,15 @@ object AdminSchedulePage {
                     submitButtonLabel = "Add trigger"
                 )
             })
+            flatpickr()
         }
+
+    fun FlowContent.flatpickr() {
+        link {
+            rel = "stylesheet"
+            href = "/assets/flatpickr.min.css"
+        }
+        script(src = "/assets/flatpickr.js") {}
+    }
 }
 

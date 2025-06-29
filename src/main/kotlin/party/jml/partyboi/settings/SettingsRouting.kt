@@ -25,13 +25,13 @@ fun Application.configureSettingsRouting(app: AppServices) {
 
     adminRouting {
         get("/admin/settings") {
-            call.respondEither({ renderSettings() })
+            call.respondEither { renderSettings().bind() }
         }
 
         post("/admin/settings") {
             call.processForm<GeneralSettings>(
-                { app.settings.saveSettings(it).map { Redirection("/admin/settings") } },
-                { renderSettings(it) }
+                { app.settings.saveSettings(it).map { Redirection("/admin/settings") }.bind() },
+                { renderSettings(it).bind() }
             )
         }
     }

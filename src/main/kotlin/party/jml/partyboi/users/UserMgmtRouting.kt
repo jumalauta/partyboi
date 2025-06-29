@@ -13,6 +13,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
+import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.voting.VoteKey
 
@@ -45,60 +46,54 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
     adminRouting {
         get("/admin/users") {
-            call.respondEither({ renderUsersPage() })
+            call.respondEither { renderUsersPage().bind() }
         }
 
         get("/admin/users/{id}") {
-            call.respondEither({
+            call.respondEither {
                 renderEditPage(
                     call.userSession(app),
                     call.parameterInt("id"),
-                )
-            })
+                ).bind()
+            }
         }
 
         get("/admin/users/{id}/send-verification") {
-            call.respondEither({
-                either {
-                    val userId = call.parameterInt("id").bind()
-                    val user = app.users.getUser(userId).bind()
-                    app.users.sendVerificationEmail(user)?.bind()
+            call.respondAndCatchEither({
+                val userId = call.parameterInt("id").bind()
+                val user = app.users.getUser(userId).bind()
+                app.users.sendVerificationEmail(user)?.bind()
 
-                    app.messages.sendMessage(
-                        userId = call.userSession(app).bind().id,
-                        type = MessageType.SUCCESS,
-                        text = "Verification email sent to ${user.email}"
-                    ).bind()
-                    Redirection("/admin/users/$userId")
-                }
+                app.messages.sendMessage(
+                    userId = call.userSession(app).bind().id,
+                    type = MessageType.SUCCESS,
+                    text = "Verification email sent to ${user.email}"
+                ).bind()
+                Redirection("/admin/users/$userId")
             }, {
-                either {
-                    val userId = call.parameterString("id")
-                    app.messages.sendMessage(
-                        userId = call.userSession(app).bind().id,
-                        type = MessageType.ERROR,
-                        text = "Sending verification email failed"
-                    ).bind()
-                    Redirection("/admin/users/$userId")
-                }
+                val userId = call.parameterString("id")
+                app.messages.sendMessage(
+                    userId = call.userSession(app).bind().id,
+                    type = MessageType.ERROR,
+                    text = "Sending verification email failed"
+                ).bind()
+                Redirection("/admin/users/$userId")
             })
         }
 
         post("/admin/users/{id}") {
             call.processForm<UserCredentials>(
                 { credentials ->
-                    either {
-                        val userId = call.parameterInt("id").bind()
-                        app.users.updateUser(userId, credentials).bind()
-                        Redirection("/admin/users/$userId")
-                    }
+                    val userId = call.parameterInt("id").bind()
+                    app.users.updateUser(userId, credentials).bind()
+                    Redirection("/admin/users/$userId")
                 },
                 {
                     renderEditPage(
                         session = call.userSession(app),
                         id = call.parameterInt("id"),
                         currentForm = it
-                    )
+                    ).bind()
                 }
             )
         }

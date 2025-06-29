@@ -6,15 +6,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.Validateable
-import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideType
+import party.jml.partyboi.validation.Validateable
 
 @Serializable
 data class ImageSlide(
-    @property:Field(order = 0, label = "Image")
+    @Label("Image")
     val assetImage: String,
 ) : Slide<ImageSlide>, Validateable<ImageSlide> {
     override suspend fun render(ctx: FlowContent, app: AppServices) {

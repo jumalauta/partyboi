@@ -1,7 +1,6 @@
 package party.jml.partyboi.compos.admin
 
 import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
@@ -65,13 +64,13 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         val redirectionToCompos = Redirection("/admin/compos")
 
         get("/admin/compos") {
-            call.respondEither({ renderAdminComposPage() })
+            call.respondEither { renderAdminComposPage().bind() }
         }
 
         post("/admin/compos") {
             call.processForm<NewCompo>(
-                { app.compos.add(it).map { redirectionToCompos } },
-                { renderAdminComposPage(newCompoForm = it) }
+                { app.compos.add(it).map { redirectionToCompos }.bind() },
+                { renderAdminComposPage(newCompoForm = it).bind() }
             )
         }
 
@@ -79,22 +78,22 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             call.processForm<GeneralRules>(
                 {
                     app.compos.generalRules.set(it)
-                    redirectionToCompos.right()
+                    redirectionToCompos
                 },
-                { renderAdminComposPage(generalRulesForm = it) }
+                { renderAdminComposPage(generalRulesForm = it).bind() }
             )
         }
 
         get("/admin/compos/{id}") {
-            call.respondEither({
-                renderAdminEditCompoPage(call.parameterInt("id"))
-            })
+            call.respondEither {
+                renderAdminEditCompoPage(call.parameterInt("id")).bind()
+            }
         }
 
         post("/admin/compos/{id}") {
             call.processForm<Compo>(
-                { app.compos.update(it).map { redirectionToCompos } },
-                { renderAdminEditCompoPage(call.parameterInt("id"), it) }
+                { app.compos.update(it).map { redirectionToCompos }.bind() },
+                { renderAdminEditCompoPage(call.parameterInt("id"), it).bind() }
             )
         }
 

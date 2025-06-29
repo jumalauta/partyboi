@@ -4,6 +4,8 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toJavaLocalDateTime
 import kotliquery.*
 import kotliquery.action.*
@@ -56,6 +58,7 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
     private fun dropSchema(tx: TransactionalSession, name: String) =
         tx.exec(queryOf("DROP SCHEMA IF EXISTS $name CASCADE"))
 
+    @SuppressWarnings
     fun debugPrintPoolState(message: String) {
         val pool = dataSource.hikariPoolMXBean
         log.info("$message: ${dataSource.poolName} (total=${pool.totalConnections}, active=${pool.activeConnections}, idle=${pool.idleConnections}, waiting=${pool.threadsAwaitingConnection})")
@@ -143,7 +146,7 @@ fun queryOf(statement: String, vararg params: Any?): Query {
 fun convertQueryParam(param: Any?): Any? = when (param) {
     is Option<*> -> param.getOrNull()
     is kotlinx.datetime.LocalDateTime -> Timestamp.valueOf(param.toJavaLocalDateTime())
-    is java.time.LocalDateTime -> Timestamp.valueOf(param)
+    is Instant -> Timestamp.from(param.toJavaInstant())
     is Path -> param.toString()
     is Enum<*> -> param.name
     is List<*> -> throw RuntimeException("Pass a typed array instead of List to a query")

@@ -1,6 +1,5 @@
 @file:UseSerializers(
     OptionSerializer::class,
-    LocalDateTimeIso8601Serializer::class,
 )
 
 package party.jml.partyboi.entries
@@ -8,17 +7,18 @@ package party.jml.partyboi.entries
 import arrow.core.*
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.serializers.LocalDateTimeIso8601Serializer
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.Forbidden
+import party.jml.partyboi.data.FormError
+import party.jml.partyboi.data.isTrue
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.form.Field
@@ -27,6 +27,9 @@ import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.validation.MaxLength
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 class EntryRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -259,7 +262,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                     it.userId,
                     it.qualified,
                     it.runOrder,
-                    it.timestamp.toJavaLocalDateTime(),
+                    it.timestamp,
                 )
             )
         }.bindAll()
@@ -284,7 +287,7 @@ data class Entry(
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,
     val allowEdit: Boolean,
 ) : EntryBase {
     companion object {
@@ -299,7 +302,7 @@ data class Entry(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp").toKotlinLocalDateTime(),
+                row.instant("timestamp").toKotlinInstant(),
                 row.boolean("allow_edit"),
             )
         }
@@ -316,10 +319,10 @@ data class EntryWithLatestFile(
     val userId: Int,
     val qualified: Boolean,
     val runOrder: Int,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,
     val originalFilename: Option<String>,
     val fileVersion: Option<Int>,
-    val uploadedAt: Option<LocalDateTime>,
+    val uploadedAt: Option<Instant>,
     val fileSize: Option<Long>,
 ) : EntryBase {
     companion object {
@@ -334,10 +337,10 @@ data class EntryWithLatestFile(
                 row.int("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
-                row.localDateTime("timestamp").toKotlinLocalDateTime(),
+                row.instant("timestamp").toKotlinInstant(),
                 row.stringOrNull("orig_filename").toOption(),
                 row.intOrNull("version").toOption(),
-                row.localDateTimeOrNull("uploaded_at")?.toKotlinLocalDateTime().toOption(),
+                row.instantOrNull("uploaded_at")?.toKotlinInstant().toOption(),
                 row.longOrNull("size").toOption(),
             )
         }
@@ -345,62 +348,59 @@ data class EntryWithLatestFile(
 }
 
 data class NewEntry(
-    @property:Field(2, "Title")
+    @Field("Title")
+    @NotEmpty
+    @MaxLength(64)
     val title: String,
-    @property:Field(3, "Author")
+    @Field("Author")
+    @NotEmpty
+    @MaxLength(64)
     val author: String,
-    @property:Field(4, "File")
+    @Field("File")
+    @MaxLength(128)
     val file: FileUpload,
-    @property:Field(1, "Compo")
+    @Field("Compo")
     val compoId: Int,
-    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
+    @Field("Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
+    @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
     val userId: Int,
 ) : Validateable<NewEntry> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> {
-        return listOf(
-            expectNotEmpty("title", title),
-            expectMaxLength("title", title, 64),
-            expectNotEmpty("author", author),
-            expectMaxLength("author", author, 64),
-            expectMaxLength("file", file.name, 128),
-        )
-    }
-
     companion object {
         val Empty = NewEntry("", "", FileUpload.Empty, 0, "", "", 0)
     }
 }
 
 data class EntryUpdate(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Field(presentation = FieldPresentation.hidden)
     val id: Int,
-    @property:Field(2, "Title")
+
+    @Field("Title")
+    @NotEmpty
+    @MaxLength(64)
     val title: String,
-    @property:Field(3, "Author")
+
+    @Field("Author")
+    @NotEmpty
+    @MaxLength(64)
     val author: String,
-    @property:Field(4, "Upload new version of file")
+
+    @Field("Upload new version of file")
     val file: FileUpload,
-    @property:Field(1, "Compo")
+
+    @Field("Compo")
     val compoId: Int,
-    @property:Field(presentation = FieldPresentation.hidden)
+
+    @Field(presentation = FieldPresentation.hidden)
     val userId: Int,
-    @property:Field(5, "Show message on the screen", presentation = FieldPresentation.large)
+
+    @Field("Show message on the screen", presentation = FieldPresentation.large)
     val screenComment: String,
-    @property:Field(6, "Information for organizers", presentation = FieldPresentation.large)
+
+    @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
 ) : Validateable<EntryUpdate> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> {
-        return listOf(
-            expectNotEmpty("title", title),
-            expectMaxLength("title", title, 64),
-            expectNotEmpty("author", author),
-            expectMaxLength("author", author, 64),
-        )
-    }
-
     companion object {
         fun fromEntry(e: Entry) = EntryUpdate(
             id = e.id,

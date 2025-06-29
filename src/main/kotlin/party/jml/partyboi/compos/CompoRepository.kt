@@ -9,18 +9,21 @@ import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.Forbidden
+import party.jml.partyboi.data.isFalse
+import party.jml.partyboi.data.optionalBoolean
+import party.jml.partyboi.data.toDatabaseEnum
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
-import party.jml.partyboi.form.DropdownOption
-import party.jml.partyboi.form.DropdownOptionSupport
-import party.jml.partyboi.form.Field
-import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.form.*
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
+import party.jml.partyboi.validation.MaxLength
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 
 class CompoRepository(private val app: AppServices) : Logging() {
     private val db = app.db
@@ -34,11 +37,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
     suspend fun getAllCompos(): AppResult<List<Compo>> = db.use {
         it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
-
-    suspend fun getOpenCompos(): AppResult<List<Compo>> = db.use {
-        it.many(queryOf("select * from compo where allow_submit and visible order by name").map(Compo.fromRow))
-    }
-
+    
     suspend fun add(compo: NewCompo): AppResult<Compo> = db.use {
         it.one(
             queryOf(
@@ -153,28 +152,26 @@ class CompoRepository(private val app: AppServices) : Logging() {
 
 @Serializable
 data class Compo(
-    @property:Field(presentation = FieldPresentation.hidden)
+    @Hidden
     val id: Int,
-    @property:Field(order = 0, label = "Name")
+    @Label("Name")
+    @NotEmpty
+    @MaxLength(64)
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
+    @Label("Description / rules")
+    @Large
     val rules: String,
     val visible: Boolean,
     val allowSubmit: Boolean,
     val allowVote: Boolean,
     val publicResults: Boolean,
-    @property:Field(presentation = FieldPresentation.custom)
+    @Custom
     @Contextual
     val requireFile: Option<Boolean>,
-    @property:Field(presentation = FieldPresentation.custom)
+    @Custom
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
-
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64),
-    )
 
     override fun toDropdownOption() = DropdownOption(
         value = id.toString(),
@@ -222,16 +219,14 @@ data class Compo(
 }
 
 data class NewCompo(
-    @property:Field(order = 0, label = "Name")
+    @Label("Name")
+    @NotEmpty
+    @MaxLength(64)
     val name: String,
-    @property:Field(order = 1, label = "Description / rules", presentation = FieldPresentation.large)
+
+    @Field(label = "Description / rules", presentation = FieldPresentation.large)
     val rules: String,
 ) : Validateable<NewCompo> {
-    override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
-        expectNotEmpty("name", name),
-        expectMaxLength("name", name, 64),
-    )
-
     companion object {
         val Empty = NewCompo("", "")
     }
@@ -239,6 +234,6 @@ data class NewCompo(
 
 @Serializable
 data class GeneralRules(
-    @property:Field(label = "General compo rules", presentation = FieldPresentation.large)
+    @Field(label = "General compo rules", presentation = FieldPresentation.large)
     val rules: String
 ) : Validateable<GeneralRules>

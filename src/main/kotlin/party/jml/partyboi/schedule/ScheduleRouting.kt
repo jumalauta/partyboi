@@ -12,13 +12,11 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureScheduleRouting(app: AppServices) {
     publicRouting {
         get("/schedule") {
-            call.respondEither({
-                either {
-                    val events = app.events.getPublic().bind()
-                    val timeZone = app.time.timeZone.get().bind()
-                    SchedulePage.render(events, timeZone)
-                }
-            })
+            call.respondEither {
+                val events = app.events.getPublic().bind()
+                val timeZone = app.time.timeZone.get().bind()
+                SchedulePage.render(events, timeZone)
+            }
         }
 
         get("/schedule/json") {
@@ -31,10 +29,14 @@ fun Application.configureScheduleRouting(app: AppServices) {
         get("/schedule.ics") {
             either {
                 val events = app.events.getPublic().bind()
-                val ics = ICalendar.eventsToIcs(events)
+                val ics = ICalendar.eventsToIcs(
+                    hostname = app.config.hostName,
+                    instanceName = app.config.instanceName,
+                    events = events
+                )
                 call.response.headers.append(
                     HttpHeaders.ContentType,
-                    "text/calendar"
+                    "text/calendar; charset=utf-8"
                 )
                 call.respondText { ics }
             }

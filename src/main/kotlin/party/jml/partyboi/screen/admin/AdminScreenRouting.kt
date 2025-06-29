@@ -6,7 +6,6 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.datetime.toLocalDateTime
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
@@ -21,10 +20,12 @@ import party.jml.partyboi.screen.slides.QrCodeSlide
 import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.validation.Validateable
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     suspend fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
@@ -72,29 +73,29 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         }
 
         get("/admin/screen/adhoc") {
-            call.respondEither({ renderAdHocEdit() })
+            call.respondEither { renderAdHocEdit().bind() }
         }
 
         post("/admin/screen/adhoc") {
             call.processForm<TextSlide>(
-                { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") } },
-                { renderAdHocEdit(it) }
+                { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") }.bind() },
+                { renderAdHocEdit(it).bind() }
             )
         }
 
         get("/admin/screen/{slideSet}") {
-            call.respondEither({
-                renderSlideSetPage(call.parameterString("slideSet"))
-            })
+            call.respondEither {
+                renderSlideSetPage(call.parameterString("slideSet")).bind()
+            }
         }
 
         get("/admin/screen/{slideSet}/{slideId}") {
-            call.respondEither({
+            call.respondEither {
                 renderSlideEdit(
                     call.parameterString("slideSet"),
                     call.parameterInt("slideId"),
-                )
-            })
+                ).bind()
+            }
         }
 
         post("/admin/screen/{slideSet}/{slideId}/textslide") {
@@ -113,94 +114,77 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
     adminApiRouting {
         post("/admin/screen/{slideSet}/text") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addSlide(slideSetName, TextSlide.Empty).bind()
-                }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                app.screen.addSlide(slideSetName, TextSlide.Empty).bind()
             }
         }
 
         post("/admin/screen/{slideSet}/qrcode") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addSlide(slideSetName, QrCodeSlide.Empty).bind()
-                }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                app.screen.addSlide(slideSetName, QrCodeSlide.Empty).bind()
             }
         }
 
         post("/admin/screen/{slideSet}/image") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.addSlide(slideSetName, ImageSlide.Empty).bind()
-                }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                app.screen.addSlide(slideSetName, ImageSlide.Empty).bind()
             }
         }
 
         post("/admin/screen/{slideSet}/schedule") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val events = app.events.getPublic().bind()
-                    val timeZone = app.time.timeZone.get().bind()
-                    val allDates = events.map { it.time.toLocalDateTime(timeZone).date }.distinct().sorted()
-                    val existingSlides = app.screen.getSlideSet(slideSetName).bind()
-                    val existingDates = existingSlides.flatMap {
-                        val slide = it.getSlide()
-                        when (slide) {
-                            is ScheduleSlide -> listOf(slide.date)
-                            else -> emptyList()
-                        }
-                    }.distinct()
-
-                    allDates.minus(existingDates).forEach { date ->
-                        app.screen.addSlide(slideSetName, ScheduleSlide(date)).bind()
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                val events = app.events.getPublic().bind()
+                val allDates = events.map { it.startTime.toDate() }.distinct().sorted()
+                val existingSlides = app.screen.getSlideSet(slideSetName).bind()
+                val existingDates = existingSlides.flatMap {
+                    val slide = it.getSlide()
+                    when (slide) {
+                        is ScheduleSlide -> listOf(slide.date)
+                        else -> emptyList()
                     }
+                }.distinct()
+
+                allDates.minus(existingDates).forEach { date ->
+                    app.screen.addSlide(slideSetName, ScheduleSlide(date)).bind()
                 }
             }
         }
 
         post("/admin/screen/{slideSet}/start") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.startSlideSet(slideSetName).bind()
-                }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                app.screen.startSlideSet(slideSetName).bind()
             }
         }
 
         post("/admin/screen/{slideSet}/stop") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    app.screen.stopSlideSet()
-                }
+                call.userSession(app).bind()
+                app.screen.stopSlideSet()
             }
         }
 
         post("/admin/screen/{slideSet}/next") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    app.screen.showNextSlideFromSet(slideSetName).bind()
-                }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                app.screen.showNextSlideFromSet(slideSetName).bind()
             }
         }
 
         post("/admin/screen/{slideSet}/{slideId}/show") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideId = call.parameterInt("slideId").bind()
-                    app.screen.show(slideId).bind()
-                }
+                call.userSession(app).bind()
+                val slideId = call.parameterInt("slideId").bind()
+                app.screen.show(slideId).bind()
             }
         }
 
@@ -215,50 +199,42 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/runOrder") {
             val newOrder = call.receive<List<String>>()
             call.apiRespond {
-                either {
-                    call.parameterString("slideSet").bind()
-                    call.userSession(app).bind()
-                    newOrder
-                        .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
-                        .bindAll()
-                }
+                call.parameterString("slideSet").bind()
+                call.userSession(app).bind()
+                newOrder
+                    .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
+                    .bindAll()
             }
         }
 
         post("/admin/screen/{slideSet}/presentation/start") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val slideSet = app.screen.getSlideSet(slideSetName).bind()
-                    if (slideSet.isNotEmpty()) {
-                        app.screen.stopSlideSet()
-                        app.screen.show(slideSet.first().id).bind()
-                    }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                val slideSet = app.screen.getSlideSet(slideSetName).bind()
+                if (slideSet.isNotEmpty()) {
+                    app.screen.stopSlideSet()
+                    app.screen.show(slideSet.first().id).bind()
                 }
             }
         }
 
         post("/admin/screen/{slideSet}/presentation/next") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideSetName = call.parameterString("slideSet").bind()
-                    val (state) = app.screen.currentState()
-                    if (state.slideSet == slideSetName) {
-                        app.screen.showNext()
-                    }
+                call.userSession(app).bind()
+                val slideSetName = call.parameterString("slideSet").bind()
+                val (state) = app.screen.currentState()
+                if (state.slideSet == slideSetName) {
+                    app.screen.showNext()
                 }
             }
         }
 
         delete("/admin/screen/{slideId}") {
             call.apiRespond {
-                either {
-                    call.userSession(app).bind()
-                    val slideId = call.parameterInt("slideId").bind()
-                    app.screen.delete(slideId).bind()
-                }
+                call.userSession(app).bind()
+                val slideId = call.parameterInt("slideId").bind()
+                app.screen.delete(slideId).bind()
             }
         }
     }
@@ -272,19 +248,17 @@ suspend inline fun <reified T> ApplicationCall.updateSlide(
         T : Validateable<T> {
     processForm<T>(
         { slide ->
-            either {
-                val id = parameterInt("slideId").bind()
-                val slideSetName = parameterString("slideSet").bind()
-                app.screen.update(id, slide).bind()
-                Redirection("/admin/screen/$slideSetName")
-            }
+            val id = parameterInt("slideId").bind()
+            val slideSetName = parameterString("slideSet").bind()
+            app.screen.update(id, slide).bind()
+            Redirection("/admin/screen/$slideSetName")
         },
         { form ->
             onError(
                 parameterString("slideSet"),
                 parameterInt("slideId"),
                 form.error,
-            )
+            ).bind()
         }
     )
 }

@@ -2,6 +2,7 @@ package party.jml.partyboi.data
 
 import arrow.core.Either
 import arrow.core.left
+import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.http.*
@@ -12,13 +13,15 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Renderable
-import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondPage
+import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
 
-suspend fun ApplicationCall.apiRespond(block: suspend () -> AppResult<Unit>) {
+suspend fun ApplicationCall.apiRespond(block: suspend Raise<AppError>.() -> Unit) {
     Either.catch {
-        apiRespond(block())
+        val result = either { block() }
+        apiRespond(result)
     }.mapLeft {
         respond(HttpStatusCode.InternalServerError, it.message ?: "Fail")
     }
@@ -36,17 +39,20 @@ suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm() =
     Form.fromParameters<T>(receiveMultipart())
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
-    handleForm: suspend (data: T) -> AppResult<Renderable>,
-    crossinline handleError: suspend (formWithErrors: Form<T>) -> AppResult<Renderable>
+    handleForm: suspend Raise<AppError>.(data: T) -> Renderable,
+    crossinline handleError: suspend Raise<AppError>.(formWithErrors: Form<T>) -> Renderable
 ) {
     receiveForm<T>().fold(
         { respondPage(it) },
         { form ->
             val result = form.validated().fold(
-                { handleError(form.with(it)) },
-                { handleForm(it) }
+                { either { handleError(form.with(it)) } },
+                { either { handleForm(it) } }
             )
-            respondEither({ result }, { handleError(form.with(it)) })
+            respondAndCatchEither(
+                { result.bind() },
+                { handleError(form.with(it)) }
+            )
         }
     )
 }

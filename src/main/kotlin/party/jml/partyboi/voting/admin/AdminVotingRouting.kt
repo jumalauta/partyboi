@@ -1,7 +1,5 @@
 package party.jml.partyboi.voting.admin
 
-import arrow.core.raise.either
-import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
@@ -17,29 +15,25 @@ import party.jml.partyboi.templates.respondPage
 fun Application.configureAdminVotingRouting(app: AppServices) {
     adminRouting {
         get("/admin/voting") {
-            call.respondEither({
-                either {
-                    val voteKeys = app.voteKeys.getAllVoteKeys().bind()
-                    val users = app.users.getUsers().bind()
-                    val settings = Form(
-                        VoteSettings::class,
-                        app.settings.getVoteSettings().bind(),
-                        initial = false
-                    )
-                    AdminVotingPage.render(voteKeys, users, settings)
-                }
-            })
+            call.respondEither {
+                val voteKeys = app.voteKeys.getAllVoteKeys().bind()
+                val users = app.users.getUsers().bind()
+                val settings = Form(
+                    VoteSettings::class,
+                    app.settings.getVoteSettings().bind(),
+                    initial = false
+                )
+                AdminVotingPage.render(voteKeys, users, settings)
+            }
         }
 
         post("/admin/voting/settings") {
             call.processForm<VoteSettings>(
-                { app.settings.saveSettings(it).map { Redirection("/admin/voting") } },
+                { app.settings.saveSettings(it).map { Redirection("/admin/voting") }.bind() },
                 { settings ->
-                    either {
-                        val voteKeys = app.voteKeys.getAllVoteKeys().bind()
-                        val users = app.users.getUsers().bind()
-                        AdminVotingPage.render(voteKeys, users, settings)
-                    }
+                    val voteKeys = app.voteKeys.getAllVoteKeys().bind()
+                    val users = app.users.getUsers().bind()
+                    AdminVotingPage.render(voteKeys, users, settings)
                 }
             )
         }
@@ -56,24 +50,20 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
         post("/admin/voting/generate") {
             call.processForm<GenerateVoteKeysPage.GenerateVoteKeySettings>(
                 {
-                    either {
-                        val keySet = app.time.isoLocalTime()
-                        app.voteKeys.createTickets(it.numberOfKeys, keySet).bind()
-                        Redirection("/admin/voting/print/$keySet")
-                    }
+                    val keySet = app.time.isoLocalTime()
+                    app.voteKeys.createTickets(it.numberOfKeys, keySet).bind()
+                    Redirection("/admin/voting/print/$keySet")
                 },
-                { GenerateVoteKeysPage.renderForm(it).right() }
+                { GenerateVoteKeysPage.renderForm(it) }
             )
         }
 
         get("/admin/voting/print/{set}") {
-            call.respondEither({
-                either {
-                    val keySet = call.parameterString("set").bind()
-                    val tickets = app.voteKeys.getVoteKeySet(keySet).bind()
-                    GenerateVoteKeysPage.renderTickets(tickets)
-                }
-            })
+            call.respondEither {
+                val keySet = call.parameterString("set").bind()
+                val tickets = app.voteKeys.getVoteKeySet(keySet).bind()
+                GenerateVoteKeysPage.renderTickets(tickets)
+            }
         }
     }
 }

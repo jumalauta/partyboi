@@ -71,40 +71,36 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
     userRouting {
         get("/entries") {
-            call.respondEither({ renderEntriesPage(call.userSession(app)) })
+            call.respondEither { renderEntriesPage(call.userSession(app)).bind() }
         }
 
         get("/entries/submit/{compoId}") {
-            call.respondEither({
-                either {
-                    val compoId = call.parameterInt("compoId").bind()
-                    val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
-                    renderEntriesPage(call.userSession(app), form).bind()
-                }
-            })
+            call.respondEither {
+                val compoId = call.parameterInt("compoId").bind()
+                val form = Form(NewEntry::class, NewEntry.Empty.copy(compoId = compoId), initial = true)
+                renderEntriesPage(call.userSession(app), form).bind()
+            }
         }
 
         post("/entries") {
             call.processForm<NewEntry>(
                 { newEntry ->
-                    either {
-                        val user = call.userSession(app).bind()
-                        val entry = newEntry.copy(userId = user.id)
-                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
-                        app.entries.add(entry).bind()
-                        Redirection("/entries")
-                    }
+                    val user = call.userSession(app).bind()
+                    val entry = newEntry.copy(userId = user.id)
+                    app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                    app.entries.add(entry).bind()
+                    Redirection("/entries")
                 },
                 {
-                    renderEntriesPage(call.userSession(app), newEntryForm = it)
+                    renderEntriesPage(call.userSession(app), newEntryForm = it).bind()
                 }
             )
         }
 
         get("/entries/{id}") {
-            call.respondEither({
-                renderEditEntryPage(call.parameterInt("id"), call.userSession(app))
-            })
+            call.respondEither {
+                renderEditEntryPage(call.parameterInt("id"), call.userSession(app)).bind()
+            }
         }
 
         get("/entries/{id}/screenshot.jpg") {
@@ -143,31 +139,33 @@ fun Application.configureEntriesRouting(app: AppServices) {
         post("/entries/{id}") {
             call.processForm<EntryUpdate>(
                 { entry ->
-                    either {
-                        val user = call.userSession(app).bind()
+                    val user = call.userSession(app).bind()
 
-                        firstRight(
-                            app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
-                            app.entries.assertCanSubmit(entry.id, user.isAdmin),
-                        ).bind()
+                    firstRight(
+                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
+                        app.entries.assertCanSubmit(entry.id, user.isAdmin),
+                    ).bind()
 
-                        val newEntry = app.entries.update(entry, user.id).bind()
+                    val newEntry = app.entries.update(entry, user.id).bind()
 
-                        if (entry.file.isDefined) {
-                            val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
-                            entry.file.write(storageFilename).bind()
-                            val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
+                    if (entry.file.isDefined) {
+                        val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
+                        entry.file.write(storageFilename).bind()
+                        val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
 
-                            app.screenshots.scanForScreenshotSource(file).map { source ->
-                                app.screenshots.store(entry.id, source)
-                            }
+                        app.screenshots.scanForScreenshotSource(file).map { source ->
+                            app.screenshots.store(entry.id, source)
                         }
-
-                        Redirection("/entries")
                     }
+
+                    Redirection("/entries")
                 },
                 {
-                    renderEditEntryPage(call.parameterInt("id"), call.userSession(app), entryUpdateForm = it)
+                    renderEditEntryPage(
+                        entryId = call.parameterInt("id"),
+                        user = call.userSession(app),
+                        entryUpdateForm = it
+                    ).bind()
                 }
             )
         }
@@ -175,18 +173,22 @@ fun Application.configureEntriesRouting(app: AppServices) {
         post("/entries/{id}/screenshot") {
             call.processForm<NewScreenshot>(
                 { screenshot ->
-                    either {
-                        val user = call.userSession(app).bind()
-                        val entryId = call.parameterInt("id").bind()
-                        val entry = app.entries.get(entryId, user.id).bind()
+                    val user = call.userSession(app).bind()
+                    val entryId = call.parameterInt("id").bind()
+                    val entry = app.entries.get(entryId, user.id).bind()
 
-                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
-                        app.screenshots.store(entry.id, screenshot.file)
+                    app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                    app.screenshots.store(entry.id, screenshot.file)
 
-                        Redirection("/entries/$entryId")
-                    }
+                    Redirection("/entries/$entryId")
                 },
-                { renderEditEntryPage(call.parameterInt("id"), call.userSession(app), screenshotForm = it) }
+                {
+                    renderEditEntryPage(
+                        entryId = call.parameterInt("id"),
+                        user = call.userSession(app),
+                        screenshotForm = it
+                    ).bind()
+                }
             )
         }
     }
@@ -194,11 +196,9 @@ fun Application.configureEntriesRouting(app: AppServices) {
     userApiRouting {
         delete("/entries/{id}") {
             call.apiRespond {
-                either {
-                    val user = call.userSession(app).bind()
-                    val id = call.parameterInt("id").bind()
-                    app.entries.delete(id, user.id).bind()
-                }
+                val user = call.userSession(app).bind()
+                val id = call.parameterInt("id").bind()
+                app.entries.delete(id, user.id).bind()
             }
         }
     }

@@ -1,8 +1,9 @@
 package party.jml.partyboi.schedule
 
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
+import party.jml.partyboi.system.displayDate
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 
@@ -15,15 +16,15 @@ object SchedulePage {
 
 fun FlowContent.schedule(events: List<Event>, timeZone: TimeZone) {
     events
-        .groupBy { it.time.toLocalDateTime(timeZone).date }
+        .groupBy { it.startTime.toDate() }
         .forEach { (date, events) ->
             article {
-                cardHeader("${date.dayOfWeek.name.lowercase().capitalize()} $date")
+                cardHeader(date.displayDate())
                 table {
                     tbody {
                         events.forEach { event ->
                             tr {
-                                td(classes = "narrow") { +event.time.toLocalDateTime(timeZone).time.toString() }
+                                td(classes = "narrow") { +event.formatTime(timeZone) }
                                 td { +event.name }
                             }
                         }
@@ -31,4 +32,9 @@ fun FlowContent.schedule(events: List<Event>, timeZone: TimeZone) {
                 }
             }
         }
+    article {
+        a(href = "/schedule.ics") {
+            +"Download calendar"
+        }
+    }
 }

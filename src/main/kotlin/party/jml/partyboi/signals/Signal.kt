@@ -14,7 +14,7 @@ class SignalService : Logging() {
     val flow = MutableStateFlow(Signal.initial())
 
     suspend fun emit(signal: Signal) {
-        log.info("Emit signal: {}", signal)
+        log.trace("Emit signal: {}", signal)
         flow.emit(signal)
     }
 

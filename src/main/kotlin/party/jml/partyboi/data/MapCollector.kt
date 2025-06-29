@@ -10,4 +10,6 @@ class MapCollector<K, V> {
     fun first(key: K): V? = map[key]?.first()
 
     fun all(key: K): List<V> = map[key] ?: emptyList()
+
+    fun toMap(): Map<K, List<V>> = map.toMap()
 }
