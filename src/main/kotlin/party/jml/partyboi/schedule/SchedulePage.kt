@@ -32,4 +32,9 @@ fun FlowContent.schedule(events: List<Event>, timeZone: TimeZone) {
                 }
             }
         }
+    article {
+        a(href = "/schedule.ics") {
+            +"Download calendar"
+        }
+    }
 }

@@ -29,10 +29,14 @@ fun Application.configureScheduleRouting(app: AppServices) {
         get("/schedule.ics") {
             either {
                 val events = app.events.getPublic().bind()
-                val ics = ICalendar.eventsToIcs(events)
+                val ics = ICalendar.eventsToIcs(
+                    hostname = app.config.hostName,
+                    instanceName = app.config.instanceName,
+                    events = events
+                )
                 call.response.headers.append(
                     HttpHeaders.ContentType,
-                    "text/calendar"
+                    "text/calendar; charset=utf-8"
                 )
                 call.respondText { ics }
             }
