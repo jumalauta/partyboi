@@ -25,6 +25,7 @@ import kotlin.time.Duration.Companion.hours
 
 class EventRepository(private val app: AppServices) : Logging() {
     private val db = app.db
+    private val listener = EventSignalEmitter(app)
 
     suspend fun get(eventId: Int): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
