@@ -27,6 +27,7 @@ import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.TriggerRepository
 import party.jml.partyboi.voting.VoteKeyRepository
 import party.jml.partyboi.voting.VoteService
+import party.jml.partyboi.workqueue.WorkQueueService
 
 class AppServices(
     val db: DatabasePool,
@@ -53,6 +54,7 @@ class AppServices(
     val errors = ErrorRepository(this)
     val email = EmailServiceFacade(this)
     val messages = MessageRepository(this)
+    val workQueue = WorkQueueService(this)
 
     companion object {
         var globalInstance: AppServices? = null

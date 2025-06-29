@@ -22,6 +22,7 @@ fun Application.module() {
 
     launch { app.triggers.start() }
     launch { app.votes.start() }
+    launch { app.workQueue.start() }
 
     configureSerialization()
     configureHTTP()
