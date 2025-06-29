@@ -50,8 +50,8 @@ fun LocalDateTime.displayTime(): String =
     toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("HH:mm"))
 
 fun Instant.displayTime(): String = format(DateTimeComponents.Format {
-    hour();
-    char(':');
+    hour()
+    char(':')
     minute()
 })
 

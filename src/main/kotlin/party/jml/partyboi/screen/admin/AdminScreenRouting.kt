@@ -141,7 +141,6 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val slideSetName = call.parameterString("slideSet").bind()
                 val events = app.events.getPublic().bind()
-                val timeZone = app.time.timeZone.get().bind()
                 val allDates = events.map { it.startTime.toDate() }.distinct().sorted()
                 val existingSlides = app.screen.getSlideSet(slideSetName).bind()
                 val existingDates = existingSlides.flatMap {
