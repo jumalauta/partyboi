@@ -16,6 +16,7 @@ import party.jml.partyboi.email.EmailServiceFacade
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
@@ -55,6 +56,7 @@ class AppServices(
     val email = EmailServiceFacade(this)
     val messages = MessageRepository(this)
     val workQueue = WorkQueueService(this)
+    val ffmpeg = FfmpegService()
 
     companion object {
         var globalInstance: AppServices? = null

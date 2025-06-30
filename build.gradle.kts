@@ -65,6 +65,7 @@ dependencies {
     implementation("org.jetbrains:markdown:0.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
+    implementation("com.github.docker-java:docker-java:3.5.2")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     testImplementation("it.skrape:skrapeit:1.2.2")
