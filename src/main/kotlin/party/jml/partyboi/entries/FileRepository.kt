@@ -26,6 +26,7 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.workqueue.NormalizeLoudness
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -115,7 +116,7 @@ class FileRepository(private val app: AppServices) : Logging() {
 
     suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
-        db.use(tx) {
+        val result = db.use(tx) {
             it.one(
                 queryOf(
                     "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum, processed) VALUES(?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
@@ -130,6 +131,8 @@ class FileRepository(private val app: AppServices) : Logging() {
                 ).map(FileDesc.fromRow)
             )
         }.bind()
+        postProcessUpload(result)
+        result
     }
 
     suspend fun getLatest(entryId: Int): AppResult<FileDesc> = db.use {
@@ -222,6 +225,16 @@ class FileRepository(private val app: AppServices) : Logging() {
 
         return Paths.get(compo, "$id-$authorClean-$titleClean.$extension")
     }
+
+    suspend fun postProcessUpload(file: FileDesc) {
+        if (!file.processed) {
+            val streamingAudioFormats = FileFormatCategory.streamingAudio.formats().flatMap { it.extensions }
+            if (streamingAudioFormats.contains(file.extension)) {
+                app.workQueue.addTask(NormalizeLoudness(file))
+            }
+        }
+    }
+
 }
 
 data class NewFileDesc(
@@ -295,6 +308,9 @@ enum class FileFormatCategory(val description: String) {
     tracker("Tracker module"),
     midi("MIDI"),
     video("Video"),
+    ;
+
+    fun formats(): List<FileFormat> = FileFormat.entries.filter { it.category == this }
 }
 
 enum class FileFormat(
