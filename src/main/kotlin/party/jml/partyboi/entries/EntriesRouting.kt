@@ -151,7 +151,14 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     if (entry.file.isDefined) {
                         val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
                         entry.file.write(storageFilename).bind()
-                        val file = app.files.add(NewFileDesc(entry.id, entry.file.name, storageFilename)).bind()
+                        val file = app.files.add(
+                            NewFileDesc(
+                                entryId = entry.id,
+                                originalFilename = entry.file.name,
+                                storageFilename = storageFilename,
+                                processed = false,
+                            )
+                        ).bind()
 
                         app.screenshots.scanForScreenshotSource(file).map { source ->
                             app.screenshots.store(entry.id, source)

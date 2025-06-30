@@ -96,20 +96,29 @@ class FileRepository(private val app: AppServices) : Logging() {
         return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
     }
 
-    suspend fun latestVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Option<Int>> =
+    suspend fun latestVersion(
+        entryId: Int,
+        originalsOnly: Boolean,
+        tx: TransactionalSession? = null
+    ): AppResult<Option<Int>> =
         db.use(tx) {
-            it.option(queryOf("SELECT max(version) FROM file WHERE entry_id = ?", entryId).map(asIntOrNull))
+            it.option(
+                queryOf(
+                    "SELECT max(version) FROM file WHERE entry_id = ?${if (originalsOnly) " AND NOT processed" else ""}",
+                    entryId
+                ).map(asIntOrNull)
+            )
         }
 
     suspend fun nextVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Int> =
-        latestVersion(entryId, tx).map { it.getOrElse { 0 } + 1 }
+        latestVersion(entryId, false, tx).map { it.getOrElse { 0 } + 1 }
 
     suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val version = nextVersion(file.entryId, tx).bind()
         db.use(tx) {
             it.one(
                 queryOf(
-                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum) VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING *",
+                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum, processed) VALUES(?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
                     file.entryId,
                     version,
                     file.originalFilename,
@@ -117,6 +126,7 @@ class FileRepository(private val app: AppServices) : Logging() {
                     file.type,
                     file.size().getOrElse { 0 },
                     file.checksum().getOrNull(),
+                    file.processed,
                 ).map(FileDesc.fromRow)
             )
         }.bind()
@@ -218,6 +228,7 @@ data class NewFileDesc(
     val entryId: Int,
     val originalFilename: String,
     val storageFilename: Path,
+    val processed: Boolean
 ) {
     val type: String by lazy { FileDesc.getType(originalFilename) }
     val absolutePath: Path by lazy { Config.get().entryDir.resolve(storageFilename) }
@@ -241,6 +252,7 @@ data class FileDesc(
     val size: Long,
     val uploadedAt: Instant,
     val checksum: String?,
+    val processed: Boolean,
 ) {
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
@@ -258,6 +270,7 @@ data class FileDesc(
                 size = row.long("size"),
                 uploadedAt = row.instant("uploaded_at").toKotlinInstant(),
                 checksum = row.stringOrNull("checksum"),
+                processed = row.boolean("processed"),
             )
         }
 
