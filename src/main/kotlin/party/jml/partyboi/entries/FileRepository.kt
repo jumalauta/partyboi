@@ -37,6 +37,10 @@ import kotlin.io.path.pathString
 class FileRepository(private val app: AppServices) : Logging() {
     private val db = app.db
 
+    init {
+        app.config.entryDir.toFile().mkdirs()
+    }
+
     suspend fun makeStorageFilename(
         entry: Entry,
         originalFilename: String,
