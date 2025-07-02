@@ -13,58 +13,57 @@ import java.io.File
 class FfmpegService() {
     fun normalizeLoudness(input: File, output: File) {
         val measurement = measureLoudness(input)
-        normalizeWithMeasurement(input, output, measurement)
+        normalizeByMeasurement(input, output, measurement)
     }
 
-    private fun measureLoudness(file: File): LoudnessMeasurement {
-        val result = runFfmpeg(
-            file,
-            listOf(
-                "-hide_banner",
-                "-i", "/config/${file.name}",
-                "-af", loudnessNormalizationFilter("print_format" to "json"),
-                "-f", "null",
-                "-"
+    private fun measureLoudness(file: File): LoudnessMeasurement =
+        runFfmpeg {
+            hideBanner()
+            input(file)
+            audioFilter(
+                "loudnorm",
+                "I" to -23,
+                "LRA" to 7,
+                "tp" to -2,
+                "print_format" to "json"
             )
-        )
-        val regex = Regex("""(?s)\{.*?}""")
-        val json = regex.find(result)?.value ?: throw IllegalArgumentException("Could not parse result: $result")
-        return lenientJson.decodeFromString<LoudnessMeasurement>(json)
-    }
+            format(FfmpegDsl.Format.None)
+            pipeOutput()
+        }.extractJson<LoudnessMeasurement>()
 
-    private fun normalizeWithMeasurement(input: File, output: File, measurement: LoudnessMeasurement) {
-        val result = runFfmpeg(
-            input,
-            listOf(
-                "-hide_banner",
-                "-i", "/config/${input.name}",
-                "-af", loudnessNormalizationFilter(
-                    "measured_I" to measurement.input_i,
-                    "measured_tp" to measurement.input_tp,
-                    "measured_LRA" to measurement.input_lra,
-                    "measured_thresh" to measurement.input_thresh,
-                    "offset" to measurement.target_offset,
-                ),
-                "-y", "/config/${output.name}"
+    private fun normalizeByMeasurement(input: File, output: File, measurement: LoudnessMeasurement): String =
+        runFfmpeg {
+            hideBanner()
+            input(input)
+            audioFilter(
+                "loudnorm",
+                "I" to -23,
+                "LRA" to 7,
+                "tp" to -2,
+                "measured_I" to measurement.input_i,
+                "measured_tp" to measurement.input_tp,
+                "measured_LRA" to measurement.input_lra,
+                "measured_thresh" to measurement.input_thresh,
+                "offset" to measurement.target_offset,
+                "linear" to "true"
             )
-        )
-        println(result)
-    }
+            output(output)
+        }
 
-    private fun runFfmpeg(input: File, args: List<String>): String {
+    private fun runFfmpeg(dsl: FfmpegDsl.() -> Unit): String {
+        val settings = FfmpegDsl { dsl() }
         val client = getClient()
 
-        val pwd = input.absoluteFile.normalize().parentFile.path
-
-        val binds = listOf(
-            Bind(pwd, Volume("/config"))
+        val binds = listOfNotNull(
+            settings.inputDir?.let { Bind(it, Volume("/input")) },
+            settings.outputDir?.let { Bind(it, Volume("/output")) }
         )
 
         val hostConfig = HostConfig.newHostConfig().withBinds(binds)
 
         val container = client.createContainerCmd(IMAGE)
             .withHostConfig(hostConfig)
-            .withCmd(args.toList())
+            .withCmd(settings.arguments)
             .withTty(false)
             .withAttachStdout(true)
             .withAttachStderr(true)
@@ -87,26 +86,65 @@ class FfmpegService() {
         return logs.toString()
     }
 
+    inline fun <reified T> String.extractJson(): T {
+        val regex = Regex("""(?s)\{.*?}""")
+        val json = regex.find(this)?.value ?: throw IllegalArgumentException("Could not parse result: $this")
+        return lenientJson.decodeFromString<T>(json)
+    }
+
     private fun getClient() = DockerClientBuilder.getInstance().build()
 
-    private fun loudnessNormalizationFilter(vararg args: Pair<String, Any>): String =
-        filterSettings("loudnorm", loudnessSettings + args.toMap())
-
-    private fun filterSettings(key: String, args: Map<String, Any>): String =
-        "$key=${args.map { (key, value) -> "$key=$value" }.joinToString(":")}"
-
-    private val lenientJson = Json {
+    val lenientJson = Json {
         ignoreUnknownKeys = true
     }
 
     companion object {
         const val IMAGE = "lscr.io/linuxserver/ffmpeg:latest"
+    }
+}
 
-        val loudnessSettings = mapOf(
-            "I" to -23,
-            "LRA" to 7,
-            "tp" to -2
-        )
+class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
+    var inputDir: String? = null
+    var outputDir: String? = null
+    val arguments: MutableList<String> = mutableListOf()
+
+    init {
+        dsl()
+    }
+
+    fun hideBanner() {
+        arguments.add("-hide_banner")
+    }
+
+    fun input(file: File) {
+        inputDir = file.absoluteFile.normalize().parentFile.path
+        arguments.add("-i")
+        arguments.add("/input/${file.name}")
+    }
+
+    fun output(file: File) {
+        outputDir = file.absoluteFile.normalize().parentFile.path
+        arguments.add("-y")
+        arguments.add("/output/${file.name}")
+    }
+
+    fun audioFilter(filterName: String, vararg args: Pair<String, Any>) {
+        arguments.add("-af")
+        arguments.add("$filterName=${args.joinToString(":") { (key, value) -> "$key=$value" }}")
+    }
+
+    fun format(containerFormat: Format) {
+        arguments.add("-f")
+        arguments.add(containerFormat.value)
+    }
+
+    fun pipeOutput() {
+        arguments.add("-")
+    }
+
+    enum class Format(val value: String) {
+        None("null"),
+        Flac("flac")
     }
 }
 
