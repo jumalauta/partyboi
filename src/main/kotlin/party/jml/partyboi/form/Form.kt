@@ -97,7 +97,7 @@ class Form<T : Validateable<T>>(
                 val data = schema.constructWith {
                     it.parse(
                         strings[it.name] ?: emptyList(),
-                        files[it.name]?.map { it.fileItem } ?: emptyList(),
+                        files[it.name] ?: emptyList(),
                     )
                 } as T
 

@@ -2,7 +2,6 @@ package party.jml.partyboi.form
 
 import arrow.core.Option
 import arrow.core.none
-import io.ktor.http.content.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -79,10 +78,10 @@ sealed interface Property {
     val meta: PropertyMeta
 
     fun serialize(value: Any?): String = value.toString()
-    fun parse(values: List<String>, files: List<PartData.FileItem>) =
+    fun parse(values: List<String>, files: List<FileUpload>) =
         parseFormValue(values, files) ?: if (optional) null else defaultValue
 
-    fun parseFormValue(values: List<String>, files: List<PartData.FileItem>): Any?
+    fun parseFormValue(values: List<String>, files: List<FileUpload>): Any?
 
     fun getInputType() = when (meta.presentation) {
         FieldPresentation.hidden -> InputType.hidden
@@ -136,7 +135,7 @@ abstract class WrapperProperty(val property: Property) : Property {
 
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
 
         ): Any? =
         wrap(values.map { property.parseFormValue(listOf(it), files) })
@@ -153,7 +152,7 @@ data class TextProp(
     override val defaultInputType: InputType = InputType.text
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
     ): String? =
         values.firstOrNull()
 }
@@ -167,7 +166,7 @@ data class IntProp(
     override val defaultInputType: InputType = InputType.number
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
 
         ): Int? =
         values.firstOrNull()?.toInt()
@@ -183,7 +182,7 @@ data class BooleanProp(
     override fun serialize(value: Any?): String = if (value is Boolean && value) "on" else ""
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
 
         ): Boolean? = when (val value = values.firstOrNull()) {
         "true" -> true
@@ -210,7 +209,7 @@ data class InstantProp(
 
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
     ): Any? =
         values.firstOrNull()?.let {
             if (it.isEmpty()) null
@@ -229,10 +228,8 @@ data class FileUploadProp(
     override fun serialize(value: Any?): String = ""
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
-
-        ): Any? =
-        files.firstOrNull()?.let { FileUpload(name, it) }
+        files: List<FileUpload>,
+    ): Any? = files.firstOrNull()
 }
 
 data class EnumProp(
@@ -248,7 +245,7 @@ data class EnumProp(
     override fun serialize(value: Any?): String = (value as? Enum<*>)?.name ?: ""
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
 
         ): Enum<*>? =
         values.firstOrNull()?.let { name ->
@@ -268,7 +265,7 @@ data class TimeZoneProp(
     override fun serialize(value: Any?): String = (value as? TimeZone)?.id ?: ""
     override fun parseFormValue(
         values: List<String>,
-        files: List<PartData.FileItem>,
+        files: List<FileUpload>,
 
         ): TimeZone? =
         values.firstOrNull()?.let { TimeZone.of(it) }

@@ -15,6 +15,10 @@ import java.nio.file.Path
 import kotlin.io.path.exists
 
 class ScreenshotRepository(val app: AppServices) {
+    init {
+        app.config.screenshotsDir.toFile().mkdirs()
+    }
+
     fun scanForScreenshotSource(file: FileDesc): Option<Path> {
         if (file.type == FileDesc.IMAGE) {
             return file.getStorageFile().toPath().some()

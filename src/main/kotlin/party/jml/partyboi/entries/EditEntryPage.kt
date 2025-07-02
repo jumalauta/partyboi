@@ -7,7 +7,7 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.system.displayTime
+import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
@@ -63,16 +63,18 @@ object EditEntryPage {
                                 th { +"Name" }
                                 th { +"Size" }
                                 th { +"Uploaded" }
+                                th { +"Info" }
                                 th {}
                             }
                         }
                         tbody {
                             files.forEach { file ->
-                                tr {
+                                tr(classes = if (file.processed) "processed" else null) {
                                     td { +file.version.toString() }
                                     td { +file.originalFilename }
                                     td { +Filesize.humanFriendly(file.size) }
-                                    td { +file.uploadedAt.displayTime() }
+                                    td { +file.uploadedAt.displayDateTime() }
+                                    td { file.info?.let { +it } }
                                     td {
                                         buttonGroup {
                                             a(href = "/entries/${file.entryId}/download/${file.version}") {

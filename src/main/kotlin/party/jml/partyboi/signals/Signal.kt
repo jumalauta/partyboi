@@ -45,8 +45,11 @@ data class Signal(
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
         fun propertyUpdated(key: String) = Signal(SignalType.propertyUpdated, null, key)
-        suspend fun compoContentUpdated(compoId: Int, timeService: TimeService) =
+        fun compoContentUpdated(compoId: Int, timeService: TimeService) =
             Signal(SignalType.compoContentUpdated, timeService.isoLocalTime(), compoId.toString())
+
+        fun fileUploaded(entryId: Int, version: Int) =
+            Signal(SignalType.fileUploaded, entryId.toString(), version.toString())
     }
 }
 
@@ -57,7 +60,8 @@ enum class SignalType {
     vote,
     liveVote,
     propertyUpdated,
-    compoContentUpdated;
+    compoContentUpdated,
+    fileUploaded;
 
     companion object {
         fun fromString(s: String): AppResult<SignalType> = catchError { SignalType.valueOf(s) }

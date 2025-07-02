@@ -14,6 +14,10 @@ import kotlin.io.path.name
 class AssetsRepository(app: AppServices) {
     private val assetsDir = app.config.assetsDir
 
+    init {
+        assetsDir.toFile().mkdirs()
+    }
+
     fun write(file: FileUpload): AppResult<Unit> =
         catchError {
             val target = assetsDir.resolve(file.name)

@@ -48,6 +48,14 @@ tbody tr:last-child td, tbody tr:last-child th {
     border-bottom: none !important;
 }
 
+tbody tr [role=group] {
+    margin-bottom: 0;
+}
+
+tr.processed td, tr.processed th {
+    font-style: italic;
+}
+
 article > *:last-child {
     margin-bottom: 0;
 }
