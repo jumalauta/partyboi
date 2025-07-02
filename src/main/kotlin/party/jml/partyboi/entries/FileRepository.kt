@@ -123,7 +123,10 @@ class FileRepository(private val app: AppServices) : Logging() {
         val result = db.use(tx) {
             it.one(
                 queryOf(
-                    "INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum, processed) VALUES(?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
+                    """
+                        INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum, processed, info) 
+                        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                        RETURNING *""".trimIndent(),
                     file.entryId,
                     version,
                     file.originalFilename,
@@ -132,6 +135,7 @@ class FileRepository(private val app: AppServices) : Logging() {
                     file.size().getOrElse { 0 },
                     file.checksum().getOrNull(),
                     file.processed,
+                    file.info,
                 ).map(FileDesc.fromRow)
             )
         }.bind()
@@ -245,7 +249,8 @@ data class NewFileDesc(
     val entryId: Int,
     val originalFilename: String,
     val storageFilename: Path,
-    val processed: Boolean
+    val processed: Boolean,
+    val info: String?
 ) {
     val type: String by lazy { FileDesc.getType(originalFilename) }
     val absolutePath: Path by lazy { Config.get().entryDir.resolve(storageFilename) }
@@ -270,6 +275,7 @@ data class FileDesc(
     val uploadedAt: Instant,
     val checksum: String?,
     val processed: Boolean,
+    val info: String?
 ) {
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
@@ -288,6 +294,7 @@ data class FileDesc(
                 uploadedAt = row.instant("uploaded_at").toKotlinInstant(),
                 checksum = row.stringOrNull("checksum"),
                 processed = row.boolean("processed"),
+                info = row.stringOrNull("info"),
             )
         }
 

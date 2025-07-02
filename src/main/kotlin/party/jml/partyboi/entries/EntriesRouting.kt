@@ -157,6 +157,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                                 originalFilename = entry.file.name,
                                 storageFilename = storageFilename,
                                 processed = false,
+                                info = null
                             )
                         ).bind()
 

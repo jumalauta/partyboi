@@ -55,6 +55,18 @@ fun Instant.displayTime(): String = format(DateTimeComponents.Format {
     minute()
 })
 
+fun Instant.displayDateTime(): String = format(DateTimeComponents.Format {
+    dayOfMonth()
+    char('.')
+    monthNumber()
+    char('.')
+    year()
+    char(' ')
+    hour()
+    char(':')
+    minute()
+})
+
 fun Instant.toDate(): LocalDate = toLocalDateTime(TimeService.timeZone()).date
 
 fun Instant.toIsoString(): String = format(DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET)

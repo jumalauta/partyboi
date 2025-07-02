@@ -8,9 +8,10 @@ import com.github.dockerjava.api.model.Volume
 import com.github.dockerjava.core.DockerClientBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import party.jml.partyboi.Logging
 import java.io.File
 
-class FfmpegService() {
+class FfmpegService() : Logging() {
     fun normalizeLoudness(input: File, output: File) {
         val measurement = measureLoudness(input)
         normalizeByMeasurement(input, output, measurement)
@@ -72,6 +73,8 @@ class FfmpegService() {
         client.startContainerCmd(container.id).exec()
         client.waitContainerCmd(container.id).start().awaitCompletion()
 
+        log.info("Run FFmpeg with arguments: ${settings.arguments} and bindings: $binds")
+
         val logs = StringBuilder()
         client.logContainerCmd(container.id)
             .withStdOut(true)
@@ -82,6 +85,8 @@ class FfmpegService() {
                     logs.append(String(frame.payload))
                 }
             }).awaitCompletion()
+
+        log.info(logs.toString())
 
         return logs.toString()
     }

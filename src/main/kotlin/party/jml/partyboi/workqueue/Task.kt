@@ -6,6 +6,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.entries.NewFileDesc
 import party.jml.partyboi.system.AppResult
+import kotlin.io.path.Path
+import kotlin.io.path.nameWithoutExtension
 
 @Serializable
 sealed interface Task {
@@ -20,20 +22,24 @@ data class NormalizeLoudness(
         val fileDesc = app.files.getVersion(file.entryId, file.version).bind()
         val entry = app.entries.get(fileDesc.entryId).bind()
 
-        val input = app.files.getStorageFile(fileDesc.storageFilename)
+        val newName = Path(fileDesc.originalFilename).nameWithoutExtension + " (normalized).flac"
         val output = app.files.makeStorageFilename(
             entry = entry,
-            originalFilename = fileDesc.originalFilename,
+            originalFilename = newName,
         ).bind()
 
-        app.ffmpeg.normalizeLoudness(input, output.toFile())
+        val inputFile = app.files.getStorageFile(fileDesc.storageFilename)
+        val outputFile = app.files.getStorageFile(output)
+
+        app.ffmpeg.normalizeLoudness(inputFile, outputFile)
 
         app.files.add(
             NewFileDesc(
                 entryId = entry.id,
-                originalFilename = fileDesc.originalFilename,
+                originalFilename = newName,
                 storageFilename = output,
-                processed = true
+                processed = true,
+                info = "Loudness normalized to -23 LUFS"
             )
         ).bind()
     }

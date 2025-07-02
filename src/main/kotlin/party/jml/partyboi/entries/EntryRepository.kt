@@ -118,7 +118,8 @@ class EntryRepository(private val app: AppServices) : Logging() {
                         entryId = entry.id,
                         originalFilename = newEntry.file.name,
                         storageFilename = storageFilename,
-                        processed = false
+                        processed = false,
+                        info = null
                     )
                     newEntry.file.write(fileDesc.storageFilename).bind()
                     val storedFile = app.files.add(fileDesc, it).bind()
