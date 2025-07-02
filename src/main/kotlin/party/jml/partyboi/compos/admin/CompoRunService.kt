@@ -105,7 +105,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         entries.forEach { entry ->
             val compo = compos.find { it.id == entry.compoId }
             if (compo != null) {
-                val file = app.files.getLatest(entry.id).bind()
+                val file = app.files.getLatest(entry.id, originalsOnly = true).bind()
                 val target =
                     app.files.makeDistributionFileName(
                         file,
@@ -139,7 +139,7 @@ class CompoRunService(val app: AppServices) : Logging() {
     }
 
     private suspend fun getLatestFileDesc(entry: Entry) =
-        app.files.getLatest(entry.id)
+        app.files.getLatest(entry.id, originalsOnly = false)
             .mapLeft {
                 when (it) {
                     is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' does not have file. Disqualify it first.")

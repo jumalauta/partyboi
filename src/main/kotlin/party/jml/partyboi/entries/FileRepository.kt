@@ -143,10 +143,15 @@ class FileRepository(private val app: AppServices) : Logging() {
         result
     }
 
-    suspend fun getLatest(entryId: Int): AppResult<FileDesc> = db.use {
+    suspend fun getLatest(entryId: Int, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
-                "SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC LIMIT 1",
+                """
+                    SELECT * 
+                    FROM file 
+                    WHERE entry_id = ? ${if (originalsOnly) " AND NOT processed" else ""}
+                    ORDER BY version DESC 
+                    LIMIT 1""".trimIndent(),
                 entryId
             ).map(FileDesc.fromRow)
         )
