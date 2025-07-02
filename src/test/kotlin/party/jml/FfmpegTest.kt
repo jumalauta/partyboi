@@ -10,7 +10,7 @@ class FfmpegTest {
     val ffmpeg = FfmpegService()
 
     @Test
-    fun `measure loudness of a music file`() {
+    fun `normalize audio file`() {
         val dir = createTempDir()
         val input = loadResourceToDisk("/files/disco.mp3", dir)
         val output = createTempFile(dir, ".mp3")

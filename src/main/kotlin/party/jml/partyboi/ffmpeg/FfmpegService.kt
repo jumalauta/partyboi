@@ -12,7 +12,26 @@ import party.jml.partyboi.Logging
 import java.io.File
 
 class FfmpegService() : Logging() {
+    fun ensureFfmpegExists() {
+        val client = getClient()
+
+        val imageExists = client.listImagesCmd()
+            .withImageNameFilter(IMAGE)
+            .exec()
+            .any { it.repoTags?.contains(IMAGE) == true }
+
+        if (!imageExists) {
+            log.info("$IMAGE does not exist, pulling it...")
+            client.pullImageCmd(IMAGE)
+                .withTag("latest")
+                .exec(object :
+                    ResultCallback.Adapter<com.github.dockerjava.api.model.PullResponseItem>() {})
+                .awaitCompletion()
+        }
+    }
+
     fun normalizeLoudness(input: File, output: File) {
+        ensureFfmpegExists()
         val measurement = measureLoudness(input)
         normalizeByMeasurement(input, output, measurement)
     }
@@ -60,7 +79,9 @@ class FfmpegService() : Logging() {
             settings.outputDir?.let { Bind(it, Volume("/output")) }
         )
 
-        val hostConfig = HostConfig.newHostConfig().withBinds(binds)
+        val hostConfig = HostConfig
+            .newHostConfig()
+            .withBinds(binds)
 
         val container = client.createContainerCmd(IMAGE)
             .withHostConfig(hostConfig)
@@ -87,6 +108,8 @@ class FfmpegService() : Logging() {
             }).awaitCompletion()
 
         log.info(logs.toString())
+
+        client.removeContainerCmd(container.id).exec()
 
         return logs.toString()
     }
