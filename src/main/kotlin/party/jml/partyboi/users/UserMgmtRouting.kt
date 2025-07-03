@@ -41,7 +41,47 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
             user = user,
             credentials = form,
             voteKeys = voteKeys,
+            showAdminControls = true,
         )
+    }
+
+    suspend fun renderProfile(user: User, prevForm: Form<UserCredentials>? = null) = either {
+        val form = prevForm ?: Form(
+            UserCredentials::class,
+            UserCredentials.fromUser(user),
+            initial = false
+        )
+        val voteKeys = app.voteKeys.getUserVoteKeys(user.id).bind()
+
+        UserEditPage.render(
+            session = user,
+            user = user,
+            credentials = form,
+            voteKeys = voteKeys,
+            showAdminControls = user.isAdmin,
+        )
+    }
+
+    userRouting {
+        get("/profile") {
+            call.respondEither {
+                val user = call.userSession(app).bind()
+                renderProfile(user).bind()
+            }
+        }
+
+        post("/profile") {
+            call.processForm<UserCredentials>({ data ->
+                val user = call.userSession(app).bind()
+                app.users.updateUser(user.id, data).bind()
+                app.users.requestUserSessionReload(user.id)
+                app.messages.sendMessage(user.id, MessageType.SUCCESS, "Profile settings updated").bind()
+                Redirection("/")
+            }, { form ->
+                val user = call.userSession(app).bind()
+                renderProfile(user, form).bind()
+            })
+        }
     }
 
     adminRouting {
@@ -86,6 +126,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
                 { credentials ->
                     val userId = call.parameterInt("id").bind()
                     app.users.updateUser(userId, credentials).bind()
+                    app.users.requestUserSessionReload(userId)
                     Redirection("/admin/users/$userId")
                 },
                 {

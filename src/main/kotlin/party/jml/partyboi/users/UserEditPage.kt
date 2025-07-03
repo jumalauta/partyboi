@@ -15,6 +15,7 @@ object UserEditPage {
         user: User,
         credentials: Form<UserCredentials>,
         voteKeys: List<VoteKey>,
+        showAdminControls: Boolean,
     ) =
         Page("Edit user") {
             h1 { +"Edit user #${user.id}" }
@@ -23,7 +24,7 @@ object UserEditPage {
                 {
                     renderForm(
                         title = "Credentials",
-                        url = "/admin/users/${user.id}",
+                        url = if (showAdminControls) "/admin/users/${user.id}" else "/profile",
                         form = credentials,
                     )
                 },
@@ -40,26 +41,30 @@ object UserEditPage {
                                 }
                             }
                         }
-                        buttonGroup {
-                            labeledToggleButton(
-                                toggled = user.votingEnabled,
-                                icons = IconSet.voting,
-                                urlPrefix = "/admin/users/${user.id}/voting",
-                                label = if (user.votingEnabled) "Revoke voting rights" else "Grant voting rights",
-                            )
+                        if (showAdminControls) {
+                            buttonGroup {
+                                labeledToggleButton(
+                                    toggled = user.votingEnabled,
+                                    icons = IconSet.voting,
+                                    urlPrefix = "/admin/users/${user.id}/voting",
+                                    label = if (user.votingEnabled) "Revoke voting rights" else "Grant voting rights",
+                                )
+                            }
                         }
 
                     }
-                    article {
-                        header { +"Permissions" }
-                        buttonGroup {
-                            labeledToggleButton(
-                                toggled = user.isAdmin,
-                                icons = IconSet.admin,
-                                urlPrefix = "/admin/users/${user.id}/admin",
-                                label = if (user.isAdmin) "Revoke admin rights" else "Grant admin rights",
-                                disabled = session.id == user.id,
-                            )
+                    if (showAdminControls) {
+                        article {
+                            header { +"Permissions" }
+                            buttonGroup {
+                                labeledToggleButton(
+                                    toggled = user.isAdmin,
+                                    icons = IconSet.admin,
+                                    urlPrefix = "/admin/users/${user.id}/admin",
+                                    label = if (user.isAdmin) "Revoke admin rights" else "Grant admin rights",
+                                    disabled = session.id == user.id,
+                                )
+                            }
                         }
                     }
                     article {
@@ -77,10 +82,12 @@ object UserEditPage {
                                         a(href = "mailto:${user.email}") { +user.email }
                                         +" but it is not verified"
                                     }
-                                    p {
-                                        a(href = "/admin/users/${user.id}/send-verification") {
-                                            attributes.put("role", "button")
-                                            +"Send verification email"
+                                    if (showAdminControls) {
+                                        p {
+                                            a(href = "/admin/users/${user.id}/send-verification") {
+                                                attributes.put("role", "button")
+                                                +"Send verification email"
+                                            }
                                         }
                                     }
                                 }

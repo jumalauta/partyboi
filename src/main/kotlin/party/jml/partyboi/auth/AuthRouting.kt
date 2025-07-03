@@ -56,7 +56,7 @@ fun Application.configureLoginRouting(app: AppServices) {
                 { newUser ->
                     val session = app.users.addUser(newUser, call.request.origin.remoteAddress).bind()
                     call.sessions.set(session)
-                    Redirection("/entries")
+                    Redirection("/")
                 },
                 { form ->
                     RegistrationPage.render(

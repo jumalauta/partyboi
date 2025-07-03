@@ -89,7 +89,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val entry = newEntry.copy(userId = user.id)
                     app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
                     app.entries.add(entry).bind()
-                    Redirection("/entries")
+                    Redirection("/")
                 },
                 {
                     renderEntriesPage(call.userSession(app), newEntryForm = it).bind()
@@ -166,7 +166,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         }
                     }
 
-                    Redirection("/entries")
+                    Redirection("/")
                 },
                 {
                     renderEditEntryPage(

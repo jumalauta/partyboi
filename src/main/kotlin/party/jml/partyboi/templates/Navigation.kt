@@ -44,6 +44,7 @@ object Navigation {
     )
 
     val accountItems = listOf(
+        NavItem("/profile", "Profile"),
         NavItem("/logout", "Log out")
     )
 }

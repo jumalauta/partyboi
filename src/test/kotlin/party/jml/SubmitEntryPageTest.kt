@@ -63,7 +63,7 @@ class SubmitEntryPageTest : PartyboiTester {
             userId = -1
         )
         it.post("/entries", goodEntry) {
-            it.redirectsTo("/entries")
+            it.redirectsTo("/")
         }
 
         // Check that the uploaded entry is shown on the entries page
@@ -139,7 +139,7 @@ class SubmitEntryPageTest : PartyboiTester {
 //            orgComment = "Yeah!!!"
 //        )
 //        it.post("/entries/${entry!!.id}", updated) {
-//            it.redirectsTo("/entries")
+//            it.redirectsTo("/")
 //        }
 //
 //        // Check that fields contain the new data
@@ -207,7 +207,7 @@ class SubmitEntryPageTest : PartyboiTester {
         )
 
         it.post("/entries/${entry!!.id}", updated) {
-            it.redirectsTo("/entries")
+            it.redirectsTo("/")
         }
     }
 

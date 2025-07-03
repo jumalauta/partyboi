@@ -63,7 +63,7 @@ class LoginTest : PartyboiTester {
                 append("isUpdate", "")
             }
         ) {
-            it.redirectsTo("/entries")
+            it.redirectsTo("/")
         }
 
         // User can see the entry page now
@@ -140,7 +140,7 @@ class LoginTest : PartyboiTester {
                 append("isUpdate", "")
             }
         ) {
-            it.redirectsTo("/entries")
+            it.redirectsTo("/")
         }
 
         // Expect that we cannot vote yet
