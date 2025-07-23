@@ -137,7 +137,15 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/results.txt") {
             either {
-                call.respondText(app.votes.getResultsFileContent().bind())
+                call.respondText(app.votes.getResultsFileContent(includeInfo = false).bind())
+            }.onLeft {
+                call.respondPage(it)
+            }
+        }
+
+        get("/admin/compos/results-with-info.txt") {
+            either {
+                call.respondText(app.votes.getResultsFileContent(includeInfo = true).bind())
             }.onLeft {
                 call.respondPage(it)
             }

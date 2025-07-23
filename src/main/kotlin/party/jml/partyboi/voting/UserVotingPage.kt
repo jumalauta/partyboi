@@ -59,7 +59,10 @@ object UserVotingPage {
                                             }
                                         }
                                     }
-                                    th(classes = "wide title") { +"${entry.author} – ${entry.title}" }
+                                    th(classes = "wide title") {
+                                        +"${entry.author} – ${entry.title}"
+                                        entry.info.onSome { small(classes = "entry-info") { +it } }
+                                    }
                                     for (points in VoteService.POINT_RANGE) {
                                         td(classes = "tight center points") {
                                             voteButton(entry.id, points, entry.points.getOrNull() == points)

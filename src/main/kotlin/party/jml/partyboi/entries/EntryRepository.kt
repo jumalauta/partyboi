@@ -236,7 +236,8 @@ class EntryRepository(private val app: AppServices) : Logging() {
                     run_order,
                     title,
                     author,
-                    points
+                    points,
+                    screen_comment
                 FROM entry
                 JOIN compo ON compo.id = entry.compo_id
                 LEFT JOIN vote ON vote.entry_id = entry.id AND vote.user_id = ?
@@ -363,7 +364,7 @@ data class NewEntry(
     val file: FileUpload,
     @Field("Compo")
     val compoId: Int,
-    @Field("Show message on the screen", presentation = FieldPresentation.large)
+    @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     val screenComment: String,
     @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
@@ -397,7 +398,7 @@ data class EntryUpdate(
     @Field(presentation = FieldPresentation.hidden)
     val userId: Int,
 
-    @Field("Show message on the screen", presentation = FieldPresentation.large)
+    @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     val screenComment: String,
 
     @Field("Information for organizers", presentation = FieldPresentation.large)
@@ -425,6 +426,7 @@ data class VotableEntry(
     override val title: String,
     override val author: String,
     val points: Option<Int>,
+    val info: Option<String>,
 ) : EntryBase {
     override val id = entryId
 
@@ -438,6 +440,7 @@ data class VotableEntry(
                 title = row.string("title"),
                 author = row.string("author"),
                 points = Option.fromNullable(row.intOrNull("points")),
+                info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
             )
         }
 
@@ -449,6 +452,7 @@ data class VotableEntry(
             title = entry.title,
             author = entry.author,
             points = Option.fromNullable(points),
+            info = entry.screenComment,
         )
     }
 }

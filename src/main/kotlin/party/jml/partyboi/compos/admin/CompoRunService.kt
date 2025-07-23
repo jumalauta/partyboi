@@ -94,10 +94,17 @@ class CompoRunService(val app: AppServices) : Logging() {
         val dir = createTempDirectory()
 
         // Write results
-        val results = app.votes.getResultsFileContent().bind()
+        val results = app.votes.getResultsFileContent(includeInfo = false).bind()
         catchError {
             dir.resolve("results.txt").toFile().writeText(results)
         }.bind()
+
+        val resultsWithInfo = app.votes.getResultsFileContent(includeInfo = true).bind()
+        if (resultsWithInfo != results) {
+            catchError {
+                dir.resolve("results-with-info.txt").toFile().writeText(resultsWithInfo)
+            }.bind()
+        }
 
         // Copy latest file version of each qualified entry
         val entries = app.entries.getAllEntries().bind().filter { it.qualified }

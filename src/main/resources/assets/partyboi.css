@@ -459,6 +459,11 @@ table.compact th, table.compact td {
     vertical-align: top;
 }
 
+table .entry-info {
+    display: block;
+    opacity: 80%;
+}
+
 .snackbars {
     position: fixed;
     left: 0;
