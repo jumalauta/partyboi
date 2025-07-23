@@ -1,5 +1,7 @@
 package party.jml.partyboi.compos
 
+import arrow.core.Option
+import arrow.core.none
 import party.jml.partyboi.voting.CompoResult
 
 object ResultsFileGenerator {
@@ -9,7 +11,7 @@ object ResultsFileGenerator {
     const val SPACE_BEFORE_ENTRY = 3
     const val ENTRY_WIDTH = LINE_WIDTH - PLACE_COL_WIDTH - POINTS_COL_WIDTH - SPACE_BEFORE_ENTRY
 
-    fun generate(header: String, results: List<CompoResult>): String {
+    fun generate(header: String, results: List<CompoResult>, includeInfo: Boolean): String {
         val txt = StringBuilder()
 
         txt.append(header + "\n\n")
@@ -24,6 +26,7 @@ object ResultsFileGenerator {
                         points = result.points,
                         title = result.title,
                         author = result.author,
+                        info = if (includeInfo) result.info else none(),
                     )
                 }
             }
@@ -55,7 +58,14 @@ object ResultsFileGenerator {
         builder.append("\n")
     }
 
-    private fun entry(builder: StringBuilder, place: Int?, points: Int, title: String, author: String) {
+    private fun entry(
+        builder: StringBuilder,
+        place: Int?,
+        points: Int,
+        title: String,
+        author: String,
+        info: Option<String>,
+    ) {
         builder.append((if (place == null) "" else "$place.").padStart(PLACE_COL_WIDTH, ' '))
         builder.append("$points pts".padStart(POINTS_COL_WIDTH, ' '))
         builder.append(" ".repeat(SPACE_BEFORE_ENTRY))
@@ -69,12 +79,20 @@ object ResultsFileGenerator {
             builder.append(" ".repeat(LINE_WIDTH - ENTRY_WIDTH))
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH + 1, author, "  by ")
         }
+
+        info.onSome {
+            builder.append("\n")
+            builder.append(" ".repeat(LINE_WIDTH - ENTRY_WIDTH))
+            multiline(builder, LINE_WIDTH - ENTRY_WIDTH + 1, it, "")
+            builder.append("\n")
+        }
     }
 
     private fun multiline(builder: StringBuilder, indent: Int, text: String, prefix: String = "") {
         builder.append(prefix)
         var cursor = prefix.length
-        text.split(' ').forEachIndexed { index, token ->
+        val whitespace = Regex("\\s+")
+        text.split(whitespace).forEachIndexed { index, token ->
             val len = token.length
             if (cursor + len > ENTRY_WIDTH) {
                 builder.append("\n" + " ".repeat(indent))

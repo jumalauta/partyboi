@@ -96,10 +96,10 @@ class VoteService(val app: AppServices) {
     suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
 
-    suspend fun getResultsFileContent(): AppResult<String> = either {
+    suspend fun getResultsFileContent(includeInfo: Boolean): AppResult<String> = either {
         val header = app.settings.resultsFileHeader.get().bind()
         val results = getResults().bind()
-        ResultsFileGenerator.generate(header, results)
+        ResultsFileGenerator.generate(header, results, includeInfo)
     }
 
     fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)

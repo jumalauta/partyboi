@@ -76,6 +76,10 @@ object AdminComposPage {
                             role = "button"
                             +"Get results.txt"
                         }
+                        a(href = "/admin/compos/results-with-info.txt") {
+                            role = "button"
+                            +"Get results-with-info.txt"
+                        }
                         a(href = "/admin/compos/entries.zip") {
                             role = "button"
                             +"Download entries for distribution"

@@ -1,10 +1,13 @@
 package party.jml.partyboi.voting
 
+import arrow.core.Option
 import arrow.core.raise.either
+import arrow.core.toOption
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.Logging
+import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
@@ -56,7 +59,8 @@ class VoteRepository(private val db: DatabasePool) : Logging() {
                 coalesce(sum(points), 0) AS points,
                 entry.id AS entry_id,
                 title,
-                author
+                author,
+                screen_comment
             FROM entry
             LEFT JOIN vote ON entry.id = vote.entry_id
             JOIN compo ON compo.id = entry.compo_id
@@ -94,7 +98,8 @@ data class CompoResult(
     val points: Int,
     val entryId: Int,
     val title: String,
-    val author: String
+    val author: String,
+    val info: Option<String>,
 ) {
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
@@ -105,6 +110,7 @@ data class CompoResult(
                 entryId = row.int("entry_id"),
                 title = row.string("title"),
                 author = row.string("author"),
+                info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
             )
         }
 
