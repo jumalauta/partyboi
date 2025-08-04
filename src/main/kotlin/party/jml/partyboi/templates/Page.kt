@@ -24,9 +24,9 @@ data class Page(
         this.messages = messages
     }
 
-    override fun getHTML(user: User?, path: String): String {
+    override fun getContent(user: User?, path: String): String {
         val titleText = title
-        return createHTML().html {
+        return "<!DOCTYPE html>\n" + createHTML().html {
             attributes.put("data-theme", "light")
             head {
                 meta { charset = "utf-8" }
@@ -92,7 +92,7 @@ data class Page(
 }
 
 class Redirection(val location: String) : Renderable {
-    override fun getHTML(user: User?, path: String): String {
+    override fun getContent(user: User?, path: String): String {
         return ""
     }
 
@@ -106,7 +106,7 @@ class Redirection(val location: String) : Renderable {
 }
 
 class EmptyPage() : Renderable {
-    override fun getHTML(user: User?, path: String): String {
+    override fun getContent(user: User?, path: String): String {
         return ""
     }
 

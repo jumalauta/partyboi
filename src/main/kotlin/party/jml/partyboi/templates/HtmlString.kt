@@ -5,5 +5,5 @@ import party.jml.partyboi.auth.User
 data class HtmlString(
     val html: String
 ) : Renderable {
-    override fun getHTML(user: User?, path: String): String = "<!DOCTYPE html>$html"
+    override fun getContent(user: User?, path: String): String = "<!DOCTYPE html>$html"
 }
