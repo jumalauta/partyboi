@@ -8,6 +8,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.templates.HtmlString
+import party.jml.partyboi.templates.JsonResponse
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureScreenRouting(app: AppServices) {
@@ -31,6 +32,10 @@ fun Application.configureScreenRouting(app: AppServices) {
                 call.response.headers.append("X-SlideId", screen.id.toString())
                 call.respondText(ScreenPage.renderContent(screen.slide, app), ContentType.Text.Html)
             }
+        }
+
+        get("/screen/examples") {
+            call.respondEither { JsonResponse.from(getRenderedExampleSlides(app)) }
         }
     }
 }
