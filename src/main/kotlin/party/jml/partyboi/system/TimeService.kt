@@ -5,6 +5,7 @@ import kotlinx.datetime.*
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.format.char
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.AppServicesImpl
 import party.jml.partyboi.data.StoredProperties
 import java.time.format.DateTimeFormatter
 import java.util.Locale.getDefault
@@ -24,7 +25,7 @@ class TimeService(app: AppServices) : StoredProperties(app) {
 
     companion object {
         fun timeZone(): TimeZone = runBlocking {
-            AppServices.globalInstance?.time?.timeZone?.getOrNull() ?: TimeZone.currentSystemDefault()
+            AppServicesImpl.globalInstance?.time?.timeZone?.getOrNull() ?: TimeZone.currentSystemDefault()
         }
 
         fun isoOffset(): String = timeZone().offsetAt(Clock.System.now()).toString()
