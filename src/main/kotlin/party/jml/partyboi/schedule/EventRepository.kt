@@ -40,7 +40,6 @@ interface EventRepository {
 
 class EventRepositoryImpl(private val app: AppServices) : EventRepository, Logging() {
     private val db = app.db
-    private val listener = EventSignalEmitter(app)
 
     override suspend fun get(eventId: Int): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))

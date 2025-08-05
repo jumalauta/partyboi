@@ -104,13 +104,3 @@ class Redirection(val location: String) : Renderable {
         return mapOf("Location" to location)
     }
 }
-
-class EmptyPage() : Renderable {
-    override fun getContent(user: User?, path: String): String {
-        return ""
-    }
-
-    override fun statusCode(): HttpStatusCode {
-        return HttpStatusCode.NoContent
-    }
-}

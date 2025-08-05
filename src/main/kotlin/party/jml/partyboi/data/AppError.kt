@@ -58,7 +58,6 @@ class FormError(override val message: String) : UserError {
 
 class ValidationError(val errors: NonEmptyList<Message>) : UserError {
     constructor(target: String, message: String, value: String) : this(nonEmptyListOf(Message(target, message, value)))
-    constructor(message: String, value: String) : this(nonEmptyListOf(Message(null, message, value)))
 
     override val statusCode: HttpStatusCode
         get() = HttpStatusCode.BadRequest
