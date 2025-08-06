@@ -6,6 +6,8 @@ import io.ktor.server.http.content.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.config
+import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.templates.respondPage
 import java.io.File
 
 fun Application.configureStaticContent() {
@@ -13,7 +15,7 @@ fun Application.configureStaticContent() {
     routing {
         get("/assets/{path...}") {
             val path = call.parameters.getAll("path")?.joinToString("/")
-                ?: return@get call.respond(HttpStatusCode.BadRequest)
+                ?: return@get call.respondPage(NotFound("File not found"))
 
             val assetFile = File("$uploadedAssetsDir/$path")
             if (assetFile.exists() && assetFile.isFile) {
@@ -23,7 +25,7 @@ fun Application.configureStaticContent() {
                 if (resourceStream != null) {
                     call.respondBytes(resourceStream.readBytes(), ContentType.defaultForFile(assetFile))
                 } else {
-                    call.respond(HttpStatusCode.NotFound)
+                    call.respondPage(NotFound("File not found"))
                 }
             }
         }
