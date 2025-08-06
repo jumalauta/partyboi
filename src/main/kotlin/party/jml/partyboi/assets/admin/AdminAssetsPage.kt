@@ -31,7 +31,7 @@ object AdminAssetsPage {
                                 tbody {
                                     assets.forEach {
                                         tr {
-                                            td { a(href = "/assets/uploaded/$it") { +it } }
+                                            td { a(href = "/assets/$it") { +it } }
                                             td {
                                                 deleteButton(
                                                     url = "/admin/assets/$it",
