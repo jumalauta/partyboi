@@ -79,6 +79,11 @@ fun ApplicationCall.parameterPath(name: String, nameToPath: (String) -> Path) =
         nameToPath(it.joinToString("/"))
     } ?: MissingInput(name).left()
 
+fun ApplicationCall.parameterPathString(name: String) =
+    parameters.getAll(name)?.right()?.map {
+        it.joinToString("/")
+    } ?: MissingInput(name).left()
+
 suspend fun ApplicationCall.switchApi(block: suspend (id: Int, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {

@@ -1,11 +1,11 @@
 package party.jml.partyboi.templates
 
 data class Theme(
-    val colorScheme: ColorScheme
+    val colorScheme: ColorScheme,
 ) {
     companion object {
         val Default = Theme(
-            colorScheme = ColorScheme.Blue
+            colorScheme = ColorScheme.Blue,
         )
     }
 }

@@ -3,13 +3,13 @@ package party.jml.partyboi.compos.admin
 import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.raise.either
-import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.zip.ZipUtils
 import java.io.*
 import java.nio.file.Path
 import java.util.zip.ZipEntry
@@ -39,7 +39,7 @@ class CompoRunService(val app: AppServices) : Logging() {
                         includeOrderNumber = true,
                     )
                 if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
-                    extractZip(fileDesc, targetFilename)
+                    ZipUtils.extract(fileDesc.getStorageFile(), targetFilename)
                 } else {
                     copyFile(fileDesc, targetFilename)
                 }
@@ -77,7 +77,7 @@ class CompoRunService(val app: AppServices) : Logging() {
         val (file, targetFilename) = target
         hostCache.memoize(Pair(entryId, file.version)) {
             val effect = if (file.type == FileDesc.ZIP_ARCHIVE) {
-                extractZip(file, targetFilename)
+                ZipUtils.extract(file.getStorageFile(), targetFilename)
             } else {
                 copyFile(file, targetFilename)
             }
@@ -158,27 +158,6 @@ class CompoRunService(val app: AppServices) : Logging() {
         log.info("Copy $source to $target")
         source.getStorageFile().copyTo(target.toFile())
     }
-
-    private fun extractZip(source: FileDesc, target: Path): AppResult<Unit> =
-        catchError {
-            ZipFile.builder()
-                .setFile(source.getStorageFile())
-                .get()
-                .use { zip ->
-                    zip.entries.iterator().forEach { entry ->
-                        val input = zip.getInputStream(entry)
-                        val output = target.resolve(entry.name)
-                        output.parent.toFile().mkdirs()
-                        if (!entry.isDirectory) {
-                            input.use { inputStream ->
-                                output.toFile().outputStream().use { outputStream ->
-                                    inputStream.transferTo(outputStream)
-                                }
-                            }
-                        }
-                    }
-                }
-        }
 }
 
 data class ExtractedEntry(

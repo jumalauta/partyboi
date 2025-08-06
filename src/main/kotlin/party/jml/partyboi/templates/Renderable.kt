@@ -18,7 +18,8 @@ import party.jml.partyboi.services
 import party.jml.partyboi.system.AppResult
 
 interface Renderable {
-    fun getHTML(user: User?, path: String): String
+    fun getContentType(): ContentType = ContentType.Text.Html.withCharset(Charsets.UTF_8)
+    fun getContent(user: User?, path: String): String
     fun statusCode(): HttpStatusCode = HttpStatusCode.OK
     fun headers(): Map<String, String> = mapOf()
 }
@@ -83,10 +84,15 @@ suspend fun ApplicationCall.respondPage(renderable: Renderable) {
         }
     }
 
-    val text = "<!DOCTYPE html>\n" + renderable.getHTML(user, request.path())
-    val status = renderable.statusCode()
     renderable.headers().map { (k, v) ->
         response.headers.append(k, v)
     }
-    respond(TextContent(text, ContentType.Text.Html.withCharset(Charsets.UTF_8), status))
+
+    respond(
+        TextContent(
+            text = renderable.getContent(user, request.path()),
+            contentType = renderable.getContentType(),
+            status = renderable.statusCode()
+        )
+    )
 }

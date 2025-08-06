@@ -2,7 +2,6 @@ package party.jml.partyboi.screen
 
 import arrow.core.raise.either
 import arrow.core.right
-import arrow.core.some
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -130,21 +129,9 @@ class ScreenService(private val app: AppServices) : Logging() {
         upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
         val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
 
-        val hypeSlides = listOf(
-            TextSlide("${compo.name} compo starts soon", "", TextSlide.CompoInfoVariant)
-        )
-        val entrySlides = entries.mapIndexed { index, entry ->
-            TextSlide(
-                "#${index + 1} ${entry.title}",
-                listOf(entry.author.some(), entry.screenComment)
-                    .flatMap { it.toList() }
-                    .joinToString(separator = "\n\n") { it },
-                TextSlide.CompoEntryVariant
-            )
-        }
-        val endingSlides = listOf(
-            TextSlide("${compo.name} compo has ended", "", TextSlide.CompoInfoVariant)
-        )
+        val hypeSlides = listOf(TextSlide.compoStartsSoon(compo.name))
+        val entrySlides = entries.mapIndexed { index, entry -> TextSlide.compoSlide(index, entry) }
+        val endingSlides = listOf(TextSlide.compoHasEnded(compo.name))
 
         val allSlides = hypeSlides + entrySlides + endingSlides
         val dbRows = repository.replaceGeneratedSlideSet(slideSet, allSlides).bind()

@@ -20,6 +20,7 @@ import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
+import party.jml.partyboi.schedule.EventRepositoryImpl
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
@@ -30,46 +31,74 @@ import party.jml.partyboi.voting.VoteKeyRepository
 import party.jml.partyboi.voting.VoteService
 import party.jml.partyboi.workqueue.WorkQueueService
 
-class AppServices(
-    val db: DatabasePool,
-    val config: ConfigReader,
-) {
-    val properties = PropertyRepository(this)
-    val settings = SettingsService(this)
-    val time = TimeService(this)
-    val users = UserService(this)
-    val sessions = SessionRepository(db)
-    val compos = CompoRepository(this)
-    val entries = EntryRepository(this)
-    val files = FileRepository(this)
-    val votes = VoteService(this)
-    val voteKeys = VoteKeyRepository(this)
-    val compoRun = CompoRunService(this)
-    val screen = ScreenService(this)
-    val screenshots = ScreenshotRepository(this)
-    val events = EventRepository(this)
-    val triggers = TriggerRepository(this)
-    val signals = SignalService()
-    val assets = AssetsRepository(this)
-    val replication = ReplicationService(this)
-    val errors = ErrorRepository(this)
-    val email = EmailServiceFacade(this)
-    val messages = MessageRepository(this)
-    val workQueue = WorkQueueService(this)
-    val ffmpeg = FfmpegService()
+interface AppServices {
+    val db: DatabasePool
+    val config: ConfigReader
+    val properties: PropertyRepository
+    val settings: SettingsService
+    val time: TimeService
+    val users: UserService
+    val sessions: SessionRepository
+    val compos: CompoRepository
+    val entries: EntryRepository
+    val files: FileRepository
+    val votes: VoteService
+    val voteKeys: VoteKeyRepository
+    val compoRun: CompoRunService
+    val screen: ScreenService
+    val screenshots: ScreenshotRepository
+    val events: EventRepository
+    val triggers: TriggerRepository
+    val signals: SignalService
+    val assets: AssetsRepository
+    val replication: ReplicationService
+    val errors: ErrorRepository
+    val email: EmailServiceFacade
+    val messages: MessageRepository
+    val workQueue: WorkQueueService
+    val ffmpeg: FfmpegService
+}
+
+class AppServicesImpl(
+    override val db: DatabasePool,
+    override val config: ConfigReader,
+) : AppServices {
+    override val properties = PropertyRepository(this)
+    override val settings = SettingsService(this)
+    override val time = TimeService(this)
+    override val users = UserService(this)
+    override val sessions = SessionRepository(db)
+    override val compos = CompoRepository(this)
+    override val entries = EntryRepository(this)
+    override val files = FileRepository(this)
+    override val votes = VoteService(this)
+    override val voteKeys = VoteKeyRepository(this)
+    override val compoRun = CompoRunService(this)
+    override val screen = ScreenService(this)
+    override val screenshots = ScreenshotRepository(this)
+    override val events = EventRepositoryImpl(this)
+    override val triggers = TriggerRepository(this)
+    override val signals = SignalService()
+    override val assets = AssetsRepository(this)
+    override val replication = ReplicationService(this)
+    override val errors = ErrorRepository(this)
+    override val email = EmailServiceFacade(this)
+    override val messages = MessageRepository(this)
+    override val workQueue = WorkQueueService(this)
+    override val ffmpeg = FfmpegService()
 
     companion object {
-        var globalInstance: AppServices? = null
+        var globalInstance: AppServicesImpl? = null
     }
 }
 
 suspend fun Application.services(): AppServices {
-    return AppServices.globalInstance ?: run {
+    return AppServicesImpl.globalInstance ?: run {
         val db = getDatabasePool()
         val migration = Migrations.migrate(db).getOrElse { it.throwError() }
-        val app = AppServices(db, config())
+        val app = AppServicesImpl(db, config())
         app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
-        AppServices.globalInstance = app
+        AppServicesImpl.globalInstance = app
         app
     }
 }

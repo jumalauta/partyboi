@@ -150,7 +150,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
                     if (entry.file.isDefined) {
                         val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
-                        entry.file.write(storageFilename).bind()
+                        entry.file.writeEntry(storageFilename).bind()
                         val file = app.files.add(
                             NewFileDesc(
                                 entryId = entry.id,

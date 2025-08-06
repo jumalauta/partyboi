@@ -17,7 +17,7 @@ interface AppError : Renderable {
     val statusCode: HttpStatusCode
     val throwable: Throwable?
 
-    override fun getHTML(user: User?, path: String): String {
+    override fun getContent(user: User?, path: String): String {
         val className = this::class.simpleName ?: "AppError"
         val page = Page("Error") {
             article {
@@ -25,7 +25,7 @@ interface AppError : Renderable {
                 p { +message }
             }
         }
-        return page.getHTML(user, path)
+        return page.getContent(user, path)
     }
 
     fun throwError(): Nothing {
@@ -58,7 +58,6 @@ class FormError(override val message: String) : UserError {
 
 class ValidationError(val errors: NonEmptyList<Message>) : UserError {
     constructor(target: String, message: String, value: String) : this(nonEmptyListOf(Message(target, message, value)))
-    constructor(message: String, value: String) : this(nonEmptyListOf(Message(null, message, value)))
 
     override val statusCode: HttpStatusCode
         get() = HttpStatusCode.BadRequest
@@ -76,7 +75,7 @@ class RedirectInterruption(val location: String) : UserError {
     override val message: String
         get() = "Location: $location"
 
-    override fun getHTML(user: User?, path: String): String = ""
+    override fun getContent(user: User?, path: String): String = ""
 
     override fun headers(): Map<String, String> =
         mapOf("Location" to location)

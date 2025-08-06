@@ -1,5 +1,6 @@
 package party.jml.partyboi.schedule
 
+import arrow.core.Either
 import arrow.core.Option
 import arrow.core.Some
 import arrow.core.raise.either
@@ -9,6 +10,7 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
+import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
@@ -23,15 +25,27 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 import kotlin.time.Duration.Companion.hours
 
-class EventRepository(private val app: AppServices) : Logging() {
-    private val db = app.db
-    private val listener = EventSignalEmitter(app)
+interface EventRepository {
+    suspend fun get(eventId: Int): AppResult<Event>
+    suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>>
+    suspend fun getAll(): AppResult<List<Event>>
+    suspend fun getPublic(): AppResult<List<Event>>
+    suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event>
+    suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>>
+    suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event>
+    suspend fun delete(eventId: Int): AppResult<Unit>
+    suspend fun deleteAll(): AppResult<Unit>
+    fun import(tx: TransactionalSession, data: DataExport): Either<AppError, List<Unit>>
+}
 
-    suspend fun get(eventId: Int): AppResult<Event> = db.use {
+class EventRepositoryImpl(private val app: AppServices) : EventRepository, Logging() {
+    private val db = app.db
+
+    override suspend fun get(eventId: Int): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
-    suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>> = db.use {
+    override suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>> = db.use {
         it.many(
             queryOf(
                 "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
@@ -41,15 +55,15 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    suspend fun getAll(): AppResult<List<Event>> = db.use {
+    override suspend fun getAll(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
     }
 
-    suspend fun getPublic(): AppResult<List<Event>> = db.use {
+    override suspend fun getPublic(): AppResult<List<Event>> = db.use {
         it.many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
     }
 
-    suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
+    override suspend fun add(event: NewEvent, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
         it.one(
             queryOf(
                 """
@@ -64,7 +78,7 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
+    override suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
         db.transaction { tx ->
             either {
                 val createdEvent = add(event, tx).bind()
@@ -75,7 +89,7 @@ class EventRepository(private val app: AppServices) : Logging() {
             }
         }
 
-    suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event> = db.use(tx) {
+    override suspend fun update(event: Event, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
         app.triggers.reset(event.signal(), tx)
         it.one(
             queryOf(
@@ -97,15 +111,15 @@ class EventRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    suspend fun delete(eventId: Int): AppResult<Unit> = db.use {
+    override suspend fun delete(eventId: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
-    suspend fun deleteAll(): AppResult<Unit> = db.use {
+    override suspend fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM event"))
     }
 
-    fun import(tx: TransactionalSession, data: DataExport) = either {
+    override fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.events.size} events")
         data.events.map {
             tx.exec(
