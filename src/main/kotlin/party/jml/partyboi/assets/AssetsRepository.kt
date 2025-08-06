@@ -18,7 +18,7 @@ class AssetsRepository(app: AppServices) {
         assetsDir.toFile().mkdirs()
     }
 
-    fun write(file: FileUpload): AppResult<Unit> =
+    suspend fun write(file: FileUpload): AppResult<Unit> =
         catchError {
             val target = assetsDir.resolve(file.name)
             target.parent.toFile().mkdirs()

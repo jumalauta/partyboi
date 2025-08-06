@@ -11,11 +11,6 @@ import party.jml.partyboi.templates.respondEither
 
 fun Application.configureScreenRouting(app: AppServices) {
     routing {
-        get("/screen/{theme}") {
-            // Backwards compatibility
-            call.respondRedirect("/screen")
-        }
-
         get("/screen") {
             val page = HtmlString(ScreenPage.render(app.screen.currentSlide(), app))
             call.respondEither { page }

@@ -56,7 +56,7 @@ class ScreenshotRepository(val app: AppServices) {
         inputImage.scaleToHeight(400).output(writer, outputImage)
     }
 
-    fun store(entryId: Int, upload: FileUpload): AppResult<Unit> = either {
+    suspend fun store(entryId: Int, upload: FileUpload): AppResult<Unit> = either {
         val tempFile = kotlin.io.path.createTempFile()
         upload.write(tempFile).bind()
         store(entryId, tempFile)

@@ -101,10 +101,13 @@ class TestHtmlClient(val client: HttpClient) {
         val data = formData {
             map.forEach {
                 when (val value = it.value) {
-                    is FileUpload -> append(it.key, value.toByteArray(), headers {
-                        append("Content-Type", "application/octet-stream")
-                        append("Content-Disposition", "form-data; name=\"file\"; filename=\"${value.name}\"")
-                    })
+                    is FileUpload ->
+                        runBlocking {
+                            append(it.key, value.toByteArray(), headers {
+                                append("Content-Type", "application/octet-stream")
+                                append("Content-Disposition", "form-data; name=\"file\"; filename=\"${value.name}\"")
+                            })
+                        }
 
                     else -> append(it.key, value.toString())
                 }

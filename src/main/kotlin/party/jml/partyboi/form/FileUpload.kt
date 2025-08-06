@@ -3,24 +3,26 @@ package party.jml.partyboi.form
 import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
-import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.util.cio.*
 import io.ktor.utils.io.*
-import io.ktor.utils.io.core.*
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.MapCollector
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.zip.ZipUtils
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
+import kotlin.io.path.writeBytes
 
 data class FileUpload(
     val name: String,
-    val fileItem: PartData.FileItem,
+    val tempFile: File,
 ) {
     fun writeEntry(storageFilename: Path): AppResult<Unit> =
         write(Config.get().entryDir.resolve(storageFilename).toFile())
@@ -29,24 +31,15 @@ data class FileUpload(
         write(storageFilename.toFile())
 
     fun write(file: File): AppResult<Unit> = try {
-        val source = fileItem.streamProvider()
         File(file.parent).mkdirs()
-        file.outputStream().use { out ->
-            while (true) {
-                val bytes = source.readNBytes(1024)
-                if (bytes.isEmpty()) break
-                out.write(bytes)
-            }
-            source.close()
-        }
-        fileItem.dispose()
+        Files.move(tempFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
         Unit.right()
     } catch (err: Error) {
         InternalServerError(err).left()
     }
 
     fun writeAndAutoExtract(storageFilename: Path): AppResult<Unit> =
-        if (storageFilename.extension == "zip") {
+        if (storageFilename.extension.lowercase() == "zip") {
             extract(storageFilename)
         } else {
             write(storageFilename)
@@ -60,12 +53,7 @@ data class FileUpload(
         ZipUtils.extract(tempFile, storageDir).bind()
     }
 
-    fun toByteArray(): ByteArray {
-        val source = fileItem.streamProvider()
-        val bytes = source.readAllBytes()
-        fileItem.dispose()
-        return bytes
-    }
+    fun toByteArray(): ByteArray = tempFile.readBytes()
 
     val isDefined = name.isNotEmpty()
 
@@ -84,14 +72,11 @@ data class FileUpload(
             )
         }
 
-        fun fromByteArray(filename: String, bytes: ByteArray) = FileUpload(
-            filename,
-            PartData.FileItem(
-                { ByteReadChannel(bytes, 0, bytes.size) },
-                {},
-                Headers.Empty
-            )
-        )
+        fun fromByteArray(filename: String, bytes: ByteArray): FileUpload {
+            val tempFile = kotlin.io.path.createTempFile()
+            tempFile.writeBytes(bytes)
+            return FileUpload(filename, tempFile.toFile())
+        }
     }
 }
 
@@ -108,10 +93,12 @@ suspend fun MultiPartData.collect(): Pair<Map<String, List<String>>, Map<String,
                 }
 
                 is PartData.FileItem -> {
+                    val tempFile = kotlin.io.path.createTempFile().toFile()
+                    part.provider().copyAndClose(tempFile.writeChannel())
                     fileParams.add(
                         name, FileUpload(
                             name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
-                            fileItem = part,
+                            tempFile = tempFile,
                         )
                     )
                 }
