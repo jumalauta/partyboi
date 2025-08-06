@@ -9,7 +9,7 @@ import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.system.AppResult
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.io.path.name
+import kotlin.io.path.relativeTo
 
 class AssetsRepository(app: AppServices) {
     private val assetsDir = app.config.assetsDir
@@ -24,13 +24,18 @@ class AssetsRepository(app: AppServices) {
             target.parent.toFile().mkdirs()
             target
         }.flatMap {
-            file.write(it)
+            file.writeAndAutoExtract(it)
         }
 
     fun getList(): List<String> =
         try {
-            Files.list(assetsDir).map { it.name }.toList()
-        } catch (_: Throwable) {
+            Files.walk(assetsDir).use { paths ->
+                paths
+                    .filter { Files.isRegularFile(it) }
+                    .map { it.relativeTo(assetsDir).toString() }
+                    .toList()
+            }
+        } catch (err: Throwable) {
             emptyList()
         }
 

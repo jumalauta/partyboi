@@ -7,7 +7,7 @@ import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.parameterString
+import party.jml.partyboi.data.parameterPathString
 import party.jml.partyboi.data.processForm
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.templates.Redirection
@@ -40,10 +40,10 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
     }
 
     adminApiRouting {
-        delete("/admin/assets/{file}") {
+        delete("/admin/assets/{file...}") {
             call.apiRespond {
                 call.userSession(app).bind()
-                val file = call.parameterString("file").bind()
+                val file = call.parameterPathString("file").bind()
                 app.assets.delete(file).bind()
             }
         }

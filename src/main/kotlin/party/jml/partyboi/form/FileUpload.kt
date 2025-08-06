@@ -1,17 +1,21 @@
 package party.jml.partyboi.form
 
 import arrow.core.left
+import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.util.*
 import io.ktor.utils.io.core.*
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.MapCollector
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.zip.ZipUtils
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.nameWithoutExtension
 
 data class FileUpload(
     val name: String,
@@ -38,6 +42,21 @@ data class FileUpload(
         Unit.right()
     } catch (err: Error) {
         InternalServerError(err).left()
+    }
+
+    fun writeAndAutoExtract(storageFilename: Path): AppResult<Unit> =
+        if (storageFilename.extension == "zip") {
+            extract(storageFilename)
+        } else {
+            write(storageFilename)
+        }
+
+    fun extract(storageFilename: Path): AppResult<Unit> = either {
+        val tempFile = File.createTempFile("tmp", ".zip")
+        write(tempFile).bind()
+
+        val storageDir = storageFilename.parent.resolve(storageFilename.nameWithoutExtension)
+        ZipUtils.extract(tempFile, storageDir).bind()
     }
 
     fun toByteArray(): ByteArray {
