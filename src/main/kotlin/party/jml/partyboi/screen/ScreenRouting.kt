@@ -5,23 +5,19 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.NotFound
-import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.templates.HtmlString
 import party.jml.partyboi.templates.JsonResponse
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureScreenRouting(app: AppServices) {
     routing {
-        get("/screen") {
-            val defaultTheme = ScreenTheme.entries.first()
-            call.respondRedirect("/screen/${defaultTheme.dir}")
+        get("/screen/{theme}") {
+            // Backwards compatibility
+            call.respondRedirect("/screen")
         }
 
-        get("/screen/{theme}") {
-            val page = call.parameterString("theme").getOrNone()
-                .flatMap { ScreenTheme.getTheme(it) }
-                .toEither { NotFound("Theme not found") }
+        get("/screen") {
+            val page = app.settings.screenTheme.get()
                 .map { ScreenPage.render(app.screen.currentSlide(), it, app) }
                 .map { HtmlString(it) }
             call.respondEither { page.bind() }

@@ -1,11 +1,15 @@
 package party.jml.partyboi.templates
 
+import party.jml.partyboi.screen.ScreenTheme
+
 data class Theme(
-    val colorScheme: ColorScheme
+    val colorScheme: ColorScheme,
+    val screenTheme: ScreenTheme,
 ) {
     companion object {
         val Default = Theme(
-            colorScheme = ColorScheme.Blue
+            colorScheme = ColorScheme.Blue,
+            screenTheme = ScreenTheme.DEFAULT,
         )
     }
 }

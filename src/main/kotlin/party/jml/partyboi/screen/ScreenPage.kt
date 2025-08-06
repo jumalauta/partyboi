@@ -18,7 +18,7 @@ object ScreenPage {
         createHTML().html {
             head {
                 title { +"Screen" }
-                link(rel = "stylesheet", href = "/assets/screen/${theme.dir}/screen.css", type = "text/css")
+                link(rel = "stylesheet", href = "${theme.assetsRoute}/screen.css", type = "text/css")
             }
             body {
                 main(classes = "shown") {
@@ -31,7 +31,7 @@ object ScreenPage {
                 main {
                     attributes["id"] = "screen2"
                 }
-                script(src = "/assets/screen/${theme.dir}/screen.js") {}
+                script(src = "/assets/screen/screen.js") {}
             }
         }
 

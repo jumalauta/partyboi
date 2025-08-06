@@ -8,6 +8,7 @@ import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
+import party.jml.partyboi.screen.ScreenTheme
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 import party.jml.partyboi.validation.Validateable
@@ -18,6 +19,7 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
     val verifiedEmailsOnly = property("verifiedEmailsOnly", true)
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
+    val screenTheme = property("screenTheme", ScreenTheme.DEFAULT)
 
     suspend fun getGeneralSettings() = either {
         GeneralSettings(
@@ -38,6 +40,7 @@ class SettingsService(app: AppServices) : StoredProperties(app) {
     suspend fun getTheme() = either {
         Theme(
             colorScheme = colorScheme.get().bind(),
+            screenTheme = screenTheme.get().bind(),
         )
     }
 

@@ -1,8 +1,6 @@
 package party.jml.partyboi.screen
 
-import arrow.core.None
 import arrow.core.Option
-import arrow.core.Some
 import arrow.core.raise.either
 import arrow.core.toNonEmptyListOrNone
 import kotlinx.coroutines.runBlocking
@@ -271,17 +269,9 @@ data class ScreenRow(
     }
 }
 
-enum class ScreenTheme(val displayName: String, val dir: String) {
-    SIXTYEIGHTK_INSIDE("68k Inside", "68k_inside"),
-    WIN95("Windows 95", "win95"),
-    NOVEMBER_GAMES("November Games", "novembergames"),
-    CUSTOM("Custom", "custom");
+enum class ScreenTheme(val displayName: String, val assetsRoute: String) {
+    DEFAULT("Default", "/assets/screen"),
+    CUSTOM("Custom", "/assets/uploaded/screen");
 
-    companion object {
-        fun getTheme(dir: String): Option<ScreenTheme> = try {
-            Some(entries.first { t -> t.dir == dir })
-        } catch (_: Throwable) {
-            None
-        }
-    }
+    override fun toString(): String = displayName
 }
