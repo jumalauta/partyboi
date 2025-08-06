@@ -5,7 +5,7 @@ import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.util.*
+import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import party.jml.partyboi.Config
 import party.jml.partyboi.data.InternalServerError
@@ -15,6 +15,7 @@ import party.jml.partyboi.zip.ZipUtils
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
 
 data class FileUpload(
@@ -86,7 +87,7 @@ data class FileUpload(
         fun fromByteArray(filename: String, bytes: ByteArray) = FileUpload(
             filename,
             PartData.FileItem(
-                { ByteReadPacket(bytes, 0, bytes.size) },
+                { ByteReadChannel(bytes, 0, bytes.size) },
                 {},
                 Headers.Empty
             )
