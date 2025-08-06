@@ -14,11 +14,11 @@ object ScreenPage {
             runBlocking { slide.render(article, app) }
         }
 
-    fun render(slide: Slide<*>, theme: ScreenTheme, app: AppServices) =
+    fun render(slide: Slide<*>, app: AppServices) =
         createHTML().html {
             head {
                 title { +"Screen" }
-                link(rel = "stylesheet", href = "${theme.assetsRoute}/screen.css", type = "text/css")
+                link(rel = "stylesheet", href = "/assets/screen/screen.css", type = "text/css")
             }
             body {
                 main(classes = "shown") {

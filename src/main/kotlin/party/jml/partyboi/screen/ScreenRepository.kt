@@ -177,7 +177,7 @@ class ScreenRepository(app: AppServices) : Logging() {
     }
 
     fun isCustomThemeInstalled() = assets.exists("screen/theme.json")
-    
+
     fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.slideSets.size} slide sets")
         data.slideSets.map {
@@ -270,11 +270,4 @@ data class ScreenRow(
             )
         }
     }
-}
-
-enum class ScreenTheme(val displayName: String, val assetsRoute: String) {
-    DEFAULT("Default", "/assets/screen"),
-    CUSTOM("Custom", "/assets/uploaded/screen");
-
-    override fun toString(): String = displayName
 }

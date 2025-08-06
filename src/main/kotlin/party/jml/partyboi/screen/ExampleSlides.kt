@@ -29,12 +29,11 @@ data class RenderedExampleSlide(
 
 fun getRenderedExampleSlides(app: AppServices): List<RenderedExampleSlide> {
     val mockApp = MockAppServices(app)
-    val theme = ScreenTheme.CUSTOM
     val slides = getExampleSlides()
 
     val initialPage = RenderedExampleSlide(
         name = "__INIT__",
-        content = ScreenPage.render(slides.first().slide, theme, mockApp)
+        content = ScreenPage.render(slides.first().slide, mockApp)
     )
 
     return listOf(initialPage) + getExampleSlides().map {

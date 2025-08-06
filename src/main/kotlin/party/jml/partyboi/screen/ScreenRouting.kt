@@ -17,10 +17,8 @@ fun Application.configureScreenRouting(app: AppServices) {
         }
 
         get("/screen") {
-            val page = app.settings.screenTheme.get()
-                .map { ScreenPage.render(app.screen.currentSlide(), it, app) }
-                .map { HtmlString(it) }
-            call.respondEither { page.bind() }
+            val page = HtmlString(ScreenPage.render(app.screen.currentSlide(), app))
+            call.respondEither { page }
         }
 
         get("/screen/next") {

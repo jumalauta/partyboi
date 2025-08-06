@@ -35,7 +35,7 @@ class AssetsRepository(app: AppServices) {
                     .map { it.relativeTo(assetsDir).toString() }
                     .toList()
             }
-        } catch (err: Throwable) {
+        } catch (_: Throwable) {
             emptyList()
         }
 
