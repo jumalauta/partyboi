@@ -17,24 +17,27 @@ data class FileUpload(
     val name: String,
     val fileItem: PartData.FileItem,
 ) {
-    fun write(storageFilename: Path): AppResult<Unit> {
-        return try {
-            val source = fileItem.streamProvider()
-            val file = Config.get().entryDir.resolve(storageFilename).toFile()
-            File(file.parent).mkdirs()
-            file.outputStream().use { out ->
-                while (true) {
-                    val bytes = source.readNBytes(1024)
-                    if (bytes.isEmpty()) break
-                    out.write(bytes)
-                }
-                source.close()
+    fun writeEntry(storageFilename: Path): AppResult<Unit> =
+        write(Config.get().entryDir.resolve(storageFilename).toFile())
+
+    fun write(storageFilename: Path): AppResult<Unit> =
+        write(storageFilename.toFile())
+
+    fun write(file: File): AppResult<Unit> = try {
+        val source = fileItem.streamProvider()
+        File(file.parent).mkdirs()
+        file.outputStream().use { out ->
+            while (true) {
+                val bytes = source.readNBytes(1024)
+                if (bytes.isEmpty()) break
+                out.write(bytes)
             }
-            fileItem.dispose()
-            Unit.right()
-        } catch (err: Error) {
-            InternalServerError(err).left()
+            source.close()
         }
+        fileItem.dispose()
+        Unit.right()
+    } catch (err: Error) {
+        InternalServerError(err).left()
     }
 
     fun toByteArray(): ByteArray {

@@ -26,6 +26,7 @@ import party.jml.partyboi.templates.NavItem
 
 class ScreenRepository(app: AppServices) : Logging() {
     val db = app.db
+    val assets = app.assets
 
     init {
         runBlocking {
@@ -175,6 +176,8 @@ class ScreenRepository(app: AppServices) : Logging() {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 
+    fun isCustomThemeInstalled() = assets.exists("screen/theme.json")
+    
     fun import(tx: TransactionalSession, data: DataExport) = either {
         log.info("Import ${data.slideSets.size} slide sets")
         data.slideSets.map {

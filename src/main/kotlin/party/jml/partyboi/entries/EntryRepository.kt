@@ -121,7 +121,7 @@ class EntryRepository(private val app: AppServices) : Logging() {
                         processed = false,
                         info = null
                     )
-                    newEntry.file.write(fileDesc.storageFilename).bind()
+                    newEntry.file.writeEntry(fileDesc.storageFilename).bind()
                     val storedFile = app.files.add(fileDesc, it).bind()
 
                     app.screenshots.scanForScreenshotSource(storedFile).map { source ->
