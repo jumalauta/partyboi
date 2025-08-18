@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.FlowContent
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Logging
@@ -22,6 +24,7 @@ import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
+import kotlin.io.path.readText
 
 
 class ScreenService(private val app: AppServices) : Logging() {
@@ -196,6 +199,21 @@ class ScreenService(private val app: AppServices) : Logging() {
         "/admin/screen/${slideSet}"
     }
 
+    fun getThemeInfo(): ThemeInfo {
+        return try {
+            if (app.assets.exists(ThemeInfo.FILE_NAME)) {
+                val content = app.assets.getFile(ThemeInfo.FILE_NAME).readText(Charsets.UTF_8)
+                Json.decodeFromString<ThemeInfo>(content)
+            } else {
+                ThemeInfo.default
+            }
+        } catch (e: Exception) {
+            ThemeInfo.default.copy(
+                injectBody = "<!-- ERROR: $e -->",
+            )
+        }
+    }
+
     fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
     private suspend fun show(row: ScreenRow) {
@@ -245,3 +263,22 @@ data class SlideType(
     val icon: String,
     val description: String,
 )
+
+@Serializable
+data class ThemeInfo(
+    val name: String,
+    val width: Int,
+    val height: Int,
+    val injectBody: String? = null,
+) {
+    companion object {
+        const val FILE_NAME = "screen/theme.json"
+
+        val default = ThemeInfo(
+            name = "Default theme",
+            width = 1920,
+            height = 1080,
+            injectBody = "<!-- Default theme -->"
+        )
+    }
+}

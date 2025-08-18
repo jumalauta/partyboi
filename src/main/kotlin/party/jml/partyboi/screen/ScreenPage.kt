@@ -21,6 +21,9 @@ object ScreenPage {
                 link(rel = "stylesheet", href = "/assets/screen/screen.css", type = "text/css")
             }
             body {
+                app.screen.getThemeInfo().injectBody?.let { injection ->
+                    unsafe { raw(injection) }
+                }
                 main(classes = "shown") {
                     attributes["id"] = "screen1"
                     article(classes = classes(slide)) {
