@@ -12,7 +12,6 @@ import kotlinx.datetime.toInstant
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.Form
@@ -39,7 +38,7 @@ data class ScheduleSlide(
                 table {
                     events.forEach { event ->
                         tr {
-                            th { +event.startTime.displayTime() }
+                            th { +event.startTime.displayTime(tz) }
                             td { +event.name }
                         }
                     }

@@ -50,11 +50,8 @@ fun LocalDate.displayDate(): String {
 fun LocalDateTime.displayTime(): String =
     toJavaLocalDateTime().format(DateTimeFormatter.ofPattern("HH:mm"))
 
-fun Instant.displayTime(): String = format(DateTimeComponents.Format {
-    hour()
-    char(':')
-    minute()
-})
+fun Instant.displayTime(tz: TimeZone): String =
+    toLocalDateTime(tz).displayTime()
 
 fun Instant.displayDateTime(): String = format(DateTimeComponents.Format {
     dayOfMonth()
