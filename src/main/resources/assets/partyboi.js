@@ -100,6 +100,7 @@ function initInteractions(target) {
         const tz = input.attributes["data-tz"]?.value || "Z"
         const defaultDate = input.attributes["data-suggested-value"]?.value
         const self = flatpickr(input, {
+            locale: {firstDayOfWeek: 1},
             dateFormat: 'Y-m-d\\TH:i:S' + tz,
             enableTime: true,
             time_24hr: true,
