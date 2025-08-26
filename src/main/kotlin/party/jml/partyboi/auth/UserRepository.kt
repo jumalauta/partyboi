@@ -137,8 +137,9 @@ class UserRepository(private val app: AppServices) : Logging() {
 
             it.updateOne(
                 queryOf(
-                    "UPDATE appuser SET name = ? WHERE id = ?",
+                    "UPDATE appuser SET name = ?, email = ? WHERE id = ?",
                     user.name,
+                    user.email.nonEmptyString(),
                     userId
                 )
             ).bind()
@@ -168,16 +169,17 @@ class UserRepository(private val app: AppServices) : Logging() {
         )
     }
 
-    suspend fun setEmailVerified(userId: Int): AppResult<Unit> = db.use {
+    suspend fun setEmailVerified(userId: Int, verified: Boolean = true): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """
                     UPDATE appuser
                     SET
                         verification_code = NULL,
-                        email_verified = true
+                        email_verified = ?
                     WHERE id = ?
                 """.trimIndent(),
+                verified,
                 userId
             )
         )

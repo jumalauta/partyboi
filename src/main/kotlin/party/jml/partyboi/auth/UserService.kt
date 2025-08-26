@@ -40,8 +40,28 @@ class UserService(private val app: AppServices) {
     suspend fun getUser(userId: Int): AppResult<User> = userRepository.getUser(userId)
     suspend fun getUserByName(username: String): AppResult<User> = userRepository.getUser(username)
     suspend fun getUsers(): AppResult<List<User>> = userRepository.getUsers()
-    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> =
+
+    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = either {
+        val oldUser = userRepository.getUser(userId).bind()
         userRepository.updateUser(userId, user)
+            .mapLeft {
+                if (it.message.contains("duplicate key value")) {
+                    ValidationError("email", "This email has been registered already", user.email)
+                } else it
+            }
+            .bind()
+
+        if (oldUser.email != user.email) {
+            userRepository.setEmailVerified(userId, false)
+            val updatedUser = userRepository.getUser(userId).bind()
+            if (sendVerificationEmail(updatedUser)?.bind() == true) {
+                app.messages.sendMessage(
+                    userId, MessageType.INFO,
+                    "To finish updating your email address, please verify it by following the instructions sent to ${updatedUser.email}"
+                )
+            }
+        }
+    }
 
     suspend fun makeAdmin(userId: Int, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
     suspend fun deleteAll() = userRepository.deleteAll()
@@ -87,7 +107,7 @@ class UserService(private val app: AppServices) {
             assignedUser
         }
 
-    suspend fun sendVerificationEmail(user: User): Either<AppError, Unit>? =
+    suspend fun sendVerificationEmail(user: User): Either<AppError, Boolean>? =
         user.email?.let { email ->
             either {
                 if (app.email.isConfigured()) {
@@ -99,7 +119,8 @@ class UserService(private val app: AppServices) {
                             hostName = app.config.hostName
                         )
                     ).bind()
-                }
+                    true
+                } else false
             }
         }?.onLeft { error ->
             app.errors.saveSafely(
