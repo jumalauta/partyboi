@@ -187,7 +187,13 @@ function refreshOnSignal(signalType) {
             return;
         }
         const abortSignal = registerAbortController(signalType).signal;
-        fetch(`/signals/${signalType}`, {signal: abortSignal})
+        fetch(`/signals/${signalType}`, {
+            signal: abortSignal,
+            headers: {
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        })
             .then(() => {
                 smoothReload();
                 wait();
