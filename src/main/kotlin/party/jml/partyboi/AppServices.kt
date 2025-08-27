@@ -87,7 +87,7 @@ class AppServicesImpl(
     override val email = EmailServiceFacade(this)
     override val messages = MessageRepository(this)
     override val workQueue = WorkQueueService(this)
-    override val ffmpeg = FfmpegService(this)
+    override val ffmpeg = FfmpegService()
     override val eventSignalEmitter = EventSignalEmitter(this)
 
     companion object {

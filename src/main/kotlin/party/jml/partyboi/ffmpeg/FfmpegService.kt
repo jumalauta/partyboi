@@ -8,11 +8,10 @@ import com.github.dockerjava.api.model.Volume
 import com.github.dockerjava.core.DockerClientBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import party.jml.partyboi.AppServices
-import party.jml.partyboi.Service
+import party.jml.partyboi.Logging
 import java.io.File
 
-class FfmpegService(app: AppServices) : Service(app) {
+class FfmpegService() : Logging() {
     fun ensureFfmpegExists() {
         val client = getClient()
 
