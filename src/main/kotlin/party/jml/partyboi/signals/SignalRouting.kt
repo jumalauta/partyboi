@@ -8,6 +8,7 @@ import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterString
+import party.jml.partyboi.templates.longPollingHeaders
 
 fun Application.configureSignalRouting(app: AppServices) {
     routing {
@@ -17,7 +18,12 @@ fun Application.configureSignalRouting(app: AppServices) {
                 SignalType.fromString(type).bind()
             }.fold(
                 { call.apiRespond { it.left() } },
-                { type -> app.signals.getNext(type) { signal -> call.respondText(signal.toString()) } }
+                { type ->
+                    app.signals.getNext(type) { signal ->
+                        longPollingHeaders()
+                        call.respondText(signal.toString())
+                    }
+                }
             )
         }
     }

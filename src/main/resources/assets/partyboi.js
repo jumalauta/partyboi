@@ -170,7 +170,6 @@ const refreshOnSignalAbortControllers = {}
 function registerAbortController(key) {
     const oldCtrl = refreshOnSignalAbortControllers[key];
     if (oldCtrl) {
-        console.log("Refresh listener for", key)
         oldCtrl.abort()
     }
     const ctrl = new AbortController()
@@ -180,25 +179,26 @@ function registerAbortController(key) {
 
 // Update screen on signals
 function refreshOnSignal(signalType) {
-    const abortSignal = registerAbortController(signalType).signal;
     let retryCount = 0;
 
     function wait() {
         if (++retryCount === 20) {
-            console.log("20 retries failed, reload page");
             location.reload();
             return;
         }
-        console.log("Waiting for signal", signalType);
+        const abortSignal = registerAbortController(signalType).signal;
         fetch(`/signals/${signalType}`, {signal: abortSignal})
             .then(() => {
                 smoothReload();
                 wait();
             })
-            .catch(() => {
-                const sleep = 1000 * retryCount;
-                console.log(`Fetch failed, retry in ${sleep} ms`);
-                setTimeout(wait, sleep);
+            .catch((err) => {
+                if (err.name === "AbortError") {
+                    // Cancelled, do nothing
+                } else {
+                    const sleep = 1000 * retryCount;
+                    setTimeout(wait, sleep);
+                }
             });
     }
 
