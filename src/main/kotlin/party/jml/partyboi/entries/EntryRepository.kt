@@ -21,6 +21,9 @@ import party.jml.partyboi.data.isTrue
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asInt
+import party.jml.partyboi.entries.NewEntry.Companion.MAX_AUTHOR_LENGTH
+import party.jml.partyboi.entries.NewEntry.Companion.MAX_SCREEN_COMMENT_LENGTH
+import party.jml.partyboi.entries.NewEntry.Companion.MAX_TITLE_LENGTH
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
@@ -353,17 +356,18 @@ data class EntryWithLatestFile(
 data class NewEntry(
     @Field("Title")
     @NotEmpty
-    @MaxLength(64)
+    @MaxLength(MAX_TITLE_LENGTH)
     val title: String,
     @Field("Author")
     @NotEmpty
-    @MaxLength(64)
+    @MaxLength(MAX_AUTHOR_LENGTH)
     val author: String,
     @Field("File")
     @MaxLength(128)
     val file: FileUpload,
     @Field("Compo")
     val compoId: Int,
+    @MaxLength(MAX_SCREEN_COMMENT_LENGTH)
     @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     val screenComment: String,
     @Field("Information for organizers", presentation = FieldPresentation.large)
@@ -372,6 +376,10 @@ data class NewEntry(
 ) : Validateable<NewEntry> {
     companion object {
         val Empty = NewEntry("", "", FileUpload.Empty, 0, "", "", 0)
+
+        const val MAX_TITLE_LENGTH = 128
+        const val MAX_AUTHOR_LENGTH = 128
+        const val MAX_SCREEN_COMMENT_LENGTH = 512
     }
 }
 
@@ -381,12 +389,12 @@ data class EntryUpdate(
 
     @Field("Title")
     @NotEmpty
-    @MaxLength(64)
+    @MaxLength(MAX_TITLE_LENGTH)
     val title: String,
 
     @Field("Author")
     @NotEmpty
-    @MaxLength(64)
+    @MaxLength(MAX_AUTHOR_LENGTH)
     val author: String,
 
     @Field("Upload new version of file")
@@ -399,6 +407,7 @@ data class EntryUpdate(
     val userId: Int,
 
     @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
+    @MaxLength(MAX_SCREEN_COMMENT_LENGTH)
     val screenComment: String,
 
     @Field("Information for organizers", presentation = FieldPresentation.large)
