@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.data.throwOnError
@@ -24,7 +24,7 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
 
-class ScreenRepository(app: AppServices) : Logging() {
+class ScreenRepository(app: AppServices) : Service(app) {
     val db = app.db
     val assets = app.assets
 

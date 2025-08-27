@@ -10,7 +10,7 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.data.randomStringId
@@ -22,7 +22,7 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.*
 
-class UserRepository(private val app: AppServices) : Logging() {
+class UserRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     suspend fun getUsers(): AppResult<List<User>> = db.use {

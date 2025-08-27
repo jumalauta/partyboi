@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ResultsFileGenerator
@@ -18,8 +19,8 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
 
-class VoteService(val app: AppServices) {
-    private val repository = VoteRepository(app.db)
+class VoteService(app: AppServices) : Service(app) {
+    private val repository = VoteRepository(app)
     private val live = MutableStateFlow(LiveVoteState.Empty)
 
     suspend fun start() {

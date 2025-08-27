@@ -6,11 +6,11 @@ import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.format.char
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.AppServicesImpl
-import party.jml.partyboi.data.StoredProperties
+import party.jml.partyboi.Service
 import java.time.format.DateTimeFormatter
 import java.util.Locale.getDefault
 
-class TimeService(app: AppServices) : StoredProperties(app) {
+class TimeService(app: AppServices) : Service(app) {
     val fallbackTime = Instant.DISTANT_PAST
     val timeZone = property("timeZone", TimeZone.currentSystemDefault())
 

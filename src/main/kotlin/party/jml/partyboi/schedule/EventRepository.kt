@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
@@ -38,7 +38,7 @@ interface EventRepository {
     fun import(tx: TransactionalSession, data: DataExport): Either<AppError, List<Unit>>
 }
 
-class EventRepositoryImpl(private val app: AppServices) : EventRepository, Logging() {
+class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     private val db = app.db
 
     override suspend fun get(eventId: Int): AppResult<Event> = db.use {

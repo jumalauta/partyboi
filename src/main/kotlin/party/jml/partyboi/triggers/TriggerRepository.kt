@@ -10,7 +10,7 @@ import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
@@ -20,7 +20,7 @@ import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.Validateable
 
-class TriggerRepository(val app: AppServices) : Logging() {
+class TriggerRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     suspend fun start() {

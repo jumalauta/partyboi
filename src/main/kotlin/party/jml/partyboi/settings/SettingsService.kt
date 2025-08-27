@@ -3,7 +3,7 @@ package party.jml.partyboi.settings
 import arrow.core.raise.either
 import kotlinx.datetime.TimeZone
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.StoredProperties
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -12,7 +12,7 @@ import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 import party.jml.partyboi.validation.Validateable
 
-class SettingsService(app: AppServices) : StoredProperties(app) {
+class SettingsService(app: AppServices) : Service(app) {
     val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
     val voteKeyEmailList = property("voteKeyEmailList", emptyList<String>())
     val verifiedEmailsOnly = property("verifiedEmailsOnly", true)

@@ -3,12 +3,11 @@ package party.jml.partyboi.data
 import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.option
@@ -17,10 +16,10 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 
-class PropertyRepository(val app: AppServices) : Logging() {
+class PropertyRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
-    inline fun <reified T> property(key: String, defaultValue: T): PersistentCachedValue<T> =
+    inline fun <reified T> createPersistentCachedValue(key: String, defaultValue: T): PersistentCachedValue<T> =
         PersistentCachedValue(
             fetchValue = {
                 either {
@@ -78,11 +77,6 @@ class PropertyRepository(val app: AppServices) : Logging() {
                 )
             )
         }
-}
-
-abstract class StoredProperties(val app: AppServices) : Logging() {
-    inline fun <reified T> property(key: String, value: T) =
-        app.properties.property("${this::class.simpleName}.$key", value)
 }
 
 @Serializable

@@ -17,7 +17,7 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
@@ -34,7 +34,7 @@ import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.pathString
 
-class FileRepository(private val app: AppServices) : Logging() {
+class FileRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     init {

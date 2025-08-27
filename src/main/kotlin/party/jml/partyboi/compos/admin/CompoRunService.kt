@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.raise.either
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
@@ -17,7 +17,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.io.path.createTempDirectory
 
 
-class CompoRunService(val app: AppServices) : Logging() {
+class CompoRunService(app: AppServices) : Service(app) {
     private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
 
     suspend fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<Path> = either {

@@ -4,11 +4,11 @@ import arrow.core.getOrElse
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.StoredProperties
+import party.jml.partyboi.Service
 import java.util.*
 import kotlin.concurrent.schedule
 
-class EventSignalEmitter(app: AppServices) : StoredProperties(app) {
+class EventSignalEmitter(app: AppServices) : Service(app) {
     private val lastCheck = runBlocking { property("lastCheck", Clock.System.now()) }
 
     private val scheduler: TimerTask = Timer().schedule(1000, 1000) {

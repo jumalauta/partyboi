@@ -5,12 +5,13 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.datetime.Clock
-import party.jml.partyboi.Logging
+import party.jml.partyboi.AppServices
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 
-class SignalService : Logging() {
+class SignalService(app: AppServices) : Service(app) {
     val flow = MutableStateFlow(Signal.initial())
 
     suspend fun emit(signal: Signal) {

@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.TextSlide
@@ -27,7 +27,7 @@ import kotlin.concurrent.schedule
 import kotlin.io.path.readText
 
 
-class ScreenService(private val app: AppServices) : Logging() {
+class ScreenService(app: AppServices) : Service(app) {
     private val state = MutableStateFlow(ScreenState.Empty)
     val repository = ScreenRepository(app)
     private var scheduler: TimerTask? = null

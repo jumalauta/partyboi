@@ -13,12 +13,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.util.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.*
@@ -40,7 +39,7 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
 import kotlin.io.path.exists
 
-class ReplicationService(val app: AppServices) : Logging() {
+class ReplicationService(app: AppServices) : Service(app) {
     private var schemaVersion: String? = null
     private val importConfig = app.config.replicationImport
     private val client: HttpClient

@@ -21,6 +21,7 @@ import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.schedule.EventRepositoryImpl
+import party.jml.partyboi.schedule.EventSignalEmitter
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
@@ -57,6 +58,7 @@ interface AppServices {
     val messages: MessageRepository
     val workQueue: WorkQueueService
     val ffmpeg: FfmpegService
+    val eventSignalEmitter: EventSignalEmitter
 }
 
 class AppServicesImpl(
@@ -78,14 +80,15 @@ class AppServicesImpl(
     override val screenshots = ScreenshotRepository(this)
     override val events = EventRepositoryImpl(this)
     override val triggers = TriggerRepository(this)
-    override val signals = SignalService()
+    override val signals = SignalService(this)
     override val assets = AssetsRepository(this)
     override val replication = ReplicationService(this)
     override val errors = ErrorRepository(this)
     override val email = EmailServiceFacade(this)
     override val messages = MessageRepository(this)
     override val workQueue = WorkQueueService(this)
-    override val ffmpeg = FfmpegService()
+    override val ffmpeg = FfmpegService(this)
+    override val eventSignalEmitter = EventSignalEmitter(this)
 
     companion object {
         var globalInstance: AppServicesImpl? = null
@@ -106,3 +109,9 @@ suspend fun Application.services(): AppServices {
 abstract class Logging {
     val log = KtorSimpleLogger(this.javaClass.name)
 }
+
+abstract class Service(val app: AppServices) : Logging() {
+    inline fun <reified T> property(key: String, value: T) =
+        app.properties.createPersistentCachedValue("${this::class.simpleName}.$key", value)
+}
+

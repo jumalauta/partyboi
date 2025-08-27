@@ -13,7 +13,7 @@ import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.db.DbBasicMappers.asInt
@@ -23,7 +23,7 @@ import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import kotlin.random.Random
 
-class VoteKeyRepository(val app: AppServices) : Logging() {
+class VoteKeyRepository(app: AppServices) : Service(app) {
     val db = app.db
 
     suspend fun getAllVoteKeys(): AppResult<List<VoteKeyRow>> = app.db.use {

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.data.Forbidden
 import party.jml.partyboi.data.isFalse
@@ -25,10 +25,10 @@ import party.jml.partyboi.validation.MaxLength
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 
-class CompoRepository(private val app: AppServices) : Logging() {
+class CompoRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
-    val generalRules = app.properties.property("CompoRepository.GeneralRules", GeneralRules(""))
+    val generalRules = app.properties.createPersistentCachedValue("CompoRepository.GeneralRules", GeneralRules(""))
 
     suspend fun getById(id: Int, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
@@ -37,7 +37,7 @@ class CompoRepository(private val app: AppServices) : Logging() {
     suspend fun getAllCompos(): AppResult<List<Compo>> = db.use {
         it.many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
-    
+
     suspend fun add(compo: NewCompo): AppResult<Compo> = db.use {
         it.one(
             queryOf(

@@ -14,7 +14,7 @@ import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.Logging
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.Forbidden
 import party.jml.partyboi.data.FormError
 import party.jml.partyboi.data.isTrue
@@ -31,7 +31,7 @@ import party.jml.partyboi.validation.MaxLength
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 
-class EntryRepository(private val app: AppServices) : Logging() {
+class EntryRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     suspend fun getAllEntries(): AppResult<List<Entry>> = db.use {

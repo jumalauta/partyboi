@@ -6,7 +6,8 @@ import arrow.core.toOption
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
-import party.jml.partyboi.Logging
+import party.jml.partyboi.AppServices
+import party.jml.partyboi.Service
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
@@ -15,7 +16,9 @@ import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 
-class VoteRepository(private val db: DatabasePool) : Logging() {
+class VoteRepository(app: AppServices) : Service(app) {
+    private val db: DatabasePool = app.db
+
     suspend fun castVote(userId: Int, entryId: Int, points: Int): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
