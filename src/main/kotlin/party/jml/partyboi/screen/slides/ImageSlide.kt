@@ -3,7 +3,6 @@ package party.jml.partyboi.screen.slides
 import kotlinx.html.FlowContent
 import kotlinx.html.div
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.Form
@@ -20,7 +19,7 @@ data class ImageSlide(
     override suspend fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
             div(classes = "image") {
-                attributes["style"] = "background-image: url(\"/assets/uploaded/$assetImage\")"
+                attributes["style"] = "background-image: url(\"/assets/$assetImage\")"
             }
         }
     }
