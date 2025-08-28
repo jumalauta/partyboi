@@ -3,7 +3,6 @@ package party.jml.partyboi.system
 import arrow.core.toOption
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import party.jml.partyboi.AppServices
@@ -25,6 +24,7 @@ class ErrorRepository(app: AppServices) {
     }
 
     suspend inline fun <reified T> saveSafely(error: Throwable, context: T? = null): String? {
+        if (isIgnoredError(error)) return null
         val key = randomShortId()
         val jsonContext = try {
             context?.let { Json.encodeToString(it) }
@@ -60,6 +60,14 @@ class ErrorRepository(app: AppServices) {
                 limit * pageIndex,
             ).map(ErrorRow.fromRow)
         )
+    }
+
+    fun isIgnoredError(error: Throwable): Boolean {
+        val ignoredMessages = listOf(
+            "Job was cancelled",
+            "Cannot write to channel",
+        )
+        return ignoredMessages.contains(error.message)
     }
 }
 
