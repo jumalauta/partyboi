@@ -35,14 +35,15 @@ suspend fun ApplicationCall.apiRespond(result: AppResult<Unit>) {
 }
 
 
-suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm() =
-    Form.fromParameters<T>(receiveMultipart())
+suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm(formFieldLimit: Long): AppResult<Form<T>> =
+    Form.fromParameters<T>(receiveMultipart(formFieldLimit = formFieldLimit))
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
     handleForm: suspend Raise<AppError>.(data: T) -> Renderable,
-    crossinline handleError: suspend Raise<AppError>.(formWithErrors: Form<T>) -> Renderable
+    crossinline handleError: suspend Raise<AppError>.(formWithErrors: Form<T>) -> Renderable,
+    formFieldLimit: Long = -1L,
 ) {
-    receiveForm<T>().fold(
+    receiveForm<T>(formFieldLimit).fold(
         { respondPage(it) },
         { form ->
             val result = form.validated().fold(

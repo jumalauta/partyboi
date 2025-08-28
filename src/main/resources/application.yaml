@@ -27,6 +27,7 @@ files:
   entries: "$FILES_ENTRIES:./data/entries"
   assets: "$FILES_ASSETS:./data/assets"
   screenshots: "$FILES_SCREENSHOTS:./data/screenshots"
+  maxSize: 1.2GB
 
 email:
   brevo:

@@ -6,6 +6,7 @@ import arrow.core.some
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.util.*
+import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.data.nonEmptyString
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -55,6 +56,9 @@ class ConfigReader(private val config: ApplicationConfig) {
     val brevoApiKey: String? by lazy { config.propertyOrNull("email.brevo.apiKey")?.getString()?.nonEmptyString() }
     val mockEmail: Boolean? by lazy { config.propertyOrNull("email.mock")?.getString() == "true" }
 
+    // File uploads
+    val maxFileUploadSize: Long by lazy { config.propertyOrNull("files.maxSize")?.getSize() ?: -1L }
+
     // Replication
     val replicationExportApiKey: String? by lazy {
         config.propertyOrNull("replication.export.key")?.getString()?.nonEmptyString()
@@ -74,3 +78,7 @@ data class ReplicationImport(
     val source: String,
     val apiKey: String,
 )
+
+fun ApplicationConfigValue.getSize(): Long {
+    return Filesize.parseHumanFriendly(getString()).fold({ -1L }, { it })
+}

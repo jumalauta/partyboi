@@ -34,7 +34,8 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
         post("/admin/assets") {
             call.processForm<AdminAssetsPage.AddAsset>(
                 { app.assets.write(it.file).map { redirectionToAssets }.bind() },
-                { renderAdminAssetsPage(addAssetForm = it) }
+                { renderAdminAssetsPage(addAssetForm = it) },
+                app.config.maxFileUploadSize,
             )
         }
     }
