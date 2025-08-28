@@ -35,7 +35,7 @@ object AdminAssetsPage {
                                             td {
                                                 a(href = "/assets/${it}") {
                                                     title = it.fullName
-                                                    +it.truncatedName
+                                                    +it.displayName
                                                 }
                                             }
                                             td {

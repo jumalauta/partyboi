@@ -81,6 +81,10 @@ data class Asset(
             }
     }
 
+    val displayName: String by lazy {
+        truncatedName.replace("/", " / ")
+    }
+
     val type: String by lazy {
         FileDesc.getType(fullName)
     }

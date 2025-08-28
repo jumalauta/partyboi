@@ -27,7 +27,7 @@ data class ImageSlide(
 
     override fun getForm(): Form<ImageSlide> = Form(ImageSlide::class, this, true)
     override fun toJson(): String = Json.encodeToString(this)
-    override fun getName(): String = Asset(assetImage).truncatedName
+    override fun getName(): String = Asset(assetImage).displayName
     override fun getType(): SlideType = SlideType("image", "Image")
 
     companion object {
