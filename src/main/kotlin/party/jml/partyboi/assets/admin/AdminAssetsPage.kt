@@ -1,6 +1,7 @@
 package party.jml.partyboi.assets.admin
 
 import kotlinx.html.*
+import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Label
@@ -12,7 +13,7 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 
 object AdminAssetsPage {
-    fun render(addAssetForm: Form<AddAsset>, assets: List<String>) =
+    fun render(addAssetForm: Form<AddAsset>, assets: List<Asset>) =
         Page("Assets") {
             h1 { +"Assets" }
 
@@ -31,11 +32,16 @@ object AdminAssetsPage {
                                 tbody {
                                     assets.forEach {
                                         tr {
-                                            td { a(href = "/assets/$it") { +it } }
+                                            td {
+                                                a(href = "/assets/${it}") {
+                                                    title = it.fullName
+                                                    +it.truncatedName
+                                                }
+                                            }
                                             td {
                                                 deleteButton(
                                                     url = "/admin/assets/$it",
-                                                    tooltipText = "Delete $it",
+                                                    tooltipText = "Delete ${it.truncatedName}",
                                                     confirmation = "Do you really want to delete file $it?"
                                                 )
                                             }

@@ -1,6 +1,7 @@
 package party.jml.partyboi.assets
 
 import arrow.core.flatMap
+import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.catchError
@@ -18,7 +19,7 @@ class AssetsRepository(app: AppServices) {
         assetsDir.toFile().mkdirs()
     }
 
-    suspend fun write(file: FileUpload): AppResult<Unit> =
+    fun write(file: FileUpload): AppResult<Unit> =
         catchError {
             val target = assetsDir.resolve(file.name)
             target.parent.toFile().mkdirs()
@@ -27,20 +28,21 @@ class AssetsRepository(app: AppServices) {
             file.writeAndAutoExtract(it)
         }
 
-    fun getList(): List<String> =
+    fun getList(): List<Asset> =
         try {
             Files.walk(assetsDir).use { paths ->
                 paths
                     .filter { Files.isRegularFile(it) }
                     .map { it.relativeTo(assetsDir).toString() }
                     .toList()
+                    .map { Asset(it) }
             }
         } catch (_: Throwable) {
             emptyList()
         }
 
-    fun getList(type: String): List<String> =
-        getList().filter { FileDesc.getType(it) == type }
+    fun getList(type: String): List<Asset> =
+        getList().filter { it.type == type }
 
     fun getFile(name: String): Path =
         assetsDir.resolve(name)
@@ -54,4 +56,32 @@ class AssetsRepository(app: AppServices) {
 
     fun getChecksum(name: String): AppResult<String> =
         FileChecksums.get(assetsDir.resolve(name))
+}
+
+@Serializable
+data class Asset(
+    val fullName: String
+) {
+    override fun toString(): String = fullName
+
+    val truncatedName: String by lazy {
+        val maxEntryLength = 38
+        fullName
+            .split('/')
+            .joinToString("/") {
+                if (it.length >= maxEntryLength) {
+                    if (it.contains(".")) {
+                        val ext = it.split('.').last()
+                        val head = it.take(maxEntryLength - ext.length - 3)
+                        "${head}...${ext}"
+                    } else {
+                        it.take(maxEntryLength - 3) + "..."
+                    }
+                } else it
+            }
+    }
+
+    val type: String by lazy {
+        FileDesc.getType(fullName)
+    }
 }

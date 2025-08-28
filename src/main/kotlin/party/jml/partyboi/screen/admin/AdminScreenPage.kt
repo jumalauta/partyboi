@@ -1,6 +1,7 @@
 package party.jml.partyboi.screen.admin
 
 import kotlinx.html.*
+import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.DropdownOption
@@ -212,7 +213,7 @@ object AdminScreenPage {
         slideSet: String,
         slide: SlideEditData,
         triggers: List<TriggerRow>,
-        assetImages: List<String>,
+        assetImages: List<Asset>,
         errors: AppError? = null,
         slideSets: List<SlideSetRow>,
     ) = Page(
@@ -228,7 +229,7 @@ object AdminScreenPage {
                 url = "/admin/screen/${slideSet}/${slide.id}/${slide.slide.javaClass.simpleName.lowercase()}",
                 form = if (errors == null) form else form.with(errors),
                 submitButtonLabel = "Save changes",
-                options = mapOf("assetImage" to assetImages.map(DropdownOption.fromString))
+                options = mapOf("assetImage" to assetImages.map(DropdownOption.fromAsset))
             )
         }
 

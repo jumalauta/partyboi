@@ -18,6 +18,7 @@ import io.ktor.utils.io.*
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.*
@@ -178,14 +179,14 @@ class ReplicationService(app: AppServices) : Service(app) {
             .bindAll()
     }
 
-    suspend fun syncAssets(assets: List<String>): AppResult<Unit> = either {
+    suspend fun syncAssets(assets: List<Asset>): AppResult<Unit> = either {
         log.info("Sync ${assets.size} assets")
         assets
             .map {
                 downloadFile(
                     path = "asset/$it",
-                    checksum = app.assets.getChecksum(it).getOrNull(),
-                    target = app.assets.getFile(it).toFile(),
+                    checksum = app.assets.getChecksum(it.fullName).getOrNull(),
+                    target = app.assets.getFile(it.fullName).toFile(),
                 )
             }
             .bindAll()
@@ -241,7 +242,7 @@ data class DataExport(
     val triggers: List<TriggerRow>,
     val votes: List<VoteRow>,
     val voteKeys: List<VoteKeyRow>,
-    val assets: List<String>,
+    val assets: List<Asset>,
 )
 
 class TrustAllX509TrustManager : X509TrustManager {

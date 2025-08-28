@@ -5,6 +5,7 @@ import kotlinx.html.div
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.screen.Slide
@@ -26,7 +27,7 @@ data class ImageSlide(
 
     override fun getForm(): Form<ImageSlide> = Form(ImageSlide::class, this, true)
     override fun toJson(): String = Json.encodeToString(this)
-    override fun getName(): String = assetImage
+    override fun getName(): String = Asset(assetImage).truncatedName
     override fun getType(): SlideType = SlideType("image", "Image")
 
     companion object {

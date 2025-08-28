@@ -3,6 +3,7 @@ package party.jml.partyboi.form
 import arrow.core.Option
 import io.ktor.util.logging.*
 import kotlinx.html.*
+import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.system.TimeService
@@ -220,6 +221,7 @@ data class DropdownOption(
 
     companion object {
         val fromString: (String) -> DropdownOption = { DropdownOption(it, it) }
+        val fromAsset: (Asset) -> DropdownOption = { DropdownOption(it.fullName, it.truncatedName) }
         inline fun <reified T : Enum<T>> fromEnum(toLabel: (T) -> String) =
             enumEntries<T>().map { DropdownOption(it.name, toLabel(it)) }
     }
