@@ -28,20 +28,25 @@ object ICalendar {
 
     class ICalendarDsl {
         val ics = StringBuilder()
+        val CRLF = "\r\n"
 
         override fun toString(): String = ics.toString()
 
+        fun append(line: String) {
+            ics.append("$line$CRLF")
+        }
+
         fun obj(name: String, block: ICalendarDsl.() -> Unit) {
-            ics.append("BEGIN:$name\n")
+            append("BEGIN:$name")
             block()
-            ics.append("END:$name\n")
+            append("END:$name")
         }
 
         fun calendar(block: ICalendarDsl.() -> Unit) = obj("VCALENDAR", block)
         fun event(block: ICalendarDsl.() -> Unit) = obj("VEVENT", block)
 
-        fun prop(key: String, value: String) = ics.append("$key:$value\n")
-        fun prop(key: String, time: Instant) = ics.append("$key:${formatTime(time)}\n")
+        fun prop(key: String, value: String) = append("$key:$value")
+        fun prop(key: String, time: Instant) = append("$key:${formatTime(time)}")
 
         private fun formatTime(time: Instant): String =
             time
