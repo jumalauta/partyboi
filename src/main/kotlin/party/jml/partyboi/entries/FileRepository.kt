@@ -23,6 +23,7 @@ import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.toFilenameToken
 import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
@@ -246,6 +247,10 @@ class FileRepository(app: AppServices) : Service(app) {
                 app.workQueue.addTask(NormalizeLoudness(file))
             }
         }
+    }
+
+    suspend fun getEntryIdsWithFiles(): AppResult<List<Int>> = db.use {
+        it.many(queryOf("SELECT DISTINCT entry_id FROM file").map(asInt))
     }
 
 }

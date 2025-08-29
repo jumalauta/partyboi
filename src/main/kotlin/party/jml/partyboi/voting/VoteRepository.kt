@@ -103,6 +103,7 @@ data class CompoResult(
     val title: String,
     val author: String,
     val info: Option<String>,
+    val downloadLink: String?,
 ) {
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
@@ -114,6 +115,7 @@ data class CompoResult(
                 title = row.string("title"),
                 author = row.string("author"),
                 info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
+                downloadLink = null,
             )
         }
 

@@ -95,7 +95,19 @@ class VoteService(app: AppServices) : Service(app) {
         repository.getResults(onlyPublic = false)
 
     suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
-        repository.getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
+        either {
+            val entriesWithFiles = app.files.getEntryIdsWithFiles().bind()
+            repository
+                .getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
+                .bind()
+                .map { entry ->
+                    if (entriesWithFiles.contains(entry.entryId)) {
+                        entry.copy(downloadLink = "/entries/download/${entry.entryId}")
+                    } else {
+                        entry
+                    }
+                }
+        }
 
     suspend fun getResultsFileContent(includeInfo: Boolean): AppResult<String> = either {
         val header = app.settings.resultsFileHeader.get().bind()

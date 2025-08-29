@@ -137,6 +137,31 @@ fun Application.configureEntriesRouting(app: AppServices) {
             )
         }
 
+        get("/entries/download/{entryId}") {
+            either {
+                val entryId = call.parameterInt("entryId").bind()
+                val entry = app.entries.get(entryId).bind()
+                val compo = app.compos.getById(entry.compoId).bind()
+                if (compo.publicResults) {
+                    app.files.getLatest(entryId, originalsOnly = true).bind()
+                } else {
+                    raise(NotFound("Downloading this file is disabled until results are public"))
+                }
+            }.fold(
+                { call.respondPage(it) },
+                {
+                    call.response.header(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.Attachment.withParameter(
+                            ContentDisposition.Parameters.FileName,
+                            it.originalFilename
+                        ).toString()
+                    )
+                    call.respondFile(it.getStorageFile())
+                }
+            )
+        }
+
         post("/entries/{id}") {
             call.processForm<EntryUpdate>(
                 { entry ->

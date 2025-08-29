@@ -1,9 +1,9 @@
 package party.jml.partyboi.compos
 
-import party.jml.partyboi.templates.Page
-import party.jml.partyboi.voting.CompoResult
 import kotlinx.html.*
+import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
+import party.jml.partyboi.voting.CompoResult
 
 object ResultsPage {
     fun render(results: List<CompoResult>) = Page("Results") {
@@ -34,7 +34,15 @@ object ResultsPage {
                                 tr {
                                     td { if (index == 0) +"$place." }
                                     td { +result.author }
-                                    td { +result.title }
+                                    td {
+                                        if (result.downloadLink != null) {
+                                            a(href = result.downloadLink) {
+                                                +result.title
+                                            }
+                                        } else {
+                                            +result.title
+                                        }
+                                    }
                                     td { +result.points.toString() }
                                 }
                             }
