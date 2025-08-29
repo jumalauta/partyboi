@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.screen.slides.Slide
 
 object ScreenPage {
     fun renderContent(slide: Slide<*>, app: AppServices) =

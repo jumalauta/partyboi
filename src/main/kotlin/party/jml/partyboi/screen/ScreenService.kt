@@ -3,24 +3,19 @@ package party.jml.partyboi.screen
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.FlowContent
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.form.Form
 import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.triggers.*
-import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
@@ -28,13 +23,17 @@ import kotlin.io.path.readText
 
 
 class ScreenService(app: AppServices) : Service(app) {
-    private val state = MutableStateFlow(ScreenState.Empty)
-    val repository = ScreenRepository(app)
-    private var scheduler: TimerTask? = null
+    private val repository = ScreenRepository(app)
+    private val state = property("state", ScreenState.Empty).toState()
+    private var autoRunScheduler: TimerTask? = null
+    private val autoRunOn = property("autoRunOn", false)
 
     init {
         runBlocking {
             repository.getAdHoc().map { it.map { state.emit(ScreenState.fromRow(it)) } }
+            if (autoRunOn.getOrNull() == true) {
+                startAutoRunScheduler()
+            }
         }
     }
 
@@ -52,12 +51,10 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
 
-    fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, scheduler != null)
+    fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
-    fun waitForNext(): Flow<ScreenState> {
-        return state.drop(1).take(1)
-    }
+    fun waitForNext(): Flow<ScreenState> = state.waitForNext()
 
     suspend fun getAddHoc() = repository.getAdHoc()
 
@@ -93,20 +90,27 @@ class ScreenService(app: AppServices) : Service(app) {
 
     suspend fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
 
-    fun stopSlideSet() {
-        scheduler?.cancel()
-        scheduler = null
+    suspend fun stopSlideSet() {
+        autoRunScheduler?.cancel()
+        autoRunScheduler = null
+        autoRunOn.set(false)
     }
 
     suspend fun startSlideSet(slideSetName: String): AppResult<Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
             show(firstScreen)
-            scheduler = Timer().schedule(10000, 10000) {
-                runBlocking {
-                    showNext()
-                }
+            startAutoRunScheduler()
+        }
+
+    suspend fun startAutoRunScheduler() {
+        autoRunScheduler = Timer().schedule(10000, 10000) {
+            runBlocking {
+                showNext()
             }
         }
+        autoRunOn.set(true)
+    }
+
 
     suspend fun show(slideId: Int) = either {
         show(repository.getSlide(slideId).bind())
@@ -226,6 +230,7 @@ class ScreenService(app: AppServices) : Service(app) {
     }
 }
 
+@Serializable
 data class ScreenState(
     val slideSet: String,
     val id: Int,
@@ -242,15 +247,6 @@ data class ScreenState(
 
         val Empty = ScreenState("adhoc", -1, TextSlide.Empty)
     }
-}
-
-interface Slide<A : Validateable<A>> {
-    suspend fun render(ctx: FlowContent, app: AppServices)
-    fun variant(): String? = null
-    fun getForm(): Form<A>
-    fun toJson(): String
-    fun getName(): String
-    fun getType(): SlideType
 }
 
 interface AutoRunHalting {

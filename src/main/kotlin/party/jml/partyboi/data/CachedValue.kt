@@ -2,7 +2,11 @@ package party.jml.partyboi.data
 
 import arrow.core.raise.either
 import arrow.core.right
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import party.jml.partyboi.system.AppResult
@@ -69,4 +73,21 @@ class PersistentCachedValue<T>(
 
     override suspend fun refresh(): AppResult<T> =
         cache.refresh().onRight { storeValue(it) }
+
+    fun toState() = PersistentState(this)
+}
+
+class PersistentState<T>(val property: PersistentCachedValue<T>) {
+    private val flow: MutableStateFlow<T> = runBlocking {
+        MutableStateFlow(property.getOrNull() ?: throw IllegalStateException("Could not initialize state"))
+    }
+
+    suspend fun emit(value: T) {
+        flow.emit(value)
+        property.set(value)
+    }
+
+    fun waitForNext(): Flow<T> = flow.drop(1).take(1)
+    
+    val value get() = flow.value
 }

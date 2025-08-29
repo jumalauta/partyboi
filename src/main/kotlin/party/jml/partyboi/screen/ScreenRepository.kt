@@ -16,10 +16,7 @@ import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.replication.DataExport
-import party.jml.partyboi.screen.slides.ImageSlide
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.ScheduleSlide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem

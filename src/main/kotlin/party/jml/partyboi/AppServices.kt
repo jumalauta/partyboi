@@ -8,6 +8,7 @@ import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserService
 import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.compos.admin.CompoRunService
+import party.jml.partyboi.data.PersistentCachedValue
 import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.Migrations
@@ -76,11 +77,11 @@ class AppServicesImpl(
     override val votes = VoteService(this)
     override val voteKeys = VoteKeyRepository(this)
     override val compoRun = CompoRunService(this)
-    override val screen = ScreenService(this)
     override val screenshots = ScreenshotRepository(this)
     override val events = EventRepositoryImpl(this)
     override val triggers = TriggerRepository(this)
     override val signals = SignalService(this)
+    override val screen = ScreenService(this)
     override val assets = AssetsRepository(this)
     override val replication = ReplicationService(this)
     override val errors = ErrorRepository(this)
@@ -111,7 +112,7 @@ abstract class Logging {
 }
 
 abstract class Service(val app: AppServices) : Logging() {
-    inline fun <reified T> property(key: String, value: T) =
+    inline fun <reified T> property(key: String, value: T): PersistentCachedValue<T> =
         app.properties.createPersistentCachedValue("${this::class.simpleName}.$key", value)
 }
 

@@ -13,12 +13,8 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
-import party.jml.partyboi.screen.Slide
 import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.ImageSlide
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.ScheduleSlide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page

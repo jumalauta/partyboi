@@ -9,10 +9,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.EventRepository
-import party.jml.partyboi.screen.slides.ImageSlide
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.ScheduleSlide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 

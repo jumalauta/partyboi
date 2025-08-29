@@ -15,6 +15,7 @@ import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.encodeToStringSafe
 
 class PropertyRepository(app: AppServices) : Service(app) {
     private val db = app.db
@@ -32,8 +33,11 @@ class PropertyRepository(app: AppServices) : Service(app) {
                 }
             },
             storeValue = { value ->
-                store(key, Json.encodeToString(value)).onRight {
-                    app.signals.emit(Signal.propertyUpdated(key))
+                either {
+                    val json = Json.encodeToStringSafe(value)
+                    store(key, json.bind()).onRight {
+                        app.signals.emit(Signal.propertyUpdated(key))
+                    }.bind()
                 }
             }
         )

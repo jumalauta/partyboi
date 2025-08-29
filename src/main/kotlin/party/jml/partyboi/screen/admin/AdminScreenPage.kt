@@ -9,6 +9,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.form.renderReadonlyFields
 import party.jml.partyboi.screen.*
+import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
