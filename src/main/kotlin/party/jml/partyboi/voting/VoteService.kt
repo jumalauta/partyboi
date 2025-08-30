@@ -77,6 +77,7 @@ class VoteService(app: AppServices) : Service(app) {
                 val userVotes = repository.getUserVotes(userId).bind()
                 live.value.entries
                     .sortedWith(compareBy({ it.runOrder }, { it.timestamp }))
+                    .reversed()
                     .map { entry ->
                         VotableEntry.apply(
                             entry,
