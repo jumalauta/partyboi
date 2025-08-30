@@ -61,6 +61,9 @@ data class TextSlide(
         fun compoStartsSoon(compoName: String): TextSlide =
             TextSlide("${compoName} compo starts soon", "", CompoInfoVariant)
 
+        fun compoStartsNow(compoName: String): TextSlide =
+            TextSlide("${compoName} compo starts NOW!", "", CompoInfoVariant)
+
         fun compoHasEnded(compoName: String): TextSlide =
             TextSlide("${compoName} compo has ended", "", CompoInfoVariant)
     }

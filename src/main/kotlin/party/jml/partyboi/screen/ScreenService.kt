@@ -139,7 +139,10 @@ class ScreenService(app: AppServices) : Service(app) {
         upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
         val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
 
-        val hypeSlides = listOf(TextSlide.compoStartsSoon(compo.name))
+        val hypeSlides = listOf(
+            TextSlide.compoStartsSoon(compo.name),
+            TextSlide.compoStartsNow(compo.name),
+        )
         val entrySlides = entries.mapIndexed { index, entry -> TextSlide.compoSlide(index, entry) }
         val endingSlides = listOf(TextSlide.compoHasEnded(compo.name))
 
