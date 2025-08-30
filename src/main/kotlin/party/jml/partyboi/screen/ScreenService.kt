@@ -18,7 +18,6 @@ import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.triggers.*
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
-import kotlin.concurrent.schedule
 import kotlin.io.path.readText
 
 
@@ -103,12 +102,12 @@ class ScreenService(app: AppServices) : Service(app) {
         }
 
     suspend fun startAutoRunScheduler() {
-        autoRunScheduler = Timer().schedule(10000, 10000) {
-            runBlocking {
-                showNext()
-            }
-        }
-        autoRunOn.set(true)
+//        autoRunScheduler = Timer().schedule(10000, 10000) {
+//            runBlocking {
+//                showNext()
+//            }
+//        }
+//        autoRunOn.set(true)
     }
 
 
