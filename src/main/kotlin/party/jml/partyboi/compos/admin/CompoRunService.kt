@@ -112,15 +112,16 @@ class CompoRunService(app: AppServices) : Service(app) {
         entries.forEach { entry ->
             val compo = compos.find { it.id == entry.compoId }
             if (compo != null) {
-                val file = app.files.getLatest(entry.id, originalsOnly = true).bind()
-                val target =
-                    app.files.makeDistributionFileName(
-                        file,
-                        entry,
-                        compo,
-                        dir,
-                    )
-                copyFile(file, target).bind()
+                app.files.getLatest(entry.id, originalsOnly = true).onRight { file ->
+                    val target =
+                        app.files.makeDistributionFileName(
+                            file,
+                            entry,
+                            compo,
+                            dir,
+                        )
+                    copyFile(file, target).bind()
+                }
             }
         }
 
