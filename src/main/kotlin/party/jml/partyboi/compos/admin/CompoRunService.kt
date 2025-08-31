@@ -9,6 +9,8 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.TempDir
+import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.zip.ZipUtils
 import java.io.*
 import java.nio.file.Path
@@ -20,8 +22,8 @@ import kotlin.io.path.createTempDirectory
 class CompoRunService(app: AppServices) : Service(app) {
     private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
 
-    suspend fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<Path> = either {
-        val tempDir = createTempDirectory()
+    suspend fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<TempDir> = either {
+        val tempDir = TempDir()
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind()
             .filter { it.qualified }
@@ -34,7 +36,7 @@ class CompoRunService(app: AppServices) : Service(app) {
                         fileDesc,
                         entry,
                         compo,
-                        tempDir,
+                        tempDir.path,
                         useFoldersForSingleFiles,
                         includeOrderNumber = true,
                     )
@@ -48,10 +50,10 @@ class CompoRunService(app: AppServices) : Service(app) {
         tempDir
     }
 
-    fun compressDirectory(sourceDir: Path): AppResult<Path> =
+    fun compressDirectory(sourceDir: Path): AppResult<File> =
         Either.catch {
-            val outputFile = kotlin.io.path.createTempFile()
-            ZipOutputStream(FileOutputStream(outputFile.toFile())).use { zipFile ->
+            val outputFile = createTemporaryFile()
+            ZipOutputStream(FileOutputStream(outputFile)).use { zipFile ->
                 compressDirectoryToZipfile(sourceDir, sourceDir, zipFile)
             }
             outputFile
@@ -90,7 +92,7 @@ class CompoRunService(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun compressAllEntries(): AppResult<Path> = either {
+    suspend fun compressAllEntries(): AppResult<File> = either {
         val dir = createTempDirectory()
 
         // Write results

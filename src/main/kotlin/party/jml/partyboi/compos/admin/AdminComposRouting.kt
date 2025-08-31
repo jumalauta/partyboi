@@ -103,7 +103,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 val useFoldersForSingleFiles = call.request.queryParameters["win"] == "true"
                 val compo = app.compos.getById(compoId).bind()
                 val entries = app.compoRun.prepareFiles(compoId, useFoldersForSingleFiles).bind()
-                val zipFile = app.compoRun.compressDirectory(entries).bind()
+                val zipFile = app.compoRun.compressDirectory(entries.path).bind()
 
                 val compoName = compo.name.toFilenameToken(true)
                 val timestamp = app.time.isoLocalTime().toFilenameToken(true)
@@ -115,7 +115,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                         "$compoName-compo-$timestamp.zip"
                     ).toString()
                 )
-                call.respondFile(zipFile.toFile())
+                call.respondFile(zipFile)
             }
         }
 
@@ -154,7 +154,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         get("/admin/compos/entries.zip") {
             either {
                 call.respondNamedFileDownload(
-                    app.compoRun.compressAllEntries().bind().toFile(),
+                    app.compoRun.compressAllEntries().bind(),
                     "entries.zip"
                 )
             }.onLeft {

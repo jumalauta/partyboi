@@ -9,6 +9,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
@@ -35,7 +36,7 @@ class ScreenshotRepository(val app: AppServices) {
                         .firstOrNull()
                         .toOption()
                         .map { (entry, _) ->
-                            val tempFile = kotlin.io.path.createTempFile()
+                            val tempFile = createTemporaryFile().toPath()
                             zip.getInputStream(entry).use { inputStream ->
                                 tempFile.toFile().outputStream().use { outputStream ->
                                     inputStream.transferTo(outputStream)
@@ -57,9 +58,9 @@ class ScreenshotRepository(val app: AppServices) {
     }
 
     suspend fun store(entryId: Int, upload: FileUpload): AppResult<Unit> = either {
-        val tempFile = kotlin.io.path.createTempFile()
+        val tempFile = createTemporaryFile()
         upload.write(tempFile).bind()
-        store(entryId, tempFile)
+        store(entryId, tempFile.toPath())
     }
 
     fun get(entryId: Int): Option<Screenshot> {

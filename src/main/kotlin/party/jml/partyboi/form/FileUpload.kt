@@ -10,6 +10,7 @@ import party.jml.partyboi.Config
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.MapCollector
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.zip.ZipUtils
 import java.io.File
 import java.nio.file.Files
@@ -18,7 +19,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
-import kotlin.io.path.writeBytes
 
 data class FileUpload(
     val name: String,
@@ -46,7 +46,7 @@ data class FileUpload(
         }
 
     fun extract(storageFilename: Path): AppResult<Unit> = either {
-        val tempFile = File.createTempFile("tmp", ".zip")
+        val tempFile = createTemporaryFile("tmp", ".zip")
         write(tempFile).bind()
 
         val storageDir = storageFilename.parent.resolve(storageFilename.nameWithoutExtension)
@@ -73,9 +73,9 @@ data class FileUpload(
         }
 
         fun fromByteArray(filename: String, bytes: ByteArray): FileUpload {
-            val tempFile = kotlin.io.path.createTempFile()
+            val tempFile = createTemporaryFile()
             tempFile.writeBytes(bytes)
-            return FileUpload(filename, tempFile.toFile())
+            return FileUpload(filename, tempFile)
         }
     }
 }
@@ -93,7 +93,7 @@ suspend fun MultiPartData.collect(): Pair<Map<String, List<String>>, Map<String,
                 }
 
                 is PartData.FileItem -> {
-                    val tempFile = kotlin.io.path.createTempFile().toFile()
+                    val tempFile = createTemporaryFile()
                     part.provider().copyAndClose(tempFile.writeChannel())
                     fileParams.add(
                         name, FileUpload(
