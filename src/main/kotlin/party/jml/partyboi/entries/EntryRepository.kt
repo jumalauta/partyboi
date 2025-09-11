@@ -12,7 +12,6 @@ import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.Forbidden
@@ -27,7 +26,6 @@ import party.jml.partyboi.entries.NewEntry.Companion.MAX_TITLE_LENGTH
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.MaxLength
@@ -251,27 +249,6 @@ class EntryRepository(app: AppServices) : Service(app) {
             )
                 .map(VotableEntry.fromRow)
         )
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.entries.size} entries")
-        data.entries.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO entry (id, title, author, screen_comment, org_comment, compo_id, user_id, qualified, run_order, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    it.id,
-                    it.title,
-                    it.author,
-                    it.screenComment.getOrNull(),
-                    it.orgComment.getOrNull(),
-                    it.compoId,
-                    it.userId,
-                    it.qualified,
-                    it.runOrder,
-                    it.timestamp,
-                )
-            )
-        }.bindAll()
     }
 }
 

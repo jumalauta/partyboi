@@ -36,9 +36,6 @@ services:
       FILES_ASSETS: /assets
       FILES_ENTRIES: /entries
       FILES_SCREENSHOTS: /screenshots
-      REPLICATION_EXPORT_KEY: "${REPLICATION_EXPORT_KEY}"
-      REPLICATION_IMPORT_SOURCE: "${REPLICATION_IMPORT_SOURCE}"
-      REPLICATION_IMPORT_KEY: "${REPLICATION_IMPORT_KEY}"
     volumes:
       - "${FILES_ASSETS}:/assets"
       - "${FILES_ENTRIES}:/entries"

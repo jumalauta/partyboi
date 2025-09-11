@@ -6,10 +6,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
@@ -223,8 +221,6 @@ class ScreenService(app: AppServices) : Service(app) {
             )
         }
     }
-
-    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
     private suspend fun show(row: ScreenRow) {
         val slide = row.getSlide()

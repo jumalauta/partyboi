@@ -41,17 +41,6 @@ fun Application.configureAuthentication(app: AppServices) {
             validate { if (it.isAdmin) it else null }
             challenge { call.respond(HttpStatusCode.Unauthorized) }
         }
-        bearer("replication") {
-            realm = "Data replication"
-            val apiKey = app.config.replicationExportApiKey
-            authenticate { tokenCredential ->
-                if (tokenCredential.token == apiKey) {
-                    UserIdPrincipal("replication")
-                } else {
-                    null
-                }
-            }
-        }
     }
 
     install(Sessions) {
@@ -117,11 +106,5 @@ fun Application.adminRouting(block: Route.() -> Unit) {
 fun Application.adminApiRouting(block: Route.() -> Unit) {
     routing {
         authenticate("adminApi") { block() }
-    }
-}
-
-fun Application.replicationRouting(block: Route.() -> Unit) {
-    routing {
-        authenticate("replication") { block() }
     }
 }

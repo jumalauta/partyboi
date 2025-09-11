@@ -19,7 +19,6 @@ import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
 import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.messages.MessageRepository
-import party.jml.partyboi.replication.ReplicationService
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.schedule.EventRepositoryImpl
 import party.jml.partyboi.schedule.EventSignalEmitter
@@ -53,7 +52,6 @@ interface AppServices {
     val triggers: TriggerRepository
     val signals: SignalService
     val assets: AssetsRepository
-    val replication: ReplicationService
     val errors: ErrorRepository
     val email: EmailServiceFacade
     val messages: MessageRepository
@@ -83,7 +81,6 @@ class AppServicesImpl(
     override val signals = SignalService(this)
     override val screen = ScreenService(this)
     override val assets = AssetsRepository(this)
-    override val replication = ReplicationService(this)
     override val errors = ErrorRepository(this)
     override val email = EmailServiceFacade(this)
     override val messages = MessageRepository(this)
@@ -96,12 +93,10 @@ class AppServicesImpl(
     }
 }
 
-suspend fun Application.services(): AppServices {
+fun Application.services(): AppServices {
     return AppServicesImpl.globalInstance ?: run {
         val db = getDatabasePool()
-        val migration = Migrations.migrate(db).getOrElse { it.throwError() }
         val app = AppServicesImpl(db, config())
-        app.replication.setSchemaVersion(migration.targetSchemaVersion ?: migration.initialSchemaVersion)
         AppServicesImpl.globalInstance = app
         app
     }

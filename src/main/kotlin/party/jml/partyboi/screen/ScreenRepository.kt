@@ -15,7 +15,6 @@ import party.jml.partyboi.data.Numbers.positiveInt
 import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
@@ -171,37 +170,6 @@ class ScreenRepository(app: AppServices) : Service(app) {
 
     suspend fun setRunOrder(id: Int, order: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.slideSets.size} slide sets")
-        data.slideSets.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO slideset (id, name, icon) VALUES (?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.icon,
-                )
-            )
-        }
-
-        log.info("Import ${data.slides.size} slides")
-        data.slides.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO screen (id, slideset_id, type, content, visible, run_order, show_on_info, readonly) VALUES (?, ?, ?, ?::jsonb, ?, ?, ?, ?)",
-                    it.id,
-                    it.slideSet,
-                    it.type,
-                    it.content,
-                    it.visible,
-                    it.runOrder,
-                    it.showOnInfoPage,
-                    it.readOnly,
-                )
-            )
-        }.bindAll()
     }
 
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())

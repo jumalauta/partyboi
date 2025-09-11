@@ -3,7 +3,6 @@ package party.jml.partyboi.voting
 import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
@@ -13,7 +12,6 @@ import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Unauthorized
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.VotableEntry
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
@@ -115,8 +113,6 @@ class VoteService(app: AppServices) : Service(app) {
         val results = getResults().bind()
         ResultsFileGenerator.generate(header, results, includeInfo)
     }
-
-    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
 
     suspend fun deleteAll() = repository.deleteAll()
 

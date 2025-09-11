@@ -5,7 +5,6 @@ import arrow.core.Option
 import arrow.core.none
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.UserCredentials.Companion.hashPassword
 import party.jml.partyboi.data.AppError
@@ -18,7 +17,6 @@ import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.form.Presentation
 import party.jml.partyboi.messages.MessageType
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.EmailAddress
@@ -210,8 +208,6 @@ class UserService(private val app: AppServices) {
         app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed successfully.").bind()
         userId
     }
-
-    fun import(tx: TransactionalSession, data: DataExport) = userRepository.import(tx, data)
 }
 
 data class PasswordResetForm(

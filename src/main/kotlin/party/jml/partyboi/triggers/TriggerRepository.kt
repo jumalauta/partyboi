@@ -15,7 +15,6 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.Validateable
@@ -78,24 +77,6 @@ class TriggerRepository(app: AppServices) : Service(app) {
         """, signal.toString()
             )
         )
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.triggers.size} triggers")
-        data.triggers.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO trigger (id, type, action, enabled, signal, description) VALUES (?, ?, ?::jsonb, ?, ?, ?)",
-                    it.triggerId,
-                    it.triggerType,
-                    it.actionJson,
-                    it.enabled,
-                    it.signal,
-                    it.description,
-                    // TODO: Copy execution time and error
-                )
-            )
-        }.bindAll()
     }
 
     private suspend fun setSuccessful(triggerId: Int, time: Instant) = db.use {

@@ -19,7 +19,6 @@ import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.messages.MessageType
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import kotlin.random.Random
 
@@ -104,19 +103,6 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
         ).map { userIds ->
             userIds.forEach { userId -> notifyUserOfVotingRights(userId) }
         }
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.voteKeys.size} vote keys")
-        data.voteKeys.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO votekey (key, appuser_id) VALUES (?, ?)",
-                    it.key,
-                    it.userId,
-                )
-            )
-        }.bindAll()
     }
 
     private suspend fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {

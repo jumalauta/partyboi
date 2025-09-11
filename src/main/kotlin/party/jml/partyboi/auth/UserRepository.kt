@@ -7,7 +7,6 @@ import arrow.core.right
 import io.ktor.server.auth.*
 import kotlinx.serialization.Serializable
 import kotliquery.Row
-import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
@@ -18,7 +17,6 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.*
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.*
 
@@ -201,25 +199,9 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.users.size} users")
-        data.users.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO appuser (id, name, password, is_admin) VALUES (?, ?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.hashedPassword,
-                    it.isAdmin,
-                )
-            )
-        }.bindAll()
-    }
-
     suspend fun makeAdmin(userId: Int, state: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
-
 
     suspend fun createAdminUser() = db.use {
         val password = app.config.adminPassword

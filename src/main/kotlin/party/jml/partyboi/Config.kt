@@ -58,26 +58,7 @@ class ConfigReader(private val config: ApplicationConfig) {
 
     // File uploads
     val maxFileUploadSize: Long by lazy { config.propertyOrNull("files.maxSize")?.getSize() ?: -1L }
-
-    // Replication
-    val replicationExportApiKey: String? by lazy {
-        config.propertyOrNull("replication.export.key")?.getString()?.nonEmptyString()
-    }
-    val replicationImport: Option<ReplicationImport> by lazy {
-        val source = config.propertyOrNull("replication.import.source")?.getString()?.nonEmptyString()
-        val apiKey = config.propertyOrNull("replication.import.key")?.getString()?.nonEmptyString()
-        if (source != null && apiKey != null) {
-            ReplicationImport(source, apiKey).some()
-        } else {
-            none()
-        }
-    }
 }
-
-data class ReplicationImport(
-    val source: String,
-    val apiKey: String,
-)
 
 fun ApplicationConfigValue.getSize(): Long {
     return Filesize.parseHumanFriendly(getString()).fold({ -1L }, { it })

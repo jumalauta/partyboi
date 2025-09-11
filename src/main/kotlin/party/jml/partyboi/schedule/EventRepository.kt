@@ -1,6 +1,5 @@
 package party.jml.partyboi.schedule
 
-import arrow.core.Either
 import arrow.core.Option
 import arrow.core.Some
 import arrow.core.raise.either
@@ -10,13 +9,11 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.*
 import party.jml.partyboi.triggers.Action
@@ -35,7 +32,6 @@ interface EventRepository {
     suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event>
     suspend fun delete(eventId: Int): AppResult<Unit>
     suspend fun deleteAll(): AppResult<Unit>
-    fun import(tx: TransactionalSession, data: DataExport): Either<AppError, List<Unit>>
 }
 
 class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
@@ -117,21 +113,6 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
 
     override suspend fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM event"))
-    }
-
-    override fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.events.size} events")
-        data.events.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO event (id, name, time, visible) VALUES (?, ?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.startTime,
-                    it.visible,
-                )
-            )
-        }.bindAll()
     }
 }
 

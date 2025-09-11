@@ -32,10 +32,3 @@ files:
 email:
   brevo:
     apiKey: "$BREVO_APIKEY:"
-
-replication:
-  import:
-    source: "$REPLICATION_IMPORT_SOURCE:"
-    key: "$REPLICATION_IMPORT_KEY:"
-  export:
-    key: "$REPLICATION_EXPORT_KEY:"

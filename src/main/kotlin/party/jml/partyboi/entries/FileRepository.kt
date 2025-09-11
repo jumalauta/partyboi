@@ -22,10 +22,12 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.toFilenameToken
-import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
-import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.db.many
+import party.jml.partyboi.db.one
+import party.jml.partyboi.db.option
+import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.workqueue.NormalizeLoudness
 import java.io.File
@@ -202,25 +204,6 @@ class FileRepository(app: AppServices) : Service(app) {
 
     suspend fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.files.size} file descriptions")
-        data.files.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO file (entry_id, version, orig_filename, storage_filename, type, size, uploaded_at, checksum) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    it.entryId,
-                    it.version,
-                    it.originalFilename,
-                    it.storageFilename,
-                    it.type,
-                    it.size,
-                    it.uploadedAt,
-                    it.checksum,
-                )
-            )
-        }.bindAll()
     }
 
     private fun buildStorageFilename(

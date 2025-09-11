@@ -47,14 +47,6 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
         }
     }
 
-    fun swapSchema(tx: TransactionalSession, fromSchema: String, toSchema: String) = either {
-        dropSchema(tx, toSchema).bind()
-        tx.exec(queryOf("ALTER SCHEMA $fromSchema RENAME TO $toSchema")).bind()
-    }
-
-    fun copyRows(tx: TransactionalSession, fromTable: String, toTable: String) =
-        tx.exec(queryOf("INSERT INTO $toTable SELECT * FROM $fromTable"))
-
     private fun dropSchema(tx: TransactionalSession, name: String) =
         tx.exec(queryOf("DROP SCHEMA IF EXISTS $name CASCADE"))
 

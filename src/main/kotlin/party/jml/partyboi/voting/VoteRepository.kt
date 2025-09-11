@@ -13,7 +13,6 @@ import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 
 class VoteRepository(app: AppServices) : Service(app) {
@@ -74,20 +73,6 @@ class VoteRepository(app: AppServices) : Service(app) {
         """.trimIndent()
             ).map(CompoResult.fromRow)
         )
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.votes.size} votes")
-        data.votes.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO VOTE (user_id, entry_id, points) VALUES (?, ?, ?)",
-                    it.userId,
-                    it.entryId,
-                    it.points,
-                )
-            )
-        }.bindAll()
     }
 
     suspend fun deleteAll() = db.use {

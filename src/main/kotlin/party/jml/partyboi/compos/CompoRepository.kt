@@ -1,7 +1,6 @@
 package party.jml.partyboi.compos
 
 import arrow.core.*
-import arrow.core.raise.either
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotliquery.Row
@@ -17,7 +16,6 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.form.*
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
@@ -123,25 +121,6 @@ class CompoRepository(app: AppServices) : Service(app) {
                 compoId,
             ).map { it.boolean(1) })
             .flatMap { if (it) Unit.right() else Forbidden().left() }
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.compos.size} compos")
-        data.compos.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO compo (id, name, rules, visible, allow_submit, allow_vote, public_results, formats) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.rules,
-                    it.visible,
-                    it.allowSubmit,
-                    it.allowVote,
-                    it.publicResults,
-                    it.fileFormats.map { it.name }.toTypedArray(),
-                )
-            )
-        }.bindAll()
     }
 
     suspend fun deleteAll(): AppResult<Unit> =
