@@ -3,10 +3,11 @@ package party.jml.partyboi.triggers
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.system.AppResult
+import java.util.*
 
 sealed interface Action {
     suspend fun description(app: AppServices): AppResult<String>
@@ -16,7 +17,8 @@ sealed interface Action {
 
 @Serializable
 data class OpenCloseVoting(
-    val compoId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val compoId: UUID,
     val open: Boolean,
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
@@ -30,7 +32,8 @@ data class OpenCloseVoting(
 
 @Serializable
 data class OpenCloseSubmitting(
-    val compoId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val compoId: UUID,
     val open: Boolean,
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
@@ -44,7 +47,8 @@ data class OpenCloseSubmitting(
 
 @Serializable
 data class OpenLiveVoting(
-    val compoId: Int
+    @Serializable(with = UUIDSerializer::class)
+    val compoId: UUID,
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
         val compo = app.compos.getById(compoId).bind()
@@ -72,7 +76,8 @@ object CloseLiveVoting : Action {
 
 @Serializable
 data class EnableLiveVotingForEntry(
-    val entryId: Int
+    @Serializable(with = UUIDSerializer::class)
+    val entryId: UUID
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
         val entry = app.entries.get(entryId).bind()

@@ -93,9 +93,10 @@ class AppServicesImpl(
     }
 }
 
-fun Application.services(): AppServices {
+suspend fun Application.services(): AppServices {
     return AppServicesImpl.globalInstance ?: run {
         val db = getDatabasePool()
+        Migrations.migrate(db).getOrElse { it.throwError() }
         val app = AppServicesImpl(db, config())
         AppServicesImpl.globalInstance = app
         app

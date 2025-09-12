@@ -8,10 +8,7 @@ import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
-import party.jml.partyboi.data.Forbidden
-import party.jml.partyboi.data.isFalse
-import party.jml.partyboi.data.optionalBoolean
-import party.jml.partyboi.data.toDatabaseEnum
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.entries.FileFormat
@@ -22,13 +19,14 @@ import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.validation.MaxLength
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 
 class CompoRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     val generalRules = app.properties.createPersistentCachedValue("CompoRepository.GeneralRules", GeneralRules(""))
 
-    suspend fun getById(id: Int, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
+    suspend fun getById(id: UUID, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))
     }
 
@@ -71,11 +69,11 @@ class CompoRepository(app: AppServices) : Service(app) {
         }
 
 
-    suspend fun setVisible(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun setVisible(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("update compo set visible = ? where id = ?", state, compoId))
     }
 
-    suspend fun allowSubmit(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun allowSubmit(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)",
@@ -86,7 +84,7 @@ class CompoRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun allowVoting(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun allowVoting(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)",
@@ -99,7 +97,7 @@ class CompoRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun publishResults(compoId: Int, state: Boolean): AppResult<Unit> = db.use {
+    suspend fun publishResults(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         it.updateOne(
             queryOf(
                 "update compo set public_results = ? where id = ?",
@@ -109,11 +107,11 @@ class CompoRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun isVotingOpen(compoId: Int): AppResult<Boolean> = db.use {
+    suspend fun isVotingOpen(compoId: UUID): AppResult<Boolean> = db.use {
         it.one(queryOf("SELECT allow_vote FROM compo WHERE id = ?", compoId).map(asBoolean))
     }
 
-    suspend fun assertCanSubmit(compoId: Int, isAdmin: Boolean): AppResult<Unit> = db.use {
+    suspend fun assertCanSubmit(compoId: UUID, isAdmin: Boolean): AppResult<Unit> = db.use {
         it.one(
             queryOf(
                 "select ? or (visible and allow_submit) from compo where id = ?",
@@ -132,7 +130,8 @@ class CompoRepository(app: AppServices) : Service(app) {
 @Serializable
 data class Compo(
     @Hidden
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     @Label("Name")
     @NotEmpty
     @MaxLength(64)
@@ -171,7 +170,7 @@ data class Compo(
     companion object {
         val fromRow: (Row) -> Compo = { row ->
             Compo(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 name = row.string("name"),
                 rules = row.string("rules"),
                 visible = row.boolean("visible"),
@@ -184,7 +183,7 @@ data class Compo(
         }
 
         val Empty = Compo(
-            id = -1,
+            id = UUID.randomUUID(),
             name = "",
             rules = "",
             visible = false,

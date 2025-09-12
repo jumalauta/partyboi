@@ -12,6 +12,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
@@ -19,6 +20,7 @@ import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
+import java.util.*
 
 class ScreenRepository(app: AppServices) : Service(app) {
     val db = app.db
@@ -60,7 +62,7 @@ class ScreenRepository(app: AppServices) : Service(app) {
         it.option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
     }
 
-    suspend fun getSlide(id: Int): AppResult<ScreenRow> = db.use {
+    suspend fun getSlide(id: UUID): AppResult<ScreenRow> = db.use {
         it.one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
     }
 
@@ -109,7 +111,7 @@ class ScreenRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun update(id: Int, slide: Slide<*>): AppResult<ScreenRow> = db.use {
+    suspend fun update(id: UUID, slide: Slide<*>): AppResult<ScreenRow> = db.use {
         val (type, content) = getTypeAndJson(slide)
         it.one(
             queryOf(
@@ -121,7 +123,7 @@ class ScreenRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun delete(id: Int): AppResult<Unit> = db.use {
+    suspend fun delete(id: UUID): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
     }
 
@@ -147,7 +149,7 @@ class ScreenRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getNext(slideSet: String, currentId: Int): AppResult<ScreenRow> = either {
+    suspend fun getNext(slideSet: String, currentId: UUID): AppResult<ScreenRow> = either {
         val screens = getSlideSetSlides(slideSet).bind()
         val index = positiveInt(screens.indexOfFirst { it.id == currentId })
             .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
@@ -160,15 +162,15 @@ class ScreenRepository(app: AppServices) : Service(app) {
             .bind()
     }
 
-    suspend fun setVisible(id: Int, visible: Boolean): AppResult<Unit> = db.use {
+    suspend fun setVisible(id: UUID, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
     }
 
-    suspend fun showOnInfo(id: Int, visible: Boolean): AppResult<Unit> = db.use {
+    suspend fun showOnInfo(id: UUID, visible: Boolean): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET show_on_info = ? WHERE id = ?", visible, id))
     }
 
-    suspend fun setRunOrder(id: Int, order: Int): AppResult<Unit> = db.use {
+    suspend fun setRunOrder(id: UUID, order: Int): AppResult<Unit> = db.use {
         it.updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
     }
 
@@ -199,7 +201,8 @@ data class SlideSetRow(
 
 @Serializable
 data class ScreenRow(
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     val slideSet: String,
     val type: String,
     val content: String,
@@ -222,7 +225,7 @@ data class ScreenRow(
     companion object {
         val fromRow: (Row) -> ScreenRow = { row ->
             ScreenRow(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 slideSet = row.string("slideset_id"),
                 type = row.string("type"),
                 content = row.string("content"),

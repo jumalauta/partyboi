@@ -13,6 +13,7 @@ import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
+import java.util.*
 import kotlin.io.path.exists
 
 class ScreenshotRepository(val app: AppServices) {
@@ -49,7 +50,7 @@ class ScreenshotRepository(val app: AppServices) {
         return none()
     }
 
-    fun store(entryId: Int, source: Path) {
+    fun store(entryId: UUID, source: Path) {
         val inputImage = ImmutableImage.loader().fromPath(source)
         val outputImage = getFile(entryId)
         outputImage.parent.toFile().mkdirs()
@@ -57,13 +58,13 @@ class ScreenshotRepository(val app: AppServices) {
         inputImage.scaleToHeight(400).output(writer, outputImage)
     }
 
-    suspend fun store(entryId: Int, upload: FileUpload): AppResult<Unit> = either {
+    suspend fun store(entryId: UUID, upload: FileUpload): AppResult<Unit> = either {
         val tempFile = createTemporaryFile()
         upload.write(tempFile).bind()
         store(entryId, tempFile.toPath())
     }
 
-    fun get(entryId: Int): Option<Screenshot> {
+    fun get(entryId: UUID): Option<Screenshot> {
         val path = getFile(entryId)
         return if (path.exists()) Some(Screenshot(entryId, path)) else None
     }
@@ -73,7 +74,7 @@ class ScreenshotRepository(val app: AppServices) {
             .map { app.screenshots.get(it.id) }
             .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
 
-    fun getFile(entryId: Int): Path =
+    fun getFile(entryId: UUID): Path =
         app.config.screenshotsDir.resolve("screenshot-$entryId.jpg")
 
     private fun heuristicsScore(filename: String): Int {
@@ -89,7 +90,7 @@ class ScreenshotRepository(val app: AppServices) {
 }
 
 data class Screenshot(
-    val entryId: Int,
+    val entryId: UUID,
     val systemPath: Path,
 ) {
     fun externalUrl() = "/entries/$entryId/screenshot.jpg"

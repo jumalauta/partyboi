@@ -23,11 +23,12 @@ import party.jml.partyboi.validation.EmailAddress
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.VoteKey
+import java.util.*
 
 class UserService(private val app: AppServices) {
     private val userRepository = UserRepository(app)
     private val passwordResetRepository = PasswordResetRepository(app)
-    private val userSessionReloadRequests = mutableSetOf<Int>()
+    private val userSessionReloadRequests = mutableSetOf<UUID>()
 
     init {
         runBlocking {
@@ -35,11 +36,11 @@ class UserService(private val app: AppServices) {
         }
     }
 
-    suspend fun getUser(userId: Int): AppResult<User> = userRepository.getUser(userId)
+    suspend fun getUser(userId: UUID): AppResult<User> = userRepository.getUser(userId)
     suspend fun getUserByName(username: String): AppResult<User> = userRepository.getUser(username)
     suspend fun getUsers(): AppResult<List<User>> = userRepository.getUsers()
 
-    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = either {
+    suspend fun updateUser(userId: UUID, user: UserCredentials): AppResult<Unit> = either {
         val oldUser = userRepository.getUser(userId).bind()
         userRepository.updateUser(userId, user)
             .mapLeft {
@@ -61,7 +62,7 @@ class UserService(private val app: AppServices) {
         }
     }
 
-    suspend fun makeAdmin(userId: Int, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
+    suspend fun makeAdmin(userId: UUID, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
     suspend fun deleteAll() = userRepository.deleteAll()
 
     suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> =
@@ -127,7 +128,7 @@ class UserService(private val app: AppServices) {
             )
         }
 
-    suspend fun verifyEmail(userId: Int, verificationCode: String): Either<AppError, Unit> = either {
+    suspend fun verifyEmail(userId: UUID, verificationCode: String): Either<AppError, Unit> = either {
         val expectedCode = userRepository.getEmailVerificationCode(userId).onLeft {
             app.messages.sendMessage(
                 userId,
@@ -154,7 +155,7 @@ class UserService(private val app: AppServices) {
         }
     }
 
-    suspend fun processAutomaticVoteKeyByEmail(userId: Int): Either<AppError, Boolean> = either {
+    suspend fun processAutomaticVoteKeyByEmail(userId: UUID): Either<AppError, Boolean> = either {
         val automaticVoteKeys = app.settings.automaticVoteKeys.get().bind()
         if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
             val user = userRepository.getUser(userId).bind()
@@ -179,11 +180,11 @@ class UserService(private val app: AppServices) {
         }
     }
 
-    fun requestUserSessionReload(userId: Int) {
+    fun requestUserSessionReload(userId: UUID) {
         userSessionReloadRequests.add(userId)
     }
 
-    suspend fun consumeUserSessionReloadRequest(userId: Int): Option<User> =
+    suspend fun consumeUserSessionReloadRequest(userId: UUID): Option<User> =
         if (userSessionReloadRequests.contains(userId)) {
             userSessionReloadRequests.remove(userId)
             userRepository.getUser(userId).getOrNone()
@@ -200,7 +201,7 @@ class UserService(private val app: AppServices) {
         passwordResetRepository.getPasswordResetUserId(code).bind()
     }
 
-    suspend fun resetPassword(code: String, newPassword: String): AppResult<Int> = either {
+    suspend fun resetPassword(code: String, newPassword: String): AppResult<UUID> = either {
         val userId = passwordResetRepository.getPasswordResetUserId(code).bind()
         val hashedPassword = hashPassword(newPassword)
         userRepository.changePassword(userId, hashedPassword).bind()

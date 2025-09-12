@@ -9,6 +9,7 @@ import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.refreshOnSignal
+import java.util.*
 
 object UserVotingPage {
     fun render(
@@ -78,7 +79,7 @@ object UserVotingPage {
     }
 }
 
-fun FlowContent.voteButton(entryId: Int, points: Int, selected: Boolean) {
+fun FlowContent.voteButton(entryId: UUID, points: Int, selected: Boolean) {
     val inputId = "entry-$entryId-$points"
     input {
         type = InputType.radio

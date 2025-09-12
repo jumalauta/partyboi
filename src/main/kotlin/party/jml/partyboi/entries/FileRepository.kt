@@ -21,8 +21,8 @@ import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.toFilenameToken
-import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
@@ -34,6 +34,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.pathString
 
@@ -105,7 +106,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun latestVersion(
-        entryId: Int,
+        entryId: UUID,
         originalsOnly: Boolean,
         tx: TransactionalSession? = null
     ): AppResult<Option<Int>> =
@@ -118,7 +119,7 @@ class FileRepository(app: AppServices) : Service(app) {
             )
         }
 
-    suspend fun nextVersion(entryId: Int, tx: TransactionalSession? = null): AppResult<Int> =
+    suspend fun nextVersion(entryId: UUID, tx: TransactionalSession? = null): AppResult<Int> =
         latestVersion(entryId, false, tx).map { it.getOrElse { 0 } + 1 }
 
     suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
@@ -146,7 +147,7 @@ class FileRepository(app: AppServices) : Service(app) {
         result
     }
 
-    suspend fun getLatest(entryId: Int, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
+    suspend fun getLatest(entryId: UUID, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 """
@@ -160,7 +161,7 @@ class FileRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getVersion(entryId: Int, version: Int): AppResult<FileDesc> = db.use {
+    suspend fun getVersion(entryId: UUID, version: Int): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
                 "SELECT * FROM file WHERE entry_id = ? AND version = ?",
@@ -170,11 +171,11 @@ class FileRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getAllVersions(entryId: Int): AppResult<List<FileDesc>> = db.use {
+    suspend fun getAllVersions(entryId: UUID): AppResult<List<FileDesc>> = db.use {
         it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
     }
 
-    suspend fun getUserVersion(entryId: Int, version: Int, userId: Int) = db.use {
+    suspend fun getUserVersion(entryId: UUID, version: Int, userId: UUID) = db.use {
         it.one(
             queryOf(
                 """
@@ -208,7 +209,7 @@ class FileRepository(app: AppServices) : Service(app) {
 
     private fun buildStorageFilename(
         compoName: String,
-        entryId: Int,
+        entryId: UUID,
         version: Int,
         author: String,
         title: String,
@@ -232,14 +233,14 @@ class FileRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun getEntryIdsWithFiles(): AppResult<List<Int>> = db.use {
-        it.many(queryOf("SELECT DISTINCT entry_id FROM file").map(asInt))
+    suspend fun getEntryIdsWithFiles(): AppResult<List<UUID>> = db.use {
+        it.many(queryOf("SELECT DISTINCT entry_id FROM file").map { it.uuid("entry_id") })
     }
 
 }
 
 data class NewFileDesc(
-    val entryId: Int,
+    val entryId: UUID,
     val originalFilename: String,
     val storageFilename: Path,
     val processed: Boolean,
@@ -258,7 +259,8 @@ data class NewFileDesc(
 
 @Serializable
 data class FileDesc(
-    val entryId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val entryId: UUID,
     val version: Int,
     val originalFilename: String,
     @Serializable(with = PathSerializer::class)
@@ -278,7 +280,7 @@ data class FileDesc(
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->
             FileDesc(
-                entryId = row.int("entry_id"),
+                entryId = row.uuid("entry_id"),
                 version = row.int("version"),
                 originalFilename = row.string("orig_filename"),
                 storageFilename = Paths.get(row.string("storage_filename")),

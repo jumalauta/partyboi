@@ -69,7 +69,7 @@ fun Application.configureVotingRouting(app: AppServices) {
         put("/vote/{entry}/{points}") {
             call.apiRespond {
                 val user = call.userSession(app).bind()
-                val entryId = call.parameterInt("entry").bind()
+                val entryId = call.parameterUUID("entry").bind()
                 val points = call.parameterInt("points").bind()
 
                 app.votes.castVote(user, entryId, points).bind()

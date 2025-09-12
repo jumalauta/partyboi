@@ -14,6 +14,7 @@ import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.TriggerRow
+import java.util.*
 
 object AdminScreenPage {
     fun renderAdHocForm(
@@ -264,7 +265,7 @@ fun FlowContent.flatPostButton(url: String, block: BUTTON.() -> Unit) {
 }
 
 data class SlideEditData(
-    val id: Int,
+    val id: UUID,
     val visible: Boolean,
     val showOnInfoPage: Boolean,
     val slide: Slide<*>,

@@ -16,6 +16,7 @@ import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
+import java.util.*
 
 class VoteService(app: AppServices) : Service(app) {
     private val repository = VoteRepository(app)
@@ -33,7 +34,7 @@ class VoteService(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun castVote(user: User, entryId: Int, points: Int): AppResult<Unit> =
+    suspend fun castVote(user: User, entryId: UUID, points: Int): AppResult<Unit> =
         if (user.votingEnabled) {
             either {
                 val validPoints = validatePoints(points).bind()
@@ -48,7 +49,7 @@ class VoteService(app: AppServices) : Service(app) {
             Unauthorized().left()
         }
 
-    suspend fun startLiveVoting(compoId: Int) {
+    suspend fun startLiveVoting(compoId: UUID) {
         either {
             val compo = app.compos.getById(compoId).bind()
             live.emit(LiveVoteState(true, compo, emptyList()))
@@ -68,7 +69,7 @@ class VoteService(app: AppServices) : Service(app) {
 
     fun getLiveVoteState(): Option<LiveVoteState> = if (live.value.open) live.value.some() else none()
 
-    suspend fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> =
+    suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> =
         either {
             val normalVoting = app.entries.getVotableEntries(userId).bind()
             val liveVoting = if (live.value.open) {

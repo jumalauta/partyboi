@@ -4,11 +4,13 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.raise.either
 import kotlinx.datetime.*
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
@@ -20,10 +22,11 @@ import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 import kotlin.time.Duration.Companion.hours
 
 interface EventRepository {
-    suspend fun get(eventId: Int): AppResult<Event>
+    suspend fun get(eventId: UUID): AppResult<Event>
     suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>>
     suspend fun getAll(): AppResult<List<Event>>
     suspend fun getPublic(): AppResult<List<Event>>
@@ -37,7 +40,7 @@ interface EventRepository {
 class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     private val db = app.db
 
-    override suspend fun get(eventId: Int): AppResult<Event> = db.use {
+    override suspend fun get(eventId: UUID): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
@@ -172,7 +175,8 @@ data class NewEvent(
 @Serializable
 data class Event(
     @Field(presentation = FieldPresentation.hidden)
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     @Label("Event name")
     @NotEmpty
     val name: String,
@@ -195,7 +199,7 @@ data class Event(
     companion object {
         val fromRow: (Row) -> Event = { row ->
             Event(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 name = row.string("name"),
                 startTime = row.instant("time").toKotlinInstant(),
                 endTime = row.instantOrNull("end_time")?.toKotlinInstant(),

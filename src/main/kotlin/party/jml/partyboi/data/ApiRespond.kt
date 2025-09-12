@@ -17,6 +17,7 @@ import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondPage
 import party.jml.partyboi.validation.Validateable
 import java.nio.file.Path
+import java.util.*
 
 suspend fun ApplicationCall.apiRespond(block: suspend Raise<AppError>.() -> Unit) {
     Either.catch {
@@ -68,6 +69,13 @@ fun ApplicationCall.parameterInt(name: String): AppResult<Int> =
         InvalidInput(name).left()
     }
 
+fun ApplicationCall.parameterUUID(name: String): AppResult<UUID> =
+    try {
+        parameters[name]?.let { UUID.fromString(it) }?.right() ?: MissingInput(name).left()
+    } catch (_: NumberFormatException) {
+        InvalidInput(name).left()
+    }
+
 fun ApplicationCall.parameterBoolean(name: String): AppResult<Boolean> =
     try {
         parameters[name]?.toBooleanStrict()?.right() ?: MissingInput(name).left()
@@ -85,11 +93,11 @@ fun ApplicationCall.parameterPathString(name: String) =
         it.joinToString("/")
     } ?: MissingInput(name).left()
 
-suspend fun ApplicationCall.switchApi(block: suspend (id: Int, state: Boolean) -> AppResult<Unit>) {
+suspend fun ApplicationCall.switchApi(block: suspend (id: UUID, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {
             userSession(null).bind()
-            val id = parameterInt("id").bind()
+            val id = parameterUUID("id").bind()
             val state = parameterBoolean("state").bind()
             block(id, state).bind()
         }

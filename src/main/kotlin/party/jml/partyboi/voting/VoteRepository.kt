@@ -1,24 +1,24 @@
 package party.jml.partyboi.voting
 
 import arrow.core.Option
-import arrow.core.raise.either
 import arrow.core.toOption
 import kotlinx.serialization.Serializable
 import kotliquery.Row
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.system.AppResult
+import java.util.*
 
 class VoteRepository(app: AppServices) : Service(app) {
     private val db: DatabasePool = app.db
 
-    suspend fun castVote(userId: Int, entryId: Int, points: Int): AppResult<Unit> = db.use {
+    suspend fun castVote(userId: UUID, entryId: UUID, points: Int): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """
@@ -34,7 +34,7 @@ class VoteRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getUserVotes(userId: Int): AppResult<List<VoteRow>> = db.use {
+    suspend fun getUserVotes(userId: UUID): AppResult<List<VoteRow>> = db.use {
         it.many(
             queryOf(
                 """
@@ -81,10 +81,10 @@ class VoteRepository(app: AppServices) : Service(app) {
 }
 
 data class CompoResult(
-    val compoId: Int,
+    val compoId: UUID,
     val compoName: String,
     val points: Int,
-    val entryId: Int,
+    val entryId: UUID,
     val title: String,
     val author: String,
     val info: Option<String>,
@@ -93,10 +93,10 @@ data class CompoResult(
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
             CompoResult(
-                compoId = row.int("compo_id"),
+                compoId = row.uuid("compo_id"),
                 compoName = row.string("compo_name"),
                 points = row.int("points"),
-                entryId = row.int("entry_id"),
+                entryId = row.uuid("entry_id"),
                 title = row.string("title"),
                 author = row.string("author"),
                 info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
@@ -116,7 +116,7 @@ data class CompoResult(
             }
 
         data class CompoGroup(
-            val id: Int,
+            val id: UUID,
             val name: String,
         )
 
@@ -129,15 +129,17 @@ data class CompoResult(
 
 @Serializable
 data class VoteRow(
-    val userId: Int,
-    val entryId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val userId: UUID,
+    @Serializable(with = UUIDSerializer::class)
+    val entryId: UUID,
     val points: Int
 ) {
     companion object {
         val fromRow: (Row) -> VoteRow = { row ->
             VoteRow(
-                userId = row.int("user_id"),
-                entryId = row.int("entry_id"),
+                userId = row.uuid("user_id"),
+                entryId = row.uuid("entry_id"),
                 points = row.int("points"),
             )
         }

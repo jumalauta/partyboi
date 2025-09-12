@@ -22,6 +22,7 @@ import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 
 fun Application.configureAdminScreenRouting(app: AppServices) {
     suspend fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
@@ -47,7 +48,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
     suspend fun renderSlideEdit(
         slideSetName: AppResult<String>,
-        slideId: AppResult<Int>,
+        slideId: AppResult<UUID>,
         errors: AppError? = null,
     ) = either {
         val slide = app.screen.getSlide(slideId.bind()).bind()
@@ -89,7 +90,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.respondEither {
                 renderSlideEdit(
                     call.parameterString("slideSet"),
-                    call.parameterInt("slideId"),
+                    call.parameterUUID("slideId"),
                 ).bind()
             }
         }
@@ -179,7 +180,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         post("/admin/screen/{slideSet}/{slideId}/show") {
             call.apiRespond {
                 call.userSession(app).bind()
-                val slideId = call.parameterInt("slideId").bind()
+                val slideId = call.parameterUUID("slideId").bind()
                 app.screen.show(slideId).bind()
             }
         }
@@ -198,7 +199,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.parameterString("slideSet").bind()
                 call.userSession(app).bind()
                 newOrder
-                    .mapIndexed { index, slideId -> app.screen.setRunOrder(slideId.toInt(), index) }
+                    .mapIndexed { index, slideId -> app.screen.setRunOrder(UUID.fromString(slideId), index) }
                     .bindAll()
             }
         }
@@ -229,7 +230,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         delete("/admin/screen/{slideId}") {
             call.apiRespond {
                 call.userSession(app).bind()
-                val slideId = call.parameterInt("slideId").bind()
+                val slideId = call.parameterUUID("slideId").bind()
                 app.screen.delete(slideId).bind()
             }
         }
@@ -238,13 +239,13 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
 suspend inline fun <reified T> ApplicationCall.updateSlide(
     app: AppServices,
-    crossinline onError: suspend (AppResult<String>, AppResult<Int>, AppError?) -> AppResult<Renderable>
+    crossinline onError: suspend (AppResult<String>, AppResult<UUID>, AppError?) -> AppResult<Renderable>
 ) where
         T : Slide<T>,
         T : Validateable<T> {
     processForm<T>(
         { slide ->
-            val id = parameterInt("slideId").bind()
+            val id = parameterUUID("slideId").bind()
             val slideSetName = parameterString("slideSet").bind()
             app.screen.update(id, slide).bind()
             Redirection("/admin/screen/$slideSetName")
@@ -252,7 +253,7 @@ suspend inline fun <reified T> ApplicationCall.updateSlide(
         { form ->
             onError(
                 parameterString("slideSet"),
-                parameterInt("slideId"),
+                parameterUUID("slideId"),
                 form.error,
             ).bind()
         }

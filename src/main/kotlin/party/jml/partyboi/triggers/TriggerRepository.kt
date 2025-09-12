@@ -18,6 +18,7 @@ import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 
 class TriggerRepository(app: AppServices) : Service(app) {
     private val db = app.db
@@ -45,7 +46,7 @@ class TriggerRepository(app: AppServices) : Service(app) {
             }.flatten()
         }
 
-    suspend fun setEnabled(triggerId: Int, enabled: Boolean) = db.use {
+    suspend fun setEnabled(triggerId: UUID, enabled: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET enabled = ? WHERE id = ?", enabled, triggerId))
     }
 
@@ -219,18 +220,18 @@ data class FailedTriggerRow(
 
 data class NewScheduledTrigger(
     @Field(presentation = FieldPresentation.hidden)
-    val eventId: Int,
+    val eventId: UUID,
     @Field("Action")
     val action: String,
     @Field("Compo")
-    val compoId: Int,
+    val compoId: UUID,
 ) : Validateable<NewScheduledTrigger> {
 
     fun signal(): Signal = Signal.eventStarted(eventId)
     fun toAction() = Action.valueOf(action).getAction(this)
 
     companion object {
-        fun empty(eventId: Int) = NewScheduledTrigger(eventId, "", -1)
+        fun empty(eventId: UUID) = NewScheduledTrigger(eventId, "", UUID.randomUUID())
 
         enum class Action(val getAction: (NewScheduledTrigger) -> party.jml.partyboi.triggers.Action) {
             VOTE_CLOSE({ OpenCloseVoting(it.compoId, false) }),

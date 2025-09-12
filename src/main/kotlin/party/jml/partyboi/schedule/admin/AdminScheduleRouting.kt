@@ -9,10 +9,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.apiRespond
-import party.jml.partyboi.data.parameterInt
-import party.jml.partyboi.data.processForm
-import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
@@ -20,6 +17,7 @@ import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.triggers.NewScheduledTrigger
+import java.util.*
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
 
@@ -33,7 +31,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
     }
 
     suspend fun renderEditSchedulePage(
-        eventId: AppResult<Int>,
+        eventId: AppResult<UUID>,
         eventForm: Form<Event>? = null,
         newTriggerForm: Form<NewScheduledTrigger>? = null,
     ) = either {
@@ -52,7 +50,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
 
     adminRouting {
         val redirectionToSchedules = Redirection("/admin/schedule")
-        fun redirectionToEvent(id: Int) = Redirection("/admin/schedule/events/$id")
+        fun redirectionToEvent(id: UUID) = Redirection("/admin/schedule/events/$id")
 
         get("/admin/schedule") {
             call.respondEither { renderSchedulesPage(timeZone = app.time.timeZone.get().getOrNull()!!).bind() }
@@ -71,13 +69,13 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         }
 
         get("/admin/schedule/events/{id}") {
-            call.respondEither { renderEditSchedulePage(call.parameterInt("id")).bind() }
+            call.respondEither { renderEditSchedulePage(call.parameterUUID("id")).bind() }
         }
 
         post("/admin/schedule/events/{id}") {
             call.processForm<Event>(
                 { app.events.update(it).map { redirectionToSchedules }.bind() },
-                { renderEditSchedulePage(call.parameterInt("id"), eventForm = it).bind() }
+                { renderEditSchedulePage(call.parameterUUID("id"), eventForm = it).bind() }
             )
         }
 
