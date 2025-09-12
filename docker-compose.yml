@@ -53,7 +53,7 @@ services:
       retries: 3
 
   db:
-    image: postgres:17.3
+    image: postgres:18rc1
     restart: unless-stopped
     volumes:
       - "${DIR_DB}:/var/lib/postgresql/data"
