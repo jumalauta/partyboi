@@ -11,6 +11,8 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.UUIDSerializer
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.DropdownOption
 import party.jml.partyboi.form.Field
@@ -80,11 +82,11 @@ class TriggerRepository(app: AppServices) : Service(app) {
         )
     }
 
-    private suspend fun setSuccessful(triggerId: Int, time: Instant) = db.use {
+    private suspend fun setSuccessful(triggerId: UUID, time: Instant) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
     }
 
-    private suspend fun setFailed(triggerId: Int, time: Instant, error: String) = db.use {
+    private suspend fun setFailed(triggerId: UUID, time: Instant, error: String) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
     }
 
@@ -127,7 +129,7 @@ class TriggerRepository(app: AppServices) : Service(app) {
 
 @Serializable
 sealed class TriggerRow {
-    abstract val triggerId: Int
+    abstract val triggerId: UUID
     abstract val signal: String
 
     abstract val triggerType: String
@@ -146,7 +148,7 @@ sealed class TriggerRow {
 
     companion object {
         val fromRow: (Row) -> TriggerRow = { row ->
-            val triggerId = row.int("id")
+            val triggerId = row.uuid("id")
             val signal = row.string("signal")
             val type = row.string("type")
             val executionTime = row.instantOrNull("executed_at")?.toKotlinInstant()
@@ -187,7 +189,8 @@ sealed class TriggerRow {
 
 @Serializable
 data class PendingTriggerRow(
-    override val triggerId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    override val triggerId: UUID,
     override val signal: String,
     override val triggerType: String,
     override val actionJson: String,
@@ -197,7 +200,8 @@ data class PendingTriggerRow(
 
 @Serializable
 data class SuccessfulTriggerRow(
-    override val triggerId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    override val triggerId: UUID,
     override val signal: String,
     override val triggerType: String,
     val executionTime: Instant,
@@ -208,7 +212,8 @@ data class SuccessfulTriggerRow(
 
 @Serializable
 data class FailedTriggerRow(
-    override val triggerId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    override val triggerId: UUID,
     override val signal: String,
     override val triggerType: String,
     val executionTime: Instant,
@@ -231,7 +236,7 @@ data class NewScheduledTrigger(
     fun toAction() = Action.valueOf(action).getAction(this)
 
     companion object {
-        fun empty(eventId: UUID) = NewScheduledTrigger(eventId, "", UUID.randomUUID())
+        fun empty(eventId: UUID) = NewScheduledTrigger(eventId, "", UUIDv7.Empty)
 
         enum class Action(val getAction: (NewScheduledTrigger) -> party.jml.partyboi.triggers.Action) {
             VOTE_CLOSE({ OpenCloseVoting(it.compoId, false) }),

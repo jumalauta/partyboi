@@ -4,7 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminRouting
-import party.jml.partyboi.data.parameterInt
+import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.templates.respondEither
 
 fun Application.configureAdminErrorLogRouting(app: AppServices) {
@@ -18,7 +18,7 @@ fun Application.configureAdminErrorLogRouting(app: AppServices) {
 
         get("/admin/errors/{id}") {
             call.respondEither {
-                val errorId = call.parameterInt("id").bind()
+                val errorId = call.parameterUUID("id").bind()
                 val error = app.errors.getError(errorId).bind()
                 AdminErrorLogPage.renderStackTrace(error)
             }

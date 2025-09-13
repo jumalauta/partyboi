@@ -49,9 +49,6 @@ data class Signal(
         fun propertyUpdated(key: String) = Signal(SignalType.propertyUpdated, null, key)
         fun compoContentUpdated(compoId: UUID, timeService: TimeService) =
             Signal(SignalType.compoContentUpdated, timeService.isoLocalTime(), compoId.toString())
-
-        fun fileUploaded(entryId: UUID, version: Int) =
-            Signal(SignalType.fileUploaded, entryId.toString(), version.toString())
     }
 }
 

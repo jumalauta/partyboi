@@ -11,6 +11,7 @@ import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 class ErrorRepository(app: AppServices) {
@@ -48,7 +49,7 @@ class ErrorRepository(app: AppServices) {
         }
     }
 
-    suspend fun getError(id: Int): AppResult<ErrorRow> = db.use {
+    suspend fun getError(id: UUID): AppResult<ErrorRow> = db.use {
         it.one(queryOf("SELECT * FROM error WHERE id = ?", id).map(ErrorRow.fromRow))
     }
 
@@ -72,7 +73,7 @@ class ErrorRepository(app: AppServices) {
 }
 
 data class ErrorRow(
-    val id: Int,
+    val id: UUID,
     val key: String,
     val message: String,
     val trace: String?,
@@ -82,7 +83,7 @@ data class ErrorRow(
     companion object {
         val fromRow: (Row) -> ErrorRow = { row ->
             ErrorRow(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 key = row.string("key"),
                 message = row.string("message"),
                 trace = row.string("trace"),

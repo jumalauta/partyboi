@@ -80,12 +80,12 @@ data class EnableLiveVotingForEntry(
     val entryId: UUID
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
-        val entry = app.entries.get(entryId).bind()
+        val entry = app.entries.getById(entryId).bind()
         "Enable live voting for ${entry.author} – ${entry.title}"
     }
 
     override suspend fun apply(app: AppServices): AppResult<Unit> =
-        app.entries.get(entryId).map { entry -> app.votes.addEntryToLiveVoting(entry) }
+        app.entries.getById(entryId).map { entry -> app.votes.addEntryToLiveVoting(entry) }
 
     override fun toJson(): String = Json.encodeToString(this)
 }

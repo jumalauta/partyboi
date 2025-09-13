@@ -50,12 +50,10 @@ class FileRepository(app: AppServices) : Service(app) {
         originalFilename: String,
         tx: TransactionalSession? = null
     ): AppResult<Path> = either {
-        val version = nextVersion(entry.id, tx).bind()
         val compo = app.compos.getById(entry.compoId, tx).bind()
         buildStorageFilename(
             compo.name,
             entry.id,
-            version,
             entry.author,
             entry.title,
             originalFilename
@@ -119,20 +117,15 @@ class FileRepository(app: AppServices) : Service(app) {
             )
         }
 
-    suspend fun nextVersion(entryId: UUID, tx: TransactionalSession? = null): AppResult<Int> =
-        latestVersion(entryId, false, tx).map { it.getOrElse { 0 } + 1 }
-
     suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
-        val version = nextVersion(file.entryId, tx).bind()
         val result = db.use(tx) {
             it.one(
                 queryOf(
                     """
-                        INSERT INTO file(entry_id, version, orig_filename, storage_filename, type, size, checksum, processed, info) 
-                        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                        INSERT INTO file(entry_id, orig_filename, storage_filename, type, size, checksum, processed, info) 
+                        VALUES(?, ?, ?, ?, ?, ?, ?, ?) 
                         RETURNING *""".trimIndent(),
                     file.entryId,
-                    version,
                     file.originalFilename,
                     file.storageFilename.toString(),
                     file.type,
@@ -145,6 +138,19 @@ class FileRepository(app: AppServices) : Service(app) {
         }.bind()
         postProcessUpload(result)
         result
+    }
+
+    suspend fun getById(fileId: UUID): AppResult<FileDesc> = db.use {
+        it.one(
+            queryOf(
+                """
+                    SELECT * 
+                    FROM file 
+                    WHERE id = ?
+                    """.trimIndent(),
+                fileId
+            ).map(FileDesc.fromRow)
+        )
     }
 
     suspend fun getLatest(entryId: UUID, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
@@ -161,44 +167,14 @@ class FileRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getVersion(entryId: UUID, version: Int): AppResult<FileDesc> = db.use {
-        it.one(
-            queryOf(
-                "SELECT * FROM file WHERE entry_id = ? AND version = ?",
-                entryId,
-                version
-            ).map(FileDesc.fromRow)
-        )
-    }
-
     suspend fun getAllVersions(entryId: UUID): AppResult<List<FileDesc>> = db.use {
-        it.many(queryOf("SELECT * FROM file WHERE entry_id = ? ORDER BY version DESC", entryId).map(FileDesc.fromRow))
-    }
-
-    suspend fun getUserVersion(entryId: UUID, version: Int, userId: UUID) = db.use {
-        it.one(
+        it.many(
             queryOf(
-                """
-                SELECT *
-                FROM file
-                JOIN entry ON entry.id = file.entry_id
-                WHERE entry_id = ?
-                  AND version = ?
-                  AND (
-                    entry.user_id = ? OR
-                    (SELECT is_admin FROM appuser WHERE id = ?)
-                )
-            """,
-                entryId,
-                version,
-                userId,
-                userId,
+                "SELECT * FROM file WHERE entry_id = ? ORDER BY uploaded_at DESC",
+                entryId
             ).map(FileDesc.fromRow)
         )
     }
-
-    fun getStoragePath(name: String): Path =
-        app.config.entryDir.resolve(name)
 
     fun getStorageFile(name: Path): File =
         app.config.entryDir.resolve(name).toFile()
@@ -210,13 +186,12 @@ class FileRepository(app: AppServices) : Service(app) {
     private fun buildStorageFilename(
         compoName: String,
         entryId: UUID,
-        version: Int,
         author: String,
         title: String,
         originalFilename: String
     ): Path {
         val compo = compoName.toFilenameToken(true) ?: "compo"
-        val id = "${entryId}-v${version.toString().padStart(2, '0')}"
+        val id = "${entryId}-${app.time.isoLocalTime()}}"
         val authorClean = author.toFilenameToken(false)
         val titleClean = title.toFilenameToken(false)
         val extension = File(originalFilename).extension.lowercase()
@@ -260,8 +235,9 @@ data class NewFileDesc(
 @Serializable
 data class FileDesc(
     @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
+    @Serializable(with = UUIDSerializer::class)
     val entryId: UUID,
-    val version: Int,
     val originalFilename: String,
     @Serializable(with = PathSerializer::class)
     val storageFilename: Path,
@@ -280,8 +256,8 @@ data class FileDesc(
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->
             FileDesc(
+                id = row.uuid("id"),
                 entryId = row.uuid("entry_id"),
-                version = row.int("version"),
                 originalFilename = row.string("orig_filename"),
                 storageFilename = Paths.get(row.string("storage_filename")),
                 type = row.string("type"),

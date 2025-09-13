@@ -43,11 +43,11 @@ class EntryRepository(app: AppServices) : Service(app) {
         it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
     }
 
-    suspend fun get(entryId: UUID): AppResult<Entry> = db.use {
+    suspend fun getById(entryId: UUID): AppResult<Entry> = db.use {
         it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
     }
 
-    suspend fun get(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
+    suspend fun getById(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
         it.one(
             queryOf(
                 """
@@ -72,17 +72,16 @@ class EntryRepository(app: AppServices) : Service(app) {
                 """
             SELECT *
             FROM entry
-            LEFT JOIN LATERAL(
-            	SELECT
-            		version,
-            		orig_filename,
-            		size,
-                    uploaded_at
-            	FROM file
-            	WHERE entry_id = entry.id
-            	ORDER BY version
-            	DESC LIMIT 1
-            ) AS file_info ON 1=1
+                LEFT JOIN LATERAL (
+                    SELECT
+                        id,
+                        orig_filename,
+                        size,
+                        uploaded_at
+                    FROM file
+                    WHERE entry_id = entry.id
+                    ORDER BY uploaded_at DESC
+                    LIMIT 1) AS file_info ON true
             WHERE user_id = ?
         """.trimIndent(), userId
             ).map(EntryWithLatestFile.fromRow)
@@ -134,7 +133,7 @@ class EntryRepository(app: AppServices) : Service(app) {
         }
 
     suspend fun update(entry: EntryUpdate, userId: UUID): AppResult<Entry> = either {
-        val previousVersion = get(entry.id).bind()
+        val previousVersion = getById(entry.id).bind()
         db.use {
             it.one(
                 queryOf(
@@ -169,7 +168,7 @@ class EntryRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun delete(entryId: UUID, userId: UUID): AppResult<Unit> = either {
-        val entry = get(entryId).bind()
+        val entry = getById(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
         }.onRight {
@@ -178,7 +177,7 @@ class EntryRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun delete(entryId: UUID): AppResult<Unit> = either {
-        val entry = get(entryId).bind()
+        val entry = getById(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ?", entryId))
         }.onRight {
@@ -305,12 +304,11 @@ data class EntryWithLatestFile(
     val screenComment: Option<String>,
     val orgComment: Option<String>,
     override val compoId: UUID,
-    val userId: Int,
+    val userId: UUID,
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: Instant,
     val originalFilename: Option<String>,
-    val fileVersion: Option<Int>,
     val uploadedAt: Option<Instant>,
     val fileSize: Option<Long>,
 ) : EntryBase {
@@ -323,12 +321,11 @@ data class EntryWithLatestFile(
                 Option.fromNullable(row.stringOrNull("screen_comment")),
                 Option.fromNullable(row.stringOrNull("org_comment")),
                 row.uuid("compo_id"),
-                row.int("user_id"),
+                row.uuid("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
                 row.instant("timestamp").toKotlinInstant(),
                 row.stringOrNull("orig_filename").toOption(),
-                row.intOrNull("version").toOption(),
                 row.instantOrNull("uploaded_at")?.toKotlinInstant().toOption(),
                 row.longOrNull("size").toOption(),
             )
@@ -337,6 +334,8 @@ data class EntryWithLatestFile(
 }
 
 data class NewEntry(
+    @Field("Compo")
+    val compoId: UUID,
     @Field("Title")
     @NotEmpty
     @MaxLength(MAX_TITLE_LENGTH)
@@ -348,8 +347,6 @@ data class NewEntry(
     @Field("File")
     @MaxLength(128)
     val file: FileUpload,
-    @Field("Compo")
-    val compoId: UUID,
     @MaxLength(MAX_SCREEN_COMMENT_LENGTH)
     @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     val screenComment: String,
@@ -362,10 +359,10 @@ data class NewEntry(
             title = "",
             author = "",
             file = FileUpload.Empty,
-            compoId = UUID.randomUUID(),
+            compoId = UUIDv7.Empty,
             screenComment = "",
             orgComment = "",
-            userId = UUID.randomUUID()
+            userId = UUIDv7.Empty,
         )
 
         const val MAX_TITLE_LENGTH = 128

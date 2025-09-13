@@ -8,6 +8,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.html.InputType
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.system.TimeService
 import java.util.*
 import kotlin.reflect.KClass
@@ -178,8 +179,8 @@ data class UUIDProp(
     override val optional: Boolean,
     override val meta: PropertyMeta,
 ) : Property {
-    override val defaultValue = 0
-    override val defaultInputType: InputType = InputType.hidden
+    override val defaultValue = UUIDv7.Empty
+    override val defaultInputType: InputType = InputType.text
     override fun parseFormValue(
         values: List<String>,
         files: List<FileUpload>,

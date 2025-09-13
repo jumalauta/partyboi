@@ -7,6 +7,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.system.AppResult
+import java.util.*
 import kotlin.test.Test
 
 class CompoPageTest : PartyboiTester {
@@ -93,7 +94,7 @@ class CompoPageTest : PartyboiTester {
         }
     }
 
-    private suspend fun setupCompos(app: AppServices, addCompos: Boolean = true): AppResult<Int?> = either {
+    private suspend fun setupCompos(app: AppServices, addCompos: Boolean = true): AppResult<UUID?> = either {
         if (addCompos) {
             val demoCompo = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
             app.compos.setVisible(demoCompo.id, true).bind()

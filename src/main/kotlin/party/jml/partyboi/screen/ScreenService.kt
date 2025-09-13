@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.UUIDSerializer
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
@@ -249,7 +250,7 @@ data class ScreenState(
             )
         }
 
-        val Empty = ScreenState("adhoc", UUID.randomUUID(), TextSlide.Empty)
+        val Empty = ScreenState("adhoc", UUIDv7.Empty, TextSlide.Empty)
     }
 }
 

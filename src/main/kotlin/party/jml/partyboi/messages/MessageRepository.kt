@@ -40,16 +40,16 @@ class MessageRepository(val app: AppServices) {
 }
 
 data class Message(
-    val id: Int?,
-    val userId: Int?,
+    val id: UUID?,
+    val userId: UUID?,
     val type: MessageType,
     val text: String,
 ) {
     companion object {
         val fromRow: (Row) -> Message = { row ->
             Message(
-                id = row.int("id"),
-                userId = row.intOrNull("user_id"),
+                id = row.uuid("id"),
+                userId = row.uuidOrNull("user_id"),
                 type = MessageType.valueOf(row.string("type")),
                 text = row.string("text"),
             )

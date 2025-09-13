@@ -59,7 +59,6 @@ object EditEntryPage {
                     table {
                         thead {
                             tr {
-                                th { +"Version" }
                                 th { +"Name" }
                                 th { +"Size" }
                                 th { +"Uploaded" }
@@ -70,19 +69,18 @@ object EditEntryPage {
                         tbody {
                             files.forEach { file ->
                                 tr(classes = if (file.processed) "processed" else null) {
-                                    td { +file.version.toString() }
                                     td { +file.originalFilename }
                                     td { +Filesize.humanFriendly(file.size) }
                                     td { +file.uploadedAt.displayDateTime() }
                                     td { file.info?.let { +it } }
                                     td {
                                         buttonGroup {
-                                            a(href = "/entries/${file.entryId}/download/${file.version}") {
+                                            a(href = "/entries/download/${file.id}") {
                                                 icon("download", "Download")
                                             }
                                             if (user.isAdmin) {
                                                 a(
-                                                    href = "/admin/host/${file.entryId}/${file.version}",
+                                                    href = "/admin/host/${file.id}",
                                                     target = "_blank"
                                                 ) {
                                                     icon("globe", "Open in browser")

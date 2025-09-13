@@ -38,7 +38,7 @@ class VoteService(app: AppServices) : Service(app) {
         if (user.votingEnabled) {
             either {
                 val validPoints = validatePoints(points).bind()
-                val entry = app.entries.get(entryId).bind()
+                val entry = app.entries.getById(entryId).bind()
                 if (isVotingOpen(entry).bind()) {
                     repository.castVote(user.id, entryId, validPoints).bind()
                 } else {

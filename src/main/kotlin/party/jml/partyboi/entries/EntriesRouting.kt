@@ -8,10 +8,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.auth.User
-import party.jml.partyboi.auth.userApiRouting
-import party.jml.partyboi.auth.userRouting
-import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.auth.*
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.system.AppResult
@@ -45,7 +42,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
     ) = either {
         val files = app.files.getAllVersions(entryId.bind()).bind()
         val screenshotUrl = app.screenshots.get(entryId.bind()).map { it.externalUrl() }
-        val entry = app.entries.get(entryId.bind(), user.bind().id).bind()
+        val entry = app.entries.getById(entryId.bind(), user.bind().id).bind()
         val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
         val allowEdit =
@@ -117,34 +114,16 @@ fun Application.configureEntriesRouting(app: AppServices) {
             )
         }
 
-        get("/entries/{id}/download/{version}") {
+        get("/entries/download/{fileId}") {
             either {
-                val id = call.parameterUUID("id").bind()
-                val version = call.parameterInt("version").bind()
-                val user = call.userSession(app).bind()
-                app.files.getUserVersion(id, version, user.id).bind()
-            }.fold(
-                { call.respondPage(it) },
-                {
-                    call.response.header(
-                        HttpHeaders.ContentDisposition,
-                        ContentDisposition.Attachment.withParameter(
-                            ContentDisposition.Parameters.FileName,
-                            it.originalFilename
-                        ).toString()
-                    )
-                    call.respondFile(it.getStorageFile())
-                }
-            )
-        }
-
-        get("/entries/download/{entryId}") {
-            either {
-                val entryId = call.parameterUUID("entryId").bind()
-                val entry = app.entries.get(entryId).bind()
-                val compo = app.compos.getById(entry.compoId).bind()
-                if (compo.publicResults) {
-                    app.files.getLatest(entryId, originalsOnly = true).bind()
+                val fileId = call.parameterUUID("fileId").bind()
+                val user = call.optionalUserSession(app)
+                val fileDesc = app.files.getById(fileId).bind()
+                val entry = app.entries.getById(fileDesc.entryId).bind()
+                if (user.isSome { it.isAdmin || it.id === entry.userId }
+                    || app.compos.getById(entry.compoId).bind().publicResults
+                ) {
+                    app.files.getById(fileId).bind()
                 } else {
                     raise(NotFound("Downloading this file is disabled until results are public"))
                 }
@@ -211,7 +190,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 { screenshot ->
                     val user = call.userSession(app).bind()
                     val entryId = call.parameterUUID("id").bind()
-                    val entry = app.entries.get(entryId, user.id).bind()
+                    val entry = app.entries.getById(entryId, user.id).bind()
 
                     app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
                     app.screenshots.store(entry.id, screenshot.file)

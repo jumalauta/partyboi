@@ -183,7 +183,7 @@ data class Compo(
         }
 
         val Empty = Compo(
-            id = UUID.randomUUID(),
+            id = UUIDv7.Empty,
             name = "",
             rules = "",
             visible = false,

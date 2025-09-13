@@ -163,23 +163,21 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             }
         }
 
-        get("/admin/host/{entryId}/{version}") {
+        get("/admin/host/{fileId}") {
             either {
-                val entryId = call.parameterUUID("entryId").bind()
-                val version = call.parameterInt("version").bind()
-                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                val fileId = call.parameterUUID("fileId").bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(fileId).bind()
                 call.hostFile(hostedEntry)
             }.mapLeft { error ->
                 call.respondPage(error)
             }
         }
 
-        get("/admin/host/{entryId}/{version}/{path...}") {
+        get("/admin/host/{fileId}/{path...}") {
             either {
-                val entryId = call.parameterUUID("entryId").bind()
-                val version = call.parameterInt("version").bind()
-                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                val fileId = call.parameterUUID("fileId").bind()
                 val path = call.parameterPath("path") { Path.of(it) }.bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(fileId).bind()
                 call.hostFile(hostedEntry, path)
             }.mapLeft { error ->
                 call.respondPage(error)

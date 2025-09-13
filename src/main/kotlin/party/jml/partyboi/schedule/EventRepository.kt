@@ -33,7 +33,7 @@ interface EventRepository {
     suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event>
     suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>>
     suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event>
-    suspend fun delete(eventId: Int): AppResult<Unit>
+    suspend fun delete(eventId: UUID): AppResult<Unit>
     suspend fun deleteAll(): AppResult<Unit>
 }
 
@@ -110,7 +110,7 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
         )
     }
 
-    override suspend fun delete(eventId: Int): AppResult<Unit> = db.use {
+    override suspend fun delete(eventId: UUID): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 

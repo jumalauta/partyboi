@@ -9,7 +9,10 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.parameterUUID
+import party.jml.partyboi.data.processForm
+import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
@@ -92,7 +95,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         delete("/admin/schedule/events/{id}") {
             call.apiRespond {
                 call.userSession(app).bind()
-                val eventId = call.parameterInt("id").bind()
+                val eventId = call.parameterUUID("id").bind()
                 app.events.delete(eventId).bind()
             }
         }

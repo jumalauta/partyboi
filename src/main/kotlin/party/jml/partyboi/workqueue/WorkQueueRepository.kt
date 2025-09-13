@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.flatten
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import party.jml.partyboi.AppServices
@@ -14,6 +13,7 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.system.AppResult
+import java.util.*
 
 class WorkQueueRepository(val app: AppServices) {
     private val db = app.db
@@ -51,13 +51,13 @@ class WorkQueueRepository(val app: AppServices) {
         it.exec(queryOf("UPDATE task SET state = 'Discarded' WHERE state = 'Working'"))
     }
 
-    suspend fun setState(id: Int, state: TaskState) = db.use {
+    suspend fun setState(id: UUID, state: TaskState) = db.use {
         it.updateOne(queryOf("UPDATE task SET state = ? WHERE id = ?", state, id))
     }
 }
 
 data class TaskRow(
-    val id: Int?,
+    val id: UUID?,
     val task: Task,
     val createdAt: Instant,
     val finishedAt: Instant?,
@@ -67,7 +67,7 @@ data class TaskRow(
         val fromRow: (Row) -> AppResult<TaskRow> = { row ->
             Either.catch {
                 TaskRow(
-                    id = row.int("id"),
+                    id = row.uuid("id"),
                     task = Json.decodeFromString(row.string("task")),
                     createdAt = row.instant("created_at").toKotlinInstant(),
                     finishedAt = row.instantOrNull("finished_at")?.toKotlinInstant(),
