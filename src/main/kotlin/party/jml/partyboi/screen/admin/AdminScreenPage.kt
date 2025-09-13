@@ -272,7 +272,7 @@ data class SlideEditData(
     val readOnly: Boolean,
 ) {
     fun getName(): String =
-        slide.getName().nonEmptyString() ?: "Untitled slide #${id}"
+        slide.getName().nonEmptyString() ?: "New slide"
 
     companion object {
         val fromRow: (ScreenRow) -> SlideEditData = { row ->

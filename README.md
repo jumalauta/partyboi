@@ -39,7 +39,7 @@ Big greetings to these parties for helping with testing:
 
 ## Getting started
 
-1. Clone repository: `git clone https://github.com/ilkkahanninen/partyboi.git && cd partyboi`
+1. Clone repository: `git clone https://github.com/jumalauta/partyboi.git && cd partyboi`
 2. Copy configuration `cp .env.example .env`
 3. Edit `.env` file – especially the passwords and host name
 4. Build and run: `docker compose up`
