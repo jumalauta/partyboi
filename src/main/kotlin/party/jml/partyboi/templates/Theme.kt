@@ -18,7 +18,7 @@ enum class ColorScheme(val displayName: String, val filename: String) {
     Violet("Violet", "pico.violet.min.css"),
     Indigo("Indigo", "pico.indigo.min.css"),
     Blue("Blue", "pico.min.css"),
-    Azure("Azure", "pico.azure.min.css"),
+    Azure("Azure", "pico.min.css"),
     Cyan("Cyan", "pico.cyan.min.css"),
     Jade("Jade", "pico.jade.min.css"),
     Green("Green", "pico.green.min.css"),
