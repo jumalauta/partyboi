@@ -12,27 +12,22 @@ import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.Forbidden
-import party.jml.partyboi.data.FormError
-import party.jml.partyboi.data.isTrue
-import party.jml.partyboi.data.nonEmptyString
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.*
-import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.entries.NewEntry.Companion.MAX_AUTHOR_LENGTH
 import party.jml.partyboi.entries.NewEntry.Companion.MAX_SCREEN_COMMENT_LENGTH
 import party.jml.partyboi.entries.NewEntry.Companion.MAX_TITLE_LENGTH
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.FileUpload
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.MaxLength
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 
 class EntryRepository(app: AppServices) : Service(app) {
     private val db = app.db
@@ -41,18 +36,18 @@ class EntryRepository(app: AppServices) : Service(app) {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
     }
 
-    suspend fun getAllEntriesByCompo(): AppResult<Map<Int, List<Entry>>> =
+    suspend fun getAllEntriesByCompo(): AppResult<Map<UUID, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
-    suspend fun getEntriesForCompo(compoId: Int): AppResult<List<Entry>> = db.use {
+    suspend fun getEntriesForCompo(compoId: UUID): AppResult<List<Entry>> = db.use {
         it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
     }
 
-    suspend fun get(entryId: Int): AppResult<Entry> = db.use {
+    suspend fun getById(entryId: UUID): AppResult<Entry> = db.use {
         it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
     }
 
-    suspend fun get(entryId: Int, userId: Int): AppResult<Entry> = db.use {
+    suspend fun getById(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
         it.one(
             queryOf(
                 """
@@ -71,23 +66,22 @@ class EntryRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getUserEntries(userId: Int): AppResult<List<EntryWithLatestFile>> = db.use {
+    suspend fun getUserEntries(userId: UUID): AppResult<List<EntryWithLatestFile>> = db.use {
         it.many(
             query = queryOf(
                 """
             SELECT *
             FROM entry
-            LEFT JOIN LATERAL(
-            	SELECT
-            		version,
-            		orig_filename,
-            		size,
-                    uploaded_at
-            	FROM file
-            	WHERE entry_id = entry.id
-            	ORDER BY version
-            	DESC LIMIT 1
-            ) AS file_info ON 1=1
+                LEFT JOIN LATERAL (
+                    SELECT
+                        id,
+                        orig_filename,
+                        size,
+                        uploaded_at
+                    FROM file
+                    WHERE entry_id = entry.id
+                    ORDER BY uploaded_at DESC
+                    LIMIT 1) AS file_info ON true
             WHERE user_id = ?
         """.trimIndent(), userId
             ).map(EntryWithLatestFile.fromRow)
@@ -138,8 +132,8 @@ class EntryRepository(app: AppServices) : Service(app) {
             app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time))
         }
 
-    suspend fun update(entry: EntryUpdate, userId: Int): AppResult<Entry> = either {
-        val previousVersion = get(entry.id).bind()
+    suspend fun update(entry: EntryUpdate, userId: UUID): AppResult<Entry> = either {
+        val previousVersion = getById(entry.id).bind()
         db.use {
             it.one(
                 queryOf(
@@ -173,8 +167,8 @@ class EntryRepository(app: AppServices) : Service(app) {
         }.bind()
     }
 
-    suspend fun delete(entryId: Int, userId: Int): AppResult<Unit> = either {
-        val entry = get(entryId).bind()
+    suspend fun delete(entryId: UUID, userId: UUID): AppResult<Unit> = either {
+        val entry = getById(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
         }.onRight {
@@ -182,8 +176,8 @@ class EntryRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun delete(entryId: Int): AppResult<Unit> = either {
-        val entry = get(entryId).bind()
+    suspend fun delete(entryId: UUID): AppResult<Unit> = either {
+        val entry = getById(entryId).bind()
         db.use {
             it.updateOne(queryOf("delete from entry where id = ?", entryId))
         }.onRight {
@@ -195,14 +189,20 @@ class EntryRepository(app: AppServices) : Service(app) {
         it.exec(queryOf("delete from entry"))
     }
 
-    suspend fun setQualified(entryId: Int, state: Boolean): AppResult<Unit> =
+    suspend fun setQualified(entryId: UUID, state: Boolean): AppResult<Unit> =
         db.use {
-            it.one(queryOf("update entry set qualified = ? where id = ? returning compo_id", state, entryId).map(asInt))
+            it.one(
+                queryOf(
+                    "update entry set qualified = ? where id = ? returning compo_id",
+                    state,
+                    entryId
+                ).map({ it.uuid("compo_id") })
+            )
         }.map { compoId ->
             app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
         }
 
-    suspend fun allowEdit(entryId: Int, state: Boolean): AppResult<Unit> =
+    suspend fun allowEdit(entryId: UUID, state: Boolean): AppResult<Unit> =
         db.use {
             it.updateOne(
                 queryOf(
@@ -213,7 +213,7 @@ class EntryRepository(app: AppServices) : Service(app) {
             )
         }
 
-    suspend fun assertCanSubmit(entryId: Int, isAdmin: Boolean): AppResult<Unit> = db.use {
+    suspend fun assertCanSubmit(entryId: UUID, isAdmin: Boolean): AppResult<Unit> = db.use {
         it.one(
             queryOf(
                 "select ? or allow_edit from entry where id = ?",
@@ -223,12 +223,12 @@ class EntryRepository(app: AppServices) : Service(app) {
             .flatMap { if (it) Unit.right() else Forbidden().left() }
     }
 
-    suspend fun setRunOrder(entryId: Int, order: Int): AppResult<Unit> =
+    suspend fun setRunOrder(entryId: UUID, order: Int): AppResult<Unit> =
         db.use {
             it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
         }
 
-    suspend fun getVotableEntries(userId: Int): AppResult<List<VotableEntry>> = db.use {
+    suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> = db.use {
         it.many(
             queryOf(
                 """
@@ -252,45 +252,27 @@ class EntryRepository(app: AppServices) : Service(app) {
                 .map(VotableEntry.fromRow)
         )
     }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.entries.size} entries")
-        data.entries.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO entry (id, title, author, screen_comment, org_comment, compo_id, user_id, qualified, run_order, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    it.id,
-                    it.title,
-                    it.author,
-                    it.screenComment.getOrNull(),
-                    it.orgComment.getOrNull(),
-                    it.compoId,
-                    it.userId,
-                    it.qualified,
-                    it.runOrder,
-                    it.timestamp,
-                )
-            )
-        }.bindAll()
-    }
 }
 
 interface EntryBase {
-    val id: Int
+    val id: UUID
     val title: String
     val author: String
-    val compoId: Int
+    val compoId: UUID
 }
 
 @Serializable
 data class Entry(
-    override val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    override val id: UUID,
     override val title: String,
     override val author: String,
     val screenComment: Option<String>,
     val orgComment: Option<String>,
-    override val compoId: Int,
-    val userId: Int,
+    @Serializable(with = UUIDSerializer::class)
+    override val compoId: UUID,
+    @Serializable(with = UUIDSerializer::class)
+    val userId: UUID,
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: Instant,
@@ -299,13 +281,13 @@ data class Entry(
     companion object {
         val fromRow: (Row) -> Entry = { row ->
             Entry(
-                row.int("id"),
+                row.uuid("id"),
                 row.string("title"),
                 row.string("author"),
                 Option.fromNullable(row.stringOrNull("screen_comment")),
                 Option.fromNullable(row.stringOrNull("org_comment")),
-                row.int("compo_id"),
-                row.int("user_id"),
+                row.uuid("compo_id"),
+                row.uuid("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
                 row.instant("timestamp").toKotlinInstant(),
@@ -316,36 +298,34 @@ data class Entry(
 }
 
 data class EntryWithLatestFile(
-    override val id: Int,
+    override val id: UUID,
     override val title: String,
     override val author: String,
     val screenComment: Option<String>,
     val orgComment: Option<String>,
-    override val compoId: Int,
-    val userId: Int,
+    override val compoId: UUID,
+    val userId: UUID,
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: Instant,
     val originalFilename: Option<String>,
-    val fileVersion: Option<Int>,
     val uploadedAt: Option<Instant>,
     val fileSize: Option<Long>,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> EntryWithLatestFile = { row ->
             EntryWithLatestFile(
-                row.int("id"),
+                row.uuid("id"),
                 row.string("title"),
                 row.string("author"),
                 Option.fromNullable(row.stringOrNull("screen_comment")),
                 Option.fromNullable(row.stringOrNull("org_comment")),
-                row.int("compo_id"),
-                row.int("user_id"),
+                row.uuid("compo_id"),
+                row.uuid("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
                 row.instant("timestamp").toKotlinInstant(),
                 row.stringOrNull("orig_filename").toOption(),
-                row.intOrNull("version").toOption(),
                 row.instantOrNull("uploaded_at")?.toKotlinInstant().toOption(),
                 row.longOrNull("size").toOption(),
             )
@@ -354,6 +334,8 @@ data class EntryWithLatestFile(
 }
 
 data class NewEntry(
+    @Field("Compo")
+    val compoId: UUID,
     @Field("Title")
     @NotEmpty
     @MaxLength(MAX_TITLE_LENGTH)
@@ -365,17 +347,23 @@ data class NewEntry(
     @Field("File")
     @MaxLength(128)
     val file: FileUpload,
-    @Field("Compo")
-    val compoId: Int,
     @MaxLength(MAX_SCREEN_COMMENT_LENGTH)
     @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     val screenComment: String,
     @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
-    val userId: Int,
+    val userId: UUID,
 ) : Validateable<NewEntry> {
     companion object {
-        val Empty = NewEntry("", "", FileUpload.Empty, 0, "", "", 0)
+        val Empty = NewEntry(
+            title = "",
+            author = "",
+            file = FileUpload.Empty,
+            compoId = UUIDv7.Empty,
+            screenComment = "",
+            orgComment = "",
+            userId = UUIDv7.Empty,
+        )
 
         const val MAX_TITLE_LENGTH = 128
         const val MAX_AUTHOR_LENGTH = 128
@@ -385,7 +373,7 @@ data class NewEntry(
 
 data class EntryUpdate(
     @Field(presentation = FieldPresentation.hidden)
-    val id: Int,
+    val id: UUID,
 
     @Field("Title")
     @NotEmpty
@@ -401,10 +389,10 @@ data class EntryUpdate(
     val file: FileUpload,
 
     @Field("Compo")
-    val compoId: Int,
+    val compoId: UUID,
 
     @Field(presentation = FieldPresentation.hidden)
-    val userId: Int,
+    val userId: UUID,
 
     @Field("Public message (shown on screen, voting and results file)", presentation = FieldPresentation.large)
     @MaxLength(MAX_SCREEN_COMMENT_LENGTH)
@@ -428,9 +416,9 @@ data class EntryUpdate(
 }
 
 data class VotableEntry(
-    override val compoId: Int,
+    override val compoId: UUID,
     val compoName: String,
-    val entryId: Int,
+    val entryId: UUID,
     val runOrder: Int,
     override val title: String,
     override val author: String,
@@ -442,9 +430,9 @@ data class VotableEntry(
     companion object {
         val fromRow: (Row) -> VotableEntry = { row ->
             VotableEntry(
-                compoId = row.int("compo_id"),
+                compoId = row.uuid("compo_id"),
                 compoName = row.string("compo_name"),
-                entryId = row.int("entry_id"),
+                entryId = row.uuid("entry_id"),
                 runOrder = row.int("run_order"),
                 title = row.string("title"),
                 author = row.string("author"),

@@ -26,6 +26,7 @@ import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 import java.nio.file.Path
+import java.util.*
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
@@ -49,7 +50,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
     }
 
     suspend fun renderAdminEditCompoPage(
-        compoId: AppResult<Int>,
+        compoId: AppResult<UUID>,
         compoForm: Form<Compo>? = null,
     ) = either {
         val id = compoId.bind()
@@ -86,20 +87,20 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/{id}") {
             call.respondEither {
-                renderAdminEditCompoPage(call.parameterInt("id")).bind()
+                renderAdminEditCompoPage(call.parameterUUID("id")).bind()
             }
         }
 
         post("/admin/compos/{id}") {
             call.processForm<Compo>(
                 { app.compos.update(it).map { redirectionToCompos }.bind() },
-                { renderAdminEditCompoPage(call.parameterInt("id"), it).bind() }
+                { renderAdminEditCompoPage(call.parameterUUID("id"), it).bind() }
             )
         }
 
         get("/admin/compos/{id}/download") {
             either {
-                val compoId = call.parameterInt("id").bind()
+                val compoId = call.parameterUUID("id").bind()
                 val useFoldersForSingleFiles = call.request.queryParameters["win"] == "true"
                 val compo = app.compos.getById(compoId).bind()
                 val entries = app.compoRun.prepareFiles(compoId, useFoldersForSingleFiles).bind()
@@ -121,7 +122,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/{id}/generate-slides") {
             either {
-                val compoId = call.parameterInt("id").bind()
+                val compoId = call.parameterUUID("id").bind()
                 val slideEditUrl = app.screen.generateSlidesForCompo(compoId).bind()
                 call.respondRedirect(slideEditUrl)
             }
@@ -129,7 +130,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/{id}/generate-result-slides") {
             either {
-                val compoId = call.parameterInt("id").bind()
+                val compoId = call.parameterUUID("id").bind()
                 val slideEditUrl = app.screen.generateResultSlidesForCompo(compoId).bind()
                 call.respondRedirect(slideEditUrl)
             }
@@ -162,23 +163,21 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             }
         }
 
-        get("/admin/host/{entryId}/{version}") {
+        get("/admin/host/{fileId}") {
             either {
-                val entryId = call.parameterInt("entryId").bind()
-                val version = call.parameterInt("version").bind()
-                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                val fileId = call.parameterUUID("fileId").bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(fileId).bind()
                 call.hostFile(hostedEntry)
             }.mapLeft { error ->
                 call.respondPage(error)
             }
         }
 
-        get("/admin/host/{entryId}/{version}/{path...}") {
+        get("/admin/host/{fileId}/{path...}") {
             either {
-                val entryId = call.parameterInt("entryId").bind()
-                val version = call.parameterInt("version").bind()
-                val hostedEntry = app.compoRun.extractEntryFiles(entryId, version).bind()
+                val fileId = call.parameterUUID("fileId").bind()
                 val path = call.parameterPath("path") { Path.of(it) }.bind()
+                val hostedEntry = app.compoRun.extractEntryFiles(fileId).bind()
                 call.hostFile(hostedEntry, path)
             }.mapLeft { error ->
                 call.respondPage(error)
@@ -214,9 +213,9 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         post("/admin/compos/{compoId}/runOrder") {
             either {
                 val runOrder = call.receive<List<String>>()
-                val compoId = call.parameterInt("compoId").bind()
+                val compoId = call.parameterUUID("compoId").bind()
                 runOrder
-                    .mapIndexed { index, entryId -> app.entries.setRunOrder(entryId.toInt(), index) }
+                    .mapIndexed { index, entryId -> app.entries.setRunOrder(UUID.fromString(entryId), index) }
                     .bindAll()
                 app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
                 call.respondText("OK")

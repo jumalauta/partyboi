@@ -14,13 +14,13 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
-import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.messages.MessageType
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
+import java.util.*
 import kotlin.random.Random
 
 class VoteKeyRepository(app: AppServices) : Service(app) {
@@ -34,19 +34,19 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
         it.atLeastOne(queryOf("SELECT * FROM votekey WHERE key_set = ?", keySet).map(VoteKeyRow.fromRow))
     }
 
-    suspend fun getUserVoteKeys(userId: Int): AppResult<List<VoteKey>> = db.use {
-        it.many(queryOf("SELECT key FROM votekey WHERE appuser_id = ?", userId).map(asString))
+    suspend fun getUserVoteKeys(userId: UUID): AppResult<List<VoteKey>> = db.use {
+        it.many(queryOf("SELECT key FROM votekey WHERE user_id = ?", userId).map(asString))
     }.map { it.map(VoteKey.fromKey) }
 
-    suspend fun revokeUserVoteKeys(userId: Int) = db.use {
-        it.exec(queryOf("DELETE FROM votekey WHERE appuser_id = ?", userId))
+    suspend fun revokeUserVoteKeys(userId: UUID) = db.use {
+        it.exec(queryOf("DELETE FROM votekey WHERE user_id = ?", userId))
     }
 
-    suspend fun insertVoteKey(userId: Int?, voteKey: VoteKey, keySet: String?, tx: TransactionalSession? = null) =
+    suspend fun insertVoteKey(userId: UUID?, voteKey: VoteKey, keySet: String?, tx: TransactionalSession? = null) =
         db.use(tx) {
             it.exec(
                 queryOf(
-                    "INSERT INTO votekey (appuser_id, key, key_set) VALUES (?, ?, ?)",
+                    "INSERT INTO votekey (user_id, key, key_set) VALUES (?, ?, ?)",
                     userId,
                     voteKey.toString(),
                     keySet
@@ -56,11 +56,11 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
             userId?.let { notifyUserOfVotingRights(it) }
         }
 
-    suspend fun registerTicket(userId: Int, code: String): AppResult<Unit> =
+    suspend fun registerTicket(userId: UUID, code: String): AppResult<Unit> =
         db.use {
             it.updateOne(
                 queryOf(
-                    "UPDATE votekey SET appuser_id = ? WHERE appuser_id IS NULL AND key = ?",
+                    "UPDATE votekey SET user_id = ? WHERE user_id IS NULL AND key = ?",
                     userId,
                     VoteKey.ticket(code).toString()
                 )
@@ -81,16 +81,16 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
         it.many(
             queryOf(
                 """
-                INSERT INTO votekey (key, appuser_id) (
+                INSERT INTO votekey (key, user_id) (
                 	SELECT
                 		('email:' || email) AS key,
-                		id AS appuser_id
+                		id AS user_id
                 	FROM appuser
                 	WHERE
                 		id NOT IN (
-                            SELECT DISTINCT appuser_id
+                            SELECT DISTINCT user_id
                 			FROM votekey
-                			WHERE appuser_id IS NOT NULL
+                			WHERE user_id IS NOT NULL
                         )
                         AND EMAIL IN (
                             SELECT jsonb_array_elements_text(value) AS emails
@@ -98,25 +98,12 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
                             WHERE key = 'SettingsService.voteKeyEmailList'
                         )
                 )
-                RETURNING appuser_id
+                RETURNING user_id
             """.trimIndent()
-            ).map(asInt)
+            ).map({ it.uuid("user_id") })
         ).map { userIds ->
             userIds.forEach { userId -> notifyUserOfVotingRights(userId) }
         }
-    }
-
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.voteKeys.size} vote keys")
-        data.voteKeys.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO votekey (key, appuser_id) VALUES (?, ?)",
-                    it.key,
-                    it.userId,
-                )
-            )
-        }.bindAll()
     }
 
     private suspend fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {
@@ -138,7 +125,7 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
     private fun generateTicketCode(): String =
         (0..7).map { getRandomTicketChar() }.joinToString("")
 
-    private suspend fun notifyUserOfVotingRights(userId: Int) {
+    private suspend fun notifyUserOfVotingRights(userId: UUID) {
         app.messages.sendMessage(
             userId,
             MessageType.INFO,
@@ -168,9 +155,9 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
     override fun toString(): String = listOfNotNull(keyType.name.lowercase(), id).joinToString(":")
 
     companion object {
-        fun user(userId: Int) = VoteKey(VoteKeyType.USER, userId.toString())
+        fun user(userId: UUID) = VoteKey(VoteKeyType.USER, userId.toString())
         fun ipAddr(ipAddr: String) = VoteKey(VoteKeyType.IP, ipAddr)
-        fun manual(userId: Int) = VoteKey(VoteKeyType.MANUAL, userId.toString())
+        fun manual(userId: UUID) = VoteKey(VoteKeyType.MANUAL, userId.toString())
         fun ticket(code: String) = VoteKey(VoteKeyType.TICKET, code.lowercase())
         fun email(email: String) = VoteKey(VoteKeyType.EMAIL, email)
 
@@ -190,14 +177,14 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
 @Serializable
 data class VoteKeyRow(
     val key: VoteKey,
-    val userId: Option<Int>,
+    val userId: Option<@Serializable(with = UUIDSerializer::class) UUID>,
     val set: String?,
 ) {
     companion object {
         val fromRow: (Row) -> VoteKeyRow = { row ->
             VoteKeyRow(
                 key = VoteKey.fromKey(row.string("key")),
-                userId = Option.fromNullable(row.intOrNull("appuser_id")),
+                userId = Option.fromNullable(row.uuidOrNull("user_id")),
                 set = row.stringOrNull("key_set"),
             )
         }

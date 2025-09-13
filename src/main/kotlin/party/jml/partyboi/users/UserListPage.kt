@@ -13,7 +13,6 @@ object UserListPage {
             table {
                 thead {
                     tr {
-                        th {}
                         th { +"User name" }
                         th { +"Privileges" }
                         th { +"Email" }
@@ -23,9 +22,6 @@ object UserListPage {
                 tbody {
                     users.forEach { user ->
                         tr {
-                            td(classes = "settings") {
-                                small { +user.id.toString() }
-                            }
                             td {
                                 a(href = "/admin/users/${user.id}") {
                                     +user.name

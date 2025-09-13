@@ -74,7 +74,7 @@ fun Application.configureLoginRouting(app: AppServices) {
 
         get("/verify/{userId}/{verificationCode}") {
             call.respondEither {
-                val userId = call.parameterInt("userId").bind()
+                val userId = call.parameterUUID("userId").bind()
                 val verificationCode = call.parameterString("verificationCode").bind()
                 app.users.verifyEmail(userId, verificationCode)
                 Redirection("/")

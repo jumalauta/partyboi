@@ -4,13 +4,12 @@ import arrow.core.Option
 import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
-import io.ktor.server.auth.*
 import kotlinx.serialization.Serializable
 import kotliquery.Row
-import kotliquery.TransactionalSession
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.data.randomStringId
@@ -18,9 +17,9 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.*
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.*
+import java.util.*
 
 class UserRepository(app: AppServices) : Service(app) {
     private val db = app.db
@@ -38,7 +37,7 @@ class UserRepository(app: AppServices) : Service(app) {
                     email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
-                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                LEFT JOIN votekey ON votekey.user_id = appuser.id
                 """,
             ).map(User.fromRow)
         )
@@ -57,7 +56,7 @@ class UserRepository(app: AppServices) : Service(app) {
                     email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
-                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                LEFT JOIN votekey ON votekey.user_id = appuser.id
                 WHERE name = ?
                 """,
                 name
@@ -78,7 +77,7 @@ class UserRepository(app: AppServices) : Service(app) {
                     email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
-                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                LEFT JOIN votekey ON votekey.user_id = appuser.id
                 WHERE email = ?
                 """,
                 email
@@ -86,7 +85,7 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun getUser(id: Int): AppResult<User> = db.use {
+    suspend fun getUser(id: UUID): AppResult<User> = db.use {
         it.one(
             queryOf(
                 """
@@ -99,7 +98,7 @@ class UserRepository(app: AppServices) : Service(app) {
                     email_verified,
                     votekey.key is not null as voting_enabled
                 FROM appuser
-                LEFT JOIN votekey ON votekey.appuser_id = appuser.id
+                LEFT JOIN votekey ON votekey.user_id = appuser.id
                 WHERE id = ?
                 """,
                 id
@@ -123,7 +122,7 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun updateUser(userId: Int, user: UserCredentials): AppResult<Unit> = db.transaction {
+    suspend fun updateUser(userId: UUID, user: UserCredentials): AppResult<Unit> = db.transaction {
         either {
             if (user.password.isNotEmpty()) {
                 it.updateOne(
@@ -146,7 +145,7 @@ class UserRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun changePassword(userId: Int, hashedPassword: String) = db.use {
+    suspend fun changePassword(userId: UUID, hashedPassword: String) = db.use {
         it.updateOne(
             queryOf(
                 "UPDATE appuser SET password = ? WHERE id = ?",
@@ -160,7 +159,7 @@ class UserRepository(app: AppServices) : Service(app) {
         it.exec(queryOf("DELETE FROM appuser"))
     }
 
-    suspend fun getEmailVerificationCode(userId: Int) = db.use {
+    suspend fun getEmailVerificationCode(userId: UUID) = db.use {
         it.one(
             queryOf(
                 "SELECT verification_code FROM appuser WHERE id = ?",
@@ -169,7 +168,7 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun setEmailVerified(userId: Int, verified: Boolean = true): AppResult<Unit> = db.use {
+    suspend fun setEmailVerified(userId: UUID, verified: Boolean = true): AppResult<Unit> = db.use {
         it.exec(
             queryOf(
                 """
@@ -185,7 +184,7 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun generateVerificationCode(userId: Int): AppResult<String> = db.use {
+    suspend fun generateVerificationCode(userId: UUID): AppResult<String> = db.use {
         val code = randomStringId(32)
         it.one(
             queryOf(
@@ -201,25 +200,9 @@ class UserRepository(app: AppServices) : Service(app) {
         )
     }
 
-    fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.users.size} users")
-        data.users.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO appuser (id, name, password, is_admin) VALUES (?, ?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.hashedPassword,
-                    it.isAdmin,
-                )
-            )
-        }.bindAll()
-    }
-
-    suspend fun makeAdmin(userId: Int, state: Boolean) = db.use {
+    suspend fun makeAdmin(userId: UUID, state: Boolean) = db.use {
         it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
-
 
     suspend fun createAdminUser() = db.use {
         val password = app.config.adminPassword
@@ -236,14 +219,15 @@ class UserRepository(app: AppServices) : Service(app) {
 
 @Serializable
 data class User(
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     val name: String,
     val hashedPassword: String,
     val isAdmin: Boolean,
     val votingEnabled: Boolean,
     val email: String?,
     val emailVerified: Boolean,
-) : Principal {
+) {
     fun authenticate(plainPassword: String): AppResult<User> =
         if (BCrypt.checkpw(plainPassword, hashedPassword)) {
             this.right()
@@ -254,7 +238,7 @@ data class User(
     companion object {
         val fromRow: (Row) -> User = { row ->
             User(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 name = row.string("name"),
                 hashedPassword = row.string("password"),
                 isAdmin = row.boolean("is_admin"),

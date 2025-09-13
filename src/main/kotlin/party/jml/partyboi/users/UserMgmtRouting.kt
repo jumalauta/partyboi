@@ -5,8 +5,8 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.*
-import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterString
+import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.data.processForm
 import party.jml.partyboi.data.switchApi
 import party.jml.partyboi.form.Form
@@ -16,6 +16,7 @@ import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.voting.VoteKey
+import java.util.*
 
 fun Application.configureUserMgmtRouting(app: AppServices) {
     suspend fun renderUsersPage() = either {
@@ -25,7 +26,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
     suspend fun renderEditPage(
         session: AppResult<User>,
-        id: AppResult<Int>,
+        id: AppResult<UUID>,
         currentForm: Form<UserCredentials>? = null,
     ) = either {
         val self = session.bind()
@@ -93,14 +94,14 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
             call.respondEither {
                 renderEditPage(
                     call.userSession(app),
-                    call.parameterInt("id"),
+                    call.parameterUUID("id"),
                 ).bind()
             }
         }
 
         get("/admin/users/{id}/send-verification") {
             call.respondAndCatchEither({
-                val userId = call.parameterInt("id").bind()
+                val userId = call.parameterUUID("id").bind()
                 val user = app.users.getUser(userId).bind()
                 app.users.sendVerificationEmail(user)?.bind()
 
@@ -124,7 +125,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         post("/admin/users/{id}") {
             call.processForm<UserCredentials>(
                 { credentials ->
-                    val userId = call.parameterInt("id").bind()
+                    val userId = call.parameterUUID("id").bind()
                     app.users.updateUser(userId, credentials).bind()
                     app.users.requestUserSessionReload(userId)
                     Redirection("/admin/users/$userId")
@@ -132,7 +133,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
                 {
                     renderEditPage(
                         session = call.userSession(app),
-                        id = call.parameterInt("id"),
+                        id = call.parameterUUID("id"),
                         currentForm = it
                     ).bind()
                 }

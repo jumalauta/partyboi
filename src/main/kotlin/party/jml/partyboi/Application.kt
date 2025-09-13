@@ -31,10 +31,6 @@ fun Application.module() {
 
     launch { app.screen.start() }
 
-    if (app.replication.isReadReplica) {
-        launch { app.replication.sync() }
-    }
-
     configureHealthCheck(app)
     app.email.configure(this)
 }

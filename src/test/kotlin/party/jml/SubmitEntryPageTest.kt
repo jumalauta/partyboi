@@ -7,16 +7,18 @@ import io.ktor.http.*
 import it.skrape.matchers.toBe
 import it.skrape.selects.text
 import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.EntryUpdate
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
+import java.util.*
 import kotlin.test.Test
 
 class SubmitEntryPageTest : PartyboiTester {
     @Test
     fun testSubmitEntry() = test {
-        var compoId: Int = -1
+        var compoId: UUID = UUIDv7.Empty
 
         setupServices {
             either {
@@ -60,7 +62,7 @@ class SubmitEntryPageTest : PartyboiTester {
             compoId = compoId,
             screenComment = "Hello to audience",
             orgComment = "Hello to orgs",
-            userId = -1
+            userId = UUIDv7.Empty,
         )
         it.post("/entries", goodEntry) {
             it.redirectsTo("/")

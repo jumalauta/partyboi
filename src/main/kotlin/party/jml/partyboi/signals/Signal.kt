@@ -10,6 +10,7 @@ import party.jml.partyboi.Service
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
+import java.util.*
 
 class SignalService(app: AppServices) : Service(app) {
     val flow = MutableStateFlow(Signal.initial())
@@ -38,19 +39,16 @@ data class Signal(
 
     companion object {
         fun initial() = Signal(SignalType.initial)
-        fun slideShown(slideId: Int) = Signal(SignalType.slideShown, null, slideId.toString())
-        fun eventStarted(eventId: Int) = Signal(SignalType.event, null, eventId.toString())
-        fun votingOpened(compoId: Int) = Signal(SignalType.vote, "open", compoId.toString())
-        fun votingClosed(compoId: Int) = Signal(SignalType.vote, "close", compoId.toString())
-        fun liveVotingOpened(compoId: Int) = Signal(SignalType.liveVote, "open", compoId.toString())
+        fun slideShown(slideId: UUID) = Signal(SignalType.slideShown, null, slideId.toString())
+        fun eventStarted(eventId: UUID) = Signal(SignalType.event, null, eventId.toString())
+        fun votingOpened(compoId: UUID) = Signal(SignalType.vote, "open", compoId.toString())
+        fun votingClosed(compoId: UUID) = Signal(SignalType.vote, "close", compoId.toString())
+        fun liveVotingOpened(compoId: UUID) = Signal(SignalType.liveVote, "open", compoId.toString())
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
-        fun liveVotingEntry(entryId: Int) = Signal(SignalType.liveVote, "entry", entryId.toString())
+        fun liveVotingEntry(entryId: UUID) = Signal(SignalType.liveVote, "entry", entryId.toString())
         fun propertyUpdated(key: String) = Signal(SignalType.propertyUpdated, null, key)
-        fun compoContentUpdated(compoId: Int, timeService: TimeService) =
+        fun compoContentUpdated(compoId: UUID, timeService: TimeService) =
             Signal(SignalType.compoContentUpdated, timeService.isoLocalTime(), compoId.toString())
-
-        fun fileUploaded(entryId: Int, version: Int) =
-            Signal(SignalType.fileUploaded, entryId.toString(), version.toString())
     }
 }
 

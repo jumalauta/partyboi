@@ -14,15 +14,16 @@ import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.zip.ZipUtils
 import java.io.*
 import java.nio.file.Path
+import java.util.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.io.path.createTempDirectory
 
 
 class CompoRunService(app: AppServices) : Service(app) {
-    private val hostCache = EitherCache<Pair<Int, Int>, AppError, ExtractedEntry>()
+    private val hostCache = EitherCache<UUID, AppError, ExtractedEntry>()
 
-    suspend fun prepareFiles(compoId: Int, useFoldersForSingleFiles: Boolean): AppResult<TempDir> = either {
+    suspend fun prepareFiles(compoId: UUID, useFoldersForSingleFiles: Boolean): AppResult<TempDir> = either {
         val tempDir = TempDir()
         val compo = app.compos.getById(compoId).bind()
         val entries = app.entries.getEntriesForCompo(compoId).bind()
@@ -59,9 +60,9 @@ class CompoRunService(app: AppServices) : Service(app) {
             outputFile
         }.mapLeft { InternalServerError(it) }
 
-    suspend fun extractEntryFiles(entryId: Int, version: Int): AppResult<ExtractedEntry> = either {
-        val file = app.files.getVersion(entryId, version).bind()
-        val entry = app.entries.get(entryId).bind()
+    suspend fun extractEntryFiles(fileId: UUID): AppResult<ExtractedEntry> = either {
+        val file = app.files.getById(fileId).bind()
+        val entry = app.entries.getById(file.entryId).bind()
         val compo = app.compos.getById(entry.compoId).bind()
         val tempDir = createTempDirectory()
         Pair(
@@ -77,7 +78,7 @@ class CompoRunService(app: AppServices) : Service(app) {
         )
     }.flatMap { target ->
         val (file, targetFilename) = target
-        hostCache.memoize(Pair(entryId, file.version)) {
+        hostCache.memoize(file.id) {
             val effect = if (file.type == FileDesc.ZIP_ARCHIVE) {
                 ZipUtils.extract(file.getStorageFile(), targetFilename)
             } else {

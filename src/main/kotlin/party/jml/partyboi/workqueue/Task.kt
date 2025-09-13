@@ -19,8 +19,8 @@ data class NormalizeLoudness(
     val file: FileDesc
 ) : Task {
     override suspend fun execute(app: AppServices): AppResult<Unit> = either {
-        val fileDesc = app.files.getVersion(file.entryId, file.version).bind()
-        val entry = app.entries.get(fileDesc.entryId).bind()
+        val fileDesc = app.files.getById(file.id).bind()
+        val entry = app.entries.getById(fileDesc.entryId).bind()
 
         val newName = Path(fileDesc.originalFilename).nameWithoutExtension + " (normalized).flac"
         val output = app.files.makeStorageFilename(

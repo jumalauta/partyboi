@@ -50,7 +50,7 @@ data class QrCodeSlide(
     companion object {
         val Empty = QrCodeSlide(
             title = "",
-            qrcode = "https://github.com/ilkkahanninen/partyboi",
+            qrcode = "https://github.com/jumalauta/partyboi",
             description = "",
         )
     }

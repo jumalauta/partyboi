@@ -12,13 +12,14 @@ import party.jml.partyboi.templates.components.IconSet
 import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.toggleButton
+import java.util.*
 
 object AdminComposPage {
     fun render(
         newCompoForm: Form<NewCompo>,
         generalRulesForm: Form<GeneralRules>,
         compos: List<Compo>,
-        entries: Map<Int, List<Entry>>,
+        entries: Map<UUID, List<Entry>>,
     ) = Page(
         title = "Compos",
         subLinks = compos.map { it.toNavItem() },

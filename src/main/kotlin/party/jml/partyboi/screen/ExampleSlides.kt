@@ -12,6 +12,7 @@ import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
+import java.util.*
 
 data class ExampleSlide(
     val name: String,
@@ -124,7 +125,7 @@ fun getExampleSlides() = listOf(
         "Compo entry",
         TextSlide.compoSlide(
             0, Entry(
-                id = 0,
+                id = UUID.randomUUID(),
                 title = "Lorem Ipsum Mega Blast 2000",
                 author = "Jumalauta + Matt Current",
                 screenComment = """
@@ -139,8 +140,8 @@ fun getExampleSlides() = listOf(
                 - RTFM
             """.trimIndent().some(),
                 orgComment = none(),
-                compoId = 0,
-                userId = 0,
+                compoId = UUID.randomUUID(),
+                userId = UUID.randomUUID(),
                 qualified = true,
                 runOrder = 0,
                 timestamp = Instant.DISTANT_PAST,
@@ -191,7 +192,7 @@ class MockEventRepository(events: EventRepository) : EventRepository by events {
             "Results & Prize Giving"
         ).mapIndexed { index, name ->
             Event(
-                id = index,
+                id = UUID.randomUUID(),
                 name = name,
                 startTime = time(10 + index / 2, 30 * (index % 2)),
                 endTime = null,

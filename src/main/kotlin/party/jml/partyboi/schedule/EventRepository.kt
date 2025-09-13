@@ -1,47 +1,46 @@
 package party.jml.partyboi.schedule
 
-import arrow.core.Either
 import arrow.core.Option
 import arrow.core.Some
 import arrow.core.raise.either
 import kotlinx.datetime.*
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.AppError
+import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
-import party.jml.partyboi.replication.DataExport
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.*
 import party.jml.partyboi.triggers.Action
 import party.jml.partyboi.triggers.TriggerRow
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import java.util.*
 import kotlin.time.Duration.Companion.hours
 
 interface EventRepository {
-    suspend fun get(eventId: Int): AppResult<Event>
+    suspend fun get(eventId: UUID): AppResult<Event>
     suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>>
     suspend fun getAll(): AppResult<List<Event>>
     suspend fun getPublic(): AppResult<List<Event>>
     suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event>
     suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>>
     suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event>
-    suspend fun delete(eventId: Int): AppResult<Unit>
+    suspend fun delete(eventId: UUID): AppResult<Unit>
     suspend fun deleteAll(): AppResult<Unit>
-    fun import(tx: TransactionalSession, data: DataExport): Either<AppError, List<Unit>>
 }
 
 class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     private val db = app.db
 
-    override suspend fun get(eventId: Int): AppResult<Event> = db.use {
+    override suspend fun get(eventId: UUID): AppResult<Event> = db.use {
         it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
@@ -111,27 +110,12 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
         )
     }
 
-    override suspend fun delete(eventId: Int): AppResult<Unit> = db.use {
+    override suspend fun delete(eventId: UUID): AppResult<Unit> = db.use {
         it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
     override suspend fun deleteAll(): AppResult<Unit> = db.use {
         it.exec(queryOf("DELETE FROM event"))
-    }
-
-    override fun import(tx: TransactionalSession, data: DataExport) = either {
-        log.info("Import ${data.events.size} events")
-        data.events.map {
-            tx.exec(
-                queryOf(
-                    "INSERT INTO event (id, name, time, visible) VALUES (?, ?, ?, ?)",
-                    it.id,
-                    it.name,
-                    it.startTime,
-                    it.visible,
-                )
-            )
-        }.bindAll()
     }
 }
 
@@ -191,7 +175,8 @@ data class NewEvent(
 @Serializable
 data class Event(
     @Field(presentation = FieldPresentation.hidden)
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     @Label("Event name")
     @NotEmpty
     val name: String,
@@ -214,7 +199,7 @@ data class Event(
     companion object {
         val fromRow: (Row) -> Event = { row ->
             Event(
-                id = row.int("id"),
+                id = row.uuid("id"),
                 name = row.string("name"),
                 startTime = row.instant("time").toKotlinInstant(),
                 endTime = row.instantOrNull("end_time")?.toKotlinInstant(),

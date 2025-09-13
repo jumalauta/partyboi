@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.replication.DataExport
+import party.jml.partyboi.data.UUIDSerializer
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
@@ -40,7 +40,7 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun start() {
         app.signals.flow.collect {
             if (it.type == SignalType.compoContentUpdated && it.target != null) {
-                val compoId = it.target.toInt()
+                val compoId = UUID.fromString(it.target)
                 log.info("Update compo slides")
                 generateSlidesForCompo(compoId)
             }
@@ -64,7 +64,7 @@ class ScreenService(app: AppServices) : Service(app) {
         state.emit(newState)
     }
 
-    suspend fun getSlide(slideId: Int): AppResult<ScreenRow> = repository.getSlide(slideId)
+    suspend fun getSlide(slideId: UUID): AppResult<ScreenRow> = repository.getSlide(slideId)
     suspend fun getAllSlides(): AppResult<List<ScreenRow>> = repository.getAllSlides()
 
     suspend fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
@@ -72,7 +72,7 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun addSlide(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false, readOnly = false)
 
-    suspend fun update(id: Int, slide: Slide<*>) = either {
+    suspend fun update(id: UUID, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
         if (state.value.id == id) {
             show(updatedRow)
@@ -80,15 +80,15 @@ class ScreenService(app: AppServices) : Service(app) {
         updatedRow
     }
 
-    suspend fun delete(id: Int) = repository.delete(id)
+    suspend fun delete(id: UUID) = repository.delete(id)
 
     suspend fun deleteAll() = repository.deleteAll()
 
-    suspend fun setVisible(id: Int, visible: Boolean) = repository.setVisible(id, visible)
+    suspend fun setVisible(id: UUID, visible: Boolean) = repository.setVisible(id, visible)
 
-    suspend fun showOnInfo(id: Int, visible: Boolean) = repository.showOnInfo(id, visible)
+    suspend fun showOnInfo(id: UUID, visible: Boolean) = repository.showOnInfo(id, visible)
 
-    suspend fun setRunOrder(id: Int, order: Int) = repository.setRunOrder(id, order)
+    suspend fun setRunOrder(id: UUID, order: Int) = repository.setRunOrder(id, order)
 
     suspend fun stopSlideSet() {
         autoRunScheduler?.cancel()
@@ -112,7 +112,7 @@ class ScreenService(app: AppServices) : Service(app) {
     }
 
 
-    suspend fun show(slideId: Int) = either {
+    suspend fun show(slideId: UUID) = either {
         show(repository.getSlide(slideId).bind())
     }
 
@@ -133,7 +133,7 @@ class ScreenService(app: AppServices) : Service(app) {
             repository.getFirstSlide(slideSetName).map { show(it) }
         }
 
-    suspend fun generateSlidesForCompo(compoId: Int): AppResult<String> = either {
+    suspend fun generateSlidesForCompo(compoId: UUID): AppResult<String> = either {
         val slideSet = "compo-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
@@ -165,7 +165,7 @@ class ScreenService(app: AppServices) : Service(app) {
         "/admin/screen/${slideSet}"
     }
 
-    suspend fun generateResultSlidesForCompo(compoId: Int): AppResult<String> = either {
+    suspend fun generateResultSlidesForCompo(compoId: UUID): AppResult<String> = either {
         val slideSet = "results-${compoId}"
         val compo = app.compos.getById(compoId).bind()
         upsertSlideSet(slideSet, "Results: ${compo.name}", "square-poll-horizontal")
@@ -224,8 +224,6 @@ class ScreenService(app: AppServices) : Service(app) {
         }
     }
 
-    fun import(tx: TransactionalSession, data: DataExport) = repository.import(tx, data)
-
     private suspend fun show(row: ScreenRow) {
         val slide = row.getSlide()
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
@@ -239,7 +237,8 @@ class ScreenService(app: AppServices) : Service(app) {
 @Serializable
 data class ScreenState(
     val slideSet: String,
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     val slide: Slide<*>,
 ) {
     companion object {
@@ -251,7 +250,7 @@ data class ScreenState(
             )
         }
 
-        val Empty = ScreenState("adhoc", -1, TextSlide.Empty)
+        val Empty = ScreenState("adhoc", UUIDv7.Empty, TextSlide.Empty)
     }
 }
 

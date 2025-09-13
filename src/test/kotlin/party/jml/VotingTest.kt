@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
@@ -32,7 +33,7 @@ class VotingTest : PartyboiTester {
 
     @Test
     fun testVotingEnabled() = test {
-        var entryId = -1
+        var entryId = UUIDv7.Empty
 
         setupServices {
             val app = this

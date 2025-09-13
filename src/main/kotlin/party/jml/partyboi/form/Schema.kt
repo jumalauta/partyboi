@@ -8,7 +8,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.html.InputType
+import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.system.TimeService
+import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
@@ -96,6 +98,7 @@ sealed interface Property {
             return when (type.classifier) {
                 String::class -> TextProp(name, optional, meta)
                 Int::class -> IntProp(name, optional, meta)
+                UUID::class -> UUIDProp(name, optional, meta)
                 Boolean::class -> BooleanProp(name, optional, meta)
                 Instant::class -> InstantProp(name, optional, meta)
                 FileUpload::class -> FileUploadProp(name, optional, meta)
@@ -167,9 +170,22 @@ data class IntProp(
     override fun parseFormValue(
         values: List<String>,
         files: List<FileUpload>,
-
-        ): Int? =
+    ): Int? =
         values.firstOrNull()?.toInt()
+}
+
+data class UUIDProp(
+    override val name: String,
+    override val optional: Boolean,
+    override val meta: PropertyMeta,
+) : Property {
+    override val defaultValue = UUIDv7.Empty
+    override val defaultInputType: InputType = InputType.text
+    override fun parseFormValue(
+        values: List<String>,
+        files: List<FileUpload>,
+    ): UUID? =
+        values.firstOrNull()?.let { UUID.fromString(it) }
 }
 
 data class BooleanProp(
