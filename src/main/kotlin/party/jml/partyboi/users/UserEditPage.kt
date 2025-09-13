@@ -18,7 +18,8 @@ object UserEditPage {
         showAdminControls: Boolean,
     ) =
         Page("Edit user") {
-            h1 { +"Edit user #${user.id}" }
+            h1 { +"User: ${user.name}" }
+            p { small { +"UUID: ${user.id}" } }
 
             columns(
                 {
