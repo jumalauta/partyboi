@@ -96,13 +96,14 @@ class VoteService(app: AppServices) : Service(app) {
 
     suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         either {
-            val entriesWithFiles = app.files.getEntryIdsWithFiles().bind()
+            val downloads = app.files.getEntryIdsWithFiles(includeProcessedFiles = false).bind()
             repository
                 .getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
                 .bind()
                 .map { entry ->
-                    if (entriesWithFiles.contains(entry.entryId)) {
-                        entry.copy(downloadLink = "/entries/download/${entry.entryId}")
+                    val download = downloads.find { it.entryId == entry.entryId }
+                    if (download != null) {
+                        entry.copy(downloadLink = "/entries/download/${download.fileId}")
                     } else {
                         entry
                     }

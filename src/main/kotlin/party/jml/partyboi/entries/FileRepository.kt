@@ -208,10 +208,42 @@ class FileRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun getEntryIdsWithFiles(): AppResult<List<UUID>> = db.use {
-        it.many(queryOf("SELECT DISTINCT entry_id FROM file").map { it.uuid("entry_id") })
+    suspend fun getEntryIdsWithFiles(includeProcessedFiles: Boolean): AppResult<List<EntryFileAssociation>> = db.use {
+        it.many(
+            queryOf(
+                """
+            WITH entry_file AS (
+            	SELECT
+            		entry_id,
+            		id,
+            		uploaded_at,
+            		row_number() OVER (PARTITION BY entry_id ORDER BY uploaded_at DESC) rn
+            	FROM file
+                ${if (includeProcessedFiles) "" else "WHERE NOT processed"}
+            )
+            SELECT
+            	entry_id,
+            	id file_id
+            FROM entry_file
+            WHERE rn = 1
+        """.trimIndent()
+            ).map(EntryFileAssociation.fromRow)
+        )
     }
+}
 
+data class EntryFileAssociation(
+    val entryId: UUID,
+    val fileId: UUID,
+) {
+    companion object {
+        val fromRow: (Row) -> EntryFileAssociation = { row ->
+            EntryFileAssociation(
+                entryId = row.uuid("entry_id"),
+                fileId = row.uuid("file_id"),
+            )
+        }
+    }
 }
 
 data class NewFileDesc(
