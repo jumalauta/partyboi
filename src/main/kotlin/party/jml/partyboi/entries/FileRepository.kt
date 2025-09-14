@@ -19,10 +19,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.FileChecksums
-import party.jml.partyboi.data.InternalServerError
-import party.jml.partyboi.data.UUIDSerializer
-import party.jml.partyboi.data.toFilenameToken
+import party.jml.partyboi.data.*
 import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
@@ -194,7 +191,7 @@ class FileRepository(app: AppServices) : Service(app) {
         val id = "${entryId}-${app.time.isoLocalTime()}}"
         val authorClean = author.toFilenameToken(false)
         val titleClean = title.toFilenameToken(false)
-        val extension = File(originalFilename).extension.lowercase()
+        val extension = File(originalFilename).extension.lowercase().nonEmptyString() ?: "file"
 
         return Paths.get(compo, "$id-$authorClean-$titleClean.$extension")
     }
