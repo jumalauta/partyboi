@@ -52,6 +52,10 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         user.bind().isAdmin
                     ).isRight()
 
+        val uploader = if (user.bind().isAdmin) {
+            app.users.getById(entry.userId).bind()
+        } else null
+
         EditEntryPage.render(
             user = user.bind(),
             entryUpdateForm = entryUpdateForm ?: Form(
@@ -64,6 +68,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             files = files,
             screenshot = screenshotUrl,
             allowEdit = allowEdit,
+            uploader = uploader
         )
     }
 

@@ -132,7 +132,7 @@ fun Application.configureLoginRouting(app: AppServices) {
                     {
                         val userId = app.users.resetPassword(it.code, it.password).bind()
                         if (call.sessions.get<User>() == null) {
-                            val user = app.users.getUser(userId).bind()
+                            val user = app.users.getById(userId).bind()
                             call.sessions.set(user)
                         }
                         Redirection("/")

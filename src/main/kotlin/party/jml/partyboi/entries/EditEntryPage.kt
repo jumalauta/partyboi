@@ -22,6 +22,7 @@ object EditEntryPage {
         files: List<FileDesc>,
         screenshot: Option<String>,
         allowEdit: Boolean,
+        uploader: User?,
     ): Page {
         val title = if (!allowEdit) "Entry" else "Edit entry"
 
@@ -30,6 +31,20 @@ object EditEntryPage {
 
             columns(
                 {
+                    uploader?.let { user ->
+                        p {
+                            +"Submitted by "
+                            a(href = "/admin/users/${user.id}") {
+                                +user.name
+                            }
+                            user.email?.let { email ->
+                                +" "
+                                a(href = "mailto:$email") {
+                                    +"(${email})"
+                                }
+                            }
+                        }
+                    }
                     if (!allowEdit) {
                         entryDetails(compos, entryUpdateForm)
                     } else {

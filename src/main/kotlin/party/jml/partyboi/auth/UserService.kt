@@ -36,7 +36,7 @@ class UserService(private val app: AppServices) {
         }
     }
 
-    suspend fun getUser(userId: UUID): AppResult<User> = userRepository.getUser(userId)
+    suspend fun getById(userId: UUID): AppResult<User> = userRepository.getUser(userId)
     suspend fun getUserByName(username: String): AppResult<User> = userRepository.getUser(username)
     suspend fun getUsers(): AppResult<List<User>> = userRepository.getUsers()
 

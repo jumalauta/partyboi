@@ -30,7 +30,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         currentForm: Form<UserCredentials>? = null,
     ) = either {
         val self = session.bind()
-        val user = app.users.getUser(id.bind()).bind()
+        val user = app.users.getById(id.bind()).bind()
         val form = currentForm ?: Form(
             UserCredentials::class,
             UserCredentials.fromUser(user),
@@ -102,7 +102,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         get("/admin/users/{id}/send-verification") {
             call.respondAndCatchEither({
                 val userId = call.parameterUUID("id").bind()
-                val user = app.users.getUser(userId).bind()
+                val user = app.users.getById(userId).bind()
                 app.users.sendVerificationEmail(user)?.bind()
 
                 app.messages.sendMessage(
