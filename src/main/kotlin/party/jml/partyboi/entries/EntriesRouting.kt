@@ -192,7 +192,10 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val entryId = call.parameterUUID("id").bind()
                     val entry = app.entries.getById(entryId, user.id).bind()
 
-                    app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
+                    firstRight(
+                        app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
+                        app.entries.assertCanSubmit(entry.id, user.isAdmin),
+                    ).bind()
                     app.screenshots.store(entry.id, screenshot.file)
 
                     Redirection("/entries/$entryId")
