@@ -1,6 +1,7 @@
 package party.jml.partyboi.data
 
 import arrow.core.Option
+import arrow.core.getOrElse
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -24,10 +25,8 @@ class PropertyRepository(app: AppServices) : Service(app) {
                 either {
                     get(key)
                         .bind()
-                        .fold(
-                            { defaultValue },
-                            { Json.decodeFromString<T>(it.json) }
-                        )
+                        .flatMap { Option.catch { Json.decodeFromString<T>(it.json) } }
+                        .getOrElse { defaultValue }
                 }
             },
             storeValue = { value ->
