@@ -5,13 +5,14 @@ We are nearing the beta phase.
 
 > "The party system and online voting was really simple and worked flawlessly."
 >
-> - [ggn](https://atariscne.org/news/index.php/68k-inside-from-the-inside-a-party-report-shall-we-say)
+> -- [ggn](https://atariscne.org/news/index.php/68k-inside-from-the-inside-a-party-report-shall-we-say)
 
 Big greetings to these parties for helping with testing:
 
-- 68k Inside
-- Winterfärjan
-- Reaktor LAN Party
+- [Jumalauta Party](https://summer.jml.party/)
+- [68k Inside](https://68k-inside.party/)
+- [Winterfärjan](https://winter.jml.party/)
+- [Reaktor](https://www.reaktor.com) LAN Party
 
 ## Requirements
 
