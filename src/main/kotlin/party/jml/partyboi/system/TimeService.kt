@@ -53,17 +53,10 @@ fun LocalDateTime.displayTime(): String =
 fun Instant.displayTime(tz: TimeZone): String =
     toLocalDateTime(tz).displayTime()
 
-fun Instant.displayDateTime(): String = format(DateTimeComponents.Format {
-    dayOfMonth()
-    char('.')
-    monthNumber()
-    char('.')
-    year()
-    char(' ')
-    hour()
-    char(':')
-    minute()
-})
+fun Instant.displayDateTime(tz: TimeZone): String {
+    val time = toLocalDateTime(tz)
+    return "${time.date.displayDate()} ${time.displayTime()}"
+}
 
 fun Instant.toDate(): LocalDate = toLocalDateTime(TimeService.timeZone()).date
 

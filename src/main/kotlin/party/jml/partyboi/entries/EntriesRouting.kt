@@ -56,6 +56,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
             app.users.getById(entry.userId).bind()
         } else null
 
+        val tz = app.time.timeZone.get().bind()
+
         EditEntryPage.render(
             user = user.bind(),
             entryUpdateForm = entryUpdateForm ?: Form(
@@ -68,7 +70,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
             files = files,
             screenshot = screenshotUrl,
             allowEdit = allowEdit,
-            uploader = uploader
+            uploader = uploader,
+            tz = tz,
         )
     }
 

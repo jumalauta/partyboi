@@ -21,7 +21,7 @@ db:
   port: "$DB_PORT:5432"
   user: "$DB_USER:postgres"
   password: "$DB_PASSWORD:password"
-  database: "$DB_DATABASE:partyboi"
+  database: "$DB_DATABASE:local"
 
 files:
   entries: "$FILES_ENTRIES:./data/entries"
