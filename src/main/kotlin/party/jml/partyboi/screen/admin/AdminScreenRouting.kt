@@ -186,11 +186,11 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         }
 
         put("/admin/screen/{id}/setVisible/{state}") {
-            call.switchApi { id, visible -> app.screen.setVisible(id, visible) }
+            call.switchApiUuid { id, visible -> app.screen.setVisible(id, visible) }
         }
 
         put("/admin/screen/{id}/showOnInfo/{state}") {
-            call.switchApi { id, show -> app.screen.showOnInfo(id, show) }
+            call.switchApiUuid { id, show -> app.screen.showOnInfo(id, show) }
         }
 
         post("/admin/screen/{slideSet}/runOrder") {

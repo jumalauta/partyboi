@@ -5,11 +5,12 @@ import arrow.core.right
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.sync.SyncRepository.Companion.CLIENT_GROUP_ID
-import party.jml.partyboi.sync.SyncRepository.Companion.ROOT_SERVER_GROUP_ID
+import party.jml.partyboi.sync.SyncRepository.Companion.MASTER_GROUP_ID
 import party.jml.partyboi.system.AppResult
 
 class SyncService(app: AppServices) : Service(app) {
     private val repository = SyncRepository(app)
+    val nodeName = "${app.config.dbDatabase}-master"
 
     private val tables = listOf(
         "appuser",
@@ -37,35 +38,45 @@ class SyncService(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun getHosts(): AppResult<List<NodeHost>> = repository.getHosts()
+    suspend fun getHost(): AppResult<NodeHost> = either {
+        val tz = app.time.timeZone.get().bind()
+        repository.getHost(nodeName).bind().withTimezone(tz)
+    }
 
     suspend fun configureMaster() = either {
-        val partyToCloudLink = NodeGroupLink(
+        val masterNode = Node(
+            id = nodeName,
+            group = masterNodeGroup,
+            externalId = nodeName,
+            syncEnabled = true
+        )
+
+        val clientToMasterGroupLink = NodeGroupLink(
             source = clientNodeGroup,
-            target = serverNodeGroup,
+            target = masterNodeGroup,
             action = DataEventAction.Push,
         )
 
-        val cloudToPartyLink = NodeGroupLink(
-            source = serverNodeGroup,
+        val masterToClientGroupLink = NodeGroupLink(
+            source = masterNodeGroup,
             target = clientNodeGroup,
             action = DataEventAction.WaitForPull,
         )
 
-        val partyToCloudRouter = DefaultRouter(
+        val clientToMasterRouter = DefaultRouter(
             id = "party-to-cloud",
             source = clientNodeGroup,
-            target = serverNodeGroup,
+            target = masterNodeGroup,
         )
 
-        val cloudToPartyRouter = DefaultRouter(
+        val masterToClientRouter = DefaultRouter(
             id = "cloud-to-party",
-            source = serverNodeGroup,
+            source = masterNodeGroup,
             target = clientNodeGroup,
         )
 
-        val dataChannel = Channel(
-            id = "database",
+        val psqlDataChannel = Channel(
+            id = "partyboi-db",
             processingOrder = 10,
             maxBatchSize = 1000,
             maxBatchToSend = 10,
@@ -80,19 +91,41 @@ class SyncService(app: AppServices) : Service(app) {
             Trigger(
                 id = table,
                 sourceTable = table,
-                channel = dataChannel
+                channel = psqlDataChannel
             )
         }
 
-        repository.addNodeGroup(serverNodeGroup).bind()
+        val triggerRouters = dataTriggers.flatMap { trigger ->
+            listOf(
+                TriggerRouter(
+                    trigger = trigger,
+                    router = masterToClientRouter,
+                    enabled = true,
+                    initialLoadOrder = 1,
+                    pingBackEnabled = false,
+                ),
+                TriggerRouter(
+                    trigger = trigger,
+                    router = clientToMasterRouter,
+                    enabled = true,
+                    initialLoadOrder = 1,
+                    pingBackEnabled = false,
+                ),
+            )
+        }.mapIndexed { idx, trigger -> trigger.copy(initialLoadOrder = idx + 1) }
+
+        repository.addNodeGroup(masterNodeGroup).bind()
         repository.addNodeGroup(clientNodeGroup).bind()
-        repository.addNodeGroupLink(partyToCloudLink).bind()
-        repository.addNodeGroupLink(cloudToPartyLink).bind()
-        repository.addDefaultRouter(partyToCloudRouter).bind()
-        repository.addDefaultRouter(cloudToPartyRouter).bind()
-        repository.addChannel(dataChannel).bind()
+        repository.addNodeGroupLink(clientToMasterGroupLink).bind()
+        repository.addNodeGroupLink(masterToClientGroupLink).bind()
+        repository.addDefaultRouter(clientToMasterRouter).bind()
+        repository.addDefaultRouter(masterToClientRouter).bind()
+        repository.addChannel(psqlDataChannel).bind()
         dataTriggers.forEach { trigger ->
             repository.addTrigger(trigger).bind()
+        }
+        triggerRouters.forEach { router ->
+            repository.addTriggerRouter(router).bind()
         }
     }
 
@@ -112,15 +145,21 @@ class SyncService(app: AppServices) : Service(app) {
         repository.addNodeSecurity(security).bind()
     }
 
+    suspend fun getClientNodeSecurities(): AppResult<List<NodeSecurity>> =
+        repository.getNodeSecurities(CLIENT_GROUP_ID)
+
+    suspend fun setSyncEnabled(nodeId: String, enabled: Boolean): AppResult<Unit> =
+        repository.setSyncEnabled(nodeId, enabled)
+
     companion object {
-        val serverNodeGroup = NodeGroup(
-            id = ROOT_SERVER_GROUP_ID,
-            description = "Root server instance running",
+        val masterNodeGroup = NodeGroup(
+            id = MASTER_GROUP_ID,
+            description = "A node running on cloud",
         )
 
         val clientNodeGroup = NodeGroup(
             id = CLIENT_GROUP_ID,
-            description = "An instance running at the party place",
+            description = "A node running at the party place",
         )
     }
 }

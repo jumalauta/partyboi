@@ -3,35 +3,93 @@ package party.jml.partyboi.sync
 import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import party.jml.partyboi.data.Filesize
-import party.jml.partyboi.form.submitButton
-import party.jml.partyboi.system.displayDateTime
+import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.timestamp
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
+import kotlin.time.ExperimentalTime
 
 object SyncAdminPage {
-    fun render(configState: SymmetricDsConfigurationState, hosts: List<NodeHost>, tz: TimeZone) =
+    @OptIn(ExperimentalTime::class)
+    fun render(
+        configState: SymmetricDsConfigurationState,
+        host: NodeHost?,
+        tz: TimeZone,
+        nodeSecurities: List<NodeSecurity>,
+        newNodeForm: Form<NewNodeForm>
+    ) =
         Page("Sync settings") {
             h1 { +"Instance synchronization" }
 
-            article {
-                when (configState) {
-                    SymmetricDsConfigurationState.MISSING -> {
-                        +"SymmetricDS has not been installed."
-                    }
+            when (configState) {
+                SymmetricDsConfigurationState.MISSING -> {
+                    article { +"SymmetricDS has not been installed." }
+                }
 
-                    SymmetricDsConfigurationState.NOT_CONFIGURED -> {
+                SymmetricDsConfigurationState.NOT_CONFIGURED -> {
+                    article {
                         p { +"SymmetricDS was found but it hasn't been initialized." }
                         form(method = FormMethod.post, action = "/admin/sync/init") {
                             submitButton("Initialize SymmetricDS")
                         }
                     }
+                }
 
-                    SymmetricDsConfigurationState.READY -> {
-                        +"SymmetricDS is ready for use."
+                SymmetricDsConfigurationState.READY -> {
+                    article {
+                        p {
+                            +"SymmetricDS is ready for use."
+                            host?.let { host ->
+                                +" Received a heartbeat "
+                                timestamp(host.heartbeatTime, tz)
+                                +"."
+                            }
+                        }
+                        form(method = FormMethod.post, action = "/admin/sync/init") {
+                            submitButton("Reinitialize SymmetricDS")
+                        }
                     }
+
+                    h1 { +"Clients" }
+
+                    if (nodeSecurities.isNotEmpty()) {
+                        article {
+                            table {
+                                tr {
+                                    th { +"External ID" }
+                                    th { +"Registration" }
+                                    th { +"Sync" }
+                                }
+                                nodeSecurities.forEach { security ->
+                                    tr {
+                                        td { +security.node.id }
+                                        td {
+                                            if (security.registrationEnabled) {
+                                                +"Pending"
+                                            } else {
+                                                +"Registered"
+                                            }
+                                        }
+                                        td {
+                                            switchLink(
+                                                toggled = security.node.syncEnabled,
+                                                labelOn = "Enabled",
+                                                labelOff = "Disabled",
+                                                urlPrefix = "/admin/sync/${security.node.id}/syncEnabled",
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    renderForm("/admin/sync", newNodeForm, submitButtonLabel = "Add new node")
                 }
             }
 
-            hosts.forEach { host ->
+            host?.let { host ->
+                h1 { +"Host" }
                 article {
                     table {
                         tbody {
@@ -93,21 +151,31 @@ object SyncAdminPage {
                             tr {
                                 th { +"Time" }
                                 th { +"Heartbeat" }
-                                td { +host.heartbeatTime.displayDateTime(tz) }
+                                td { timestamp(host.heartbeatTime, tz) }
                             }
                             tr {
                                 th {}
                                 th { +"Last restart" }
-                                td { +host.lastRestartTime.displayDateTime(tz) }
+                                td { timestamp(host.lastRestartTime, tz) }
                             }
                             tr {
                                 th {}
                                 th { +"Created" }
-                                td { +host.createTime.displayDateTime(tz) }
+                                td { timestamp(host.createTime, tz) }
                             }
                         }
                     }
                 }
             }
         }
+}
+
+data class NewNodeForm(
+    @Field(label = "External ID")
+    @NotEmpty
+    val nodeId: String,
+) : Validateable<NewNodeForm> {
+    companion object {
+        val Empty = NewNodeForm("")
+    }
 }

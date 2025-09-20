@@ -1,17 +1,17 @@
 package party.jml.partyboi.sync
 
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toKotlinInstant
 import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.toBoolean
 import party.jml.partyboi.data.toInt
+import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
-import party.jml.partyboi.db.many
-import party.jml.partyboi.db.one
-import party.jml.partyboi.db.queryOf
-import party.jml.partyboi.db.updateAny
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.utcToTimeZone
 
 class SyncRepository(app: AppServices) : Service(app) {
     private val db = app.db
@@ -34,14 +34,14 @@ class SyncRepository(app: AppServices) : Service(app) {
                 """
             SELECT count(*) = 2
             FROM sym_node_group
-            WHERE node_group_id = ANY ('{$ROOT_SERVER_GROUP_ID, $CLIENT_GROUP_ID}');
+            WHERE node_group_id = ANY ('{$MASTER_GROUP_ID, $CLIENT_GROUP_ID}');
         """.trimIndent()
             ).map(asBoolean)
         )
     }
-
-    suspend fun getHosts(): AppResult<List<NodeHost>> = db.use {
-        it.many(queryOf("SELECT * FROM sym_node_host").map(NodeHost.fromRow))
+    
+    suspend fun getHost(hostId: String): AppResult<NodeHost> = db.use {
+        it.one(queryOf("SELECT * FROM sym_node_host WHERE node_id = ?", hostId).map(NodeHost.fromRow))
     }
 
     suspend fun addNodeGroup(group: NodeGroup) = db.use {
@@ -128,6 +128,24 @@ class SyncRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun addTriggerRouter(router: TriggerRouter) = db.use {
+        it.updateAny(
+            queryOf(
+                """
+                INSERT INTO sym_trigger_router
+                    (trigger_id, router_id, enabled, initial_load_order, ping_back_enabled, create_time, last_update_time)
+                VALUES (?, ?, ?, ?, ?, now(), now())
+                ON CONFLICT DO NOTHING
+            """.trimIndent(),
+                router.trigger.id,
+                router.router.id,
+                router.enabled.toInt(),
+                router.initialLoadOrder,
+                router.pingBackEnabled.toInt(),
+            )
+        )
+    }
+
     suspend fun addNode(node: Node) = db.use {
         it.updateAny(
             queryOf(
@@ -142,6 +160,21 @@ class SyncRepository(app: AppServices) : Service(app) {
                 node.externalId,
                 node.syncEnabled.toInt(),
             )
+        )
+    }
+
+    suspend fun getNodeSecurities(nodeGroupId: String) = db.use {
+        it.many(
+            queryOf(
+                """
+            SELECT *
+            FROM sym_node_security
+            JOIN sym_node ON sym_node.node_id = sym_node_security.node_id
+            JOIN sym_node_group ON sym_node.node_group_id = sym_node_group.node_group_id
+            WHERE sym_node.node_group_id = ?
+            ORDER BY sym_node_security.node_id
+        """.trimIndent(), nodeGroupId
+            ).map(NodeSecurity.fromRow)
         )
     }
 
@@ -162,15 +195,29 @@ class SyncRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun setSyncEnabled(nodeId: String, enabled: Boolean): AppResult<Unit> = db.use {
+        it.updateOne(
+            queryOf(
+                """
+            UPDATE sym_node
+            SET sync_enabled = ? 
+            WHERE node_id = ?
+        """.trimIndent(),
+                enabled.toInt(),
+                nodeId
+            )
+        )
+    }
+
     companion object {
-        const val ROOT_SERVER_GROUP_ID = "server"
+        const val MASTER_GROUP_ID = "master"
         const val CLIENT_GROUP_ID = "client"
     }
 }
 
 data class NodeGroup(
     val id: String,
-    val description: String,
+    val description: String?,
 )
 
 data class NodeGroupLink(
@@ -245,19 +292,52 @@ data class Trigger(
     val channel: Channel,
 )
 
+data class TriggerRouter(
+    val trigger: Trigger,
+    val router: DefaultRouter,
+    val enabled: Boolean,
+    val initialLoadOrder: Int,
+    val pingBackEnabled: Boolean,
+)
+
 data class Node(
     val id: String,
     val group: NodeGroup,
     val externalId: String,
     val syncEnabled: Boolean = true,
-)
+) {
+    companion object {
+        val fromRow: (Row) -> Node = { row ->
+            Node(
+                id = row.string("node_id"),
+                group = NodeGroup(
+                    id = row.string("node_group_id"),
+                    description = row.stringOrNull("description"),
+                ),
+                externalId = row.string("external_id"),
+                syncEnabled = row.int("sync_enabled").toBoolean(),
+            )
+        }
+    }
+}
 
 data class NodeSecurity(
     val node: Node,
     val nodePassword: String,
     val registrationEnabled: Boolean = true,
     val initialLoadEnabled: Boolean = true,
-)
+) {
+    companion object {
+        val fromRow: (Row) -> NodeSecurity = { row ->
+            NodeSecurity(
+                node = Node.fromRow(row),
+                nodePassword = row.string("node_password"),
+                registrationEnabled = row.int("registration_enabled").toBoolean(),
+                initialLoadEnabled = row.int("initial_load_enabled").toBoolean(),
+            )
+        }
+    }
+}
 
 data class NodeHost(
     val osName: String,
@@ -275,6 +355,12 @@ data class NodeHost(
     val lastRestartTime: Instant,
     val createTime: Instant,
 ) {
+    fun withTimezone(tz: TimeZone): NodeHost = copy(
+        heartbeatTime = heartbeatTime.utcToTimeZone(tz),
+        lastRestartTime = lastRestartTime.utcToTimeZone(tz),
+        createTime = createTime.utcToTimeZone(tz),
+    )
+
     companion object {
         val fromRow: (Row) -> NodeHost = { row ->
             NodeHost(
