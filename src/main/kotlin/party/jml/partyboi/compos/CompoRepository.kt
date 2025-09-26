@@ -54,7 +54,7 @@ class CompoRepository(app: AppServices) : Service(app) {
                     name = ?, 
                     rules = ?,
                     formats = ?,
-                    require_file = ?::optional_boolean
+                    require_file = ?::boolean
                 WHERE id = ?
                 """,
                     compo.name,
