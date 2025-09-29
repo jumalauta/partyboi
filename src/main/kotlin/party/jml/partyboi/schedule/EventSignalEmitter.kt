@@ -9,7 +9,13 @@ import java.util.*
 import kotlin.concurrent.schedule
 
 class EventSignalEmitter(app: AppServices) : Service(app) {
-    private val lastCheck = runBlocking { property("lastCheck", Clock.System.now()) }
+    private val lastCheck = runBlocking {
+        property(
+            key = "lastCheck",
+            value = Clock.System.now(),
+            private = true,
+        )
+    }
 
     private val scheduler: TimerTask = Timer().schedule(1000, 1000) {
         runBlocking {

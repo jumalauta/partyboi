@@ -111,7 +111,7 @@ abstract class Logging {
 }
 
 abstract class Service(val app: AppServices) : Logging() {
-    inline fun <reified T> property(key: String, value: T): PersistentCachedValue<T> =
-        app.properties.createPersistentCachedValue("${this::class.simpleName}.$key", value)
+    inline fun <reified T> property(key: String, value: T, private: Boolean = false): PersistentCachedValue<T> =
+        app.properties.createPersistentCachedValue("${this::class.simpleName}.$key", private, value)
 }
 

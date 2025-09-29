@@ -24,7 +24,7 @@ import java.util.*
 class CompoRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
-    val generalRules = app.properties.createPersistentCachedValue("CompoRepository.GeneralRules", GeneralRules(""))
+    val generalRules = property("GeneralRules", GeneralRules(""))
 
     suspend fun getById(id: UUID, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
         it.one(queryOf("select * from compo where id = ?", id).map(Compo.fromRow))

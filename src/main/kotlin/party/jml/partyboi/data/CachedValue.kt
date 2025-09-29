@@ -57,7 +57,8 @@ class CachedValue<T>(
 class PersistentCachedValue<T>(
     ttl: Duration = 1.hours,
     fetchValue: suspend () -> AppResult<T>,
-    val storeValue: suspend (T) -> AppResult<Unit>
+    val storeValue: suspend (T) -> AppResult<Unit>,
+    val private: Boolean = false,
 ) : ICachedValue<T> {
     private val cache = CachedValue(ttl, fetchValue)
 
@@ -88,6 +89,6 @@ class PersistentState<T>(val property: PersistentCachedValue<T>) {
     }
 
     fun waitForNext(): Flow<T> = flow.drop(1).take(1)
-    
+
     val value get() = flow.value
 }
