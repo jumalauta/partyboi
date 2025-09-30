@@ -8,6 +8,7 @@ ktor:
     secretSignKey: "$SESSION_SIGN_KEY:0123456789abcdef"
 
 instance:
+  id: "$INSTANCE_ID:partyboi"
   name: "$INSTANCE_NAME:Partyboi"
   host: "$HOST_ADDRESS:localhost"
 
@@ -24,9 +25,7 @@ db:
   database: "$DB_DATABASE:local"
 
 files:
-  entries: "$FILES_ENTRIES:./data/entries"
-  assets: "$FILES_ASSETS:./data/assets"
-  screenshots: "$FILES_SCREENSHOTS:./data/screenshots"
+  path: "$FILES:./data"
   maxSize: 1.2GB
 
 email:

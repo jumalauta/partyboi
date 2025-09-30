@@ -23,6 +23,7 @@ services:
     ports:
       - "${PORT:-8123}:8123"
     environment:
+      INSTANCE_ID: "${INSTANCE_ID}"
       INSTANCE_NAME: "${INSTANCE_NAME}"
       HOST_ADDRESS: "${HOST_ADDRESS}"
       SESSION_SIGN_KEY: "${SESSION_SIGN_KEY}"
@@ -33,9 +34,6 @@ services:
       DB_DATABASE: partyboi
       DB_HOST: db
       DB_PORT: "${DB_PORT}"
-      FILES_ASSETS: /assets
-      FILES_ENTRIES: /entries
-      FILES_SCREENSHOTS: /screenshots
     volumes:
       - "${FILES_ASSETS}:/assets"
       - "${FILES_ENTRIES}:/entries"

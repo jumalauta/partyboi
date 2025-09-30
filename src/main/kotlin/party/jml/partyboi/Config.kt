@@ -1,8 +1,5 @@
 package party.jml.partyboi
 
-import arrow.core.Option
-import arrow.core.none
-import arrow.core.some
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.util.*
@@ -30,6 +27,7 @@ fun ApplicationConfigValue.getInt(): Int = getString().toInt()
 
 class ConfigReader(private val config: ApplicationConfig) {
     // Instance
+    val instanceId: String by lazy { config.property("instance.id").getString() }
     val instanceName: String by lazy { config.property("instance.name").getString() }
     val hostName: String by lazy { config.property("instance.host").getString() }
 
@@ -41,9 +39,10 @@ class ConfigReader(private val config: ApplicationConfig) {
     val secretSignKey: ByteArray by lazy { hex(config.property("ktor.sessions.secretSignKey").getString()) }
 
     // Directories
-    val entryDir: Path by lazy { config.property("files.entries").getPath() }
-    val assetsDir: Path by lazy { config.property("files.assets").getPath() }
-    val screenshotsDir: Path by lazy { config.property("files.screenshots").getPath() }
+    val filesDir by lazy { config.property("files.path").getPath() }
+    val entryDir: Path by lazy { filesDir.resolve("entries") }
+    val assetsDir: Path by lazy { filesDir.resolve("assets") }
+    val screenshotsDir: Path by lazy { filesDir.resolve("screenshots") }
 
     // Database
     val dbHost: String by lazy { config.property("db.host").getString() }
