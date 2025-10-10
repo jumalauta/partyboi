@@ -193,14 +193,14 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun delete(entryId: UUID): AppResult<Unit> = either {
         val entry = getById(entryId).bind()
         db.use {
-            it.updateOne(queryOf("delete from entry where id = ?", entryId))
+            it.updateOne(queryOf("DELETE FROM entry WHERE id = ? CASCADE", entryId))
         }.onRight {
             app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
     suspend fun deleteAll(): AppResult<Unit> = db.use {
-        it.exec(queryOf("delete from entry"))
+        it.exec(queryOf("DELETE FROM entry CASCADE"))
     }
 
     suspend fun setQualified(entryId: UUID, state: Boolean): AppResult<Unit> =
