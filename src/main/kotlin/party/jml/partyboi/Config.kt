@@ -40,7 +40,6 @@ class ConfigReader(private val config: ApplicationConfig) {
 
     // Directories
     val filesDir by lazy { config.property("files.path").getPath() }
-    val entryDir: Path by lazy { filesDir.resolve("entries") }
     val assetsDir: Path by lazy { filesDir.resolve("assets") }
     val screenshotsDir: Path by lazy { filesDir.resolve("screenshots") }
 

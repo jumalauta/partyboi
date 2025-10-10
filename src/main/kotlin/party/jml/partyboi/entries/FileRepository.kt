@@ -39,7 +39,8 @@ class FileRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     init {
-        app.config.entryDir.toFile().mkdirs()
+        val basePath = app.config.filesDir
+        basePath.resolve(entriesDir).toFile().mkdirs()
     }
 
     suspend fun makeStorageFilename(
@@ -48,7 +49,7 @@ class FileRepository(app: AppServices) : Service(app) {
         tx: TransactionalSession? = null
     ): AppResult<Path> = either {
         val compo = app.compos.getById(entry.compoId, tx).bind()
-        buildStorageFilename(
+        buildStorageFilenameForCompoEntry(
             compo.name,
             entry.id,
             entry.author,
@@ -174,13 +175,13 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     fun getStorageFile(name: Path): File =
-        app.config.entryDir.resolve(name).toFile()
+        app.config.filesDir.resolve(name).toFile()
 
     suspend fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
     }
 
-    private fun buildStorageFilename(
+    private fun buildStorageFilenameForCompoEntry(
         compoName: String,
         entryId: UUID,
         author: String,
@@ -188,12 +189,13 @@ class FileRepository(app: AppServices) : Service(app) {
         originalFilename: String
     ): Path {
         val compo = compoName.toFilenameToken(true) ?: "compo"
-        val id = "${entryId}-${app.time.isoLocalTime()}}"
+        val id = "${entryId}-${app.time.isoLocalTime().replace("/", "")}"
         val authorClean = author.toFilenameToken(false)
         val titleClean = title.toFilenameToken(false)
         val extension = File(originalFilename).extension.lowercase().nonEmptyString() ?: "file"
 
-        return Paths.get(compo, "$id-$authorClean-$titleClean.$extension")
+        val subPath = Paths.get(compo, "$id-$authorClean-$titleClean.$extension")
+        return entriesDir.resolve(subPath)
     }
 
     suspend fun postProcessUpload(file: FileDesc) {
@@ -227,6 +229,10 @@ class FileRepository(app: AppServices) : Service(app) {
             ).map(EntryFileAssociation.fromRow)
         )
     }
+
+    companion object {
+        val entriesDir: Path = Path.of("entries")
+    }
 }
 
 data class EntryFileAssociation(
@@ -251,7 +257,7 @@ data class NewFileDesc(
     val info: String?
 ) {
     val type: String by lazy { FileDesc.getType(originalFilename) }
-    val absolutePath: Path by lazy { Config.get().entryDir.resolve(storageFilename) }
+    val absolutePath: Path by lazy { Config.get().filesDir.resolve(storageFilename) }
 
     fun size(): Either<InternalServerError, Long> =
         Either.catch { Files.size(absolutePath) }.mapLeft { InternalServerError(it) }
@@ -280,7 +286,7 @@ data class FileDesc(
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
 
-    fun getStorageFile(): File = Config.get().entryDir.resolve(storageFilename).toFile()
+    fun getStorageFile(): File = Config.get().filesDir.resolve(storageFilename).toFile()
 
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->
