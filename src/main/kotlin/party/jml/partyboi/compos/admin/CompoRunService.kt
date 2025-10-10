@@ -62,7 +62,7 @@ class CompoRunService(app: AppServices) : Service(app) {
 
     suspend fun extractEntryFiles(fileId: UUID): AppResult<ExtractedEntry> = either {
         val file = app.files.getById(fileId).bind()
-        val entry = app.entries.getById(file.entryId).bind()
+        val entry = app.entries.getByFileId(fileId).bind()
         val compo = app.compos.getById(entry.compoId).bind()
         val tempDir = createTempDirectory()
         Pair(

@@ -1,7 +1,6 @@
 package party.jml.partyboi.entries
 
 import arrow.core.Either
-import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.raise.either
 import kotlinx.datetime.Instant
@@ -20,11 +19,10 @@ import party.jml.partyboi.Config
 import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.*
-import party.jml.partyboi.db.DbBasicMappers.asIntOrNull
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
-import party.jml.partyboi.db.option
 import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.db.updateOne
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.workqueue.NormalizeLoudness
 import java.io.File
@@ -101,29 +99,14 @@ class FileRepository(app: AppServices) : Service(app) {
         return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
     }
 
-    suspend fun latestVersion(
-        entryId: UUID,
-        originalsOnly: Boolean,
-        tx: TransactionalSession? = null
-    ): AppResult<Option<Int>> =
-        db.use(tx) {
-            it.option(
-                queryOf(
-                    "SELECT max(version) FROM file WHERE entry_id = ?${if (originalsOnly) " AND NOT processed" else ""}",
-                    entryId
-                ).map(asIntOrNull)
-            )
-        }
-
     suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val result = db.use(tx) {
-            it.one(
+            val fileDesc = it.one(
                 queryOf(
                     """
-                        INSERT INTO file(entry_id, orig_filename, storage_filename, type, size, checksum, processed, info) 
-                        VALUES(?, ?, ?, ?, ?, ?, ?, ?) 
+                        INSERT INTO file(orig_filename, storage_filename, type, size, checksum, processed, info) 
+                        VALUES(?, ?, ?, ?, ?, ?, ?) 
                         RETURNING *""".trimIndent(),
-                    file.entryId,
                     file.originalFilename,
                     file.storageFilename.toString(),
                     file.type,
@@ -132,8 +115,18 @@ class FileRepository(app: AppServices) : Service(app) {
                     file.processed,
                     file.info,
                 ).map(FileDesc.fromRow)
-            )
-        }.bind()
+            ).bind()
+
+            it.updateOne(
+                queryOf(
+                    "INSERT INTO entry_file (entry_id, file_id) VALUES (?, ?)",
+                    file.entryId,
+                    fileDesc.id,
+                )
+            ).bind()
+
+            fileDesc
+        }
         postProcessUpload(result)
         result
     }
@@ -154,11 +147,14 @@ class FileRepository(app: AppServices) : Service(app) {
     suspend fun getLatest(entryId: UUID, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
         it.one(
             queryOf(
-                """
-                    SELECT * 
-                    FROM file 
-                    WHERE entry_id = ? ${if (originalsOnly) " AND NOT processed" else ""}
-                    ORDER BY version DESC 
+                """                    
+                    SELECT *
+                    FROM file
+                    JOIN entry_file ON entry_file.file_id = file.id
+                    WHERE
+                        entry_id = ?
+                        ${if (originalsOnly) " AND NOT processed" else ""}
+                    ORDER BY uploaded_at DESC
                     LIMIT 1""".trimIndent(),
                 entryId
             ).map(FileDesc.fromRow)
@@ -168,7 +164,13 @@ class FileRepository(app: AppServices) : Service(app) {
     suspend fun getAllVersions(entryId: UUID): AppResult<List<FileDesc>> = db.use {
         it.many(
             queryOf(
-                "SELECT * FROM file WHERE entry_id = ? ORDER BY uploaded_at DESC",
+                """
+                    SELECT *
+                    FROM file
+                    JOIN entry_file ON entry_file.file_id = file.id
+                    WHERE entry_id = ?
+                    ORDER BY uploaded_at DESC
+                """.trimIndent(),
                 entryId
             ).map(FileDesc.fromRow)
         )
@@ -211,20 +213,20 @@ class FileRepository(app: AppServices) : Service(app) {
         it.many(
             queryOf(
                 """
-            WITH entry_file AS (
-            	SELECT
-            		entry_id,
-            		id,
-            		uploaded_at,
-            		row_number() OVER (PARTITION BY entry_id ORDER BY uploaded_at DESC) rn
-            	FROM file
-                ${if (includeProcessedFiles) "" else "WHERE NOT processed"}
-            )
-            SELECT
-            	entry_id,
-            	id file_id
-            FROM entry_file
-            WHERE rn = 1
+                    WITH entry_file_with_rn AS (
+                        SELECT
+                            entry_id,
+                            id,
+                            row_number() OVER (PARTITION BY entry_id ORDER BY uploaded_at DESC) rn
+                        FROM entry_file
+                        JOIN file ON file.id = entry_file.file_id
+                        ${if (includeProcessedFiles) "" else "WHERE NOT processed"}
+                    )
+                    SELECT
+                        entry_id,
+                        id file_id
+                    FROM entry_file_with_rn
+                    WHERE rn = 1
         """.trimIndent()
             ).map(EntryFileAssociation.fromRow)
         )
@@ -271,8 +273,6 @@ data class NewFileDesc(
 data class FileDesc(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
-    @Serializable(with = UUIDSerializer::class)
-    val entryId: UUID,
     val originalFilename: String,
     @Serializable(with = PathSerializer::class)
     val storageFilename: Path,
@@ -292,7 +292,6 @@ data class FileDesc(
         val fromRow: (Row) -> FileDesc = { row ->
             FileDesc(
                 id = row.uuid("id"),
-                entryId = row.uuid("entry_id"),
                 originalFilename = row.string("orig_filename"),
                 storageFilename = Paths.get(row.string("storage_filename")),
                 type = row.string("type"),
