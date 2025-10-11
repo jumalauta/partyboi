@@ -3,7 +3,6 @@ package party.jml.partyboi.workqueue
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.system.AppResult
 import kotlin.io.path.Path
@@ -19,10 +18,8 @@ data class NormalizeLoudness(
     val file: FileDesc
 ) : Task {
     override suspend fun execute(app: AppServices): AppResult<Unit> = either {
-        if (file.id == null) raise(InvalidInput("File uuid missing"))
-
         val fileDesc = app.files.getById(file.id).bind()
-        val fileId = fileDesc.id!!
+        val fileId = fileDesc.id
 
         val inputFile = app.files.getStorageFile(fileId)
         val normalizedFile = app.ffmpeg.normalizeLoudness(inputFile)

@@ -176,7 +176,6 @@ class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
 
     enum class Format(val value: String) {
         None("null"),
-        Flac("flac")
     }
 }
 

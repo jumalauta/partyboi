@@ -12,7 +12,7 @@ class FfmpegTest {
     @Test
     fun `normalize audio file`() {
         val dir = createTempDir()
-        val input = loadResourceToDisk("/files/disco.mp3", dir)
+        val input = loadResourceToDisk(dir)
         val output = ffmpeg.normalizeLoudness(input)
 
         assertNotEquals(0, output.length())
@@ -28,7 +28,9 @@ class FfmpegTest {
         return File.createTempFile("ffmpeg-test-", suffix, targetDir)
     }
 
-    private fun loadResourceToDisk(resourcePath: String, targetDir: File): File {
+
+    private fun loadResourceToDisk(targetDir: File): File {
+        val resourcePath = "/files/disco.mp3"
         val inputStream = object {}.javaClass.getResourceAsStream(resourcePath)
             ?: throw IllegalArgumentException("Resource not found: $resourcePath")
 

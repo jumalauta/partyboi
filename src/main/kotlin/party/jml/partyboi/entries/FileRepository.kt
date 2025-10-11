@@ -79,7 +79,7 @@ class FileRepository(app: AppServices) : Service(app) {
                 ), tx
             ).bind()
 
-            val storagePath = app.config.filesDir.resolve(desc.id!!.toString())
+            val storagePath = app.config.filesDir.resolve(desc.id.toString())
             tempFile.toPath().moveTo(storagePath)
 
             desc
@@ -231,10 +231,6 @@ class FileRepository(app: AppServices) : Service(app) {
 
     fun getStorageFile(fileId: UUID): File =
         app.config.filesDir.resolve(fileId.toString()).toFile()
-
-    suspend fun getAll() = db.use {
-        it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
-    }
 
     suspend fun postProcessUpload(file: FileDesc) {
         if (!file.processed) {
