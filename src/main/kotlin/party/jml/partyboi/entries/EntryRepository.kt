@@ -12,6 +12,7 @@ import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.*
@@ -31,6 +32,13 @@ import java.util.*
 
 class EntryRepository(app: AppServices) : Service(app) {
     private val db = app.db
+
+    suspend fun storeFile(file: FileUpload, entryId: UUID, tx: TransactionalSession? = null): AppResult<FileDesc> =
+        either {
+            val desc = app.files.store(file, tx).bind()
+            associateFile(desc.id, entryId, tx).bind()
+            desc
+        }
 
     suspend fun getAllEntries(): AppResult<List<Entry>> = db.use {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
@@ -59,6 +67,13 @@ class EntryRepository(app: AppServices) : Service(app) {
             ).map(Entry.fromRow)
         )
     }
+
+    suspend fun associateFile(fileId: UUID, entryId: UUID, tx: TransactionalSession? = null): AppResult<Unit> =
+        db.use(tx) {
+            it.updateOne(
+                queryOf("INSERT INTO entry_file(entry_id, file_id) VALUES(?, ?)", entryId, fileId)
+            )
+        }
 
     suspend fun getById(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
         it.one(
@@ -123,17 +138,7 @@ class EntryRepository(app: AppServices) : Service(app) {
                 ).bind()
 
                 if (newEntry.file.isDefined) {
-                    val storageFilename = app.files.makeStorageFilename(entry, newEntry.file.name, it).bind()
-
-                    val fileDesc = NewFileDesc(
-                        entryId = entry.id,
-                        originalFilename = newEntry.file.name,
-                        storageFilename = storageFilename,
-                        processed = false,
-                        info = null
-                    )
-                    newEntry.file.writeEntry(fileDesc.storageFilename).bind()
-                    val storedFile = app.files.add(fileDesc, it).bind()
+                    val storedFile = storeFile(newEntry.file, entry.id, it).bind()
 
                     app.screenshots.scanForScreenshotSource(storedFile).map { source ->
                         app.screenshots.store(entry.id, source)

@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.Logging
 import java.io.File
+import java.nio.file.Files
 
 class FfmpegService() : Logging() {
     fun ensureFfmpegExists() {
@@ -30,10 +31,13 @@ class FfmpegService() : Logging() {
         }
     }
 
-    fun normalizeLoudness(input: File, output: File) {
+    fun normalizeLoudness(input: File): File {
         ensureFfmpegExists()
         val measurement = measureLoudness(input)
+        val output = Files.createTempFile("loudnessNormalization", ".flac").toFile()
         normalizeByMeasurement(input, output, measurement)
+
+        return output
     }
 
     private fun measureLoudness(file: File): LoudnessMeasurement =

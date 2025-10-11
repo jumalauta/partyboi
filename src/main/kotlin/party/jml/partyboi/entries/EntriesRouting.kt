@@ -160,21 +160,10 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         app.entries.assertCanSubmit(entry.id, user.isAdmin),
                     ).bind()
 
-                    val newEntry = app.entries.update(entry, user.id).bind()
+                    app.entries.update(entry, user.id).bind()
 
                     if (entry.file.isDefined) {
-                        val storageFilename = app.files.makeStorageFilename(newEntry, entry.file.name).bind()
-                        entry.file.writeEntry(storageFilename).bind()
-                        val file = app.files.add(
-                            NewFileDesc(
-                                entryId = entry.id,
-                                originalFilename = entry.file.name,
-                                storageFilename = storageFilename,
-                                processed = false,
-                                info = null
-                            )
-                        ).bind()
-
+                        val file = app.entries.storeFile(entry.file, entry.id).bind()
                         app.screenshots.scanForScreenshotSource(file).map { source ->
                             app.screenshots.store(entry.id, source)
                         }

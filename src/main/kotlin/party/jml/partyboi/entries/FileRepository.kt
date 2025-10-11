@@ -3,6 +3,7 @@ package party.jml.partyboi.entries
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.KSerializer
@@ -18,11 +19,14 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Config
 import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.data.*
+import party.jml.partyboi.data.FileChecksums
+import party.jml.partyboi.data.InternalServerError
+import party.jml.partyboi.data.UUIDSerializer
+import party.jml.partyboi.data.toFilenameToken
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
-import party.jml.partyboi.db.updateOne
+import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.workqueue.NormalizeLoudness
 import java.io.File
@@ -31,29 +35,88 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.exists
+import kotlin.io.path.moveTo
 import kotlin.io.path.pathString
 
 class FileRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     init {
-        val basePath = app.config.filesDir
-        basePath.resolve(entriesDir).toFile().mkdirs()
+        runBlocking {
+            migrateFileDirectories()
+        }
     }
 
-    suspend fun makeStorageFilename(
-        entry: Entry,
-        originalFilename: String,
-        tx: TransactionalSession? = null
-    ): AppResult<Path> = either {
-        val compo = app.compos.getById(entry.compoId, tx).bind()
-        buildStorageFilenameForCompoEntry(
-            compo.name,
-            entry.id,
-            entry.author,
-            entry.title,
-            originalFilename
+    suspend fun store(newFile: FileUpload, tx: TransactionalSession? = null): AppResult<FileDesc> =
+        store(
+            tempFile = newFile.tempFile,
+            originalFilename = newFile.name,
+            processed = false,
+            info = null,
+            tx = tx,
         )
+
+    suspend fun store(
+        tempFile: File,
+        originalFilename: String,
+        processed: Boolean = false,
+        info: String? = null,
+        tx: TransactionalSession? = null
+    ): AppResult<FileDesc> =
+        either {
+            val desc = add(
+                FileDesc(
+                    id = UUID.randomUUID(),
+                    originalFilename = originalFilename,
+                    deprecatedStorageFilename = null,
+                    type = FileDesc.getType(originalFilename),
+                    size = getSize(tempFile).getOrElse { 0 },
+                    uploadedAt = Instant.fromEpochSeconds(0),
+                    checksum = getChecksum(tempFile).getOrNull(),
+                    processed = processed,
+                    info = info,
+                ), tx
+            ).bind()
+
+            val storagePath = app.config.filesDir.resolve(desc.id!!.toString())
+            tempFile.toPath().moveTo(storagePath)
+
+            desc
+        }
+
+    private fun getSize(absoluteFile: File): Either<InternalServerError, Long> =
+        Either.catch { Files.size(absoluteFile.toPath()) }.mapLeft { InternalServerError(it) }
+
+    private fun getChecksum(absoluteFile: File): AppResult<String> =
+        FileChecksums.get(absoluteFile.toPath())
+
+
+    private suspend fun migrateFileDirectories() {
+        val basePath = app.config.filesDir
+        val entriesPath = basePath.resolve(deprecatedEntriesDir).toFile()
+        if (entriesPath.exists()) {
+            either {
+                val entryFiles = db.use {
+                    it.many(
+                        queryOf("SELECT * FROM file JOIN entry_file ON entry_file.file_id = file.id")
+                            .map(FileDesc.fromRow)
+                    )
+                }.bind()
+
+                entryFiles.forEach { fileDesc ->
+                    fileDesc.deprecatedStorageFilename?.let {
+                        val storageFile = basePath.resolve(it)
+                        if (storageFile.exists()) {
+                            val newFile = basePath.resolve(fileDesc.id.toString())
+                            storageFile.moveTo(newFile, overwrite = true)
+                        }
+                    }
+                }
+
+                entriesPath.deleteRecursively()
+            }
+        }
     }
 
     fun makeCompoRunFileOrDirName(
@@ -99,33 +162,23 @@ class FileRepository(app: AppServices) : Service(app) {
         return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
     }
 
-    suspend fun add(file: NewFileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
+    private suspend fun add(file: FileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val result = db.use(tx) {
-            val fileDesc = it.one(
+            it.one(
                 queryOf(
                     """
                         INSERT INTO file(orig_filename, storage_filename, type, size, checksum, processed, info) 
                         VALUES(?, ?, ?, ?, ?, ?, ?) 
                         RETURNING *""".trimIndent(),
                     file.originalFilename,
-                    file.storageFilename.toString(),
+                    "",
                     file.type,
-                    file.size().getOrElse { 0 },
-                    file.checksum().getOrNull(),
+                    file.size,
+                    file.checksum,
                     file.processed,
                     file.info,
                 ).map(FileDesc.fromRow)
             ).bind()
-
-            it.updateOne(
-                queryOf(
-                    "INSERT INTO entry_file (entry_id, file_id) VALUES (?, ?)",
-                    file.entryId,
-                    fileDesc.id,
-                )
-            ).bind()
-
-            fileDesc
         }
         postProcessUpload(result)
         result
@@ -176,28 +229,11 @@ class FileRepository(app: AppServices) : Service(app) {
         )
     }
 
-    fun getStorageFile(name: Path): File =
-        app.config.filesDir.resolve(name).toFile()
+    fun getStorageFile(fileId: UUID): File =
+        app.config.filesDir.resolve(fileId.toString()).toFile()
 
     suspend fun getAll() = db.use {
         it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
-    }
-
-    private fun buildStorageFilenameForCompoEntry(
-        compoName: String,
-        entryId: UUID,
-        author: String,
-        title: String,
-        originalFilename: String
-    ): Path {
-        val compo = compoName.toFilenameToken(true) ?: "compo"
-        val id = "${entryId}-${app.time.isoLocalTime().replace("/", "")}"
-        val authorClean = author.toFilenameToken(false)
-        val titleClean = title.toFilenameToken(false)
-        val extension = File(originalFilename).extension.lowercase().nonEmptyString() ?: "file"
-
-        val subPath = Paths.get(compo, "$id-$authorClean-$titleClean.$extension")
-        return entriesDir.resolve(subPath)
     }
 
     suspend fun postProcessUpload(file: FileDesc) {
@@ -233,7 +269,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     companion object {
-        val entriesDir: Path = Path.of("entries")
+        val deprecatedEntriesDir: Path = Path.of("entries")
     }
 }
 
@@ -251,31 +287,13 @@ data class EntryFileAssociation(
     }
 }
 
-data class NewFileDesc(
-    val entryId: UUID,
-    val originalFilename: String,
-    val storageFilename: Path,
-    val processed: Boolean,
-    val info: String?
-) {
-    val type: String by lazy { FileDesc.getType(originalFilename) }
-    val absolutePath: Path by lazy { Config.get().filesDir.resolve(storageFilename) }
-
-    fun size(): Either<InternalServerError, Long> =
-        Either.catch { Files.size(absolutePath) }.mapLeft { InternalServerError(it) }
-
-    fun checksum(): AppResult<String> =
-        FileChecksums.get(absolutePath)
-
-}
-
 @Serializable
 data class FileDesc(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val originalFilename: String,
     @Serializable(with = PathSerializer::class)
-    val storageFilename: Path,
+    val deprecatedStorageFilename: Path?,
     val type: String,
     val size: Long,
     val uploadedAt: Instant,
@@ -286,14 +304,14 @@ data class FileDesc(
     val isArchive = type == ZIP_ARCHIVE
     val extension by lazy { File(originalFilename).extension.lowercase() }
 
-    fun getStorageFile(): File = Config.get().filesDir.resolve(storageFilename).toFile()
+    fun getStorageFile(): File = Config.get().filesDir.resolve(id.toString()).toFile()
 
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->
             FileDesc(
                 id = row.uuid("id"),
                 originalFilename = row.string("orig_filename"),
-                storageFilename = Paths.get(row.string("storage_filename")),
+                deprecatedStorageFilename = row.stringOrNull("storage_filename")?.let { Paths.get(it) },
                 type = row.string("type"),
                 size = row.long("size"),
                 uploadedAt = row.instant("uploaded_at").toKotlinInstant(),

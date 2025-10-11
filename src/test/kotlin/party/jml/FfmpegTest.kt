@@ -13,9 +13,7 @@ class FfmpegTest {
     fun `normalize audio file`() {
         val dir = createTempDir()
         val input = loadResourceToDisk("/files/disco.mp3", dir)
-        val output = createTempFile(dir, ".mp3")
-
-        ffmpeg.normalizeLoudness(input, output)
+        val output = ffmpeg.normalizeLoudness(input)
 
         assertNotEquals(0, output.length())
     }
