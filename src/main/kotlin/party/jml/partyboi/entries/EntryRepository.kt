@@ -47,6 +47,19 @@ class EntryRepository(app: AppServices) : Service(app) {
         it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
     }
 
+    suspend fun getByFileId(fileId: UUID): AppResult<Entry> = db.use {
+        it.one(
+            queryOf(
+                """
+            SELECT *
+            FROM entry_file
+            JOIN entry ON entry.id = entry_file.entry_id
+            WHERE file_id = ?
+        """.trimIndent(), fileId
+            ).map(Entry.fromRow)
+        )
+    }
+
     suspend fun getById(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
         it.one(
             queryOf(
@@ -79,6 +92,7 @@ class EntryRepository(app: AppServices) : Service(app) {
                         size,
                         uploaded_at
                     FROM file
+                    JOIN entry_file ON entry_file.file_id = file.id
                     WHERE entry_id = entry.id
                     ORDER BY uploaded_at DESC
                     LIMIT 1) AS file_info ON true
@@ -179,14 +193,14 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun delete(entryId: UUID): AppResult<Unit> = either {
         val entry = getById(entryId).bind()
         db.use {
-            it.updateOne(queryOf("delete from entry where id = ?", entryId))
+            it.updateOne(queryOf("DELETE FROM entry WHERE id = ? CASCADE", entryId))
         }.onRight {
             app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
     suspend fun deleteAll(): AppResult<Unit> = db.use {
-        it.exec(queryOf("delete from entry"))
+        it.exec(queryOf("DELETE FROM entry CASCADE"))
     }
 
     suspend fun setQualified(entryId: UUID, state: Boolean): AppResult<Unit> =

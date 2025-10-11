@@ -9,6 +9,7 @@ import party.jml.partyboi.AppServicesImpl
 import party.jml.partyboi.Service
 import java.time.format.DateTimeFormatter
 import java.util.Locale.getDefault
+import kotlin.time.Duration
 
 class TimeService(app: AppServices) : Service(app) {
     val fallbackTime = Instant.DISTANT_PAST
@@ -53,18 +54,30 @@ fun LocalDateTime.displayTime(): String =
 fun Instant.displayTime(tz: TimeZone): String =
     toLocalDateTime(tz).displayTime()
 
-fun Instant.displayDateTime(): String = format(DateTimeComponents.Format {
-    dayOfMonth()
-    char('.')
-    monthNumber()
-    char('.')
-    year()
-    char(' ')
-    hour()
-    char(':')
-    minute()
-})
+fun Instant.displayDateTime(tz: TimeZone): String {
+    val time = toLocalDateTime(tz)
+    return "${time.date.displayDate()} ${time.displayTime()}"
+}
+
+fun Instant.displayDuration(): String {
+    return Clock.System.now().minus(this).displayDuration()
+}
 
 fun Instant.toDate(): LocalDate = toLocalDateTime(TimeService.timeZone()).date
 
 fun Instant.toIsoString(): String = format(DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET)
+
+fun Instant.utcToTimeZone(tz: TimeZone): Instant = this.toLocalDateTime(tz).toInstant(TimeZone.UTC)
+
+fun Duration.displayDuration(): String {
+    if (inWholeSeconds < 60) {
+        return "${inWholeSeconds} seconds"
+    }
+    if (inWholeMinutes < 60) {
+        return "${inWholeMinutes} minutes"
+    }
+    if (inWholeHours < 24) {
+        return "${inWholeHours} hours"
+    }
+    return "${inWholeDays} days"
+}

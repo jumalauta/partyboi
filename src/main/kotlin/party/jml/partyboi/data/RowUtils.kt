@@ -5,14 +5,10 @@ import arrow.core.some
 import kotliquery.Row
 
 fun Row.optionalBoolean(columnLabel: String): Option<Boolean> =
-    if (underlying.wasNull()) {
-        arrow.core.none()
-    } else {
-        when (underlying.getString(columnLabel)) {
-            "true" -> true.some()
-            "false" -> false.some()
-            else -> arrow.core.none()
-        }
+    when (stringOrNull(columnLabel)?.take(1)?.lowercase()) {
+        "t" -> true.some()
+        "f" -> false.some()
+        else -> arrow.core.none()
     }
 
 fun Option<Boolean>.toDatabaseEnum(): String? =

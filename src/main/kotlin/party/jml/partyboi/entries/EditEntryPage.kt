@@ -1,6 +1,7 @@
 package party.jml.partyboi.entries
 
 import arrow.core.Option
+import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
@@ -23,6 +24,7 @@ object EditEntryPage {
         screenshot: Option<String>,
         allowEdit: Boolean,
         uploader: User?,
+        tz: TimeZone,
     ): Page {
         val title = if (!allowEdit) "Entry" else "Edit entry"
 
@@ -86,7 +88,7 @@ object EditEntryPage {
                                 tr(classes = if (file.processed) "processed" else null) {
                                     td { +file.originalFilename }
                                     td { +Filesize.humanFriendly(file.size) }
-                                    td { +file.uploadedAt.displayDateTime() }
+                                    td { +file.uploadedAt.displayDateTime(tz) }
                                     td { file.info?.let { +it } }
                                     td {
                                         buttonGroup {

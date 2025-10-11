@@ -12,7 +12,7 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.data.processForm
-import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.switchApiUuid
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
@@ -101,7 +101,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         }
 
         put("/admin/schedule/triggers/{id}/setEnabled/{state}") {
-            call.switchApi { id, state -> app.triggers.setEnabled(id, state) }
+            call.switchApiUuid { id, state -> app.triggers.setEnabled(id, state) }
         }
     }
 }

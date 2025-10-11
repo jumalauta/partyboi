@@ -93,11 +93,22 @@ fun ApplicationCall.parameterPathString(name: String) =
         it.joinToString("/")
     } ?: MissingInput(name).left()
 
-suspend fun ApplicationCall.switchApi(block: suspend (id: UUID, state: Boolean) -> AppResult<Unit>) {
+suspend fun ApplicationCall.switchApiUuid(block: suspend (id: UUID, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {
             userSession(null).bind()
             val id = parameterUUID("id").bind()
+            val state = parameterBoolean("state").bind()
+            block(id, state).bind()
+        }
+    }
+}
+
+suspend fun ApplicationCall.switchApiString(block: suspend (id: String, state: Boolean) -> AppResult<Unit>) {
+    apiRespond {
+        either {
+            userSession(null).bind()
+            val id = parameterString("id").bind()
             val state = parameterBoolean("state").bind()
             block(id, state).bind()
         }

@@ -1,14 +1,14 @@
 package party.jml
 
 import arrow.core.raise.either
-import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.entries.NewEntry
-import party.jml.partyboi.form.FileUpload
-import kotlin.test.Test
 import it.skrape.matchers.toBe
 import it.skrape.selects.html5.article
 import it.skrape.selects.text
+import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.entries.NewEntry
+import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
+import kotlin.test.Test
 
 class ResultsTest : PartyboiTester {
     @Test
@@ -31,7 +31,7 @@ class ResultsTest : PartyboiTester {
                         NewEntry(
                             title = "Demo #$index",
                             author = "Author #$index",
-                            file = FileUpload.Empty,
+                            file = FileUpload.createTestData("demo$index.dat", 256),
                             compoId = demoCompo.id,
                             screenComment = "",
                             orgComment = "",
@@ -45,7 +45,7 @@ class ResultsTest : PartyboiTester {
                         NewEntry(
                             title = "Track #$index",
                             author = "Author #$index",
-                            file = FileUpload.Empty,
+                            file = FileUpload.createTestData("track$index.dat", 256),
                             compoId = musicCompo.id,
                             screenComment = "",
                             orgComment = "",

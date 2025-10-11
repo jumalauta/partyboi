@@ -117,7 +117,7 @@ class VotingTest : PartyboiTester {
             NewEntry(
                 title = "fr004: action",
                 author = "Friction",
-                file = FileUpload.Empty,
+                file = FileUpload.createTestData("friction.dat", 256),
                 compoId = demoCompo.id,
                 screenComment = "",
                 orgComment = "TODO()",

@@ -187,27 +187,27 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
     adminApiRouting {
         put("/admin/compos/{id}/setVisible/{state}") {
-            call.switchApi { id, state -> app.compos.setVisible(id, state) }
+            call.switchApiUuid { id, state -> app.compos.setVisible(id, state) }
         }
 
         put("/admin/compos/{id}/setSubmit/{state}") {
-            call.switchApi { id, state -> app.compos.allowSubmit(id, state) }
+            call.switchApiUuid { id, state -> app.compos.allowSubmit(id, state) }
         }
 
         put("/admin/compos/{id}/setVoting/{state}") {
-            call.switchApi { id, state -> app.compos.allowVoting(id, state) }
+            call.switchApiUuid { id, state -> app.compos.allowVoting(id, state) }
         }
 
         put("/admin/compos/{id}/publishResults/{state}") {
-            call.switchApi { id, state -> app.compos.publishResults(id, state) }
+            call.switchApiUuid { id, state -> app.compos.publishResults(id, state) }
         }
 
         put("/admin/compos/entries/{id}/setQualified/{state}") {
-            call.switchApi { id, state -> app.entries.setQualified(id, state) }
+            call.switchApiUuid { id, state -> app.entries.setQualified(id, state) }
         }
 
         put("/admin/compos/entries/{id}/allowEdit/{state}") {
-            call.switchApi { id, state -> app.entries.allowEdit(id, state) }
+            call.switchApiUuid { id, state -> app.entries.allowEdit(id, state) }
         }
 
         post("/admin/compos/{compoId}/runOrder") {

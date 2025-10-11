@@ -8,7 +8,7 @@ import party.jml.partyboi.auth.*
 import party.jml.partyboi.data.parameterString
 import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.data.processForm
-import party.jml.partyboi.data.switchApi
+import party.jml.partyboi.data.switchApiUuid
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.system.AppResult
@@ -143,7 +143,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
     adminApiRouting {
         put("/admin/users/{id}/voting/{state}") {
-            call.switchApi { id, state ->
+            call.switchApiUuid { id, state ->
                 (if (state) {
                     app.voteKeys.insertVoteKey(id, VoteKey.manual(id), null)
                 } else {
@@ -155,7 +155,7 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
         }
 
         put("/admin/users/{id}/admin/{state}") {
-            call.switchApi { id, state ->
+            call.switchApiUuid { id, state ->
                 app.users.makeAdmin(id, state).onRight {
                     app.users.requestUserSessionReload(id)
                 }

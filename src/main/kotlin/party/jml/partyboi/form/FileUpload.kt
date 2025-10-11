@@ -25,7 +25,7 @@ data class FileUpload(
     val tempFile: File,
 ) {
     fun writeEntry(storageFilename: Path): AppResult<Unit> =
-        write(Config.get().entryDir.resolve(storageFilename).toFile())
+        write(Config.get().filesDir.resolve(storageFilename).toFile())
 
     fun write(storageFilename: Path): AppResult<Unit> =
         write(storageFilename.toFile())
