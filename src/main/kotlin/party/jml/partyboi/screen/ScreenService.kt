@@ -13,9 +13,7 @@ import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
-import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.triggers.*
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
@@ -36,17 +34,7 @@ class ScreenService(app: AppServices) : Service(app) {
             }
         }
     }
-
-    suspend fun start() {
-        app.signals.flow.collect {
-            if (it.type == SignalType.compoContentUpdated && it.target != null) {
-                val compoId = UUID.fromString(it.target)
-                log.info("Update compo slides")
-                generateSlidesForCompo(compoId)
-            }
-        }
-    }
-
+    
     suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
     suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
@@ -132,38 +120,6 @@ class ScreenService(app: AppServices) : Service(app) {
         } else {
             repository.getFirstSlide(slideSetName).map { show(it) }
         }
-
-    suspend fun generateSlidesForCompo(compoId: UUID): AppResult<String> = either {
-        val slideSet = "compo-${compoId}"
-        val compo = app.compos.getById(compoId).bind()
-        upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
-        val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
-
-        val hypeSlides = listOf(
-            TextSlide.compoStartsSoon(compo.name),
-            TextSlide.compoStartsNow(compo.name),
-        )
-        val entrySlides = entries.mapIndexed { index, entry -> TextSlide.compoSlide(index, entry) }
-        val endingSlides = listOf(TextSlide.compoHasEnded(compo.name))
-
-        val allSlides = hypeSlides + entrySlides + endingSlides
-        val dbRows = repository.replaceGeneratedSlideSet(slideSet, allSlides).bind()
-
-        val firstShown = dbRows.first().whenShown()
-        app.triggers.add(firstShown, OpenCloseSubmitting(compoId, false))
-        app.triggers.add(firstShown, OpenLiveVoting(compoId))
-
-        val entrySlideDbRows = dbRows.subList(hypeSlides.size, hypeSlides.size + entrySlides.size)
-        entries.zip(entrySlideDbRows) { entry, slide ->
-            app.triggers.add(slide.whenShown(), EnableLiveVotingForEntry(entry.id))
-        }
-
-        val lastShown = dbRows.last().whenShown()
-        app.triggers.add(lastShown, CloseLiveVoting)
-        app.triggers.add(lastShown, OpenCloseVoting(compoId, true))
-
-        "/admin/screen/${slideSet}"
-    }
 
     suspend fun generateResultSlidesForCompo(compoId: UUID): AppResult<String> = either {
         val slideSet = "results-${compoId}"

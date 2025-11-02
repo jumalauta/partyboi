@@ -140,9 +140,6 @@ sealed class TriggerRow {
     fun getAction(): Action = when (triggerType) {
         OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
         OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
-        OpenLiveVoting::class.qualifiedName -> Json.decodeFromString<OpenLiveVoting>(actionJson)
-        CloseLiveVoting::class.qualifiedName -> Json.decodeFromString<CloseLiveVoting>(actionJson)
-        EnableLiveVotingForEntry::class.qualifiedName -> Json.decodeFromString<EnableLiveVotingForEntry>(actionJson)
         else -> TODO("JSON decoding not implemented for $triggerType")
     }
 

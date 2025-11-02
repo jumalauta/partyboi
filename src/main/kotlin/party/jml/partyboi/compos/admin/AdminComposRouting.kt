@@ -119,15 +119,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                 call.respondFile(zipFile)
             }
         }
-
-        get("/admin/compos/{id}/generate-slides") {
-            either {
-                val compoId = call.parameterUUID("id").bind()
-                val slideEditUrl = app.screen.generateSlidesForCompo(compoId).bind()
-                call.respondRedirect(slideEditUrl)
-            }
-        }
-
+        
         get("/admin/compos/{id}/generate-result-slides") {
             either {
                 val compoId = call.parameterUUID("id").bind()

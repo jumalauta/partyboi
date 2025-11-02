@@ -29,8 +29,6 @@ fun Application.module() {
     configureAuthentication(app)
     configureDefaultRouting(app)
 
-    launch { app.screen.start() }
-
     configureHealthCheck(app)
     app.email.configure(this)
 }
