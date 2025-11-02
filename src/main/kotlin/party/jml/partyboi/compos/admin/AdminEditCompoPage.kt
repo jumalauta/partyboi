@@ -2,14 +2,14 @@ package party.jml.partyboi.compos.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.data.isFalse
+import party.jml.partyboi.data.isTrue
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.entries.FileFormatCategory
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
-import party.jml.partyboi.data.isFalse
-import party.jml.partyboi.data.isTrue
 
 object AdminEditCompoPage {
     fun render(
@@ -233,11 +233,11 @@ object AdminEditCompoPage {
                             br {}
                             +"Download files"
                         }
-                        a(href = "/admin/compos/${compoForm.data.id}/generate-slides") {
+                        a(href = "/admin/compos/${compoForm.data.id}/run") {
                             attributes.put("role", "button")
-                            icon("tv")
+                            icon("image")
                             br {}
-                            +"Compo slides"
+                            +"Run info screen"
                         }
                         a(href = "/admin/compos/${compoForm.data.id}/generate-result-slides") {
                             attributes.put("role", "button")

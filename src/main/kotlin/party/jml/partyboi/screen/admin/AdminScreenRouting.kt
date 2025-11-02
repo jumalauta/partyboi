@@ -181,7 +181,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.apiRespond {
                 call.userSession(app).bind()
                 val slideId = call.parameterUUID("slideId").bind()
-                app.screen.show(slideId).bind()
+                app.screen.showStoredSlide(slideId).bind()
             }
         }
 
@@ -211,7 +211,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 val slideSet = app.screen.getSlideSet(slideSetName).bind()
                 if (slideSet.isNotEmpty()) {
                     app.screen.stopSlideSet()
-                    app.screen.show(slideSet.first().id).bind()
+                    app.screen.showStoredSlide(slideSet.first().id).bind()
                 }
             }
         }

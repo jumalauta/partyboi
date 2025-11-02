@@ -191,7 +191,7 @@ object AdminScreenPage {
         script(src = "/assets/draggable.min.js") {}
     }
 
-    private fun FlowContent.renderWithScreenMonitoring(refreshOnSlideChange: Boolean, block: FlowContent.() -> Unit) {
+    fun FlowContent.renderWithScreenMonitoring(refreshOnSlideChange: Boolean, block: FlowContent.() -> Unit) {
         columns({
             block()
         }, {

@@ -62,6 +62,13 @@ class VoteService(app: AppServices) : Service(app) {
         app.signals.emit(Signal.liveVotingEntry(entry.id))
     }
 
+    suspend fun removeEntryFromLiveVoting(entry: Entry) {
+        val newState = live.value.without(entry)
+        live.emit(newState)
+        newState.entries.lastOrNull()?.let { app.signals.emit(Signal.liveVotingEntry(it.id)) }
+
+    }
+
     suspend fun closeLiveVoting() {
         live.emit(LiveVoteState.Empty)
         app.signals.emit(Signal.liveVotingClosed())
@@ -149,7 +156,9 @@ data class LiveVoteState(
     fun openFor(entry: Entry): Boolean =
         open && compo.id == entry.compoId && entries.find { it.id == entry.id } != null
 
-    fun with(entry: Entry) = copy(entries = entries + entry)
+    fun with(entry: Entry) = without(entry).let { it.copy(entries = it.entries + entry) }
+
+    fun without(entry: Entry) = copy(entries = entries.filter { it.id != entry.id })
 
     companion object {
         val Empty = LiveVoteState(false, Compo.Empty, emptyList())

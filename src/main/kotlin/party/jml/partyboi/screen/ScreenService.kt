@@ -13,9 +13,7 @@ import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
-import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.triggers.*
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
@@ -33,16 +31,6 @@ class ScreenService(app: AppServices) : Service(app) {
             repository.getAdHoc().map { it.map { state.emit(ScreenState.fromRow(it)) } }
             if (autoRunOn.getOrNull() == true) {
                 startAutoRunScheduler()
-            }
-        }
-    }
-
-    suspend fun start() {
-        app.signals.flow.collect {
-            if (it.type == SignalType.compoContentUpdated && it.target != null) {
-                val compoId = UUID.fromString(it.target)
-                log.info("Update compo slides")
-                generateSlidesForCompo(compoId)
             }
         }
     }
@@ -75,7 +63,7 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun update(id: UUID, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
         if (state.value.id == id) {
-            show(updatedRow)
+            showSlide(updatedRow)
         }
         updatedRow
     }
@@ -98,7 +86,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
     suspend fun startSlideSet(slideSetName: String): AppResult<Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
-            show(firstScreen)
+            showSlide(firstScreen)
             startAutoRunScheduler()
         }
 
@@ -111,59 +99,37 @@ class ScreenService(app: AppServices) : Service(app) {
         autoRunOn.set(true)
     }
 
+    suspend fun showInMemorySlide(slide: Slide<*>) {
+        if (slide is AutoRunHalting && slide.haltAutoRun()) {
+            stopSlideSet()
+        }
+        val newState = ScreenState.fromSlide(slide)
+        state.emit(newState)
+        return app.signals.emit(Signal.slideShown(newState.id))
+    }
 
-    suspend fun show(slideId: UUID) = either {
-        show(repository.getSlide(slideId).bind())
+    suspend fun showStoredSlide(slideId: UUID) = either {
+        showSlide(repository.getSlide(slideId).bind())
     }
 
     suspend fun showNext() {
-        repository.getNext(state.value.slideSet, state.value.id).fold(
-            { stopSlideSet() },
-            {
-                stopSlideSet()
-                show(it)
-            }
-        )
+        state.value.slideSet?.let { slideSet ->
+            repository.getNext(slideSet, state.value.id).fold(
+                { stopSlideSet() },
+                {
+                    stopSlideSet()
+                    showSlide(it)
+                }
+            )
+        }
     }
 
     suspend fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
         if (state.value.slideSet == slideSetName) {
             showNext().right()
         } else {
-            repository.getFirstSlide(slideSetName).map { show(it) }
+            repository.getFirstSlide(slideSetName).map { showSlide(it) }
         }
-
-    suspend fun generateSlidesForCompo(compoId: UUID): AppResult<String> = either {
-        val slideSet = "compo-${compoId}"
-        val compo = app.compos.getById(compoId).bind()
-        upsertSlideSet(slideSet, "Compo: ${compo.name}", "award")
-        val entries = app.entries.getEntriesForCompo(compoId).bind().filter { it.qualified }
-
-        val hypeSlides = listOf(
-            TextSlide.compoStartsSoon(compo.name),
-            TextSlide.compoStartsNow(compo.name),
-        )
-        val entrySlides = entries.mapIndexed { index, entry -> TextSlide.compoSlide(index, entry) }
-        val endingSlides = listOf(TextSlide.compoHasEnded(compo.name))
-
-        val allSlides = hypeSlides + entrySlides + endingSlides
-        val dbRows = repository.replaceGeneratedSlideSet(slideSet, allSlides).bind()
-
-        val firstShown = dbRows.first().whenShown()
-        app.triggers.add(firstShown, OpenCloseSubmitting(compoId, false))
-        app.triggers.add(firstShown, OpenLiveVoting(compoId))
-
-        val entrySlideDbRows = dbRows.subList(hypeSlides.size, hypeSlides.size + entrySlides.size)
-        entries.zip(entrySlideDbRows) { entry, slide ->
-            app.triggers.add(slide.whenShown(), EnableLiveVotingForEntry(entry.id))
-        }
-
-        val lastShown = dbRows.last().whenShown()
-        app.triggers.add(lastShown, CloseLiveVoting)
-        app.triggers.add(lastShown, OpenCloseVoting(compoId, true))
-
-        "/admin/screen/${slideSet}"
-    }
 
     suspend fun generateResultSlidesForCompo(compoId: UUID): AppResult<String> = either {
         val slideSet = "results-${compoId}"
@@ -224,7 +190,7 @@ class ScreenService(app: AppServices) : Service(app) {
         }
     }
 
-    private suspend fun show(row: ScreenRow) {
+    private suspend fun showSlide(row: ScreenRow) {
         val slide = row.getSlide()
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
             stopSlideSet()
@@ -236,7 +202,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
 @Serializable
 data class ScreenState(
-    val slideSet: String,
+    val slideSet: String?,
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val slide: Slide<*>,
@@ -247,6 +213,14 @@ data class ScreenState(
                 slideSet = row.slideSet,
                 id = row.id,
                 slide = row.getSlide(),
+            )
+        }
+
+        val fromSlide: (Slide<*>) -> ScreenState = { slide ->
+            ScreenState(
+                slideSet = null,
+                id = UUID.randomUUID(),
+                slide = slide,
             )
         }
 
