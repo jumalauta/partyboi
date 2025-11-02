@@ -34,7 +34,7 @@ class ScreenService(app: AppServices) : Service(app) {
             }
         }
     }
-    
+
     suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
     suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
@@ -63,7 +63,7 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun update(id: UUID, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
         if (state.value.id == id) {
-            show(updatedRow)
+            showSlide(updatedRow)
         }
         updatedRow
     }
@@ -86,7 +86,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
     suspend fun startSlideSet(slideSetName: String): AppResult<Unit> =
         repository.getFirstSlide(slideSetName).map { firstScreen ->
-            show(firstScreen)
+            showSlide(firstScreen)
             startAutoRunScheduler()
         }
 
@@ -99,26 +99,36 @@ class ScreenService(app: AppServices) : Service(app) {
         autoRunOn.set(true)
     }
 
+    suspend fun showInMemorySlide(slide: Slide<*>) {
+        if (slide is AutoRunHalting && slide.haltAutoRun()) {
+            stopSlideSet()
+        }
+        val newState = ScreenState.fromSlide(slide)
+        state.emit(newState)
+        return app.signals.emit(Signal.slideShown(newState.id))
+    }
 
-    suspend fun show(slideId: UUID) = either {
-        show(repository.getSlide(slideId).bind())
+    suspend fun showStoredSlide(slideId: UUID) = either {
+        showSlide(repository.getSlide(slideId).bind())
     }
 
     suspend fun showNext() {
-        repository.getNext(state.value.slideSet, state.value.id).fold(
-            { stopSlideSet() },
-            {
-                stopSlideSet()
-                show(it)
-            }
-        )
+        state.value.slideSet?.let { slideSet ->
+            repository.getNext(slideSet, state.value.id).fold(
+                { stopSlideSet() },
+                {
+                    stopSlideSet()
+                    showSlide(it)
+                }
+            )
+        }
     }
 
     suspend fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
         if (state.value.slideSet == slideSetName) {
             showNext().right()
         } else {
-            repository.getFirstSlide(slideSetName).map { show(it) }
+            repository.getFirstSlide(slideSetName).map { showSlide(it) }
         }
 
     suspend fun generateResultSlidesForCompo(compoId: UUID): AppResult<String> = either {
@@ -180,7 +190,7 @@ class ScreenService(app: AppServices) : Service(app) {
         }
     }
 
-    private suspend fun show(row: ScreenRow) {
+    private suspend fun showSlide(row: ScreenRow) {
         val slide = row.getSlide()
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
             stopSlideSet()
@@ -192,7 +202,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
 @Serializable
 data class ScreenState(
-    val slideSet: String,
+    val slideSet: String?,
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val slide: Slide<*>,
@@ -203,6 +213,14 @@ data class ScreenState(
                 slideSet = row.slideSet,
                 id = row.id,
                 slide = row.getSlide(),
+            )
+        }
+
+        val fromSlide: (Slide<*>) -> ScreenState = { slide ->
+            ScreenState(
+                slideSet = null,
+                id = UUID.randomUUID(),
+                slide = slide,
             )
         }
 

@@ -233,6 +233,12 @@ object AdminEditCompoPage {
                             br {}
                             +"Download files"
                         }
+                        a(href = "/admin/compos/${compoForm.data.id}/run") {
+                            attributes.put("role", "button")
+                            icon("image")
+                            br {}
+                            +"Run info screen"
+                        }
                         a(href = "/admin/compos/${compoForm.data.id}/generate-result-slides") {
                             attributes.put("role", "button")
                             icon("square-poll-horizontal")
