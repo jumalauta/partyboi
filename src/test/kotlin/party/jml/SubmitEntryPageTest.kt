@@ -65,7 +65,7 @@ class SubmitEntryPageTest : PartyboiTester {
             userId = UUIDv7.Empty,
         )
         it.post("/entries", goodEntry) {
-            it.redirectsTo("/")
+            it.redirectsTo(Regex("/entries/.*"))
         }
 
         // Check that the uploaded entry is shown on the entries page

@@ -11,6 +11,7 @@ import io.ktor.http.content.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
 import it.skrape.core.htmlDocument
+import it.skrape.matchers.generalAssertion
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import kotlinx.coroutines.runBlocking
@@ -146,6 +147,12 @@ class TestHtmlClient(val client: HttpClient) {
 
 fun Headers.redirectsTo(urlString: String) {
     this["Location"]?.trim().toBe(urlString.trim())
+}
+
+fun Headers.redirectsTo(urlPattern: Regex) {
+    urlPattern.matches(this["Location"]!!.trim()).let {
+        generalAssertion(it, urlPattern, "${this["Location"]} matches $urlPattern")
+    }
 }
 
 fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.() -> AppResult<T>) {
