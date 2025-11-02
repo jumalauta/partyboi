@@ -57,7 +57,12 @@ object CompoScreenRunningPage {
                                             icon(step.icon())
                                         }
                                     }
-                                    td(classes = "wide") { +step.title() }
+                                    td(classes = "wide") {
+                                        div { +step.title() }
+                                        step.notes()?.let {
+                                            small { +it }
+                                        }
+                                    }
                                 }
                             }
                         }

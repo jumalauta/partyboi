@@ -237,6 +237,7 @@ data class CompoSteps(
 sealed interface CompoStep {
     fun title(): String
     fun icon(): String
+    fun notes(): String? = null
     fun getSlide(): Slide<*>
     suspend fun activate(app: AppServices) {}
     suspend fun undo(app: AppServices) {}
@@ -266,6 +267,8 @@ sealed interface CompoStep {
             app.compos.allowVoting(compoId, false)
             app.compos.publishResults(compoId, false)
         }
+
+        override fun notes(): String? = "Disables submitting, normal voting and results if any of them is enabled."
     }
 
     @Serializable
@@ -285,6 +288,8 @@ sealed interface CompoStep {
         override suspend fun undo(app: AppServices) {
             app.votes.closeLiveVoting()
         }
+
+        override fun notes(): String? = "Enables live voting."
     }
 
     @Serializable
@@ -311,6 +316,8 @@ sealed interface CompoStep {
                 app.compos.allowVoting(compoId, false)
             }
         }
+
+        override fun notes(): String? = "Changes live voting to normal voting for this compo."
     }
 
     @Serializable
@@ -329,6 +336,8 @@ sealed interface CompoStep {
         override suspend fun undo(app: AppServices) {
             app.votes.removeEntryFromLiveVoting(entry)
         }
+
+        override fun notes(): String? = entry.orgComment.getOrNull()
     }
 }
 
