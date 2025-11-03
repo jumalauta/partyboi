@@ -1,16 +1,19 @@
 package party.jml.partyboi.ffmpeg
 
+import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
-import com.github.dockerjava.api.model.Bind
-import com.github.dockerjava.api.model.Frame
-import com.github.dockerjava.api.model.HostConfig
-import com.github.dockerjava.api.model.Volume
-import com.github.dockerjava.core.DockerClientBuilder
+import com.github.dockerjava.api.model.*
+import com.github.dockerjava.core.DefaultDockerClientConfig
+import com.github.dockerjava.core.DockerClientImpl
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
+import com.github.dockerjava.transport.DockerHttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.Logging
 import java.io.File
 import java.nio.file.Files
+import java.time.Duration
+
 
 class FfmpegService() : Logging() {
     fun ensureFfmpegExists() {
@@ -26,7 +29,7 @@ class FfmpegService() : Logging() {
             client.pullImageCmd(IMAGE)
                 .withTag("latest")
                 .exec(object :
-                    ResultCallback.Adapter<com.github.dockerjava.api.model.PullResponseItem>() {})
+                    ResultCallback.Adapter<PullResponseItem>() {})
                 .awaitCompletion()
         }
     }
@@ -46,7 +49,7 @@ class FfmpegService() : Logging() {
             input(file)
             audioFilter(
                 "loudnorm",
-                "I" to -23,
+                "I" to -14,
                 "LRA" to 7,
                 "tp" to -2,
                 "print_format" to "json"
@@ -124,7 +127,21 @@ class FfmpegService() : Logging() {
         return lenientJson.decodeFromString<T>(json)
     }
 
-    private fun getClient() = DockerClientBuilder.getInstance().build()
+    private fun getClient(): DockerClient {
+        val config = DefaultDockerClientConfig
+            .createDefaultConfigBuilder()
+            .build()
+
+        val httpClient: DockerHttpClient? = ApacheDockerHttpClient.Builder()
+            .dockerHost(config.dockerHost)
+            .sslConfig(config.sslConfig)
+            .maxConnections(100)
+            .connectionTimeout(Duration.ofSeconds(30))
+            .responseTimeout(Duration.ofSeconds(45))
+            .build()
+
+        return DockerClientImpl.getInstance(config, httpClient)
+    }
 
     val lenientJson = Json {
         ignoreUnknownKeys = true

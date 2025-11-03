@@ -28,7 +28,7 @@ data class NormalizeLoudness(
             tempFile = normalizedFile,
             originalFilename = Path(fileDesc.originalFilename).nameWithoutExtension + " (normalized).flac",
             processed = true,
-            info = "Loudness normalized to -23 LUFS",
+            info = "Loudness normalized to -14 LUFS",
         ).bind()
 
         app.entries.getByFileId(fileId).onRight { entry ->
