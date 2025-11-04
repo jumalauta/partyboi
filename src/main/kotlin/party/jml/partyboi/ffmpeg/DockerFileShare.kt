@@ -1,6 +1,5 @@
 package party.jml.partyboi.ffmpeg
 
-import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.nonEmptyString
@@ -11,7 +10,6 @@ class DockerFileShare(app: AppServices) : Service(app) {
     val sharedDir: File by lazy {
         val localShared = app.config.sharedDir.toFile()
         Docker.inspectSelf()?.let { inspection ->
-            log.info(Json.encodeToString(inspection))
             inspection.mounts?.find { it.destination == localShared }?.source?.let { File(it) }
         } ?: localShared
     }
