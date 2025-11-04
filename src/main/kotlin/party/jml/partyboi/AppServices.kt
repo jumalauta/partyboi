@@ -17,6 +17,7 @@ import party.jml.partyboi.email.EmailServiceFacade
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.ffmpeg.DockerFileShare
 import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.schedule.EventRepository
@@ -57,6 +58,7 @@ interface AppServices {
     val email: EmailServiceFacade
     val messages: MessageRepository
     val workQueue: WorkQueueService
+    val dockerFileShare: DockerFileShare
     val ffmpeg: FfmpegService
     val eventSignalEmitter: EventSignalEmitter
     val sync: SyncService
@@ -87,7 +89,8 @@ class AppServicesImpl(
     override val email = EmailServiceFacade(this)
     override val messages = MessageRepository(this)
     override val workQueue = WorkQueueService(this)
-    override val ffmpeg = FfmpegService()
+    override val dockerFileShare = DockerFileShare(this)
+    override val ffmpeg = FfmpegService(this)
     override val eventSignalEmitter = EventSignalEmitter(this)
     override val sync = SyncService(this)
 

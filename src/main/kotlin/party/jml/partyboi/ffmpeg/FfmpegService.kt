@@ -1,23 +1,16 @@
 package party.jml.partyboi.ffmpeg
 
-import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.model.*
-import com.github.dockerjava.core.DefaultDockerClientConfig
-import com.github.dockerjava.core.DockerClientImpl
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
-import com.github.dockerjava.transport.DockerHttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import party.jml.partyboi.Logging
+import party.jml.partyboi.AppServices
 import java.io.File
-import java.nio.file.Files
-import java.time.Duration
 
 
-class FfmpegService() : Logging() {
+class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
     fun ensureFfmpegExists() {
-        val client = getClient()
+        val client = Docker.getClient()
 
         val imageExists = client.listImagesCmd()
             .withImageNameFilter(IMAGE)
@@ -36,14 +29,17 @@ class FfmpegService() : Logging() {
 
     fun normalizeLoudness(input: File): File {
         ensureFfmpegExists()
-        val measurement = measureLoudness(input)
-        val output = Files.createTempFile("loudnessNormalization", ".flac").toFile()
-        normalizeByMeasurement(input, output, measurement)
 
-        return output
+        return app.dockerFileShare.use(input) { sharedInput ->
+            val measurement = measureLoudness(sharedInput)
+            val sharedOutput = app.dockerFileShare.createTempFile("loudnessNormalization", ".flac")
+            normalizeByMeasurement(sharedInput, sharedOutput, measurement)
+
+            sharedOutput.localFile
+        }
     }
 
-    private fun measureLoudness(file: File): LoudnessMeasurement =
+    private fun measureLoudness(file: SharedFile): LoudnessMeasurement =
         runFfmpeg {
             hideBanner()
             input(file)
@@ -58,13 +54,17 @@ class FfmpegService() : Logging() {
             pipeOutput()
         }.extractJson<LoudnessMeasurement>()
 
-    private fun normalizeByMeasurement(input: File, output: File, measurement: LoudnessMeasurement): String =
+    private fun normalizeByMeasurement(
+        input: SharedFile,
+        output: SharedFile,
+        measurement: LoudnessMeasurement
+    ): String =
         runFfmpeg {
             hideBanner()
             input(input)
             audioFilter(
                 "loudnorm",
-                "I" to -23,
+                "I" to -14,
                 "LRA" to 7,
                 "tp" to -2,
                 "measured_I" to measurement.input_i,
@@ -79,11 +79,10 @@ class FfmpegService() : Logging() {
 
     private fun runFfmpeg(dsl: FfmpegDsl.() -> Unit): String {
         val settings = FfmpegDsl { dsl() }
-        val client = getClient()
+        val client = Docker.getClient()
 
         val binds = listOfNotNull(
-            settings.inputDir?.let { Bind(it, Volume("/input")) },
-            settings.outputDir?.let { Bind(it, Volume("/output")) }
+            app.dockerFileShare.sharedDir?.let { Bind(it.toString(), Volume("/files")) }
         )
 
         val hostConfig = HostConfig
@@ -127,22 +126,6 @@ class FfmpegService() : Logging() {
         return lenientJson.decodeFromString<T>(json)
     }
 
-    private fun getClient(): DockerClient {
-        val config = DefaultDockerClientConfig
-            .createDefaultConfigBuilder()
-            .build()
-
-        val httpClient: DockerHttpClient? = ApacheDockerHttpClient.Builder()
-            .dockerHost(config.dockerHost)
-            .sslConfig(config.sslConfig)
-            .maxConnections(100)
-            .connectionTimeout(Duration.ofSeconds(30))
-            .responseTimeout(Duration.ofSeconds(45))
-            .build()
-
-        return DockerClientImpl.getInstance(config, httpClient)
-    }
-
     val lenientJson = Json {
         ignoreUnknownKeys = true
     }
@@ -153,8 +136,6 @@ class FfmpegService() : Logging() {
 }
 
 class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
-    var inputDir: String? = null
-    var outputDir: String? = null
     val arguments: MutableList<String> = mutableListOf()
 
     init {
@@ -165,16 +146,14 @@ class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
         arguments.add("-hide_banner")
     }
 
-    fun input(file: File) {
-        inputDir = file.absoluteFile.normalize().parentFile.path
+    fun input(file: SharedFile) {
         arguments.add("-i")
-        arguments.add("/input/${file.name}")
+        arguments.add("/files/${file.localFile.name}")
     }
 
-    fun output(file: File) {
-        outputDir = file.absoluteFile.normalize().parentFile.path
+    fun output(file: SharedFile) {
         arguments.add("-y")
-        arguments.add("/output/${file.name}")
+        arguments.add("/files/${file.localFile.name}")
     }
 
     fun audioFilter(filterName: String, vararg args: Pair<String, Any>) {

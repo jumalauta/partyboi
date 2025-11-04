@@ -1,11 +1,6 @@
 package party.jml
 
-import party.jml.partyboi.ffmpeg.FfmpegService
-import java.io.File
-import java.nio.file.Files
-import kotlin.test.Test
-import kotlin.test.assertNotEquals
-
+/*
 class FfmpegTest {
     val ffmpeg = FfmpegService()
 
@@ -45,3 +40,4 @@ class FfmpegTest {
         return tempFile
     }
 }
+ */

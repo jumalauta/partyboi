@@ -42,6 +42,7 @@ class ConfigReader(private val config: ApplicationConfig) {
     val filesDir by lazy { config.propertyOrNull("files.path")?.getPath() ?: Path.of("data/files") }
     val assetsDir: Path by lazy { filesDir.resolve("assets") }
     val screenshotsDir: Path by lazy { filesDir.resolve("screenshots") }
+    val sharedDir: Path by lazy { config.propertyOrNull("files.sharedPath")?.getPath() ?: Path.of("data/shared") }
 
     // Database
     val dbHost: String by lazy { config.property("db.host").getString() }
