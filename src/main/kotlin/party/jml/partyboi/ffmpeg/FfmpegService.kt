@@ -82,7 +82,7 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         val client = Docker.getClient()
 
         val binds = listOfNotNull(
-            app.dockerFileShare.sharedDir?.let { Bind(it.toString(), Volume("/files")) }
+            Bind(app.dockerFileShare.sharedDir.toString(), Volume("/files"))
         )
 
         val hostConfig = HostConfig
