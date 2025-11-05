@@ -55,7 +55,7 @@ class AssetsRepository(app: AppServices) {
     }
 
     fun getChecksum(name: String): AppResult<String> =
-        FileChecksums.get(assetsDir.resolve(name))
+        FileChecksums.md5sum(assetsDir.resolve(name).toFile())
 }
 
 @Serializable

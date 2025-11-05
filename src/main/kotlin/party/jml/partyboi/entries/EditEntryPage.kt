@@ -10,7 +10,6 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
 
@@ -79,23 +78,28 @@ object EditEntryPage {
                                 th { +"Name" }
                                 th { +"Size" }
                                 th { +"Uploaded" }
-                                th { +"Info" }
+                                th { +"MD5" }
                                 th {}
+                                if (user.isAdmin) {
+                                    th {}
+                                }
                             }
                         }
                         tbody {
                             files.forEach { file ->
-                                tr(classes = if (file.processed) "processed" else null) {
-                                    td { +file.originalFilename }
-                                    td { +Filesize.humanFriendly(file.size) }
-                                    td { +file.uploadedAt.displayDateTime(tz) }
-                                    td { file.info?.let { +it } }
-                                    td {
-                                        buttonGroup {
+                                if (!file.processed || user.isAdmin) {
+                                    tr(classes = if (file.processed) "processed" else null) {
+                                        td { +file.originalFilename }
+                                        td { +Filesize.humanFriendly(file.size) }
+                                        td { +file.uploadedAt.displayDateTime(tz) }
+                                        td { +file.checksum.orEmpty() }
+                                        td {
                                             a(href = "/entries/download/${file.id}") {
                                                 icon("download", "Download")
                                             }
-                                            if (user.isAdmin) {
+                                        }
+                                        if (user.isAdmin) {
+                                            td {
                                                 a(
                                                     href = "/admin/host/${file.id}",
                                                     target = "_blank"

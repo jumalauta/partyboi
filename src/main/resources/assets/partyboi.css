@@ -54,6 +54,8 @@ tbody tr [role=group] {
 
 tr.processed td, tr.processed th {
     font-style: italic;
+    opacity: 33%;
+    font-weight: 100;
 }
 
 article > *:last-child {

@@ -89,7 +89,7 @@ class FileRepository(app: AppServices) : Service(app) {
         Either.catch { Files.size(absoluteFile.toPath()) }.mapLeft { InternalServerError(it) }
 
     private fun getChecksum(absoluteFile: File): AppResult<String> =
-        FileChecksums.get(absoluteFile.toPath())
+        FileChecksums.md5sum(absoluteFile)
 
 
     private suspend fun migrateFileDirectories() {
