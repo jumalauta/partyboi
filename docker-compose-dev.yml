@@ -14,9 +14,9 @@ services:
       DB_HOST: db
       DB_PORT: 5432
     volumes:
-      - "./data/assets:/assets"
-      - "./data/entries:/entries"
-      - "./data/screenshots:/screenshots"
+      - "./data/container/files:/files"
+      - "./data/container/shared:/tmp/shared"
+      - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - frontend
       - backend

@@ -10,7 +10,7 @@ class DockerFileShare(app: AppServices) : Service(app) {
     val sharedDir: File by lazy {
         val localShared = app.config.sharedDir.toFile()
         Docker.inspectSelf()?.let { inspection ->
-            inspection.mounts?.find { it.destination == localShared }?.source?.let { File(it) }
+            inspection.mounts?.find { it.destination?.path == localShared.path }?.source?.let { File(it) }
         } ?: localShared
     }
 
