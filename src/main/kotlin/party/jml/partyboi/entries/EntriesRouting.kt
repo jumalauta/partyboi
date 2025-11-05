@@ -11,6 +11,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.*
 import party.jml.partyboi.data.*
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
@@ -95,6 +96,11 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     val entry = newEntry.copy(userId = user.id)
                     app.compos.assertCanSubmit(entry.compoId, user.isAdmin).bind()
                     val savedEntry = app.entries.add(entry).bind()
+                    app.messages.sendMessage(
+                        user.id,
+                        MessageType.SUCCESS,
+                        "${entry.author} - ${entry.title} added successfully."
+                    )
                     Redirection("/entries/${savedEntry.id}")
                 },
                 {
@@ -166,9 +172,15 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         app.screenshots.scanForScreenshotSource(file).map { source ->
                             app.screenshots.store(entry.id, source)
                         }
+                        app.messages.sendMessage(
+                            user.id,
+                            MessageType.SUCCESS,
+                            "${entry.file.name} uploaded successfully."
+                        )
                     }
 
-                    Redirection("/")
+                    app.messages.sendMessage(user.id, MessageType.INFO, "${entry.author} - ${entry.title} updated.")
+                    Redirection("/entries/${entry.id}")
                 },
                 {
                     renderEditEntryPage(

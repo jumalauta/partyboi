@@ -208,8 +208,8 @@ class SubmitEntryPageTest : PartyboiTester {
             orgComment = "Yeah!!!"
         )
 
-        it.post("/entries/${entry!!.id}", updated) {
-            it.redirectsTo("/")
+        it.post("/entries/${entry.id}", updated) {
+            it.redirectsTo("/entries/${entry.id}")
         }
     }
 
