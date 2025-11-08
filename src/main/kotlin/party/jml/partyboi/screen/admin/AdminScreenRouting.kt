@@ -222,6 +222,7 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 val slideSetName = call.parameterString("slideSet").bind()
                 val (state) = app.screen.currentState()
                 if (state.slideSet == slideSetName) {
+                    app.screen.stopSlideSet()
                     app.screen.showNext()
                 }
             }

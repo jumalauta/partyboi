@@ -117,7 +117,6 @@ class ScreenService(app: AppServices) : Service(app) {
             repository.getNext(slideSet, state.value.id).fold(
                 { stopSlideSet() },
                 {
-                    stopSlideSet()
                     showSlide(it)
                 }
             )
