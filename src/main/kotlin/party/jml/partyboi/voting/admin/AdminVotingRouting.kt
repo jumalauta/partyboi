@@ -18,12 +18,12 @@ fun Application.configureAdminVotingRouting(app: AppServices) {
             call.respondEither {
                 val voteKeys = app.voteKeys.getAllVoteKeys().bind()
                 val users = app.users.getUsers().bind()
-                val settings = Form(
+                val voteSettings = Form(
                     VoteSettings::class,
-                    app.settings.getVoteSettings().bind(),
+                    app.settings.getVoteKeySettings().bind(),
                     initial = false
                 )
-                AdminVotingPage.render(voteKeys, users, settings)
+                AdminVotingPage.render(voteKeys, users, voteSettings)
             }
         }
 

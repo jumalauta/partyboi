@@ -24,6 +24,7 @@ fun Application.configureVotingRouting(app: AppServices) {
                     entries = entries,
                     screenshots = app.screenshots.getForEntries(entries),
                     liveVote = app.votes.getLiveVoteState(),
+                    settings = app.settings.voting.get().bind(),
                 )
             }
         }

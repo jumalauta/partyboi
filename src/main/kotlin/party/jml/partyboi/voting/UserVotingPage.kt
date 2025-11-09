@@ -16,6 +16,7 @@ object UserVotingPage {
         entries: List<VotableEntry>,
         screenshots: List<Screenshot>,
         liveVote: Option<LiveVoteState>,
+        settings: VotingSettings,
     ) = Page("Voting") {
         refreshOnSignal(SignalType.vote)
         refreshOnSignal(SignalType.liveVote)
@@ -42,7 +43,7 @@ object UserVotingPage {
                                 th(classes = "tight") { +"#" }
                                 th {}
                                 th(classes = "wide") { +"Author – Entry" }
-                                for (i in VoteService.POINT_RANGE) {
+                                for (i in settings.scale.range) {
                                     th(classes = "tight center") { +i.toString() }
                                 }
                             }
@@ -64,7 +65,7 @@ object UserVotingPage {
                                         +"${entry.author} – ${entry.title}"
                                         entry.info.onSome { small(classes = "entry-info") { +it } }
                                     }
-                                    for (points in VoteService.POINT_RANGE) {
+                                    for (points in settings.scale.range) {
                                         td(classes = "tight center points") {
                                             voteButton(entry.id, points, entry.points.getOrNull() == points)
                                         }

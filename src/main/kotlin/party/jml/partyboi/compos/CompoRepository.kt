@@ -19,6 +19,10 @@ import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.validation.MaxLength
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import party.jml.partyboi.voting.EmptyVoteHandling
+import party.jml.partyboi.voting.PointScale
+import party.jml.partyboi.voting.ScoringMethod
+import party.jml.partyboi.voting.VotingSettings
 import java.util.*
 
 class CompoRepository(app: AppServices) : Service(app) {
@@ -148,6 +152,11 @@ data class Compo(
     val requireFile: Option<Boolean>,
     @Custom
     val fileFormats: List<FileFormat>,
+    // Voting settings which overrule the defaults:
+    val scoringMethod: ScoringMethod?,
+    val emptyVoteHandling: EmptyVoteHandling?,
+    val minPoints: Int?,
+    val maxPoints: Int?,
 ) : Validateable<Compo>, DropdownOptionSupport {
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
 
@@ -167,6 +176,16 @@ data class Compo(
             .flatMap { it.extensions.map { ext -> ".$ext" } + it.mimeTypes }
             .joinToString(",")
 
+    fun getVotingSettings(defaults: VotingSettings) = defaults.override(
+        scale = minPoints?.let { min ->
+            maxPoints?.let { max ->
+                PointScale(min, max)
+            }
+        },
+        emptyVotes = emptyVoteHandling,
+        scoring = scoringMethod
+    )
+
     companion object {
         val fromRow: (Row) -> Compo = { row ->
             Compo(
@@ -179,6 +198,10 @@ data class Compo(
                 publicResults = row.boolean("public_results"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
                 requireFile = row.optionalBoolean("require_file"),
+                scoringMethod = row.valueOfOrNull<ScoringMethod>("scoring_method"),
+                emptyVoteHandling = row.valueOfOrNull<EmptyVoteHandling>("empty_vote_handling"),
+                minPoints = row.intOrNull("min_points"),
+                maxPoints = row.intOrNull("max_points"),
             )
         }
 
@@ -192,6 +215,10 @@ data class Compo(
             publicResults = false,
             fileFormats = emptyList(),
             requireFile = none(),
+            scoringMethod = ScoringMethod.Additive,
+            emptyVoteHandling = EmptyVoteHandling.Ignore,
+            minPoints = 1,
+            maxPoints = 5,
         )
     }
 }

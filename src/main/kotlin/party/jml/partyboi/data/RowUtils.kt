@@ -17,3 +17,9 @@ fun Option<Boolean>.toDatabaseEnum(): String? =
 fun Option<Boolean>.isTrue(): Boolean = this.isSome { it }
 
 fun Option<Boolean>.isFalse(): Boolean = this.isSome { !it }
+
+inline fun <reified T : Enum<T>> Row.valueOf(columnLabel: String): T =
+    enumValueOf(string(columnLabel))
+
+inline fun <reified T : Enum<T>> Row.valueOfOrNull(columnLabel: String): T? =
+    stringOrNull(columnLabel)?.let { enumValueOf<T>(it) }

@@ -9,6 +9,8 @@ import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.settings.VoteSettings
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.voting.EmptyVoteHandling
+import party.jml.partyboi.voting.ScoringMethod
 import party.jml.partyboi.voting.VoteKeyRow
 
 object AdminVotingPage {
@@ -22,7 +24,9 @@ object AdminVotingPage {
             form = settings,
             title = "Settings",
             options = mapOf(
-                "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label }
+                "automaticVoteKeys" to DropdownOption.fromEnum<AutomaticVoteKeys> { it.label },
+                "emptyVoteHandling" to DropdownOption.fromEnum<EmptyVoteHandling> { it.label },
+                "scoringMethod" to DropdownOption.fromEnum<ScoringMethod> { it.label },
             )
         )
 
