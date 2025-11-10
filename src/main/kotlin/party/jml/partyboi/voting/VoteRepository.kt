@@ -2,11 +2,9 @@ package party.jml.partyboi.voting
 
 import arrow.core.Option
 import arrow.core.toOption
-import kotlinx.serialization.Serializable
 import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.db.DatabasePool
 import party.jml.partyboi.db.exec
@@ -48,33 +46,21 @@ class VoteRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getAllVotes(): AppResult<List<VoteRow>> = db.use {
-        it.many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
-    }
-
-    suspend fun getResults(onlyPublic: Boolean): AppResult<List<CompoResult>> = db.use {
         it.many(
             queryOf(
                 """
             SELECT
-                compo_id,
-                compo.name as compo_name,
-                coalesce(sum(points), 0) AS points,
-                entry.id AS entry_id,
-                title,
-                author,
-                screen_comment
-            FROM entry
-            LEFT JOIN vote ON entry.id = vote.entry_id
-            JOIN compo ON compo.id = entry.compo_id
-            WHERE qualified
-            ${if (onlyPublic) "AND public_results" else ""}
-            GROUP BY compo_id, compo.name, entry.id, title, author
-            ORDER BY compo_id, points DESC, entry_id
+            	vote.user_id,
+            	entry_id,
+            	compo_id,
+            	points
+            FROM vote
+            JOIN entry ON vote.entry_id = entry.id
         """.trimIndent()
-            ).map(CompoResult.fromRow)
+            ).map(VoteRow.fromRow)
         )
     }
-
+    
     suspend fun deleteAll() = db.use {
         it.exec(queryOf("DELETE FROM vote"))
     }
@@ -88,7 +74,7 @@ data class CompoResult(
     val title: String,
     val author: String,
     val info: Option<String>,
-    val downloadLink: String?,
+    val downloadLink: String? = null,
 ) {
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
@@ -127,12 +113,10 @@ data class CompoResult(
     }
 }
 
-@Serializable
 data class VoteRow(
-    @Serializable(with = UUIDSerializer::class)
     val userId: UUID,
-    @Serializable(with = UUIDSerializer::class)
     val entryId: UUID,
+    val compoId: UUID,
     val points: Int
 ) {
     companion object {
@@ -140,6 +124,7 @@ data class VoteRow(
             VoteRow(
                 userId = row.uuid("user_id"),
                 entryId = row.uuid("entry_id"),
+                compoId = row.uuid("compo_id"),
                 points = row.int("points"),
             )
         }
