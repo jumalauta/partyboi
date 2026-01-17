@@ -82,6 +82,8 @@ class TriggerRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun deleteAll() = db.use { it.exec(queryOf("TRUNCATE TABLE trigger CASCADE")) }
+
     private suspend fun setSuccessful(triggerId: UUID, time: Instant) = db.use {
         it.updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
     }

@@ -12,7 +12,9 @@ fun Application.configureSyncRouting(app: AppServices) {
         get("/sync/table/{name}") {
             call.jsonRespond {
                 val name = call.parameterString("name").bind()
-                app.sync.db.getTable(name).bind()
+                val data = app.sync.db.getTable(name).bind()
+                app.sync.db.putTable(data)
+                data
             }
         }
     }
