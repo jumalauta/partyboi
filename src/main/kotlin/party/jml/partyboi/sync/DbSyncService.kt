@@ -1,13 +1,15 @@
 package party.jml.partyboi.sync
 
+import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.toNonEmptyListOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.system.AppResult
@@ -33,7 +35,38 @@ class DbSyncService(app: AppServices) : Service(app) {
             Table(tableName, Clock.System.now(), data)
         }
 
-    suspend fun getColumns(tableName: String): AppResult<Map<String, String>> =
+    suspend fun putTable(table: Table) =
+        either {
+            val columns = getColumns(table.table).bind()
+            val pkeyResolver = getPrimaryKeyConstraint(table.table).bind()
+
+            db.use { session ->
+                table.data.map { row ->
+                    session.update(
+                        queryOf(
+                            """
+                        INSERT INTO ${table.table}
+                        (${row.keys.joinToString(",")}) 
+                        VALUES (${
+                                row.keys.joinToString(",") { key ->
+                                    when (columns[key]) {
+                                        "uuid" -> "?::uuid"
+                                        "timestamp with time zone" -> "?::timestamp"
+                                        "jsonb" -> "?::jsonb"
+                                        else -> "?"
+                                    }
+                                }
+                            })
+                        ${pkeyResolver?.sql(columns.keys).orEmpty()}
+                        """.trimIndent(),
+                            *row.values.map { it.toNative() }.toTypedArray()
+                        )
+                    )
+                }
+            }
+        }
+
+    private suspend fun getColumns(tableName: String): AppResult<Map<String, String>> =
         db.use {
             it.many(
                 queryOf(
@@ -44,6 +77,28 @@ class DbSyncService(app: AppServices) : Service(app) {
                 }
             ).map { cols -> cols.toMap() }
         }
+
+    private suspend fun getPrimaryKeyConstraint(tableName: String): Either<AppError, UpdateAllColumnsExcept?> =
+        db.use {
+            it.many(
+                queryOf(
+                    """
+                    SELECT
+                        tc.constraint_name,
+                        kcu.column_name
+                    FROM information_schema.key_column_usage kcu
+                    JOIN information_schema.table_constraints tc
+                      ON tc.constraint_name = kcu.constraint_name
+                     AND tc.table_schema = kcu.table_schema
+                    WHERE kcu.table_name = ?
+                      AND tc.constraint_type = 'PRIMARY KEY'
+                """.trimIndent(), tableName
+                ).map { row -> row.string("constraint_name") to row.string("column_name") })
+        }.map { result ->
+            result.toNonEmptyListOrNull()?.let { r ->
+                UpdateAllColumnsExcept(r.first().first, r.map { it.second }.toSet())
+            }
+        }
 }
 
 @Serializable
@@ -52,3 +107,39 @@ data class Table(
     val time: Instant,
     val data: List<Map<String, JsonElement>>
 )
+
+fun JsonElement.toNative(): Any? =
+    when (this) {
+        is JsonNull -> null
+
+        is JsonPrimitive -> when {
+            isString -> content
+            booleanOrNull != null -> boolean
+            longOrNull != null -> long
+            doubleOrNull != null -> double
+            else -> content
+        }
+
+        is JsonArray ->
+            map { it.toNative() }
+
+        is JsonObject ->
+            mapValues { (_, v) -> v.toNative() }
+    }
+
+abstract class ConflictResolveStrategy {
+    abstract val constraintName: String
+    abstract fun sql(allColumns: Set<String>): String
+}
+
+abstract class UpdateColumns(override val constraintName: String) : ConflictResolveStrategy() {
+    abstract fun columnsToUpdate(allColumns: Set<String>): Set<String>
+
+    override fun sql(allColumns: Set<String>): String =
+        "ON CONFLICT ON CONSTRAINT $constraintName DO UPDATE SET\n" +
+                columnsToUpdate(allColumns).joinToString(",\n") { "$it = EXCLUDED.$it" }
+}
+
+class UpdateAllColumnsExcept(constraintName: String, val ignoredColumns: Set<String>) : UpdateColumns(constraintName) {
+    override fun columnsToUpdate(allColumns: Set<String>): Set<String> = allColumns.minus(ignoredColumns)
+}
