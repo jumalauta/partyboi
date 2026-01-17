@@ -22,7 +22,6 @@ import party.jml.partyboi.screen.admin.configureAdminScreenRouting
 import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.settings.configureSettingsRouting
 import party.jml.partyboi.signals.configureSignalRouting
-import party.jml.partyboi.sync.configureSyncRouting
 import party.jml.partyboi.system.admin.configureAdminErrorLogRouting
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.errorMessage
@@ -80,5 +79,4 @@ fun Application.configureDefaultRouting(app: AppServices) {
     configureUserMgmtRouting(app)
     configureAdminVotingRouting(app)
     configureAdminErrorLogRouting(app)
-    configureSyncRouting(app)
 }
