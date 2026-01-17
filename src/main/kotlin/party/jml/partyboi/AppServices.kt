@@ -26,6 +26,7 @@ import party.jml.partyboi.schedule.EventSignalEmitter
 import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
+import party.jml.partyboi.sync.SyncService
 import party.jml.partyboi.system.ErrorRepository
 import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.triggers.TriggerRepository
@@ -60,6 +61,7 @@ interface AppServices {
     val dockerFileShare: DockerFileShare
     val ffmpeg: FfmpegService
     val eventSignalEmitter: EventSignalEmitter
+    val sync: SyncService
 }
 
 class AppServicesImpl(
@@ -90,6 +92,7 @@ class AppServicesImpl(
     override val dockerFileShare = DockerFileShare(this)
     override val ffmpeg = FfmpegService(this)
     override val eventSignalEmitter = EventSignalEmitter(this)
+    override val sync = SyncService(this)
 
     companion object {
         var globalInstance: AppServicesImpl? = null

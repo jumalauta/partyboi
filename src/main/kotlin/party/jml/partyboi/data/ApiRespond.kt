@@ -9,6 +9,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import kotlinx.serialization.json.Json
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.system.AppResult
@@ -35,6 +36,19 @@ suspend fun ApplicationCall.apiRespond(result: AppResult<Unit>) {
     )
 }
 
+suspend inline fun <reified T> ApplicationCall.jsonRespond(noinline block: suspend Raise<AppError>.() -> T) {
+    Either.catch {
+        val result = either { block() }
+        result.fold(
+            { respond(it.statusCode, it.message) },
+            {
+                respondText(Json.encodeToString(it), ContentType.Application.Json)
+            }
+        )
+    }.mapLeft {
+        respond(HttpStatusCode.InternalServerError, it.message ?: "Fail")
+    }
+}
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm(formFieldLimit: Long): AppResult<Form<T>> =
     Form.fromParameters<T>(receiveMultipart(formFieldLimit = formFieldLimit))
