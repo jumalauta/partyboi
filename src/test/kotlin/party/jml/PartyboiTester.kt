@@ -161,6 +161,8 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
             val app = services()
             either {
                 app.settings.automaticVoteKeys.set(AutomaticVoteKeys.DISABLED)
+                app.files.deleteAll().bind()
+                app.triggers.deleteAll().bind()
                 app.events.deleteAll().bind()
                 app.screen.deleteAll().bind()
                 app.votes.deleteAll().bind()

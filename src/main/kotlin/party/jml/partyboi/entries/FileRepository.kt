@@ -23,6 +23,7 @@ import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.toFilenameToken
+import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
@@ -84,6 +85,8 @@ class FileRepository(app: AppServices) : Service(app) {
 
             desc
         }
+
+    suspend fun deleteAll() = db.use { it.exec(queryOf("TRUNCATE TABLE file CASCADE")) }
 
     private fun getSize(absoluteFile: File): Either<InternalServerError, Long> =
         Either.catch { Files.size(absoluteFile.toPath()) }.mapLeft { InternalServerError(it) }
