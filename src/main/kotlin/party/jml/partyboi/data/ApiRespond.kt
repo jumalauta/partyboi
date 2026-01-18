@@ -107,6 +107,16 @@ fun ApplicationCall.parameterPathString(name: String) =
         it.joinToString("/")
     } ?: MissingInput(name).left()
 
+
+inline fun <reified T : Enum<T>> ApplicationCall.parameterEnum(name: String) =
+    parameters[name]?.let { name ->
+        try {
+            enumValues<T>().find { it.name.lowercase() == name.lowercase() }?.right()
+        } catch (_: IllegalArgumentException) {
+            InvalidInput(name).left()
+        }
+    } ?: MissingInput(name).left()
+
 suspend fun ApplicationCall.switchApiUuid(block: suspend (id: UUID, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
         either {

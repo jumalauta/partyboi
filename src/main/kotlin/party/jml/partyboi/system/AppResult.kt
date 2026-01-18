@@ -9,3 +9,4 @@ typealias AppResult<T> = Either<AppError, T>
 inline fun <T> catchResult(f: () -> T): AppResult<T> =
     Either.catch(f).mapLeft { InternalServerError(it) }
 
+fun AppResult<Boolean>.isTrue(): Boolean = fold({ false }, { it })

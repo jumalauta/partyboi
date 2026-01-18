@@ -10,7 +10,7 @@ import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.screen.slides.TextSlide
-import party.jml.partyboi.sync.SyncService
+import party.jml.partyboi.sync.SyncedTable
 import party.jml.partyboi.triggers.OpenCloseSubmitting
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -76,17 +76,17 @@ class DbSyncTest : PartyboiTester {
 
                 app.votes.castVote(testUser.copy(votingEnabled = true), demoEntry.id, 3).bind()
 
-                SyncService.tables.forEach { tableName ->
-                    println("Testing: $tableName")
+                SyncedTable.entries.forEach { table ->
+                    println("Testing: $table")
 
-                    val export = app.sync.db.getTable(tableName).bind()
+                    val export = app.sync.getTable(table).bind()
                     println("Exported data: ${Json.encodeToString(export)}")
-                    assertNotEquals(export.data.size, 0, "Expected '$tableName' to contain data")
+                    assertNotEquals(export.data.size, 0, "Expected '$table' to contain data")
 
-                    app.sync.db.putTable(export).bind()
+                    app.sync.putTable(export).bind()
                     println("Data written back\n")
 
-                    val export2 = app.sync.db.getTable(tableName).bind()
+                    val export2 = app.sync.getTable(table).bind()
                     assertEquals(export.data, export2.data)
                 }
             }
