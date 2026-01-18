@@ -115,6 +115,7 @@ enum class FieldPresentation {
     monospace,
     secret,
     email,
+    url,
     custom,
 }
 

@@ -8,12 +8,21 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.InvalidConfiguration
+import party.jml.partyboi.data.URISerializer
+import party.jml.partyboi.data.randomToken
+import party.jml.partyboi.form.Field
+import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.catchResult
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.ValidURI
+import party.jml.partyboi.validation.Validateable
 import java.net.URI
 
 enum class SyncedTable(val tableName: String) {
@@ -33,10 +42,10 @@ enum class SyncedTable(val tableName: String) {
 }
 
 class SyncService(app: AppServices) : Service(app) {
-    private val db = DbSyncService(app)
-    private val expectedApiKey = property<String?>("apiKey", null)
-    private val remoteInstance = property<RemoteInstance?>("remoteInstance", null)
+    val expectedApiKey = property<String?>("apiKey", null)
+    val remoteInstance = property<RemoteInstance?>("remoteInstance", null, private = true)
 
+    private val db = DbSyncService(app)
     private val client = HttpClient(CIO) {
         expectSuccess = true
         install(ContentNegotiation) {
@@ -49,8 +58,16 @@ class SyncService(app: AppServices) : Service(app) {
         }
     }
 
+    suspend fun generateNewToken(): AppResult<String> = either {
+        val token = randomToken()
+        expectedApiKey.set(hashToken(token)).bind()
+        token
+    }
+
     suspend fun isValidToken(token: String): AppResult<Boolean> =
-        expectedApiKey.get().map { it == token }
+        expectedApiKey.get().map { hashedToken ->
+            BCrypt.checkpw(token, hashedToken)
+        }
 
     suspend fun getTable(table: SyncedTable) = db.getTable(table.tableName)
     suspend fun putTable(table: Table) = db.putTable(table)
@@ -78,6 +95,8 @@ class SyncService(app: AppServices) : Service(app) {
             }.body()
         }
 
+    private fun hashToken(token: String): String = BCrypt.hashpw(token, BCrypt.gensalt())
+
     companion object {
         val tables = listOf(
             "appuser",
@@ -97,8 +116,19 @@ class SyncService(app: AppServices) : Service(app) {
     }
 }
 
+@Serializable
 data class RemoteInstance(
+    @Field("Remote address", presentation = FieldPresentation.url)
+    @Serializable(with = URISerializer::class)
+    @NotEmpty
+    @ValidURI
     val address: URI,
+    @Field("Secret Token", presentation = FieldPresentation.secret)
+    @NotEmpty
     val apiToken: String,
-)
+) : Validateable<RemoteInstance> {
+    companion object {
+        val EMPTY = RemoteInstance(URI(""), "")
+    }
+}
 

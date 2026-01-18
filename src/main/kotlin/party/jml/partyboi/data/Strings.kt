@@ -4,6 +4,7 @@ import arrow.core.Option
 import arrow.core.none
 import arrow.core.some
 import org.apache.commons.lang3.RandomStringUtils
+import java.net.URI
 import java.util.Locale.getDefault
 import java.util.regex.Pattern
 
@@ -24,7 +25,9 @@ fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? 
 
 fun randomShortId() = randomStringId(3) + "-" + randomStringId(3)
 
-fun randomStringId(length: Int): String = RandomStringUtils.random(length, true, false).uppercase()
+fun randomStringId(length: Int): String = RandomStringUtils.secure().next(length, true, false).uppercase()
+
+fun randomToken() = RandomStringUtils.secure().next(64, true, true)
 
 fun String.toLabel(): String {
     val tokens = split(Regex("(?<=[a-z])(?=[A-Z])"))
@@ -40,3 +43,11 @@ fun String.isValidEmailAddress(): Boolean = Pattern.compile(
             + "[0-9]{1,2}|25[0-5]|2[0-4][0-9]))|"
             + "([\\w-]+\\.)+[a-zA-Z]{2,4})$"
 ).matcher(this).matches()
+
+fun String.isValidUri(): Boolean =
+    try {
+        val uri = URI.create(this)
+        uri.scheme != null && uri.host != null
+    } catch (_: Exception) {
+        false
+    }

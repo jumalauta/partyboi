@@ -3,7 +3,9 @@ package party.jml.partyboi.validation
 import arrow.core.*
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.isValidEmailAddress
+import party.jml.partyboi.data.isValidUri
 import party.jml.partyboi.form.FileUpload
+import java.net.URI
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
@@ -40,6 +42,7 @@ object ValidationAnnotations {
             when (value) {
                 is String -> check(message, { isValid(value) })
                 is FileUpload -> check(message, { isValid(value.name) })
+                is URI -> check(message, { isValid(value.toString()) })
                 else -> error("Not a string")
             }
 
@@ -52,6 +55,7 @@ object ValidationAnnotations {
                 is Min -> check("Minimum value is ${annotation.min}") { value as Int >= annotation.min }
                 is Max -> check("Minimum value is ${annotation.max}") { value as Int <= annotation.max }
                 is EmailAddress -> checkString("Invalid email address") { it.isEmpty() || it.isValidEmailAddress() }
+                is ValidURI -> checkString("Invalid address") { it.isEmpty() || it.isValidUri() }
                 else -> None
             }.toList()
         }
@@ -65,3 +69,4 @@ annotation class MaxLength(val max: Int)
 annotation class Min(val min: Int)
 annotation class Max(val max: Int)
 annotation class EmailAddress()
+annotation class ValidURI()

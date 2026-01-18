@@ -10,6 +10,7 @@ import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.html.InputType
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.system.TimeService
+import java.net.URI
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -89,6 +90,7 @@ sealed interface Property {
         FieldPresentation.hidden -> InputType.hidden
         FieldPresentation.secret -> InputType.password
         FieldPresentation.email -> InputType.email
+        FieldPresentation.url -> InputType.url
         else -> defaultInputType
     }
 
@@ -112,6 +114,8 @@ sealed interface Property {
                     formValueToProperty(it, meta, name)
                         ?.let { ListProp(it, optional) }
                 }
+
+                URI::class -> UriProp(name, optional, meta)
 
                 else -> {
                     (type.classifier as? KClass<*>)?.let { classifier ->
@@ -302,6 +306,21 @@ class ListProp(
     override val defaultValue = emptyList<Any>()
     override fun wrap(values: List<Any?>): Any? = values
 }
+
+data class UriProp(
+    override val name: String,
+    override val optional: Boolean,
+    override val meta: PropertyMeta,
+) : Property {
+    override val defaultValue = ""
+    override val defaultInputType: InputType = InputType.url
+    override fun parseFormValue(
+        values: List<String>,
+        files: List<FileUpload>,
+    ): URI? =
+        values.firstOrNull()?.let { URI.create(it) }
+}
+
 
 fun KClass<*>.enumValues(): List<Enum<*>>? =
     if (this.java.isEnum) {
