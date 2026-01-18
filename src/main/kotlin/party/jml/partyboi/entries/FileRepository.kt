@@ -86,6 +86,14 @@ class FileRepository(app: AppServices) : Service(app) {
             desc
         }
 
+    suspend fun replaceFile(fileId: UUID, tempFile: File): AppResult<FileDesc> =
+        either {
+            val desc = getById(fileId).bind() // Ensure that the file id exists
+            val storagePath = app.config.filesDir.resolve(fileId.toString())
+            tempFile.toPath().moveTo(storagePath, overwrite = true)
+            desc
+        }
+
     suspend fun deleteAll() = db.use { it.exec(queryOf("TRUNCATE TABLE file CASCADE")) }
 
     private fun getSize(absoluteFile: File): Either<InternalServerError, Long> =
@@ -265,6 +273,10 @@ class FileRepository(app: AppServices) : Service(app) {
         """.trimIndent()
             ).map(EntryFileAssociation.fromRow)
         )
+    }
+
+    suspend fun getAll() = db.use {
+        it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
     }
 
     companion object {

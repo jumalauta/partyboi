@@ -8,14 +8,18 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.mindrot.jbcrypt.BCrypt
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.data.InvalidConfiguration
 import party.jml.partyboi.data.URISerializer
 import party.jml.partyboi.data.randomToken
+import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.system.AppResult
@@ -24,6 +28,7 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.ValidURI
 import party.jml.partyboi.validation.Validateable
 import java.net.URI
+import java.util.*
 
 enum class SyncedTable(val tableName: String) {
     Users("appuser"),
@@ -46,6 +51,7 @@ class SyncService(app: AppServices) : Service(app) {
     val remoteInstance = property<RemoteInstance?>("remoteInstance", null, private = true)
 
     private val db = DbSyncService(app)
+
     private val client = HttpClient(CIO) {
         expectSuccess = true
         install(ContentNegotiation) {
@@ -78,21 +84,51 @@ class SyncService(app: AppServices) : Service(app) {
             raise(InvalidConfiguration())
         }
         downloadAndMergeTables(instance).bind()
+        downloadMissingFiles(instance).bind()
     }
 
     private suspend fun downloadAndMergeTables(instance: RemoteInstance) = either {
         SyncedTable.entries.forEach { table ->
             val importedData = downloadTable(instance, table).bind()
             db.putTable(importedData).bind()
+            log.info("Table ${table.tableName} synced successfully")
         }
     }
 
-    suspend fun downloadTable(instance: RemoteInstance, table: SyncedTable): AppResult<Table> =
+    private suspend fun downloadTable(instance: RemoteInstance, table: SyncedTable): AppResult<Table> =
         catchResult {
             client.get("${instance.address}/sync/table/${table.name.lowercase()}") {
                 accept(ContentType.Application.Json)
                 bearerAuth(instance.apiToken)
             }.body()
+        }
+
+    private suspend fun downloadMissingFiles(instance: RemoteInstance) =
+        either {
+            val expectedFiles = app.files.getAll().bind()
+            val missingFiles = expectedFiles.filterNot { it.getStorageFile().exists() }
+            val totalSize = Filesize.humanFriendly(missingFiles.sumOf { it.size })
+            log.info("Number of missing files: ${missingFiles.size} ($totalSize)")
+            missingFiles.forEach { file ->
+                log.info("Downloading ${file.id}: ${file.originalFilename} (${Filesize.humanFriendly(file.size)})")
+                downloadFile(instance, file.id).bind()
+                log.info("${file.originalFilename} downloaded")
+            }
+        }
+
+    private suspend fun downloadFile(instance: RemoteInstance, fileId: UUID): AppResult<FileDesc> =
+        either {
+            val client = HttpClient(CIO)
+            client.use {
+                val tempFile = catchResult {
+                    val response = it.get("${instance.address}/sync/file/${fileId}")
+                    val channel: ByteReadChannel = response.body()
+                    val tempFile = kotlin.io.path.createTempFile().toFile()
+                    channel.copyTo(tempFile.outputStream())
+                    tempFile
+                }.bind()
+                app.files.replaceFile(fileId, tempFile).bind()
+            }
         }
 
     private fun hashToken(token: String): String = BCrypt.hashpw(token, BCrypt.gensalt())
