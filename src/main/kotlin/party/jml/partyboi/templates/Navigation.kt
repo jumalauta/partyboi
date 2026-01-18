@@ -40,7 +40,7 @@ object Navigation {
         NavItem("/admin/schedule", "Schedule"),
         NavItem("/admin/screen", "Info screen"),
         NavItem("/admin/assets", "Assets"),
-        NavItem("/admin/sync", "Synchronization"),
+        NavItem("/sync", "Synchronization"),
         NavItem("/admin/errors", "Error log")
     )
 
