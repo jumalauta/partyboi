@@ -5,6 +5,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import org.junit.Test
 import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.messages.MessageType
@@ -23,8 +24,16 @@ class DbSyncTest : PartyboiTester {
             either {
                 val testUser = addTestUser(app, "john", "password").bind()
 
-                val demoCompo = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
+                val demoCompoBaes = app.compos.add(NewCompo("Demo", "Make a demo about it")).bind()
                 val musicCompo = app.compos.add(NewCompo("Music", "Make a song about it")).bind()
+
+                app.compos.update(
+                    demoCompoBaes.copy(
+                        fileFormats = FileFormat.entries.toList()
+                    )
+                ).bind()
+
+                val demoCompo = app.compos.getById(demoCompoBaes.id).bind()
 
                 val demoEntry = app.entries.add(
                     NewEntry(

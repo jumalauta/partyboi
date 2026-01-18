@@ -1,18 +1,21 @@
 package party.jml.partyboi.sync
 
-import arrow.core.Either
+import arrow.core.*
 import arrow.core.raise.either
-import arrow.core.toNonEmptyListOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import kotliquery.Session
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.db.updateAny
 import party.jml.partyboi.system.AppResult
+
+typealias ExceptionResolver = (Throwable?, Map<String, JsonElement>) -> Map<String, JsonElement>?
 
 class DbSyncService(app: AppServices) : Service(app) {
     private val db = app.db
@@ -21,7 +24,7 @@ class DbSyncService(app: AppServices) : Service(app) {
         either {
             val columns = getColumns(tableName).bind()
             val data = db.use {
-                it.many(queryOf("SELECT * FROM $tableName").map { row ->
+                it.many(queryOf("SELECT * FROM $tableName ORDER BY ${columns.keys.first()}").map { row ->
                     columns.map { (colName, colType) ->
                         colName to when (colType) {
                             "boolean" -> JsonPrimitive(row.boolean(colName))
@@ -35,36 +38,61 @@ class DbSyncService(app: AppServices) : Service(app) {
             Table(tableName, Clock.System.now(), data)
         }
 
-    suspend fun putTable(table: Table) =
+    suspend fun putTable(table: Table, exceptionResolver: ExceptionResolver?) =
         either {
             val columns = getColumns(table.table).bind()
             val pkeyResolver = getPrimaryKeyConstraint(table.table).bind()
 
             db.use { session ->
-                table.data.map { row ->
-                    session.update(
-                        queryOf(
-                            """
-                        INSERT INTO ${table.table}
-                        (${row.keys.joinToString(",")}) 
-                        VALUES (${
-                                row.keys.joinToString(",") { key ->
-                                    when (columns[key]) {
-                                        "uuid" -> "?::uuid"
-                                        "timestamp with time zone" -> "?::timestamp"
-                                        "jsonb" -> "?::jsonb"
-                                        else -> "?"
-                                    }
-                                }
-                            })
-                        ${pkeyResolver?.sql(columns.keys).orEmpty()}
-                        """.trimIndent(),
-                            *row.values.map { it.toNative() }.toTypedArray()
+                either {
+                    table.data.map { row ->
+                        putEntry(
+                            session = session,
+                            tableName = table.table,
+                            columns = columns,
+                            row = row,
+                            conflictResolver = pkeyResolver,
+                            exceptionResolver = exceptionResolver
                         )
-                    )
+                    }.bindAll()
                 }
             }
-        }
+        }.flatten()
+
+    private fun putEntry(
+        session: Session,
+        tableName: String,
+        columns: Map<String, String>,
+        row: Map<String, JsonElement>,
+        conflictResolver: ConflictResolveStrategy?,
+        exceptionResolver: ExceptionResolver?
+    ): AppResult<Int> = session.updateAny(
+        queryOf(
+            """
+                        INSERT INTO ${tableName}
+                        (${row.keys.joinToString(",")}) 
+                        VALUES (${
+                row.keys.joinToString(",") { key ->
+                    when (columns[key]) {
+                        "uuid" -> "?::uuid"
+                        "timestamp with time zone" -> "?::timestamp"
+                        "jsonb" -> "?::jsonb"
+                        "ARRAY" -> "?::text[]"
+                        else -> "?"
+                    }
+                }
+            })
+                        ${conflictResolver?.sql(columns.keys).orEmpty()}
+                        """.trimIndent(),
+            *row.values.map { it.toNative() }.toTypedArray()
+        )
+    ).fold({ error ->
+        exceptionResolver?.let {
+            exceptionResolver(error.throwable, row)?.let { newRow ->
+                putEntry(session, tableName, columns, newRow, conflictResolver, exceptionResolver)
+            }
+        } ?: error.left()
+    }, { it.right() })
 
     private suspend fun getColumns(tableName: String): AppResult<Map<String, String>> =
         db.use {

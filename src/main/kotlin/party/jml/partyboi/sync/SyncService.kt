@@ -12,13 +12,14 @@ import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import org.mindrot.jbcrypt.BCrypt
+import org.postgresql.util.PSQLException
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.Filesize
-import party.jml.partyboi.data.InvalidConfiguration
-import party.jml.partyboi.data.URISerializer
-import party.jml.partyboi.data.randomToken
+import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
@@ -30,8 +31,21 @@ import party.jml.partyboi.validation.Validateable
 import java.net.URI
 import java.util.*
 
-enum class SyncedTable(val tableName: String) {
-    Users("appuser"),
+enum class SyncedTable(
+    val tableName: String,
+    val exceptionResolver: ExceptionResolver? = null
+) {
+    Users("appuser", { error, row ->
+        if (error is PSQLException) {
+            if (error.message?.contains("appuser_name_key") == true) {
+                row["name"]?.jsonPrimitive?.content?.let { name ->
+                    row.plus(mapOf("name" to JsonPrimitive("$name-${randomShortId()}")))
+                }
+            } else if (error.message?.contains("appuser_email_key") == true) {
+                row.plus(mapOf("email" to JsonNull))
+            } else null
+        } else null
+    }),
     Compos("compo"),
     Entries("entry"),
     EntryFiles("entry_file"),
@@ -76,7 +90,11 @@ class SyncService(app: AppServices) : Service(app) {
         }
 
     suspend fun getTable(table: SyncedTable) = db.getTable(table.tableName)
-    suspend fun putTable(table: Table) = db.putTable(table)
+    suspend fun putTable(table: Table) =
+        db.putTable(
+            table = table,
+            exceptionResolver = SyncedTable.entries.find { it.tableName == table.table }?.exceptionResolver
+        )
 
     suspend fun run() = either {
         val instance = remoteInstance.get().bind()
@@ -90,8 +108,8 @@ class SyncService(app: AppServices) : Service(app) {
     private suspend fun downloadAndMergeTables(instance: RemoteInstance) = either {
         SyncedTable.entries.forEach { table ->
             val importedData = downloadTable(instance, table).bind()
-            db.putTable(importedData).bind()
-            log.info("Table ${table.tableName} synced successfully")
+            putTable(importedData).bind()
+            log.info("Table ${table.tableName} synced successfully (${importedData.data.size} entries)")
         }
     }
 
@@ -132,24 +150,6 @@ class SyncService(app: AppServices) : Service(app) {
         }
 
     private fun hashToken(token: String): String = BCrypt.hashpw(token, BCrypt.gensalt())
-
-    companion object {
-        val tables = listOf(
-            "appuser",
-            "compo",
-            "entry",
-            "entry_file",
-            "event",
-            "file",
-            "message",
-            "property",
-            "screen",
-            "slideset",
-            "trigger",
-            "vote",
-            "votekey"
-        )
-    }
 }
 
 @Serializable
