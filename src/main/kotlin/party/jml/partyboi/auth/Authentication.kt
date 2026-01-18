@@ -15,6 +15,7 @@ import io.ktor.util.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.RedirectInterruption
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.isTrue
 import kotlin.time.Duration.Companion.days
 
 val UpdatedUser = AttributeKey<User>("UpdatedUser")
@@ -40,6 +41,15 @@ fun Application.configureAuthentication(app: AppServices) {
         session<User>("adminApi") {
             validate { if (it.isAdmin) it else null }
             challenge { call.respond(HttpStatusCode.Unauthorized) }
+        }
+        bearer("sync") {
+            authenticate { tokenCredential ->
+                if (app.sync.isValidToken(tokenCredential.token).isTrue()) {
+                    UserIdPrincipal("sync")
+                } else {
+                    null
+                }
+            }
         }
     }
 
@@ -106,5 +116,11 @@ fun Application.adminRouting(block: Route.() -> Unit) {
 fun Application.adminApiRouting(block: Route.() -> Unit) {
     routing {
         authenticate("adminApi") { block() }
+    }
+}
+
+fun Application.syncRouting(block: Route.() -> Unit) {
+    routing {
+        authenticate("sync") { block() }
     }
 }
