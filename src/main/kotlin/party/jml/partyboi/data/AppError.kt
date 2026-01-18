@@ -116,6 +116,12 @@ class InvalidSchemaVersion : AppError {
     override val throwable: Throwable? = null
 }
 
+class InvalidConfiguration : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
+    override val message: String = "Invalid configuration"
+    override val throwable: Throwable? = null
+}
+
 fun <A> catchError(f: () -> A): AppResult<A> =
     Either.catch { f() }.mapLeft {
         InternalServerError(it)
