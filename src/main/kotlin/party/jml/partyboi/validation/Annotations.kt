@@ -12,7 +12,6 @@ import kotlin.reflect.full.primaryConstructor
 
 object ValidationAnnotations {
     fun validate(kclass: KClass<*>, data: Any): List<ValidationError.Message> {
-        println("Validate $kclass: ${kclass.primaryConstructor}")
         return kclass.primaryConstructor!!.parameters.flatMap { param ->
             param.annotations.toNonEmptyListOrNone().map { annotations ->
                 kclass.memberProperties

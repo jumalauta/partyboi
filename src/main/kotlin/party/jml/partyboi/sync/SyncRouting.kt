@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.launch
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.syncRouting
@@ -24,11 +25,13 @@ fun Application.configureSyncRouting(app: AppServices) {
     suspend fun renderPage(remoteForm: Form<RemoteInstance>? = null) = either {
         val apiKey = app.sync.expectedApiKey.get().bind()
         val remoteInstance = app.sync.remoteInstance.get().bind()
+        val syncLog = app.sync.getLog().bind()
 
         SyncPage.render(
             apiKey,
             remoteInstance != null,
-            remoteForm ?: Form.of(remoteInstance?.copy(apiToken = "") ?: RemoteInstance.EMPTY)
+            remoteForm ?: Form.of(remoteInstance?.copy(apiToken = "") ?: RemoteInstance.EMPTY),
+            syncLog
         )
     }
 
@@ -64,12 +67,15 @@ fun Application.configureSyncRouting(app: AppServices) {
 
         get("/sync/run") {
             call.respondEither {
-                app.sync.run().bind()
-                app.messages.sendMessage(
-                    call.userSession(app).bind().id,
-                    MessageType.SUCCESS,
-                    "Databases synced successfully"
-                )
+                val userId = call.userSession(app).bind().id
+                launch {
+                    app.sync.run().bind()
+                    app.messages.sendMessage(
+                        userId,
+                        MessageType.SUCCESS,
+                        "Remote server synced successfully"
+                    )
+                }
                 Redirection("/sync")
             }
         }

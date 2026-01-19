@@ -29,7 +29,6 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.ValidURI
 import party.jml.partyboi.validation.Validateable
 import java.net.URI
-import java.util.*
 
 enum class SyncedTable(
     val tableName: String,
@@ -47,14 +46,14 @@ enum class SyncedTable(
         } else null
     }),
     Compos("compo"),
+    Files("file"),
     Entries("entry"),
     EntryFiles("entry_file"),
     Events("event"),
-    Files("file"),
     Messages("message"),
     Properties("property"),
-    InfoScreens("screen"),
     SlideSets("slideset"),
+    InfoScreens("screen"),
     Triggers("trigger"),
     Votes("vote"),
     VoteKeys("votekey")
@@ -65,6 +64,7 @@ class SyncService(app: AppServices) : Service(app) {
     val remoteInstance = property<RemoteInstance?>("remoteInstance", null, private = true)
 
     private val db = DbSyncService(app)
+    private val syncLog = SyncLogRepository(app)
 
     private val client = HttpClient(CIO) {
         expectSuccess = true
@@ -105,6 +105,8 @@ class SyncService(app: AppServices) : Service(app) {
         downloadMissingFiles(instance).bind()
     }
 
+    suspend fun getLog() = syncLog.getAll()
+
     private suspend fun downloadAndMergeTables(instance: RemoteInstance) = either {
         SyncedTable.entries.forEach { table ->
             val importedData = downloadTable(instance, table).bind()
@@ -114,11 +116,13 @@ class SyncService(app: AppServices) : Service(app) {
     }
 
     private suspend fun downloadTable(instance: RemoteInstance, table: SyncedTable): AppResult<Table> =
-        catchResult {
-            client.get("${instance.address}/sync/table/${table.name.lowercase()}") {
-                accept(ContentType.Application.Json)
-                bearerAuth(instance.apiToken)
-            }.body()
+        syncLog.use(TableSyncId(table.tableName)) {
+            catchResult {
+                client.get("${instance.address}/sync/table/${table.name.lowercase()}") {
+                    accept(ContentType.Application.Json)
+                    bearerAuth(instance.apiToken)
+                }.body()
+            }
         }
 
     private suspend fun downloadMissingFiles(instance: RemoteInstance) =
@@ -129,23 +133,25 @@ class SyncService(app: AppServices) : Service(app) {
             log.info("Number of missing files: ${missingFiles.size} ($totalSize)")
             missingFiles.forEach { file ->
                 log.info("Downloading ${file.id}: ${file.originalFilename} (${Filesize.humanFriendly(file.size)})")
-                downloadFile(instance, file.id).bind()
+                downloadFile(instance, file).bind()
                 log.info("${file.originalFilename} downloaded")
             }
         }
 
-    private suspend fun downloadFile(instance: RemoteInstance, fileId: UUID): AppResult<FileDesc> =
-        either {
-            val client = HttpClient(CIO)
-            client.use {
-                val tempFile = catchResult {
-                    val response = it.get("${instance.address}/sync/file/${fileId}")
-                    val channel: ByteReadChannel = response.body()
-                    val tempFile = kotlin.io.path.createTempFile().toFile()
-                    channel.copyTo(tempFile.outputStream())
-                    tempFile
-                }.bind()
-                app.files.replaceFile(fileId, tempFile).bind()
+    private suspend fun downloadFile(instance: RemoteInstance, file: FileDesc): AppResult<FileDesc> =
+        syncLog.use(FileSyncId(file)) {
+            either {
+                val client = HttpClient(CIO)
+                client.use {
+                    val tempFile = catchResult {
+                        val response = it.get("${instance.address}/sync/file/${file.id}")
+                        val channel: ByteReadChannel = response.body()
+                        val tempFile = kotlin.io.path.createTempFile().toFile()
+                        channel.copyTo(tempFile.outputStream())
+                        tempFile
+                    }.bind()
+                    app.files.replaceFile(file.id, tempFile).bind()
+                }
             }
         }
 
