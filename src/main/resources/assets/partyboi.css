@@ -549,3 +549,12 @@ table .entry-info {
         opacity: 0;
     }
 }
+
+.sync-status-error td {
+    background-color: #800;
+    color: white;
+}
+
+.sync-status-running td {
+    opacity: 50%;
+}

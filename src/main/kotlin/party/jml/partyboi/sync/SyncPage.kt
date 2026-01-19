@@ -4,10 +4,11 @@ import kotlinx.html.*
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.form.submitButton
-import party.jml.partyboi.system.toIsoString
+import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.buttonLink
+import party.jml.partyboi.templates.components.timestamp
 import java.net.URI
 
 object SyncPage {
@@ -51,30 +52,46 @@ object SyncPage {
             }
 
             if (syncLog.isNotEmpty()) {
+                val tz = TimeService.timeZone()
                 article {
                     header { +"Log" }
                     table {
                         thead {
                             tr {
-                                th { +"Entry" }
-                                th { +"Start time" }
-                                th { +"End time" }
                                 th { +"Status" }
+                                th { +"Entry" }
+                                th { +"Time" }
                             }
+                        }
+                        tbody {
                             syncLog.forEach { entry ->
-                                tr {
+                                val status = if (entry.hasEnded) {
+                                    if (entry.isSuccess) {
+                                        "OK"
+                                    } else {
+                                        "Error"
+                                    }
+                                } else {
+                                    "Running"
+                                }
+                                tr(classes = "sync-status-${status.lowercase()}") {
+                                    td { +status }
                                     td { +entry.description }
-                                    td { +entry.startTime.toIsoString() }
-                                    td { +entry.endTime?.toIsoString().orEmpty() }
                                     td {
-                                        if (entry.hasEnded) {
-                                            if (entry.isSuccess) {
-                                                +"OK"
-                                            } else {
-                                                +entry.error.orEmpty()
-                                            }
+                                        if (entry.endTime != null) {
+                                            +"Finished "
+                                            timestamp(entry.endTime, tz)
                                         } else {
-                                            +"Running"
+                                            +"Started "
+                                            timestamp(entry.startTime, tz)
+                                        }
+                                    }
+                                }
+                                entry.error?.let {
+                                    tr(classes = "sync-status-error") {
+                                        td {
+                                            colSpan = "3"
+                                            +entry.error
                                         }
                                     }
                                 }

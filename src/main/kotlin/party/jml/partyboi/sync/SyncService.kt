@@ -1,5 +1,6 @@
 package party.jml.partyboi.sync
 
+import arrow.core.flatten
 import arrow.core.raise.either
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -29,6 +30,7 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.ValidURI
 import party.jml.partyboi.validation.Validateable
 import java.net.URI
+import kotlin.io.path.fileSize
 
 enum class SyncedTable(
     val tableName: String,
@@ -133,26 +135,53 @@ class SyncService(app: AppServices) : Service(app) {
             log.info("Number of missing files: ${missingFiles.size} ($totalSize)")
             missingFiles.forEach { file ->
                 log.info("Downloading ${file.id}: ${file.originalFilename} (${Filesize.humanFriendly(file.size)})")
-                downloadFile(instance, file).bind()
-                log.info("${file.originalFilename} downloaded")
+                downloadFile(instance, file).fold({
+                    log.error("Error downloading ${file.id}: ${it.message}")
+                }, {
+                    log.info("${file.originalFilename} downloaded")
+                })
             }
         }
 
     private suspend fun downloadFile(instance: RemoteInstance, file: FileDesc): AppResult<FileDesc> =
         syncLog.use(FileSyncId(file)) {
-            either {
-                val client = HttpClient(CIO)
-                client.use {
-                    val tempFile = catchResult {
-                        val response = it.get("${instance.address}/sync/file/${file.id}")
-                        val channel: ByteReadChannel = response.body()
-                        val tempFile = kotlin.io.path.createTempFile().toFile()
-                        channel.copyTo(tempFile.outputStream())
-                        tempFile
-                    }.bind()
-                    app.files.replaceFile(file.id, tempFile).bind()
+            catchResult {
+                either {
+                    HttpClient(CIO) {
+                        expectSuccess = true
+                    }.use {
+                        val tempFile = catchResult {
+                            val response = it.get("${instance.address}/sync/file/${file.id}") {
+                                bearerAuth(instance.apiToken)
+                            }
+                            val channel: ByteReadChannel = response.body()
+                            val tempFile = kotlin.io.path.createTempFile().toFile()
+                            channel.copyTo(tempFile.outputStream())
+
+                            val dlSize = tempFile.toPath().fileSize()
+                            if (dlSize != file.size) {
+                                raise(
+                                    SyncError(
+                                        "File size mismatch: expected ${file.size} bytes (${Filesize.humanFriendly(file.size)}), got: $dlSize bytes (${
+                                            Filesize.humanFriendly(dlSize)
+                                        })"
+                                    )
+                                )
+                            }
+
+                            file.checksum?.let {
+                                val dlChecksum = FileChecksums.md5sum(tempFile).bind()
+                                if (dlChecksum != file.checksum) {
+                                    raise(SyncError("Checksum mismatch: expected ${file.checksum}, got ${dlChecksum}"))
+                                }
+                            }
+
+                            tempFile
+                        }.bind()
+                        app.files.replaceFile(file.id, tempFile).bind()
+                    }
                 }
-            }
+            }.flatten()
         }
 
     private fun hashToken(token: String): String = BCrypt.hashpw(token, BCrypt.gensalt())

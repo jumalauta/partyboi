@@ -122,6 +122,11 @@ class InvalidConfiguration : AppError {
     override val throwable: Throwable? = null
 }
 
+class SyncError(override val message: String) : AppError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.InternalServerError
+    override val throwable: Throwable? = null
+}
+
 fun <A> catchError(f: () -> A): AppResult<A> =
     Either.catch { f() }.mapLeft {
         InternalServerError(it)
