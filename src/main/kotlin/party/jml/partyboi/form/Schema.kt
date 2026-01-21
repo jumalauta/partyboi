@@ -24,7 +24,7 @@ data class Schema(
     val properties: List<Property> by lazy {
         ctor.parameters.mapNotNull { param ->
             param.name?.let { name ->
-                val annotation = param.annotations.fold(
+                val meta = param.annotations.fold(
                     PropertyMeta()
                 ) { meta, annotation ->
                     when (annotation) {
@@ -40,14 +40,15 @@ data class Schema(
                         is Hidden -> meta.copy(presentation = FieldPresentation.hidden)
                         is Large -> meta.copy(presentation = FieldPresentation.large)
                         is Custom -> meta.copy(presentation = FieldPresentation.custom)
+                        is PropertyName -> meta.copy(name = annotation.name)
                         else -> meta
                     }
                 }
 
                 Property.formValueToProperty(
                     type = param.type,
-                    meta = annotation,
-                    name = name,
+                    meta = meta,
+                    name = meta.name ?: name,
                 )
             }
         }
@@ -65,6 +66,7 @@ data class Schema(
 }
 
 data class PropertyMeta(
+    val name: String? = null,
     val label: String? = null,
     val description: String? = null,
     val presentation: FieldPresentation? = null,

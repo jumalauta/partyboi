@@ -31,6 +31,20 @@ class ConfigReader(private val config: ApplicationConfig) {
     val instanceName: String by lazy { config.property("instance.name").getString() }
     val hostName: String by lazy { config.property("instance.host").getString() }
 
+    // reCAPTCHA
+    val recaptcha: RecaptchaConfig? by lazy {
+        val projectId = config.propertyOrNull("googleCloud.projectId")?.getString()?.nonEmptyString()
+        val apiKey = config.propertyOrNull("googleCloud.apiKey")?.getString()?.nonEmptyString()
+        val siteKey = config.propertyOrNull("googleCloud.recaptcha.siteKey")?.getString()?.nonEmptyString()
+        val secret = config.propertyOrNull("googleCloud.recaptcha.secret")?.getString()?.nonEmptyString()
+
+        if (projectId != null && apiKey != null && siteKey != null && secret != null) {
+            RecaptchaConfig(projectId, apiKey, siteKey, secret)
+        } else {
+            null
+        }
+    }
+
     // Data initialization
     val adminUsername: String by lazy { config.property("init.admin.username").getString() }
     val adminPassword: String by lazy { config.property("init.admin.password").getString() }
@@ -58,6 +72,13 @@ class ConfigReader(private val config: ApplicationConfig) {
     // File uploads
     val maxFileUploadSize: Long by lazy { config.propertyOrNull("files.maxSize")?.getSize() ?: -1L }
 }
+
+data class RecaptchaConfig(
+    val projectId: String,
+    val apiKey: String,
+    val siteKey: String,
+    val secret: String,
+)
 
 fun ApplicationConfigValue.getSize(): Long {
     return Filesize.parseHumanFriendly(getString()).fold({ -1L }, { it })

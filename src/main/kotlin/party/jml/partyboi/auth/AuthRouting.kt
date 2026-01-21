@@ -18,7 +18,9 @@ import party.jml.partyboi.templates.respondPage
 fun Application.configureLoginRouting(app: AppServices) {
     routing {
         get("/login") {
-            call.respondPage(LoginPage.render(emailServiceConfigured = app.email.isConfigured()))
+            call.respondPage(
+                LoginPage.render(emailServiceConfigured = app.email.isConfigured())
+            )
         }
 
         post("/login") {
@@ -41,19 +43,20 @@ fun Application.configureLoginRouting(app: AppServices) {
                                 else -> it
                             }
                         },
-                        emailServiceConfigured = app.email.isConfigured()
+                        emailServiceConfigured = app.email.isConfigured(),
                     )
                 }
             )
         }
 
         get("/register") {
-            call.respondPage(RegistrationPage.render())
+            call.respondPage(RegistrationPage.render(recaptcha = app.config.recaptcha))
         }
 
         post("/register") {
             call.processForm<UserCredentials>(
                 { newUser ->
+                    app.recaptcha.verify("register", newUser.recaptchaResponse).bind()
                     val session = app.users.addUser(newUser, call.request.origin.remoteAddress).bind()
                     call.sessions.set(session)
                     Redirection("/")
@@ -66,7 +69,8 @@ fun Application.configureLoginRouting(app: AppServices) {
                             } else {
                                 it
                             }
-                        }
+                        },
+                        recaptcha = app.config.recaptcha
                     )
                 }
             )

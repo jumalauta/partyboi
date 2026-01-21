@@ -267,6 +267,8 @@ fun <T : Validateable<T>> FlowContent.renderForm(
 
 fun FlowContent.submitButton(label: String) {
     footer {
-        submitInput { value = label }
+        submitInput {
+            value = label
+        }
     }
 }

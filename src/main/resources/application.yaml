@@ -12,6 +12,13 @@ instance:
   name: "$INSTANCE_NAME:Partyboi"
   host: "$HOST_ADDRESS:localhost"
 
+googleCloud:
+  projectId: "$GCP_PROJECTID:"
+  apiKey: "$GCP_APIKEY:"
+  recaptcha:
+    siteKey: "$GCP_RECAPTCHA_SITEKEY:"
+    secret: "$GCP_RECAPTCHA_SECRET:"
+
 init:
   admin:
     username: "$ADMIN_USERNAME:admin"

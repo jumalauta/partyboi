@@ -276,6 +276,9 @@ data class UserCredentials(
 
     @Hidden
     val isUpdate: Boolean = false,
+
+    @PropertyName("g-recaptcha-response")
+    val recaptchaResponse: String? = null,
 ) : Validateable<UserCredentials> {
     override fun validationErrors(): List<Option<ValidationError.Message>> = listOf(
         expectEqual("password2", password2, password),

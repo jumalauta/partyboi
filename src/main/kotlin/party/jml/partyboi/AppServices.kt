@@ -4,6 +4,7 @@ import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
 import party.jml.partyboi.assets.AssetsRepository
+import party.jml.partyboi.auth.RecaptchaService
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserService
 import party.jml.partyboi.compos.CompoRepository
@@ -62,6 +63,7 @@ interface AppServices {
     val ffmpeg: FfmpegService
     val eventSignalEmitter: EventSignalEmitter
     val sync: SyncService
+    val recaptcha: RecaptchaService
 }
 
 class AppServicesImpl(
@@ -93,6 +95,7 @@ class AppServicesImpl(
     override val ffmpeg = FfmpegService(this)
     override val eventSignalEmitter = EventSignalEmitter(this)
     override val sync = SyncService(this)
+    override val recaptcha = RecaptchaService(this)
 
     companion object {
         var globalInstance: AppServicesImpl? = null
