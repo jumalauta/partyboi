@@ -1,5 +1,4 @@
 package party.jml.partyboi.data
 
-fun Boolean.toInt() = if (this) 1 else 0
-
-fun Int.toBoolean() = this != 0
+inline fun <reified T> Boolean.map(f: () -> T): T? =
+    if (this) f() else null

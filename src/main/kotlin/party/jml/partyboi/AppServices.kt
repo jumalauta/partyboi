@@ -4,6 +4,7 @@ import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
 import party.jml.partyboi.assets.AssetsRepository
+import party.jml.partyboi.auth.JmlCaptchaService
 import party.jml.partyboi.auth.RecaptchaService
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserService
@@ -64,6 +65,7 @@ interface AppServices {
     val eventSignalEmitter: EventSignalEmitter
     val sync: SyncService
     val recaptcha: RecaptchaService
+    val jmlCaptcha: JmlCaptchaService
 }
 
 class AppServicesImpl(
@@ -96,6 +98,7 @@ class AppServicesImpl(
     override val eventSignalEmitter = EventSignalEmitter(this)
     override val sync = SyncService(this)
     override val recaptcha = RecaptchaService(this)
+    override val jmlCaptcha = JmlCaptchaService(this)
 
     companion object {
         var globalInstance: AppServicesImpl? = null

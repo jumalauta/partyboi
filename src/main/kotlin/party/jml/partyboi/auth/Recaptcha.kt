@@ -15,7 +15,7 @@ import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.RecaptchaConfig
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.InvalidInput
+import party.jml.partyboi.data.BotDetected
 import party.jml.partyboi.system.AppResult
 
 class RecaptchaService(app: AppServices) : Service(app) {
@@ -67,7 +67,7 @@ class RecaptchaService(app: AppServices) : Service(app) {
             Unit.right()
         } else {
             log.warn("Recaptcha failed")
-            InvalidInput("reCAPTCHA").left()
+            BotDetected("You failed reCAPTCHA").left()
         }
     }
 }

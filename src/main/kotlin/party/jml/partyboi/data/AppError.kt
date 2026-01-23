@@ -94,6 +94,11 @@ class InvalidInput(name: String) : UserError {
     override val message: String = "Invalid input: $name"
 }
 
+class BotDetected(message: String) : UserError {
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
+    override val message: String = "Bot detection: $message"
+}
+
 class MissingInput(name: String) : UserError {
     override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
     override val message: String = "Missing input: $name"

@@ -56,6 +56,7 @@ fun Application.configureLoginRouting(app: AppServices) {
         post("/register") {
             call.processForm<UserCredentials>(
                 { newUser ->
+                    app.jmlCaptcha.verify(newUser).bind()
                     app.recaptcha.verify("register", newUser.recaptchaResponse).bind()
                     val session = app.users.addUser(newUser, call.request.origin.remoteAddress).bind()
                     call.sessions.set(session)
