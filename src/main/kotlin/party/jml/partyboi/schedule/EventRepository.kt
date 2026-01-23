@@ -166,7 +166,7 @@ data class NewEvent(
             )
         }
 
-        fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
+        suspend fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
             return make(timeService.today(), otherEvents.map { it.endTime ?: it.startTime })
         }
     }

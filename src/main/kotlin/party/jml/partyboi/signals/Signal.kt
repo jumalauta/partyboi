@@ -47,7 +47,7 @@ data class Signal(
         fun liveVotingClosed() = Signal(SignalType.liveVote, "close")
         fun liveVotingEntry(entryId: UUID) = Signal(SignalType.liveVote, "entry", entryId.toString())
         fun propertyUpdated(key: String) = Signal(SignalType.propertyUpdated, null, key)
-        fun compoContentUpdated(compoId: UUID, timeService: TimeService) =
+        suspend fun compoContentUpdated(compoId: UUID, timeService: TimeService) =
             Signal(SignalType.compoContentUpdated, timeService.isoLocalTime(), compoId.toString())
     }
 }

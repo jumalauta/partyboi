@@ -1,25 +1,35 @@
 package party.jml.partyboi.schedule
 
-import kotlinx.datetime.TimeZone
 import kotlinx.html.*
+import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.system.displayDate
 import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 
 object SchedulePage {
-    fun render(events: List<Event>, timeZone: TimeZone) = Page("Schedule") {
+    fun render(events: List<Event>) = Page("Schedule") {
         h1 { +"Schedule" }
-        schedule(events, timeZone)
+        schedule(events)
     }
 }
 
-fun FlowContent.schedule(events: List<Event>, timeZone: TimeZone) {
-    events
-        .groupBy { it.startTime.toDate() }
+fun FlowContent.schedule(events: List<Event>) {
+    val eventsByDate = events.groupBy { it.startTime.toDate() }
+    val timeZones = eventsByDate.keys.associateWith { TimeService.timeZoneAt(it) }
+    val showTimeZones = timeZones.values.distinct().count() > 1
+
+    eventsByDate
         .forEach { (date, events) ->
+            val timeZone = timeZones[date]!!
             article {
-                cardHeader(date.displayDate())
+                cardHeader(
+                    if (showTimeZones) {
+                        "${date.displayDate()} (${timeZone})"
+                    } else {
+                        date.displayDate()
+                    }
+                )
                 table {
                     tbody {
                         events.forEach { event ->

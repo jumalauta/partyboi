@@ -14,20 +14,31 @@ import kotlin.time.Duration
 class TimeService(app: AppServices) : Service(app) {
     val fallbackTime = Instant.DISTANT_PAST
     val timeZone = property("timeZone", TimeZone.currentSystemDefault())
+    val timeZoneOverrides = property<Map<LocalDate, TimeZone>>("timeZoneOverrides", emptyMap())
 
-    fun localTime(): LocalDateTime =
+    suspend fun localTime(): LocalDateTime =
         Clock.System.now().toLocalDateTime(timeZone())
 
-    fun isoLocalTime(): String =
+    suspend fun isoLocalTime(): String =
         localTime().format(LocalDateTime.Formats.ISO)
 
     fun today(): LocalDate =
-        Clock.System.todayIn(timeZone())
+        Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+    suspend fun timeZone(): TimeZone =
+        timeZoneAt(today())
+
+    suspend fun timeZoneAt(date: LocalDate): TimeZone =
+        timeZoneOverrides.getOrNull()?.let { it[date] }
+            ?: timeZone.getOrNull()
+            ?: TimeZone.currentSystemDefault()
+
 
     companion object {
-        fun timeZone(): TimeZone = runBlocking {
-            AppServicesImpl.globalInstance?.time?.timeZone?.getOrNull() ?: TimeZone.currentSystemDefault()
-        }
+        fun timeZoneAt(date: LocalDate): TimeZone =
+            runBlocking { AppServicesImpl.globalInstance!!.time.timeZoneAt(date) }
+
+        fun timeZone(): TimeZone = runBlocking { AppServicesImpl.globalInstance!!.time.timeZone() }
 
         fun isoOffset(): String = timeZone().offsetAt(Clock.System.now()).toString()
     }
