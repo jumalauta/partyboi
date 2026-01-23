@@ -21,7 +21,7 @@ import java.util.*
 fun Application.configureUserMgmtRouting(app: AppServices) {
     suspend fun renderUsersPage() = either {
         val users = app.users.getUsers().bind().sortedBy { it.name.lowercase() }
-        UserListPage.render(users)
+        UserListPage.render(users, users.associate { it.id to app.jmlCaptcha.getScore(it) })
     }
 
     suspend fun renderEditPage(

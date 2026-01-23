@@ -34,7 +34,7 @@ class JmlCaptchaService(app: AppServices) : Service(app) {
         )
 
     private fun calculateScore(suspicions: Map<Boolean, Double>): Double =
-        suspicions.filterKeys { it }.values.sum() / suspicions.values.sum()
+        1.0 - (suspicions.filterKeys { it }.values.sum() / suspicions.values.sum())
 
     private fun isBotLikeName(name: String): Boolean =
         name.length >= 16 &&
