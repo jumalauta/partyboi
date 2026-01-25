@@ -22,7 +22,7 @@ fun Application.configureVotingRouting(app: AppServices) {
                 val entries = app.votes.getVotableEntries(user.bind().id).bind()
                 UserVotingPage.render(
                     entries = entries,
-                    screenshots = app.screenshots.getForEntries(entries),
+                    previews = app.previews.getEntryPreviews(entries),
                     liveVote = app.votes.getLiveVoteState(),
                 )
             }

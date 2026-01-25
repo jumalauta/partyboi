@@ -18,7 +18,7 @@ import party.jml.partyboi.db.getDatabasePool
 import party.jml.partyboi.email.EmailServiceFacade
 import party.jml.partyboi.entries.EntryRepository
 import party.jml.partyboi.entries.FileRepository
-import party.jml.partyboi.entries.ScreenshotRepository
+import party.jml.partyboi.entries.PreviewRepository
 import party.jml.partyboi.ffmpeg.DockerFileShare
 import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.messages.MessageRepository
@@ -51,7 +51,7 @@ interface AppServices {
     val voteKeys: VoteKeyRepository
     val compoRun: CompoRunService
     val screen: ScreenService
-    val screenshots: ScreenshotRepository
+    val previews: PreviewRepository
     val events: EventRepository
     val triggers: TriggerRepository
     val signals: SignalService
@@ -83,7 +83,7 @@ class AppServicesImpl(
     override val votes = VoteService(this)
     override val voteKeys = VoteKeyRepository(this)
     override val compoRun = CompoRunService(this)
-    override val screenshots = ScreenshotRepository(this)
+    override val previews = PreviewRepository(this)
     override val events = EventRepositoryImpl(this)
     override val triggers = TriggerRepository(this)
     override val signals = SignalService(this)

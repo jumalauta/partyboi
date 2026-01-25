@@ -1,6 +1,5 @@
 package party.jml.partyboi.entries
 
-import arrow.core.Option
 import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
@@ -17,10 +16,10 @@ object EditEntryPage {
     fun render(
         user: User,
         entryUpdateForm: Form<EntryUpdate>,
-        screenshotForm: Form<NewScreenshot>,
+        previewForm: Form<NewPreview>,
         compos: List<Compo>,
         files: List<FileDesc>,
-        screenshot: Option<String>,
+        preview: String?,
         allowEdit: Boolean,
         uploader: User?,
         tz: TimeZone,
@@ -57,14 +56,14 @@ object EditEntryPage {
                     }
                 },
                 {
-                    screenshot.map {
+                    preview?.let {
                         figure { img(src = it) }
                     }
                     renderForm(
-                        url = "/entries/${entryUpdateForm.data.id}/screenshot",
-                        form = screenshotForm,
-                        title = "Screenshot / preview",
-                        submitButtonLabel = "Set screenshot"
+                        url = "/entries/${entryUpdateForm.data.id}/preview",
+                        form = previewForm,
+                        title = "Preview",
+                        submitButtonLabel = "Set preview"
                     )
                 }
             )

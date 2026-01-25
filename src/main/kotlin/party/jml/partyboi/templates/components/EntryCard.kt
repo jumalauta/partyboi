@@ -3,19 +3,19 @@ package party.jml.partyboi.templates.components
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.entries.EntryBase
-import party.jml.partyboi.entries.Screenshot
+import party.jml.partyboi.entries.Preview
 import party.jml.partyboi.form.readonlyField
 
 fun FlowContent.entryCard(
     entry: EntryBase,
-    screenshot: Screenshot?,
+    preview: Preview?,
     compos: List<Compo>,
     block: SECTION.() -> Unit = {}
 ) {
     article(classes = "entry") {
         figure {
-            if (screenshot != null) {
-                attributes["style"] = "background-image: url(${screenshot.externalUrl()})"
+            if (preview != null) {
+                attributes["style"] = "background-image: url(${preview.externalUrl()})"
             }
         }
         section {

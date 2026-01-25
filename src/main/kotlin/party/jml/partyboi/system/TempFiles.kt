@@ -27,7 +27,7 @@ fun createTemporaryFile(prefix: String? = null, suffix: String? = null): File {
     return file
 }
 
-fun useTempFile(f: (Path) -> Unit) {
+suspend fun useTempFile(f: suspend (Path) -> Unit) {
     val file = kotlin.io.path.createTempFile()
     file.toFile().deleteOnExit()
     f(file)

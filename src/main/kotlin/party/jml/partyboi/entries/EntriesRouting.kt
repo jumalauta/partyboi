@@ -25,13 +25,13 @@ fun Application.configureEntriesRouting(app: AppServices) {
     ) = either {
         val user = userSession.bind()
         val userEntries = app.entries.getUserEntries(user.id).bind()
-        val screenshots = app.screenshots.getForEntries(userEntries)
+        val previews = app.previews.getEntryPreviews(userEntries)
 
         EntriesPage.render(
             newEntryForm = newEntryForm ?: Form(NewEntry::class, NewEntry.Empty, initial = true),
             compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user) },
             userEntries = userEntries,
-            screenshots = screenshots,
+            previews = previews,
         )
     }
 
@@ -39,10 +39,10 @@ fun Application.configureEntriesRouting(app: AppServices) {
         entryId: AppResult<UUID>,
         user: AppResult<User>,
         entryUpdateForm: Form<EntryUpdate>? = null,
-        screenshotForm: Form<NewScreenshot>? = null,
+        previewForm: Form<NewPreview>? = null,
     ) = either {
         val files = app.files.getAllVersions(entryId.bind()).bind()
-        val screenshotUrl = app.screenshots.get(entryId.bind()).map { it.externalUrl() }
+        val previewUrl = app.previews.get(entryId.bind()).map { it.externalUrl() }.getOrNull()
         val entry = app.entries.getById(entryId.bind(), user.bind().id).bind()
         val compos = app.compos.getAllCompos().bind().filter { it.canSubmit(user.bind()) || it.id == entry.compoId }
 
@@ -66,10 +66,10 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 EntryUpdate.fromEntry(entry),
                 initial = true
             ),
-            screenshotForm = screenshotForm ?: Form(NewScreenshot::class, NewScreenshot.Empty, true),
+            previewForm = previewForm ?: Form(NewPreview::class, NewPreview.Empty, true),
             compos = compos,
             files = files,
-            screenshot = screenshotUrl,
+            preview = previewUrl,
             allowEdit = allowEdit,
             uploader = uploader,
             tz = tz,
@@ -116,11 +116,11 @@ fun Application.configureEntriesRouting(app: AppServices) {
             }
         }
 
-        get("/entries/{id}/screenshot.jpg") {
+        get("/entries/{id}/preview.jpg") {
             either {
                 val id = call.parameterUUID("id").bind()
-                app.screenshots.get(id)
-                    .toEither { NotFound("Entry screenshot not found") }
+                app.previews.get(id)
+                    .mapLeft { NotFound("Preview image is missing") }
                     .bind()
             }.fold(
                 { call.respondPage(it) },
@@ -169,8 +169,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
                     if (entry.file.isDefined) {
                         val file = app.entries.storeFile(entry.file, entry.id).bind()
-                        app.screenshots.scanForScreenshotSource(file).map { source ->
-                            app.screenshots.store(entry.id, source)
+                        app.previews.scanForScreenshotSource(file).map { source ->
+                            app.previews.store(entry.id, source)
                         }
                         app.messages.sendMessage(
                             user.id,
@@ -193,9 +193,9 @@ fun Application.configureEntriesRouting(app: AppServices) {
             )
         }
 
-        post("/entries/{id}/screenshot") {
-            call.processForm<NewScreenshot>(
-                { screenshot ->
+        post("/entries/{id}/preview") {
+            call.processForm<NewPreview>(
+                { preview ->
                     val user = call.userSession(app).bind()
                     val entryId = call.parameterUUID("id").bind()
                     val entry = app.entries.getById(entryId, user.id).bind()
@@ -204,7 +204,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
                         app.entries.assertCanSubmit(entry.id, user.isAdmin),
                     ).bind()
-                    app.screenshots.store(entry.id, screenshot.file)
+                    app.previews.store(entry.id, preview.file)
 
                     Redirection("/entries/$entryId")
                 },
@@ -212,7 +212,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     renderEditEntryPage(
                         entryId = call.parameterUUID("id"),
                         user = call.userSession(app),
-                        screenshotForm = it
+                        previewForm = it
                     ).bind()
                 }
             )

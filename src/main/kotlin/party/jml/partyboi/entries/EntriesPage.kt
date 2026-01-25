@@ -2,17 +2,22 @@ package party.jml.partyboi.entries
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.form.*
+import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.renderForm
+import party.jml.partyboi.form.renderReadonlyFields
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.*
+import party.jml.partyboi.templates.components.buttonGroup
+import party.jml.partyboi.templates.components.columns
+import party.jml.partyboi.templates.components.entryCard
+import party.jml.partyboi.templates.components.icon
 
 object EntriesPage {
     fun render(
         newEntryForm: Form<NewEntry>,
         compos: List<Compo>,
         userEntries: List<EntryWithLatestFile>,
-        screenshots: List<Screenshot>,
+        previews: List<Preview>,
     ) = Page("Submit entries") {
         h1 { +"Entries" }
 
@@ -25,7 +30,7 @@ object EntriesPage {
                 { submitNewEntryForm("/entries", compos, newEntryForm) }
             } else null,
             if (userEntries.isNotEmpty()) {
-                { entryList(userEntries, compos, screenshots) }
+                { entryList(userEntries, compos, previews) }
             } else null
         )
     }
@@ -34,13 +39,13 @@ object EntriesPage {
 fun FlowContent.entryList(
     userEntries: List<EntryWithLatestFile>,
     compos: List<Compo>,
-    screenshots: List<Screenshot>,
+    previews: List<Preview>,
 ) {
     if (userEntries.isNotEmpty()) {
         h1 { +"My entries" }
 
         userEntries.forEach { entry ->
-            entryCard(entry, screenshots.find { it.entryId == entry.id }, compos) {
+            entryCard(entry, previews.find { it.entryId == entry.id }, compos) {
                 val compo = compos.find { it.id == entry.compoId }
                 val allowSubmit = compo?.allowSubmit == true
 

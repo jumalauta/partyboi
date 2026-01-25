@@ -140,8 +140,8 @@ class EntryRepository(app: AppServices) : Service(app) {
                 if (newEntry.file.isDefined) {
                     val storedFile = storeFile(newEntry.file, entry.id, it).bind()
 
-                    app.screenshots.scanForScreenshotSource(storedFile).map { source ->
-                        app.screenshots.store(entry.id, source)
+                    app.previews.scanForScreenshotSource(storedFile).map { source ->
+                        app.previews.store(entry.id, source)
                     }
                 }
 

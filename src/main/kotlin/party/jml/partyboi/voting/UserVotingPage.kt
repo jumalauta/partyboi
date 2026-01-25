@@ -2,7 +2,7 @@ package party.jml.partyboi.voting
 
 import arrow.core.Option
 import kotlinx.html.*
-import party.jml.partyboi.entries.Screenshot
+import party.jml.partyboi.entries.Preview
 import party.jml.partyboi.entries.VotableEntry
 import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.templates.Javascript
@@ -14,7 +14,7 @@ import java.util.*
 object UserVotingPage {
     fun render(
         entries: List<VotableEntry>,
-        screenshots: List<Screenshot>,
+        previews: List<Preview>,
         liveVote: Option<LiveVoteState>,
     ) = Page("Voting") {
         refreshOnSignal(SignalType.vote)
@@ -49,14 +49,14 @@ object UserVotingPage {
                         }
                         tbody {
                             compo.value.forEachIndexed { index, entry ->
-                                val screenshot = screenshots.find { it.entryId == entry.entryId }
+                                val preview = previews.find { it.entryId == entry.entryId }
                                 tr {
                                     td(classes = "tight order") { +"${index + 1}." }
                                     td(classes = "screenshot") {
                                         figure {
-                                            if (screenshot != null) {
+                                            if (preview != null) {
                                                 attributes["style"] =
-                                                    "background-image: url(${screenshot.externalUrl()})"
+                                                    "background-image: url(${preview.externalUrl()})"
                                             }
                                         }
                                     }
