@@ -51,6 +51,7 @@ enum class SyncedTable(
     Files("file"),
     Entries("entry"),
     EntryFiles("entry_file"),
+    Previews("preview"),
     Events("event"),
     Messages("message"),
     Properties("property"),
