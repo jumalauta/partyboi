@@ -47,6 +47,11 @@ class DbSyncTest : PartyboiTester {
                     )
                 ).bind()
 
+                app.previews.store(
+                    demoEntry.id,
+                    FileUpload.fromResource(app, "/images/final.png")!!
+                ).bind()
+
                 app.events.add(
                     event = NewEvent(
                         name = "Deadline for demo compo",
