@@ -11,7 +11,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
-import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
@@ -150,11 +149,14 @@ class SyncService(app: AppServices) : Service(app) {
             catchResult {
                 either {
                     HttpClient(CIO) {
-                        expectSuccess = true
+                        expectSuccess = false
                         install(HttpTimeout) {
                             requestTimeoutMillis = 10 * 60_000 // 10 minutes
                             connectTimeoutMillis = 30_000
                             socketTimeoutMillis = 10 * 60_000
+                        }
+                        engine {
+                            pipelining = false
                         }
                     }.use {
                         val tempFile = catchResult {
@@ -163,7 +165,18 @@ class SyncService(app: AppServices) : Service(app) {
                             }
                             val channel: ByteReadChannel = response.body()
                             val tempFile = kotlin.io.path.createTempFile().toFile()
-                            channel.copyTo(tempFile.outputStream())
+
+                            tempFile.outputStream().use { output ->
+                                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+                                while (!channel.isClosedForRead) {
+                                    val bytesRead = channel.readAvailable(buffer)
+                                    if (bytesRead == -1) break
+
+                                    output.write(buffer, 0, bytesRead)
+                                    output.flush() // important for long downloads
+                                }
+                            }
 
                             val dlSize = tempFile.toPath().fileSize()
                             if (dlSize != file.size) {
