@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -150,6 +151,11 @@ class SyncService(app: AppServices) : Service(app) {
                 either {
                     HttpClient(CIO) {
                         expectSuccess = true
+                        install(HttpTimeout) {
+                            requestTimeoutMillis = 10 * 60_000 // 10 minutes
+                            connectTimeoutMillis = 30_000
+                            socketTimeoutMillis = 10 * 60_000
+                        }
                     }.use {
                         val tempFile = catchResult {
                             val response = it.get("${instance.address}/sync/file/${file.id}") {
