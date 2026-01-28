@@ -13,7 +13,8 @@ fun Application.configureComposRouting(app: AppServices) {
             call.respondEither {
                 val generalRules = app.compos.generalRules.get().bind()
                 val compos = app.compos.getAllCompos().bind()
-                ComposPage.render(generalRules, compos)
+                val defaultVotingSettings = app.settings.getVoteKeySettings().bind()
+                ComposPage.render(generalRules, compos, defaultVotingSettings)
             }
         }
 

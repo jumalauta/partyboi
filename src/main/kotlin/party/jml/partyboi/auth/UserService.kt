@@ -209,6 +209,8 @@ class UserService(private val app: AppServices) {
         app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed successfully.").bind()
         userId
     }
+
+    suspend fun numberOfVotedUsers(): AppResult<Int> = userRepository.numberOfVotedUsers()
 }
 
 data class PasswordResetForm(
