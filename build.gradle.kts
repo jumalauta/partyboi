@@ -1,15 +1,17 @@
-val kotlin_version: String by project
-val logback_version: String by project
-val postgres_version: String by project
-val h2_version: String by project
-val kotlinx_html_version: String by project
-val flyway_version: String by project
-val arrow_version: String by project
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+val kotlin_version = "2.3.0"
+val logback_version: String = "1.5.13"
+val postgres_version: String = "42.7.9"
+val h2_version: String = "2.4.240"
+val kotlinx_html_version: String = "0.12.0"
+val flyway_version: String = "12.0.0"
+val arrow_version: String = "2.2.1"
 
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.3.0"
     id("io.ktor.plugin") version "3.2.3"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.0"
 }
 
 group = "com.example"
@@ -80,4 +82,8 @@ kotlin {
 
 tasks.named("shadowJar", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java) {
     mergeServiceFiles()
+}
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.compilerOptions {
+    freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
 }
