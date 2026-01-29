@@ -75,7 +75,7 @@ class DbSyncService(app: AppServices) : Service(app) {
                 row.keys.joinToString(",") { key ->
                     when (columns[key]) {
                         "uuid" -> "?::uuid"
-                        "timestamp with time zone" -> "?::timestamp"
+                        "timestamp with time zone" -> "?::timestamp with time zone"
                         "jsonb" -> "?::jsonb"
                         "ARRAY" -> "?::text[]"
                         else -> "?"
