@@ -1,4 +1,3 @@
-val kotlin_version: String by project
 val logback_version: String by project
 val postgres_version: String by project
 val h2_version: String by project
@@ -7,9 +6,9 @@ val flyway_version: String by project
 val arrow_version: String by project
 
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.3.0"
     id("io.ktor.plugin") version "3.2.3"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.0"
 }
 
 group = "com.example"
@@ -68,7 +67,7 @@ dependencies {
     implementation("com.github.docker-java:docker-java:3.5.2")
     implementation("com.github.docker-java:docker-java-transport-httpclient5:3.6.0")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.0")
     testImplementation("it.skrape:skrapeit:1.2.2")
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
