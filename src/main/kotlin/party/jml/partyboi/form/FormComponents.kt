@@ -176,11 +176,13 @@ fun FlowOrInteractiveOrPhrasingContent.formFileInput(data: Form.FieldData) {
 }
 
 fun FlowOrInteractiveOrPhrasingContent.formCheckBox(data: Form.FieldData) {
-    input(name = data.key) {
-        type = InputType.checkBox
-        role = "switch"
-        checked = data.value.isNotEmpty()
-        +data.label
+    label {
+        input(name = data.key) {
+            type = InputType.checkBox
+            role = "switch"
+            checked = data.value.isNotEmpty()
+            +data.label
+        }
     }
 }
 

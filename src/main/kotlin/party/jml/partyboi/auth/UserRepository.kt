@@ -14,6 +14,7 @@ import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.data.randomStringId
 import party.jml.partyboi.db.*
+import party.jml.partyboi.db.DbBasicMappers.asInt
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.*
@@ -215,6 +216,19 @@ class UserRepository(app: AppServices) : Service(app) {
             )
         )
     }
+
+    suspend fun numberOfVotedUsers(): AppResult<Int> = db.use {
+        it.one(
+            queryOf(
+                """
+            SELECT COUNT(DISTINCT appuser.id)
+            FROM appuser
+            JOIN vote ON vote.user_id = appuser.id
+        """.trimIndent()
+            ).map(asInt)
+        )
+    }
+
 }
 
 @Serializable
