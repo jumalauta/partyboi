@@ -33,6 +33,7 @@ object UserVotingPage {
         }
 
         entries.groupBy { it.compoId }.forEach { compo ->
+            val isLiveVote = compo.value.first().compoId == liveVote.getOrNull()?.compo?.id
             article {
                 cardHeader(compo.value.first().compoName)
                 section {
@@ -40,7 +41,7 @@ object UserVotingPage {
                         thead {
                             tr {
                                 th(classes = "tight") { +"#" }
-                                th {}
+                                if (!isLiveVote) th {}
                                 th(classes = "wide") { +"Author – Entry" }
                                 for (i in VoteService.POINT_RANGE) {
                                     th(classes = "tight center") { +i.toString() }
@@ -48,15 +49,21 @@ object UserVotingPage {
                             }
                         }
                         tbody {
+                            val entryCount = compo.value.size
                             compo.value.forEachIndexed { index, entry ->
                                 val preview = previews.find { it.entryId == entry.entryId }
                                 tr {
-                                    td(classes = "tight order") { +"${index + 1}." }
-                                    td(classes = "screenshot") {
-                                        figure {
-                                            if (preview != null) {
-                                                attributes["style"] =
-                                                    "background-image: url(${preview.externalUrl()})"
+                                    td(classes = "tight order") {
+                                        val entryIndex = if (isLiveVote) entryCount - index else index + 1
+                                        +"$entryIndex."
+                                    }
+                                    if (!isLiveVote) {
+                                        td(classes = "screenshot") {
+                                            figure {
+                                                if (preview != null) {
+                                                    attributes["style"] =
+                                                        "background-image: url(${preview.externalUrl()})"
+                                                }
                                             }
                                         }
                                     }

@@ -146,7 +146,9 @@ class CompoRunService(app: AppServices) : Service(app) {
             val steps = listOf(
                 CompoStep.StartsSoon(compo.name, compo.id),
                 CompoStep.StartsNow(compo.name, compo.id),
-            ) + entries.mapIndexed { idx, entry -> CompoStep.Entry(entry, idx) } +
+            ) + entries
+                .filter { it.qualified }
+                .mapIndexed { idx, entry -> CompoStep.Entry(entry, idx) } +
                     listOf(CompoStep.End(compo.name, compo.id))
 
             val result = CompoSteps(compo.id, null, steps)
@@ -325,7 +327,7 @@ sealed interface CompoStep {
         val entry: party.jml.partyboi.entries.Entry,
         val index: Int,
     ) : CompoStep {
-        override fun title() = "#$index: ${entry.author} - ${entry.title}"
+        override fun title() = "#${index + 1}: ${entry.author} - ${entry.title}"
         override fun icon() = "eye"
         override fun getSlide() = TextSlide.compoSlide(index, entry)
 
