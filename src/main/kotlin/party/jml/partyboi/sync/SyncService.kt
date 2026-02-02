@@ -182,29 +182,38 @@ class SyncService(app: AppServices) : Service(app) {
             val missingFiles = getMissingFiles().bind()
             val totalSize = Filesize.humanFriendly(missingFiles.sumOf { it.size })
             log.info("Number of missing files: ${missingFiles.size} ($totalSize)")
-            missingFiles.forEach { file ->
-                log.info("Downloading ${file.id}: ${file.originalFilename} (${Filesize.humanFriendly(file.size)})")
-                downloadFile(instance, file).fold({
-                    log.error("Error downloading ${file.id}: ${it.message}")
-                }, {
-                    log.info("${file.originalFilename} downloaded")
-                })
-            }
+            missingFiles
+                .sortedBy { it.size }
+                .forEach { file ->
+                    log.info("Downloading ${file.id}: ${file.originalFilename} (${Filesize.humanFriendly(file.size)})")
+                    downloadFile(instance, file).fold({
+                        log.error("Error downloading ${file.id}: ${it.message}")
+                    }, {
+                        log.info("${file.originalFilename} downloaded")
+                    })
+                }
         }
 
     private suspend fun uploadMissingFiles(instance: RemoteInstance) =
         either {
-            val missing = getListOfMissingRemoteFiles(instance).bind()
-            missing.fileIds.forEach { fileId ->
-                val file = app.files.getById(UUID.fromString(fileId)).bind()
-                if (file.getStorageFile().exists()) {
-                    uploadFile(instance, file).bind()
-                }
-            }
+            val missingFileIds = getListOfMissingRemoteFiles(instance).bind().fileIds.map { UUID.fromString(it) }
+            val filesForUpload = app.files
+                .getAll().bind()
+                .filter { missingFileIds.contains(it.id) }
+                .filter { it.getStorageFile().exists() }
+                .sortedBy { it.size }
+            log.info(
+                "Remote instance is missing ${missingFileIds.size} files. We have ${filesForUpload.size} files to upload (${
+                    Filesize.humanFriendly(
+                        filesForUpload.sumOf { it.size })
+                })"
+            )
+            filesForUpload.forEach { file -> uploadFile(instance, file).bind() }
         }
 
     private suspend fun uploadFile(instance: RemoteInstance, file: FileDesc) =
         syncLog.use(FileUploadId(file)) {
+            log.info("Uploading ${file.id}: ${file.originalFilename}")
             catchResult {
                 fileClient.post("${instance.address}/sync/file/${file.id}") {
                     bearerAuth(instance.apiToken)
