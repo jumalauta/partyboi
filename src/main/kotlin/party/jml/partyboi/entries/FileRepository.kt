@@ -3,6 +3,8 @@ package party.jml.partyboi.entries
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.raise.either
+import io.ktor.client.request.forms.*
+import io.ktor.util.cio.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
@@ -316,6 +318,9 @@ data class FileDesc(
     val extension by lazy { File(originalFilename).extension.lowercase() }
 
     fun getStorageFile(): File = Config.get().filesDir.resolve(id.toString()).toFile()
+    fun getChannelProvider(): ChannelProvider = ChannelProvider {
+        getStorageFile().readChannel()
+    }
 
     companion object {
         val fromRow: (Row) -> FileDesc = { row ->

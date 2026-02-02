@@ -2,9 +2,12 @@ package party.jml.partyboi.sync
 
 import arrow.core.raise.either
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.launch
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminRouting
@@ -65,16 +68,33 @@ fun Application.configureSyncRouting(app: AppServices) {
             )
         }
 
-        get("/sync/run") {
+        get("/sync/download") {
             call.respondEither {
                 val userId = call.userSession(app).bind().id
                 launch {
-                    app.sync.run().bind()
+                    app.sync.syncDown().bind()
                     app.messages.sendMessage(
                         userId,
                         MessageType.SUCCESS,
                         "Remote server synced successfully"
                     )
+                }
+                Redirection("/sync")
+            }
+        }
+
+        get("/sync/upload") {
+            call.respondEither {
+                val userId = call.userSession(app).bind().id
+                launch {
+                    either {
+                        app.sync.syncUp().bind()
+                        app.messages.sendMessage(
+                            userId,
+                            MessageType.SUCCESS,
+                            "Data and files sent to remote server successfully"
+                        )
+                    }
                 }
                 Redirection("/sync")
             }
@@ -86,6 +106,20 @@ fun Application.configureSyncRouting(app: AppServices) {
             call.jsonRespond {
                 val name = call.parameterEnum<SyncedTable>("name").bind()
                 app.sync.getTable(name).bind()
+            }
+        }
+
+        post("/sync/table") {
+            call.jsonRespond {
+                val table = call.receive<Table>()
+                app.sync.putTable(table).bind()
+                "OK"
+            }
+        }
+
+        get("/sync/missing-files") {
+            call.jsonRespond {
+                MissingFiles.of(app.sync.getMissingFiles().bind())
             }
         }
 
@@ -106,6 +140,26 @@ fun Application.configureSyncRouting(app: AppServices) {
                     call.respondFile(it.getStorageFile())
                 }
             )
+        }
+
+        post("/sync/file/{fileId}") {
+            either {
+                val fileId = call.parameterUUID("fileId").bind()
+                val targetFile = app.files.getStorageFile(fileId)
+                val multipart = call.receiveMultipart()
+
+                multipart.forEachPart { part ->
+                    when (part) {
+                        is PartData.FileItem ->
+                            targetFile.outputStream().use { output ->
+                                part.provider().copyTo(output)
+                            }
+
+                        else -> Unit
+                    }
+                    part.dispose()
+                }
+            }
         }
     }
 }

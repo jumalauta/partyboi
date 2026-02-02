@@ -20,7 +20,8 @@ object SyncPage {
                 article {
                     header { +"Remote sync" }
                     buttonGroup {
-                        buttonLink(href = "/sync/run") { +"Run" }
+                        buttonLink(href = "/sync/download") { +"Download" }
+                        buttonLink(href = "/sync/upload") { +"Upload" }
                     }
                 }
             }

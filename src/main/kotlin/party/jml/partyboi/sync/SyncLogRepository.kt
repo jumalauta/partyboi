@@ -103,21 +103,43 @@ sealed interface SyncLogId {
     fun description(): String
 }
 
-data class TableSyncId(
+data class TableDownSyncId(
     val tableName: String,
 ) : SyncLogId {
     override fun toString(): String = "table-$tableName"
 
-    override fun description(): String = "Table '$tableName'"
+    override fun description(): String = "Download table '$tableName'"
 }
 
-data class FileSyncId(
+data class TableUpSyncId(
+    val tableName: String,
+) : SyncLogId {
+    override fun toString(): String = "table-up-$tableName"
+
+    override fun description(): String = "Upload table '$tableName'"
+}
+
+data class FileDownloadId(
     val file: FileDesc,
 ) : SyncLogId {
     override fun toString(): String = "file-${file.id}"
 
     override fun description(): String =
-        "File '${file.originalFilename}' (${Filesize.humanFriendly(file.size)})"
+        "Download file '${file.originalFilename}' (${Filesize.humanFriendly(file.size)})"
+}
+
+data class FileUploadId(
+    val file: FileDesc,
+) : SyncLogId {
+    override fun toString(): String = "file-up-${file.id}"
+
+    override fun description(): String =
+        "Upload file '${file.originalFilename}' (${Filesize.humanFriendly(file.size)})"
+}
+
+class MissingFileList : SyncLogId {
+    override fun toString(): String = "missing-files"
+    override fun description(): String = "Get list of missing files"
 }
 
 data class SyncLogEntry(
