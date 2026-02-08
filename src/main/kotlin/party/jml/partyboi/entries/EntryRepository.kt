@@ -44,6 +44,19 @@ class EntryRepository(app: AppServices) : Service(app) {
         it.many(queryOf("select * from entry").map(Entry.fromRow))
     }
 
+    suspend fun getPublicEntries(): AppResult<List<Entry>> = db.use {
+        it.many(
+            queryOf(
+                """
+            SELECT entry.*
+            FROM entry
+            JOIN compo ON compo.id = entry.compo_id
+            WHERE compo.public_results
+        """.trimIndent()
+            ).map(Entry.fromRow)
+        )
+    }
+
     suspend fun getAllEntriesByCompo(): AppResult<Map<UUID, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 

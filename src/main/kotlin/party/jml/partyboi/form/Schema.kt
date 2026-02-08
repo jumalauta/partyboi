@@ -112,6 +112,7 @@ sealed interface Property {
                         ?.let { OptionProp(it, optional) }
                 }
 
+
                 List::class -> type.arguments.first().type?.let {
                     formValueToProperty(it, meta, name)
                         ?.let { ListProp(it, optional) }

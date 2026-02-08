@@ -6,6 +6,8 @@ import it.skrape.matchers.toBePresent
 import party.jml.partyboi.auth.UserCredentials
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.settings.VoteSettings
+import party.jml.partyboi.voting.EmptyVoteHandling
+import party.jml.partyboi.voting.ScoringMethod
 import party.jml.partyboi.voting.VoteKeyForm
 import party.jml.partyboi.voting.VoteKeyRow
 import java.time.LocalDateTime
@@ -80,7 +82,11 @@ class VoteKeyTest : PartyboiTester {
         val voteSettings = VoteSettings(
             automaticVoteKeys = AutomaticVoteKeys.PER_EMAIL,
             listOfEmails = "",
-            verifiedEmailsOnly = false
+            verifiedEmailsOnly = false,
+            minimumPoints = 1,
+            maximumPoints = 5,
+            emptyVoteHandling = EmptyVoteHandling.Ignore,
+            scoringMethod = ScoringMethod.Additive,
         )
 
         setupServices {
