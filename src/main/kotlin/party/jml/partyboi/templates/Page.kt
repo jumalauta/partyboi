@@ -3,6 +3,7 @@ package party.jml.partyboi.templates
 import io.ktor.http.*
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import party.jml.partyboi.BuildInfo
 import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.messages.Message
@@ -70,6 +71,9 @@ data class Page(
                             children()
                         }
                     }
+                }
+                footer {
+                    small { +"Partyboi © 2024-${BuildInfo.buildYear} Jumalauta – built ${BuildInfo.timestamp}" }
                 }
                 if (messages.isNotEmpty()) {
                     aside(classes = "snackbars") {

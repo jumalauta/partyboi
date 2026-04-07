@@ -80,6 +80,28 @@ kotlin {
     jvmToolchain(21)
 }
 
+tasks.register("generateBuildInfo") {
+    val outputDir = layout.buildDirectory.dir("generated/resources/build-info")
+    outputs.dir(outputDir)
+    doLast {
+        val dir = outputDir.get().asFile
+        dir.mkdirs()
+        val timestamp = ProcessBuilder("date", "-u", "+%Y-%m-%dT%H:%M:%SZ")
+            .start().inputStream.bufferedReader().readText().trim()
+        dir.resolve("build-info.properties").writeText("build.timestamp=$timestamp\n")
+    }
+}
+
+tasks.named("processResources") {
+    dependsOn("generateBuildInfo")
+}
+
+sourceSets {
+    main {
+        resources.srcDir(layout.buildDirectory.dir("generated/resources/build-info"))
+    }
+}
+
 tasks.named("shadowJar", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java) {
     mergeServiceFiles()
 }

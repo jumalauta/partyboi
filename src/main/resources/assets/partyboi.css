@@ -467,6 +467,12 @@ table .entry-info {
     opacity: 80%;
 }
 
+body > footer {
+    margin-top: calc(var(--pico-spacing) * 2);
+    text-align: center;
+    opacity: 0.4;
+}
+
 .snackbars {
     position: fixed;
     left: 0;
