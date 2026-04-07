@@ -22,4 +22,5 @@ FROM amazoncorretto:21 AS runtime
 EXPOSE 8123:8123
 RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/*.jar /app/partyboi.jar
+COPY --from=build /home/gradle/src/build/generated/resources/build-info/build-info.properties /app/build-info.properties
 ENTRYPOINT ["java","-jar","/app/partyboi.jar"]
