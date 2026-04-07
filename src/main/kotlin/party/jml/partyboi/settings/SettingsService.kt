@@ -11,6 +11,10 @@ import party.jml.partyboi.form.Label
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
 import party.jml.partyboi.validation.Validateable
+import party.jml.partyboi.voting.EmptyVoteHandling
+import party.jml.partyboi.voting.PointScale
+import party.jml.partyboi.voting.ScoringMethod
+import party.jml.partyboi.voting.VotingSettings
 
 class SettingsService(app: AppServices) : Service(app) {
     val automaticVoteKeys = property("automaticVoteKeys", AutomaticVoteKeys.DISABLED)
@@ -18,20 +22,26 @@ class SettingsService(app: AppServices) : Service(app) {
     val verifiedEmailsOnly = property("verifiedEmailsOnly", true)
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
+    val voting = property("voting", VotingSettings.Default)
 
     suspend fun getGeneralSettings() = either {
         GeneralSettings(
             resultsFileHeader = resultsFileHeader.get().bind(),
             colorScheme = colorScheme.get().bind(),
-            timeZone = app.time.timeZone.get().bind()
+            timeZone = app.time.timeZone.get().bind(),
         )
     }
 
-    suspend fun getVoteSettings() = either {
+    suspend fun getVoteKeySettings() = either {
+        val votingSettings = voting.get().bind()
         VoteSettings(
             automaticVoteKeys = automaticVoteKeys.get().bind(),
             listOfEmails = voteKeyEmailList.get().bind().joinToString("\n"),
-            verifiedEmailsOnly = verifiedEmailsOnly.get().bind()
+            verifiedEmailsOnly = verifiedEmailsOnly.get().bind(),
+            minimumPoints = votingSettings.scale.min,
+            maximumPoints = votingSettings.scale.max,
+            emptyVoteHandling = votingSettings.emptyVotes,
+            scoringMethod = votingSettings.scoring,
         )
     }
 
@@ -69,6 +79,13 @@ class SettingsService(app: AppServices) : Service(app) {
                     .filter { it.isNotEmpty() }
             ),
             verifiedEmailsOnly.set(settings.verifiedEmailsOnly),
+            voting.set(
+                VotingSettings(
+                    scale = PointScale(settings.minimumPoints, settings.maximumPoints),
+                    emptyVotes = settings.emptyVoteHandling,
+                    scoring = settings.scoringMethod,
+                )
+            )
         ).bindAll()
     }
 }
@@ -89,10 +106,24 @@ data class VoteSettings(
     val listOfEmails: String,
     @Label("Accept only verified email addresses")
     val verifiedEmailsOnly: Boolean,
-) : Validateable<VoteSettings>
+    @Label("Minimum points per vote")
+    val minimumPoints: Int,
+    @Label("Maximum points per vote")
+    val maximumPoints: Int,
+    @Label("How the empty votes are handled?")
+    val emptyVoteHandling: EmptyVoteHandling,
+    @Label("How the points are tallied?")
+    val scoringMethod: ScoringMethod,
+) : Validateable<VoteSettings> {
+    fun voteCounting() = VotingSettings(
+        scale = PointScale(minimumPoints, maximumPoints),
+        emptyVotes = emptyVoteHandling,
+        scoring = scoringMethod,
+    )
+}
 
 enum class AutomaticVoteKeys(val label: String) {
-    DISABLED("Vote keys only"),
+    DISABLED("Voting rights can be acquired only by a vote key"),
     PER_USER("Every new user gets voting rights automatically"),
     PER_IP_ADDRESS("Every new user from distinct IP address gets voting rights automatically"),
     PER_EMAIL("Voting rights are granted according to an email list"),

@@ -9,6 +9,8 @@ import it.skrape.selects.text
 import party.jml.partyboi.email.EmailMessage
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.settings.VoteSettings
+import party.jml.partyboi.voting.EmptyVoteHandling
+import party.jml.partyboi.voting.ScoringMethod
 import kotlin.test.Test
 
 class LoginTest : PartyboiTester {
@@ -124,7 +126,11 @@ class LoginTest : PartyboiTester {
                 VoteSettings(
                     automaticVoteKeys = AutomaticVoteKeys.PER_EMAIL,
                     listOfEmails = emailAddr,
-                    verifiedEmailsOnly = true
+                    verifiedEmailsOnly = true,
+                    minimumPoints = 1,
+                    maximumPoints = 5,
+                    emptyVoteHandling = EmptyVoteHandling.Ignore,
+                    scoringMethod = ScoringMethod.Additive,
                 )
             )
         }

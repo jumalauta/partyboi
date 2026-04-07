@@ -34,12 +34,20 @@ class VoteService(app: AppServices) : Service(app) {
         }
     }
 
+    suspend fun getCompoVotingSettings(compoId: UUID) = either {
+        val defaults = app.settings.voting.get().bind()
+        val compo = app.compos.getById(compoId).bind()
+        compo.emptyVoteHandling
+    }
+
     suspend fun castVote(user: User, entryId: UUID, points: Int): AppResult<Unit> =
         if (user.votingEnabled) {
             either {
-                val validPoints = validatePoints(points).bind()
                 val entry = app.entries.getById(entryId).bind()
                 if (isVotingOpen(entry).bind()) {
+                    val compo = app.compos.getById(entry.compoId).bind()
+                    val validPoints =
+                        validatePoints(points, compo.getVotingSettings(app.settings.voting.get().bind())).bind()
                     repository.castVote(user.id, entryId, validPoints).bind()
                 } else {
                     raise(InvalidInput("This entry cannot be voted"))
@@ -96,26 +104,64 @@ class VoteService(app: AppServices) : Service(app) {
             liveVoting + normalVoting
         }
 
-    suspend fun getAllVotes(): AppResult<List<VoteRow>> = repository.getAllVotes()
-
-    suspend fun getResults(): AppResult<List<CompoResult>> =
-        repository.getResults(onlyPublic = false)
+    suspend fun getResults(): AppResult<List<CompoResult>> = either {
+        countVotes(app.entries.getAllEntries().bind()).bind()
+    }
 
     suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         either {
+            val entries = if (user.fold({ false }, { it.isAdmin })) {
+                app.entries.getAllEntries().bind()
+            } else {
+                app.entries.getPublicEntries().bind()
+            }
             val downloads = app.files.getEntryIdsWithFiles(includeProcessedFiles = false).bind()
-            repository
-                .getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
-                .bind()
-                .map { entry ->
-                    val download = downloads.find { it.entryId == entry.entryId }
-                    if (download != null) {
-                        entry.copy(downloadLink = "/entries/download/${download.fileId}")
-                    } else {
-                        entry
+
+            countVotes(entries).bind().map { entry ->
+                val download = downloads.find { it.entryId == entry.entryId }
+                if (download != null) {
+                    entry.copy(downloadLink = "/entries/download/${download.fileId}")
+                } else {
+                    entry
+                }
+            }
+        }
+
+    private suspend fun countVotes(entries: List<Entry>): AppResult<List<CompoResult>> = either {
+        val compos = app.compos.getAllCompos().bind()
+        val numberOfVotedUsers = app.users.numberOfVotedUsers().bind()
+        val allVotes = repository.getAllVotes().bind()
+        val defaultVotingSettings = app.settings.voting.get().bind()
+
+        entries
+            .groupBy { it.compoId }
+            .mapNotNull { (compoId, compoEntries) ->
+                compos.find { it.id == compoId }?.let { compo ->
+                    val voting = compo.getVotingSettings(defaultVotingSettings)
+
+                    val compoVotes = compoEntries.map { entry ->
+                        val givenVotes = allVotes.filter { it.entryId == entry.id }.map { it.points as Int? }
+                        val emptyVotes = Array<Int?>(numberOfVotedUsers - givenVotes.size) { null }
+                        Voting(entry.id, givenVotes + emptyVotes)
+                    }
+                    val results = voting.countVotes(compoVotes)
+                    compoEntries.map { entry ->
+                        val result = results.find { it.entryId == entry.id }
+                        CompoResult(
+                            compoId = compo.id,
+                            compoName = compo.name,
+                            points = result?.score ?: 0,
+                            entryId = entry.id,
+                            title = entry.title,
+                            author = entry.author,
+                            info = entry.screenComment,
+                        )
                     }
                 }
-        }
+            }
+            .values
+            .flatten()
+    }
 
     suspend fun getResultsFileContent(includeInfo: Boolean): AppResult<String> = either {
         val header = app.settings.resultsFileHeader.get().bind()
@@ -134,18 +180,12 @@ class VoteService(app: AppServices) : Service(app) {
             app.compos.isVotingOpen(entry.compoId)
         }
 
-    private fun validatePoints(points: Int): AppResult<Int> =
-        if (points < MIN_POINTS || points > MAX_POINTS) {
+    private fun validatePoints(points: Int, settings: VotingSettings): AppResult<Int> =
+        if (points < settings.scale.min || points > settings.scale.max) {
             InvalidInput("Invalid points").left()
         } else {
             points.right()
         }
-
-    companion object {
-        const val MIN_POINTS = 1
-        const val MAX_POINTS = 5
-        val POINT_RANGE = MIN_POINTS..MAX_POINTS
-    }
 }
 
 data class LiveVoteState(

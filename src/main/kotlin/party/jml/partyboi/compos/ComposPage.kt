@@ -1,21 +1,23 @@
 package party.jml.partyboi.compos
 
 import kotlinx.html.*
+import party.jml.partyboi.settings.VoteSettings
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.markdown
 
 object ComposPage {
-    fun render(generalRules: GeneralRules, compos: List<Compo>) =
+    fun render(generalRules: GeneralRules, compos: List<Compo>, voteSettings: VoteSettings) =
         Page("Compos") {
             h1 { +"Compos" }
 
-            if (generalRules.rules.isNotEmpty()) {
-                article {
-                    id = "generalRules"
-                    cardHeader("General rules")
-                    markdown(generalRules.rules)
-                }
+            article {
+                id = "generalRules"
+                cardHeader("General rules")
+                markdown(generalRules.rules)
+
+                h2 { +"Voting" }
+                voteCounting(voteSettings)
             }
 
             if (compos.isEmpty()) {
@@ -58,4 +60,13 @@ object ComposPage {
                 }
             }
         }
+
+    fun FlowContent.voteCounting(settings: VoteSettings) {
+        ul {
+            li { +"${settings.automaticVoteKeys.label}." }
+            li { +"Points are given between ${settings.minimumPoints} to ${settings.maximumPoints}." }
+            li { +"${settings.emptyVoteHandling.label}." }
+            li { +"${settings.scoringMethod.label}." }
+        }
+    }
 }
