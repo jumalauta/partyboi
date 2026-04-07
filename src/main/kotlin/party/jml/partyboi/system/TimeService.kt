@@ -40,7 +40,11 @@ class TimeService(app: AppServices) : Service(app) {
 
         fun timeZone(): TimeZone = runBlocking { AppServicesImpl.globalInstance!!.time.timeZone() }
 
-        fun isoOffset(): String = timeZone().offsetAt(Clock.System.now()).toString()
+        fun isoOffset(): String {
+            val offset = timeZone().offsetAt(Clock.System.now())
+            val formatted = offset.format(UtcOffset.Formats.ISO)
+            return if (formatted == "Z") "+00:00" else formatted
+        }
     }
 }
 
