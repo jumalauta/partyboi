@@ -21,7 +21,7 @@ object ComposPage {
             if (compos.isEmpty()) {
                 article {
                     id = "noCompos"
-                    +"No compos have not been published."
+                    +"Compos have not been published."
                 }
             }
 
