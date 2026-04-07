@@ -18,7 +18,7 @@ class CompoPageTest : PartyboiTester {
         it.get("/compos") {
             relaxed = true
             this.findAll("#generalRules").toBeEmpty
-            this.findFirst("#noCompos") { text.toBe("No compos have not been published.") }
+            this.findFirst("#noCompos") { text.toBe("Compos have not been published.") }
         }
     }
 
