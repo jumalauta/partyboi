@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.minutes
 val LoginRateLimit = RateLimitName("login")
 
 fun Application.configureHTTP() {
-    val hostName = config().hostName
+    val hostName = config().hostName.removePrefix("https://").removePrefix("http://")
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Post)
