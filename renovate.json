@@ -2,5 +2,13 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "automerge": true,
+  "automergeSchedule": [
+    "before 11pm on monday",
+    "before 11pm on tuesday",
+    "before 11pm on wednesday",
+    "before 11pm on thursday"
+  ],
+  "rebaseWhen": "auto"
 }
