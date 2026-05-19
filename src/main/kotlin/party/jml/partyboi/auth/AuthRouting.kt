@@ -34,7 +34,9 @@ fun Application.configureLoginRouting(app: AppServices) {
                         val user = app.users.getUserByName(login.name).bind()
                         val session = user.authenticate(login.password).bind()
                         call.sessions.set(session)
-                        val redirect = call.request.cookies["afterLogin"] ?: "/"
+                        val redirect = call.request.cookies["afterLogin"]
+                            ?.takeIf { it.startsWith("/") && !it.startsWith("//") }
+                            ?: "/"
                         call.response.cookies.append("afterLogin", "", expires = GMTDate.START)
                         Redirection(redirect)
                     },
