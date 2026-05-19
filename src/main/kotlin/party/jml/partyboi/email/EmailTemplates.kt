@@ -9,7 +9,7 @@ import party.jml.partyboi.auth.User
 object EmailTemplates {
     fun emailVerification(recipient: User, verificationCode: String, instanceName: String, hostName: String) =
         EmailMessage.build(
-            recipient = recipient.email!!,
+            recipient = requireNotNull(recipient.email) { "Cannot send verification email to user without email address" },
             subject = "Verify your email address to $instanceName",
         ) {
             p { +"Hi, ${recipient.name}!" }

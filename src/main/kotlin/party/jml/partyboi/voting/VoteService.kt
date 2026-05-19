@@ -3,6 +3,7 @@ package party.jml.partyboi.voting
 import arrow.core.*
 import arrow.core.raise.either
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.updateAndGet
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.auth.User
@@ -58,15 +59,13 @@ class VoteService(app: AppServices) : Service(app) {
     }
 
     suspend fun addEntryToLiveVoting(entry: Entry) {
-        live.emit(live.value.with(entry))
+        live.updateAndGet { it.with(entry) }
         app.signals.emit(Signal.liveVotingEntry(entry.id))
     }
 
     suspend fun removeEntryFromLiveVoting(entry: Entry) {
-        val newState = live.value.without(entry)
-        live.emit(newState)
+        val newState = live.updateAndGet { it.without(entry) }
         newState.entries.lastOrNull()?.let { app.signals.emit(Signal.liveVotingEntry(it.id)) }
-
     }
 
     suspend fun closeLiveVoting() {

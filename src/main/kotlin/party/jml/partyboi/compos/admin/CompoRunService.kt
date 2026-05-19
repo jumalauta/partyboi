@@ -174,7 +174,7 @@ class CompoRunService(app: AppServices) : Service(app) {
 
     @Throws(IOException::class, FileNotFoundException::class)
     private fun compressDirectoryToZipfile(rootDir: Path, sourceDir: Path, out: ZipOutputStream) {
-        for (file in sourceDir.toFile().listFiles()!!) {
+        for (file in sourceDir.toFile().listFiles() ?: emptyArray()) {
             if (file.isDirectory) {
                 compressDirectoryToZipfile(rootDir, sourceDir.resolve(file.name), out)
             } else {
@@ -183,8 +183,9 @@ class CompoRunService(app: AppServices) : Service(app) {
                 val entry = ZipEntry(entryName)
                 out.putNextEntry(entry)
 
-                val input = FileInputStream(sourceFile.toFile())
-                input.transferTo(out)
+                FileInputStream(sourceFile.toFile()).use { input ->
+                    input.transferTo(out)
+                }
             }
         }
     }

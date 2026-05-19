@@ -57,7 +57,7 @@ class WorkQueueRepository(val app: AppServices) {
 }
 
 data class TaskRow(
-    val id: UUID?,
+    val id: UUID,
     val task: Task,
     val createdAt: Instant,
     val finishedAt: Instant?,

@@ -16,7 +16,7 @@ class WorkQueueService(val app: AppServices) {
                 delay(1000)
             }, { taskRow ->
                 val success = taskRow.task.execute(app).isRight()
-                repository.setState(taskRow.id!!, if (success) TaskState.Success else TaskState.Failed)
+                repository.setState(taskRow.id, if (success) TaskState.Success else TaskState.Failed)
             })
         }
     }

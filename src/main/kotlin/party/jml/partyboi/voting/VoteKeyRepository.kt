@@ -106,13 +106,14 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
         }
     }
 
-    private suspend fun generateTicket(tx: TransactionalSession, keySet: String?): AppResult<Unit> = either {
+    private suspend fun generateTicket(tx: TransactionalSession, keySet: String?, remainingAttempts: Int = 100): AppResult<Unit> = either {
+        require(remainingAttempts > 0) { "Failed to generate unique ticket code after 100 attempts" }
         val voteKey = VoteKey.ticket(generateTicketCode())
         val exists = tx
             .one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean))
             .isRight()
         if (exists) {
-            generateTicket(tx, keySet)
+            generateTicket(tx, keySet, remainingAttempts - 1)
         } else {
             insertVoteKey(userId = null, voteKey, keySet, tx)
         }

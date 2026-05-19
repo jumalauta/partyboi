@@ -95,13 +95,13 @@ class VotingTest : PartyboiTester {
         it.buttonClickFails("/vote/${entry!!.id}/3")
 
         // An entry is shown
-        app!!.votes.addEntryToLiveVoting(entry!!)
+        app!!.votes.addEntryToLiveVoting(entry)
         it.get("/vote") {
             findFirst("article") {
                 text.toBe("Live: Demo # Author – Entry 1 2 3 4 5 1. Friction – fr004: action 1 2 3 4 5")
             }
         }
-        it.buttonClick("/vote/${entry!!.id}/3")
+        it.buttonClick("/vote/${entry.id}/3")
     }
 
     private suspend fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {

@@ -6,7 +6,7 @@ import party.jml.partyboi.db.queryOf
 
 class SessionRepository(private val db: DatabasePool) : SessionStorage {
     override suspend fun invalidate(id: String) {
-        db.use { execute(queryOf("DELETE FROM session WHERE id = ?", id)) }
+        db.useUnsafe { execute(queryOf("DELETE FROM session WHERE id = ?", id)) }
     }
 
     override suspend fun read(id: String): String {
@@ -19,7 +19,7 @@ class SessionRepository(private val db: DatabasePool) : SessionStorage {
     }
 
     override suspend fun write(id: String, value: String) {
-        db.use {
+        db.useUnsafe {
             execute(
                 queryOf(
                     """
