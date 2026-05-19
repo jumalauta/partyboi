@@ -12,6 +12,7 @@ import party.jml.partyboi.Service
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.queryOf
+import party.jml.partyboi.db.requireSafeIdentifier
 import party.jml.partyboi.db.updateAny
 import party.jml.partyboi.system.AppResult
 
@@ -22,7 +23,9 @@ class DbSyncService(app: AppServices) : Service(app) {
 
     suspend fun getTable(tableName: String): AppResult<Table> =
         either {
+            requireSafeIdentifier(tableName)
             val columns = getColumns(tableName).bind()
+            columns.keys.forEach { requireSafeIdentifier(it) }
             val data = db.use {
                 it.many(queryOf("SELECT * FROM $tableName ORDER BY ${columns.keys.first()}").map { row ->
                     columns.map { (colName, colType) ->
@@ -40,7 +43,9 @@ class DbSyncService(app: AppServices) : Service(app) {
 
     suspend fun putTable(table: Table, exceptionResolver: ExceptionResolver?) =
         either {
+            requireSafeIdentifier(table.table)
             val columns = getColumns(table.table).bind()
+            columns.keys.forEach { requireSafeIdentifier(it) }
             val pkeyResolver = getPrimaryKeyConstraint(table.table).bind()
 
             db.use { session ->
@@ -66,7 +71,9 @@ class DbSyncService(app: AppServices) : Service(app) {
         row: Map<String, JsonElement>,
         conflictResolver: ConflictResolveStrategy?,
         exceptionResolver: ExceptionResolver?
-    ): AppResult<Int> = session.updateAny(
+    ): AppResult<Int> {
+        row.keys.forEach { requireSafeIdentifier(it) }
+        return session.updateAny(
         queryOf(
             """
                         INSERT INTO ${tableName}
@@ -93,6 +100,7 @@ class DbSyncService(app: AppServices) : Service(app) {
             }
         } ?: error.left()
     }, { it.right() })
+    }
 
     private suspend fun getColumns(tableName: String): AppResult<Map<String, String>> =
         db.use {
@@ -163,9 +171,12 @@ abstract class ConflictResolveStrategy {
 abstract class UpdateColumns(override val constraintName: String) : ConflictResolveStrategy() {
     abstract fun columnsToUpdate(allColumns: Set<String>): Set<String>
 
-    override fun sql(allColumns: Set<String>): String =
-        "ON CONFLICT ON CONSTRAINT $constraintName DO UPDATE SET\n" +
+    override fun sql(allColumns: Set<String>): String {
+        requireSafeIdentifier(constraintName)
+        allColumns.forEach { requireSafeIdentifier(it) }
+        return "ON CONFLICT ON CONSTRAINT $constraintName DO UPDATE SET\n" +
                 columnsToUpdate(allColumns).joinToString(",\n") { "$it = EXCLUDED.$it" }
+    }
 }
 
 class UpdateAllColumnsExcept(constraintName: String, val ignoredColumns: Set<String>) : UpdateColumns(constraintName) {
