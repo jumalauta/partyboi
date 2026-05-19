@@ -58,7 +58,7 @@ class VotingTest : PartyboiTester {
         it.get("/vote") {
             findFirst("article") {
                 findAll("input")
-                    .joinToString("") { if (it.hasAttribute("checked")) "x" else "." }
+                    .joinToString("") { elem -> if (elem.hasAttribute("checked")) "x" else "." }
                     .toBe("...x.")
             }
         }
