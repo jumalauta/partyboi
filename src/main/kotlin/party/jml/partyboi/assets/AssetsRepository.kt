@@ -37,7 +37,7 @@ class AssetsRepository(app: AppServices) {
                     .toList()
                     .map { Asset(it) }
             }
-        } catch (_: Throwable) {
+        } catch (_: Exception) {
             emptyList()
         }
 

@@ -10,11 +10,14 @@ import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.html.InputType
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.system.TimeService
+import io.ktor.util.logging.*
 import java.net.URI
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
+
+private val log = KtorSimpleLogger("party.jml.partyboi.form.Schema")
 
 data class Schema(
     val kclass: KClass<*>,
@@ -59,7 +62,7 @@ data class Schema(
         return try {
             ctor.call(*args)
         } catch (e: Throwable) {
-            println("Could not construct ${ctor} with args ${args.toList()}")
+            log.error("Could not construct $ctor with args ${args.toList()}", e)
             throw e
         }
     }

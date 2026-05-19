@@ -163,11 +163,8 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
 
         val fromKey: (String) -> VoteKey = { key ->
             val tokens = key.split(":")
-            val keyType = try {
-                VoteKeyType.valueOf(tokens.first().uppercase())
-            } catch (_: Throwable) {
-                VoteKeyType.OTHER
-            }
+            val keyType = runCatching { VoteKeyType.valueOf(tokens.first().uppercase()) }
+                .getOrDefault(VoteKeyType.OTHER)
             val id = tokens.getOrNull(1)
             VoteKey(keyType, id)
         }

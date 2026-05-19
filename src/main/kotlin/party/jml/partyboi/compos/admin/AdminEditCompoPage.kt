@@ -72,7 +72,7 @@ object AdminEditCompoPage {
                                                         type = InputType.checkBox
                                                         value = format.name
                                                         checked =
-                                                            compoForm.data.fileFormats.find { it.name == format.name } != null
+                                                            compoForm.data.fileFormats.any { it.name == format.name }
                                                         +format.description
                                                     }
                                                 }

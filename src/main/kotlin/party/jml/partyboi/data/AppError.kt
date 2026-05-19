@@ -34,8 +34,7 @@ interface AppError : Renderable {
 }
 
 interface UserError : AppError {
-    override val throwable: Throwable?
-        get() = null
+    override val throwable: Throwable? get() = null
 }
 
 class Notice(override val message: String) : UserError {
@@ -59,8 +58,7 @@ class FormError(override val message: String) : UserError {
 class ValidationError(val errors: NonEmptyList<Message>) : UserError {
     constructor(target: String, message: String, value: String) : this(nonEmptyListOf(Message(target, message, value)))
 
-    override val statusCode: HttpStatusCode
-        get() = HttpStatusCode.BadRequest
+    override val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
 
     override val message: String
         get() = errors.map { if (it.target == null) it.message else "${it.target}: ${it.message}" }.joinToString { it }
@@ -69,11 +67,8 @@ class ValidationError(val errors: NonEmptyList<Message>) : UserError {
 }
 
 class RedirectInterruption(val location: String) : UserError {
-    override val statusCode: HttpStatusCode
-        get() = HttpStatusCode.Found
-
-    override val message: String
-        get() = "Location: $location"
+    override val statusCode: HttpStatusCode = HttpStatusCode.Found
+    override val message: String = "Location: $location"
 
     override fun getContent(user: User?, path: String): String = ""
 

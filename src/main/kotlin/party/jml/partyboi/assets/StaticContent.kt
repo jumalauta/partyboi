@@ -21,12 +21,9 @@ fun Application.configureStaticContent() {
             if (assetFile.exists() && assetFile.isFile) {
                 call.respondFile(assetFile)
             } else {
-                val resourceStream = this::class.java.classLoader.getResourceAsStream("assets/$path")
-                if (resourceStream != null) {
-                    call.respondBytes(resourceStream.readBytes(), ContentType.defaultForFile(assetFile))
-                } else {
-                    call.respondPage(NotFound("File not found"))
-                }
+                this::class.java.classLoader.getResourceAsStream("assets/$path")
+                    ?.let { call.respondBytes(it.readBytes(), ContentType.defaultForFile(assetFile)) }
+                    ?: call.respondPage(NotFound("File not found"))
             }
         }
 

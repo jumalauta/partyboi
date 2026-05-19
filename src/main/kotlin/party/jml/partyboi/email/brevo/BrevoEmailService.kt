@@ -17,11 +17,10 @@ import party.jml.partyboi.email.EmailService
 import party.jml.partyboi.system.AppResult
 
 class BrevoEmailService(val app: AppServices, val apiKey: String) : EmailService {
-    private val client: HttpClient get() = HttpClient(CIO)
+    private val client = HttpClient(CIO)
 
     override suspend fun sendMail(message: EmailMessage): AppResult<Unit> {
-        val response = client.use { client ->
-            client.request("https://api.brevo.com/v3/smtp/email") {
+        val response = client.request("https://api.brevo.com/v3/smtp/email") {
                 method = HttpMethod.Post
                 headers {
                     append(HttpHeaders.ContentType, ContentType.Application.Json)
@@ -38,7 +37,6 @@ class BrevoEmailService(val app: AppServices, val apiKey: String) : EmailService
                         )
                     )
                 )
-            }
         }
 
         return when (response.status) {

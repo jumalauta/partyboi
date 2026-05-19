@@ -31,38 +31,37 @@ fun <T : Validateable<T>> FlowContent.renderReadonlyFields(
 ) {
     table {
         form.forEach { data ->
-            if (data.type == InputType.file) {
-                // Render nothing
-            } else if (data.type == InputType.hidden) {
-                // Render nothing
-            } else if (data.type == InputType.checkBox) {
-                readonlyField(data.label, if (data.value.isNotEmpty()) "True" else "False")
-            } else {
-                val opts = options?.get(data.key)
-                if (opts == null) {
-                    if (data.presentation == FieldPresentation.large) {
-                        if (data.value.isNotEmpty()) {
-                            tr {
-                                th {
-                                    colSpan = "2"
-                                    small { +data.label }
+            when (data.type) {
+                InputType.file, InputType.hidden -> {}
+                InputType.checkBox ->
+                    readonlyField(data.label, if (data.value.isNotEmpty()) "True" else "False")
+                else -> {
+                    val opts = options?.get(data.key)
+                    if (opts == null) {
+                        if (data.presentation == FieldPresentation.large) {
+                            if (data.value.isNotEmpty()) {
+                                tr {
+                                    th {
+                                        colSpan = "2"
+                                        small { +data.label }
+                                    }
+                                }
+                                tr {
+                                    td {
+                                        colSpan = "2"
+                                        +data.value
+                                    }
                                 }
                             }
-                            tr {
-                                td {
-                                    colSpan = "2"
-                                    +data.value
-                                }
-                            }
+                        } else {
+                            readonlyField(data.label, data.value)
                         }
                     } else {
-                        readonlyField(data.label, data.value)
+                        val opt = opts
+                            .map { it.toDropdownOption() }
+                            .find { it.value == data.value }
+                        readonlyField(data.label, opt?.label ?: data.value)
                     }
-                } else {
-                    val opt = opts
-                        .map { it.toDropdownOption() }
-                        .find { it.value == data.value }
-                    readonlyField(data.label, opt?.label ?: data.value)
                 }
             }
         }
@@ -93,22 +92,21 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
         }
     }
     form.forEach { data ->
-        if (data.type == InputType.file) {
-            formFileInput(data)
-        } else if (data.type == InputType.hidden) {
-            formHiddenValue(data)
-        } else if (data.type == InputType.checkBox) {
-            formCheckBox(data)
-        } else {
-            val opts = options?.get(data.key)
-            if (opts == null) {
-                when (data.presentation) {
-                    FieldPresentation.large -> formTextArea(data, monospace = false)
-                    FieldPresentation.monospace -> formTextArea(data, monospace = true)
-                    else -> formTextInput(data)
+        when (data.type) {
+            InputType.file -> formFileInput(data)
+            InputType.hidden -> formHiddenValue(data)
+            InputType.checkBox -> formCheckBox(data)
+            else -> {
+                val opts = options?.get(data.key)
+                if (opts == null) {
+                    when (data.presentation) {
+                        FieldPresentation.large -> formTextArea(data, monospace = false)
+                        FieldPresentation.monospace -> formTextArea(data, monospace = true)
+                        else -> formTextInput(data)
+                    }
+                } else {
+                    dropdown(data, opts)
                 }
-            } else {
-                dropdown(data, opts)
             }
         }
     }

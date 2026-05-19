@@ -7,9 +7,7 @@ import party.jml.partyboi.templates.Page
 
 object PasswordResetPage {
     fun render(form: Form<PasswordResetForm>, errorMsg: String? = null) = Page("Password reset") {
-        if (errorMsg != null) {
-            article(classes = "error") { +errorMsg }
-        }
+        errorMsg?.let { article(classes = "error") { +it } }
         renderForm(
             url = "/reset-password",
             form = form,
