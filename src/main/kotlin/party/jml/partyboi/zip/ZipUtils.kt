@@ -15,7 +15,10 @@ object ZipUtils {
                 .use { zip ->
                     zip.entries.iterator().forEach { entry ->
                         val input = zip.getInputStream(entry)
-                        val output = targetDir.resolve(entry.name)
+                        val output = targetDir.resolve(entry.name).normalize()
+                        require(output.startsWith(targetDir.normalize())) {
+                            "Path traversal detected in ZIP entry: ${entry.name}"
+                        }
                         output.parent.toFile().mkdirs()
                         if (!entry.isDirectory) {
                             input.use { inputStream ->
