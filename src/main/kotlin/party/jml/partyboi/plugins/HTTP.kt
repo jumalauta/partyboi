@@ -5,6 +5,8 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.server.plugins.ratelimit.*
 import party.jml.partyboi.config
 import kotlin.time.Duration.Companion.minutes
@@ -24,6 +26,14 @@ fun Application.configureHTTP() {
         allowHost(hostName, schemes = listOf("https", "http"))
     }
     install(Compression)
+    install(createRouteScopedPlugin("SecurityHeaders") {
+        onCallRespond { call ->
+            call.response.header("X-Frame-Options", "DENY")
+            call.response.header("X-Content-Type-Options", "nosniff")
+            call.response.header("Referrer-Policy", "strict-origin-when-cross-origin")
+            call.response.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        }
+    })
     install(RateLimit) {
         register(LoginRateLimit) {
             rateLimiter(limit = 10, refillPeriod = 5.minutes)
