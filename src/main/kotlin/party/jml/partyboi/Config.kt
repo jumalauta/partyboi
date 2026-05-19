@@ -53,7 +53,7 @@ class ConfigReader(private val config: ApplicationConfig) {
     val secretSignKey: ByteArray by lazy { hex(config.property("ktor.sessions.secretSignKey").getString()) }
 
     // Directories
-    val filesDir by lazy { config.propertyOrNull("files.path")?.getPath() ?: Path.of("data/files") }
+    val filesDir: Path by lazy { config.propertyOrNull("files.path")?.getPath() ?: Path.of("data/files") }
     val assetsDir: Path by lazy { filesDir.resolve("assets") }
     val sharedDir: Path by lazy { config.propertyOrNull("files.sharedPath")?.getPath() ?: Path.of("data/shared") }
 

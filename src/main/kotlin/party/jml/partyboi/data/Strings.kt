@@ -27,7 +27,7 @@ fun randomShortId() = randomStringId(3) + "-" + randomStringId(3)
 
 fun randomStringId(length: Int): String = RandomStringUtils.secure().next(length, true, false).uppercase()
 
-fun randomToken() = RandomStringUtils.secure().next(64, true, true)
+fun randomToken(): String = RandomStringUtils.secure().next(64, true, true)
 
 fun String.toLabel(): String {
     val tokens = split(Regex("(?<=[a-z])(?=[A-Z])"))
