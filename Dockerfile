@@ -18,7 +18,7 @@ WORKDIR /home/gradle/src
 RUN gradle buildFatJar --no-daemon
 
 # Stage 3: Create the Runtime Image
-FROM amazoncorretto:21 AS runtime
+FROM amazoncorretto:21.0.11 AS runtime
 EXPOSE 8123:8123
 RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/*.jar /app/partyboi.jar
