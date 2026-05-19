@@ -11,7 +11,7 @@ import party.jml.partyboi.data.randomShortId
 fun FlowContent.errorMessage(storedId: String?, error: Throwable) {
     section(classes = "error") {
         val id = storedId ?: randomShortId()
-        KtorSimpleLogger("renderFields").error("Error {}: {}", id, error)
+        KtorSimpleLogger("renderFields").error("Error {}: {}", id, error.toString(), error)
         +"Something went wrong"
         span {
             tooltip("Error id for debugging: $id")
