@@ -53,11 +53,15 @@ fun Application.configureAuthentication(app: AppServices) {
         }
     }
 
+    val isDev = developmentMode
     install(Sessions) {
         val secretSignKey = app.config.secretSignKey
         cookie<User>("user_session", app.sessions) {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 7.days.inWholeSeconds
+            cookie.httpOnly = true
+            cookie.secure = !isDev
+            cookie.extensions["SameSite"] = "Lax"
             transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
         }
     }
