@@ -14,7 +14,7 @@ class PasswordResetRepository(val app: AppServices) {
 
     suspend fun generatePasswordResetCode(userId: UUID): AppResult<String> = db.use {
         val code = randomStringId(32)
-        it.one(
+        one(
             queryOf(
                 "INSERT INTO password_reset(code, user_id) VALUES (?, ?) RETURNING code",
                 code,
@@ -24,7 +24,7 @@ class PasswordResetRepository(val app: AppServices) {
     }
 
     suspend fun getPasswordResetUserId(code: String): AppResult<UUID> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                 SELECT user_id 
@@ -37,6 +37,6 @@ class PasswordResetRepository(val app: AppServices) {
     }
 
     suspend fun invalidateCode(code: String): AppResult<Unit> = db.use {
-        it.exec(queryOf("DELETE FROM password_reset WHERE code = ?", code))
+        exec(queryOf("DELETE FROM password_reset WHERE code = ?", code))
     }
 }

@@ -36,7 +36,7 @@ fun Application.module() {
 fun Application.configureHealthCheck(app: AppServices) {
     routing {
         get("/health") {
-            val result = app.db.use { it.one(queryOf("SELECT true").map(asBoolean)) }
+            val result = app.db.use { one(queryOf("SELECT true").map(asBoolean)) }
             call.apiRespond(result.map {})
         }
     }

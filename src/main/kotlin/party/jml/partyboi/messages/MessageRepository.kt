@@ -12,7 +12,7 @@ class MessageRepository(val app: AppServices) {
     private val db = app.db
 
     suspend fun consumeUnreadMessages(userId: UUID): AppResult<List<Message>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
            DELETE FROM message
@@ -25,7 +25,7 @@ class MessageRepository(val app: AppServices) {
     }
 
     suspend fun sendMessage(userId: UUID, type: MessageType, text: String): AppResult<Message> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
             INSERT INTO message(user_id, type, text) VALUES(?, ?, ?)

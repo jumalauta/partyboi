@@ -41,11 +41,11 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     private val db = app.db
 
     override suspend fun get(eventId: UUID): AppResult<Event> = db.use {
-        it.one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
+        one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
     override suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>> = db.use {
-        it.many(
+        many(
             queryOf(
                 "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
                 since,
@@ -55,15 +55,15 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     }
 
     override suspend fun getAll(): AppResult<List<Event>> = db.use {
-        it.many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
+        many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
     }
 
     override suspend fun getPublic(): AppResult<List<Event>> = db.use {
-        it.many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
+        many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
     }
 
     override suspend fun add(event: NewEvent, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
-        it.one(
+        one(
             queryOf(
                 """
             INSERT INTO event (name, time, end_time, visible) 
@@ -78,11 +78,11 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     }
 
     override suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>> =
-        db.transaction { tx ->
+        db.transaction {
             either {
-                val createdEvent = add(event, tx).bind()
+                val createdEvent = add(event, this@transaction).bind()
                 val createdTriggers = actions
-                    .map { app.triggers.add(createdEvent.signal(), it, tx) }
+                    .map { app.triggers.add(createdEvent.signal(), it, this@transaction) }
                     .bindAll()
                 Pair(createdEvent, createdTriggers)
             }
@@ -90,7 +90,7 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
 
     override suspend fun update(event: Event, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
         app.triggers.reset(event.signal(), tx)
-        it.one(
+        one(
             queryOf(
                 """
             UPDATE event
@@ -111,11 +111,11 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     }
 
     override suspend fun delete(eventId: UUID): AppResult<Unit> = db.use {
-        it.updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
+        updateOne(queryOf("DELETE FROM event WHERE id = ?", eventId))
     }
 
     override suspend fun deleteAll(): AppResult<Unit> = db.use {
-        it.exec(queryOf("DELETE FROM event"))
+        exec(queryOf("DELETE FROM event"))
     }
 }
 

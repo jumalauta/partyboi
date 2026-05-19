@@ -27,7 +27,7 @@ class DbSyncService(app: AppServices) : Service(app) {
             val columns = getColumns(tableName).bind()
             columns.keys.forEach { requireSafeIdentifier(it) }
             val data = db.use {
-                it.many(queryOf("SELECT * FROM $tableName ORDER BY ${columns.keys.first()}").map { row ->
+                many(queryOf("SELECT * FROM $tableName ORDER BY ${columns.keys.first()}").map { row ->
                     columns.map { (colName, colType) ->
                         colName to when (colType) {
                             "boolean" -> JsonPrimitive(row.boolean(colName))
@@ -48,11 +48,11 @@ class DbSyncService(app: AppServices) : Service(app) {
             columns.keys.forEach { requireSafeIdentifier(it) }
             val pkeyResolver = getPrimaryKeyConstraint(table.table).bind()
 
-            db.use { session ->
+            db.use {
                 either {
                     table.data.map { row ->
                         putEntry(
-                            session = session,
+                            session = this@use,
                             tableName = table.table,
                             columns = columns,
                             row = row,
@@ -104,7 +104,7 @@ class DbSyncService(app: AppServices) : Service(app) {
 
     private suspend fun getColumns(tableName: String): AppResult<Map<String, String>> =
         db.use {
-            it.many(
+            many(
                 queryOf(
                     "SELECT * FROM information_schema.columns WHERE table_name = ?",
                     tableName
@@ -116,7 +116,7 @@ class DbSyncService(app: AppServices) : Service(app) {
 
     private suspend fun getPrimaryKeyConstraint(tableName: String): Either<AppError, UpdateAllColumnsExcept?> =
         db.use {
-            it.many(
+            many(
                 queryOf(
                     """
                     SELECT

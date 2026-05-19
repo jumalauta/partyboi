@@ -32,7 +32,7 @@ class TriggerRepository(app: AppServices) : Service(app) {
     suspend fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): AppResult<TriggerRow> =
         db.use(tx) {
             either {
-                it.one(
+                one(
                     queryOf(
                         """
                 INSERT INTO trigger (signal, type, action, description)
@@ -49,11 +49,11 @@ class TriggerRepository(app: AppServices) : Service(app) {
         }
 
     suspend fun setEnabled(triggerId: UUID, enabled: Boolean) = db.use {
-        it.updateOne(queryOf("UPDATE trigger SET enabled = ? WHERE id = ?", enabled, triggerId))
+        updateOne(queryOf("UPDATE trigger SET enabled = ? WHERE id = ?", enabled, triggerId))
     }
 
     suspend fun getTriggersForSignal(signal: Signal) = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                 SELECT *
@@ -67,11 +67,11 @@ class TriggerRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getAllTriggers() = db.use {
-        it.many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
+        many(queryOf("SELECT * FROM trigger").map(TriggerRow.fromRow))
     }
 
     suspend fun reset(signal: Signal, tx: TransactionalSession? = null): AppResult<Unit> = db.use(tx) {
-        it.exec(
+        exec(
             queryOf(
                 """
             UPDATE trigger
@@ -82,14 +82,14 @@ class TriggerRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun deleteAll() = db.use { it.exec(queryOf("TRUNCATE TABLE trigger CASCADE")) }
+    suspend fun deleteAll() = db.use { exec(queryOf("TRUNCATE TABLE trigger CASCADE")) }
 
     private suspend fun setSuccessful(triggerId: UUID, time: Instant) = db.use {
-        it.updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
+        updateOne(queryOf("UPDATE trigger SET executed_at = ? WHERE id = ?", time, triggerId))
     }
 
     private suspend fun setFailed(triggerId: UUID, time: Instant, error: String) = db.use {
-        it.updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
+        updateOne(queryOf("UPDATE trigger SET error = ?, executed_at = ? WHERE id = ?", error, time, triggerId))
     }
 
     private suspend fun execute(signal: Signal): AppResult<Unit> = either {
@@ -113,7 +113,7 @@ class TriggerRepository(app: AppServices) : Service(app) {
     }
 
     private suspend fun getTriggers(signal: String) = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                 SELECT *

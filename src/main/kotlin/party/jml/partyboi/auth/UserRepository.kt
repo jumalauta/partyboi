@@ -25,7 +25,7 @@ class UserRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     suspend fun getUsers(): AppResult<List<User>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                 SELECT
@@ -44,7 +44,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getUser(name: String): AppResult<User> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                 SELECT
@@ -65,7 +65,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun findUserByEmail(email: String): AppResult<User> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                 SELECT
@@ -86,7 +86,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getUser(id: UUID): AppResult<User> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                 SELECT
@@ -107,7 +107,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun createUser(user: UserCredentials) = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                         INSERT INTO appuser (name, password, email)
@@ -125,7 +125,7 @@ class UserRepository(app: AppServices) : Service(app) {
     suspend fun updateUser(userId: UUID, user: UserCredentials): AppResult<Unit> = db.transaction {
         either {
             if (user.password.isNotEmpty()) {
-                it.updateOne(
+                updateOne(
                     queryOf(
                         "UPDATE appuser SET password = ? WHERE id = ?",
                         user.hashedPassword(),
@@ -134,7 +134,7 @@ class UserRepository(app: AppServices) : Service(app) {
                 ).bind()
             }
 
-            it.updateOne(
+            updateOne(
                 queryOf(
                     "UPDATE appuser SET name = ?, email = ? WHERE id = ?",
                     user.name,
@@ -146,7 +146,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun changePassword(userId: UUID, hashedPassword: String) = db.use {
-        it.updateOne(
+        updateOne(
             queryOf(
                 "UPDATE appuser SET password = ? WHERE id = ?",
                 hashedPassword,
@@ -156,11 +156,11 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun deleteAll() = db.use {
-        it.exec(queryOf("DELETE FROM appuser"))
+        exec(queryOf("DELETE FROM appuser"))
     }
 
     suspend fun getEmailVerificationCode(userId: UUID) = db.use {
-        it.one(
+        one(
             queryOf(
                 "SELECT verification_code FROM appuser WHERE id = ?",
                 userId
@@ -169,7 +169,7 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun setEmailVerified(userId: UUID, verified: Boolean = true): AppResult<Unit> = db.use {
-        it.exec(
+        exec(
             queryOf(
                 """
                     UPDATE appuser
@@ -186,7 +186,7 @@ class UserRepository(app: AppServices) : Service(app) {
 
     suspend fun generateVerificationCode(userId: UUID): AppResult<String> = db.use {
         val code = randomStringId(32)
-        it.one(
+        one(
             queryOf(
                 """
             UPDATE appuser
@@ -201,13 +201,13 @@ class UserRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun makeAdmin(userId: UUID, state: Boolean) = db.use {
-        it.updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
+        updateOne(queryOf("UPDATE appuser SET is_admin = ? WHERE id = ?", state, userId))
     }
 
     suspend fun createAdminUser() = db.use {
         val password = app.config.adminPassword
         val admin = UserCredentials(app.config.adminUsername, password, password, "")
-        it.exec(
+        exec(
             queryOf(
                 "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",
                 admin.name,

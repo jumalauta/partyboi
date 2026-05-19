@@ -19,7 +19,7 @@ class VoteRepository(app: AppServices) : Service(app) {
     private val db: DatabasePool = app.db
 
     suspend fun castVote(userId: UUID, entryId: UUID, points: Int): AppResult<Unit> = db.use {
-        it.exec(
+        exec(
             queryOf(
                 """
                 INSERT INTO vote (user_id, entry_id, points)
@@ -35,7 +35,7 @@ class VoteRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getUserVotes(userId: UUID): AppResult<List<VoteRow>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                 SELECT *
@@ -48,11 +48,11 @@ class VoteRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getAllVotes(): AppResult<List<VoteRow>> = db.use {
-        it.many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
+        many(queryOf("SELECT * FROM vote").map(VoteRow.fromRow))
     }
 
     suspend fun getResults(onlyPublic: Boolean): AppResult<List<CompoResult>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
             SELECT
@@ -76,7 +76,7 @@ class VoteRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun deleteAll() = db.use {
-        it.exec(queryOf("DELETE FROM vote"))
+        exec(queryOf("DELETE FROM vote"))
     }
 }
 

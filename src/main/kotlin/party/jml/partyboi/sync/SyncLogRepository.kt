@@ -22,7 +22,7 @@ class SyncLogRepository(app: AppServices) : Service(app) {
 
     suspend fun getAll(): AppResult<List<SyncLogEntry>> =
         db.use {
-            it.many(
+            many(
                 queryOf("SELECT * FROM synclog ORDER BY start_time ASC").map(SyncLogEntry.fromRow)
             )
         }
@@ -44,7 +44,7 @@ class SyncLogRepository(app: AppServices) : Service(app) {
 
     suspend fun startEntry(id: SyncLogId) =
         db.use {
-            it.exec(
+            exec(
                 queryOf(
                     """
                     INSERT INTO synclog (id, description, start_time)
@@ -65,7 +65,7 @@ class SyncLogRepository(app: AppServices) : Service(app) {
 
     suspend fun completeEntry(id: SyncLogId) =
         db.use {
-            it.updateOne(
+            updateOne(
                 queryOf(
                     """
                         UPDATE synclog SET
@@ -81,7 +81,7 @@ class SyncLogRepository(app: AppServices) : Service(app) {
 
     suspend fun failEntry(id: SyncLogId, error: String) =
         db.use {
-            it.updateOne(
+            updateOne(
                 queryOf(
                     """
                         UPDATE synclog SET

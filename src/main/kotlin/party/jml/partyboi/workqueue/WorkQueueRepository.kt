@@ -19,7 +19,7 @@ class WorkQueueRepository(val app: AppServices) {
     private val db = app.db
 
     suspend fun add(task: Task): AppResult<TaskRow> = db.use {
-        it.one(
+        one(
             queryOf(
                 "INSERT INTO task(task, state) VALUES (?::jsonb, ?) RETURNING *",
                 Json.encodeToString(task),
@@ -29,7 +29,7 @@ class WorkQueueRepository(val app: AppServices) {
     }
 
     suspend fun takeNext(): AppResult<TaskRow> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
             UPDATE task
@@ -48,11 +48,11 @@ class WorkQueueRepository(val app: AppServices) {
     }
 
     suspend fun cancel(): AppResult<Unit> = db.use {
-        it.exec(queryOf("UPDATE task SET state = 'Discarded' WHERE state = 'Working'"))
+        exec(queryOf("UPDATE task SET state = 'Discarded' WHERE state = 'Working'"))
     }
 
     suspend fun setState(id: UUID, state: TaskState) = db.use {
-        it.updateOne(queryOf("UPDATE task SET state = ? WHERE id = ?", state, id))
+        updateOne(queryOf("UPDATE task SET state = ? WHERE id = ?", state, id))
     }
 }
 

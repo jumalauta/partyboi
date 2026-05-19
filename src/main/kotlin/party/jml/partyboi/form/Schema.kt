@@ -54,7 +54,7 @@ data class Schema(
         }
     }
 
-    fun constructWith(getValue: (Property) -> Any?): Any {
+    fun constructWith(getValue: Property.() -> Any?): Any {
         val args = properties.map { getValue(it) }.toTypedArray()
         return try {
             ctor.call(*args)

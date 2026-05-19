@@ -24,7 +24,7 @@ fun requireSafeIdentifier(name: String) {
 }
 
 class DatabasePool(val dataSource: HikariDataSource) : Logging() {
-    suspend fun <A> use(tx: TransactionalSession? = null, block: suspend (Session) -> A): A =
+    suspend fun <A> use(tx: TransactionalSession? = null, block: suspend Session.() -> A): A =
         if (tx != null) {
             block(tx)
         } else {
@@ -33,18 +33,18 @@ class DatabasePool(val dataSource: HikariDataSource) : Logging() {
 
     suspend fun <A> transaction(
         schema: String? = null,
-        block: suspend (TransactionalSession) -> AppResult<A>
+        block: suspend TransactionalSession.() -> AppResult<A>
     ): AppResult<A> =
-        sessionOf(dataSource).use { it.transactionEither(schema) { tx -> block(tx) } }
+        sessionOf(dataSource).use { it.transactionEither(schema) { block() } }
 
-    suspend fun <A> useUnsafe(block: suspend (Session) -> A): A =
+    suspend fun <A> useUnsafe(block: suspend Session.() -> A): A =
         sessionOf(dataSource).use { block(it) }
 
     suspend fun createSchema(name: String): AppResult<String> {
         requireSafeIdentifier(name)
         val schema = transaction {
-            dropSchema(it, name)
-            it.exec(queryOf("CREATE SCHEMA $name"))
+            dropSchema(this, name)
+            exec(queryOf("CREATE SCHEMA $name"))
         }
         val self = this
         return either {
@@ -111,7 +111,7 @@ object DbBasicMappers {
 
 inline fun <A> Session.transactionEither(
     schema: String?,
-    operation: (TransactionalSession) -> AppResult<A>
+    operation: TransactionalSession.() -> AppResult<A>
 ): AppResult<A> {
     try {
         connection.begin()
@@ -121,7 +121,7 @@ inline fun <A> Session.transactionEither(
             requireSafeIdentifier(schema)
             tx.exec(queryOf("SET search_path TO $schema"))
         }
-        val result = operation.invoke(tx)
+        val result = tx.operation()
         if (result.isRight()) {
             connection.commit()
         } else {

@@ -96,7 +96,7 @@ class PreviewRepository(val app: AppServices) {
 
     private suspend fun getPreviewEntry(entryId: UUID): AppResult<PreviewEntry> =
         app.db.use {
-            it.one(
+            one(
                 queryOf(
                     "SELECT * FROM preview WHERE entry_id = ?",
                     entryId
@@ -106,7 +106,7 @@ class PreviewRepository(val app: AppServices) {
 
     private suspend fun savePreviewEntry(entryId: UUID, fileId: UUID): AppResult<Unit> =
         app.db.use {
-            it.exec(
+            exec(
                 queryOf(
                     """
                     INSERT INTO preview (entry_id, file_id)

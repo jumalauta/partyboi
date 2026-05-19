@@ -36,7 +36,7 @@ class ErrorRepository(app: AppServices) {
     }
 
     suspend fun save(key: String, error: Throwable, context: String? = null): AppResult<Unit> = db.use {
-        it.exec(
+        exec(
             queryOf(
                 """INSERT INTO error ("key", "message", "trace", "context") VALUES (?, ?, ?, ?::jsonb)""".trimIndent(),
                 key,
@@ -50,11 +50,11 @@ class ErrorRepository(app: AppServices) {
     }
 
     suspend fun getError(id: UUID): AppResult<ErrorRow> = db.use {
-        it.one(queryOf("SELECT * FROM error WHERE id = ?", id).map(ErrorRow.fromRow))
+        one(queryOf("SELECT * FROM error WHERE id = ?", id).map(ErrorRow.fromRow))
     }
 
     suspend fun getErrors(limit: Int, pageIndex: Int): AppResult<List<ErrorRow>> = db.use {
-        it.many(
+        many(
             queryOf(
                 "SELECT * FROM error ORDER BY time DESC LIMIT ? OFFSET ?",
                 limit,

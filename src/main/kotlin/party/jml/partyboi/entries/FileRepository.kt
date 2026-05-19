@@ -96,7 +96,7 @@ class FileRepository(app: AppServices) : Service(app) {
             desc
         }
 
-    suspend fun deleteAll() = db.use { it.exec(queryOf("TRUNCATE TABLE file CASCADE")) }
+    suspend fun deleteAll() = db.use { exec(queryOf("TRUNCATE TABLE file CASCADE")) }
 
     private fun getSize(absoluteFile: File): Either<InternalServerError, Long> =
         Either.catch { Files.size(absoluteFile.toPath()) }.mapLeft { InternalServerError(it) }
@@ -111,7 +111,7 @@ class FileRepository(app: AppServices) : Service(app) {
         if (entriesPath.exists()) {
             either {
                 val entryFiles = db.use {
-                    it.many(
+                    many(
                         queryOf("SELECT * FROM file JOIN entry_file ON entry_file.file_id = file.id")
                             .map(FileDesc.fromRow)
                     )
@@ -177,7 +177,7 @@ class FileRepository(app: AppServices) : Service(app) {
 
     private suspend fun add(file: FileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
         val result = db.use(tx) {
-            it.one(
+            one(
                 queryOf(
                     """
                         INSERT INTO file(orig_filename, storage_filename, type, size, checksum, processed, info) 
@@ -198,7 +198,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getById(fileId: UUID): AppResult<FileDesc> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
                     SELECT * 
@@ -211,7 +211,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getLatest(entryId: UUID, originalsOnly: Boolean): AppResult<FileDesc> = db.use {
-        it.one(
+        one(
             queryOf(
                 """                    
                     SELECT *
@@ -228,7 +228,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getAllVersions(entryId: UUID): AppResult<List<FileDesc>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                     SELECT *
@@ -255,7 +255,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getEntryIdsWithFiles(includeProcessedFiles: Boolean): AppResult<List<EntryFileAssociation>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                     WITH entry_file_with_rn AS (
@@ -278,7 +278,7 @@ class FileRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getAll() = db.use {
-        it.many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
+        many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
     }
 
     companion object {

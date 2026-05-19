@@ -41,22 +41,22 @@ class EntryRepository(app: AppServices) : Service(app) {
         }
 
     suspend fun getAllEntries(): AppResult<List<Entry>> = db.use {
-        it.many(queryOf("select * from entry").map(Entry.fromRow))
+        many(queryOf("select * from entry").map(Entry.fromRow))
     }
 
     suspend fun getAllEntriesByCompo(): AppResult<Map<UUID, List<Entry>>> =
         getAllEntries().map { it.groupBy { it.compoId } }
 
     suspend fun getEntriesForCompo(compoId: UUID): AppResult<List<Entry>> = db.use {
-        it.many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
+        many(queryOf("select * from entry where compo_id = ? order by run_order, id", compoId).map(Entry.fromRow))
     }
 
     suspend fun getById(entryId: UUID): AppResult<Entry> = db.use {
-        it.one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
+        one(queryOf("SELECT * FROM entry WHERE id = ?", entryId).map(Entry.fromRow))
     }
 
     suspend fun getByFileId(fileId: UUID): AppResult<Entry> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
             SELECT *
@@ -70,13 +70,13 @@ class EntryRepository(app: AppServices) : Service(app) {
 
     suspend fun associateFile(fileId: UUID, entryId: UUID, tx: TransactionalSession? = null): AppResult<Unit> =
         db.use(tx) {
-            it.updateOne(
+            updateOne(
                 queryOf("INSERT INTO entry_file(entry_id, file_id) VALUES(?, ?)", entryId, fileId)
             )
         }
 
     suspend fun getById(entryId: UUID, userId: UUID): AppResult<Entry> = db.use {
-        it.one(
+        one(
             queryOf(
                 """
             SELECT *
@@ -95,7 +95,7 @@ class EntryRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun getUserEntries(userId: UUID): AppResult<List<EntryWithLatestFile>> = db.use {
-        it.many(
+        many(
             query = queryOf(
                 """
             SELECT *
@@ -120,12 +120,12 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun add(newEntry: NewEntry): AppResult<Entry> =
         db.transaction {
             either {
-                val compo = app.compos.getById(newEntry.compoId, it).bind()
+                val compo = app.compos.getById(newEntry.compoId, this@transaction).bind()
                 if (compo.requireFile.isTrue() && !newEntry.file.isDefined) {
                     FormError("${compo.name} compo requires a file").left().bind<Unit>()
                 }
 
-                val entry = it.one(
+                val entry = one(
                     queryOf(
                         "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
                         newEntry.title,
@@ -138,7 +138,7 @@ class EntryRepository(app: AppServices) : Service(app) {
                 ).bind()
 
                 if (newEntry.file.isDefined) {
-                    val storedFile = storeFile(newEntry.file, entry.id, it).bind()
+                    val storedFile = storeFile(newEntry.file, entry.id, this@transaction).bind()
 
                     app.previews.scanForScreenshotSource(storedFile).map { source ->
                         app.previews.store(entry.id, source)
@@ -154,7 +154,7 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun update(entry: EntryUpdate, userId: UUID): AppResult<Entry> = either {
         val previousVersion = getById(entry.id).bind()
         db.use {
-            it.one(
+            one(
                 queryOf(
                     """
             update entry set
@@ -189,7 +189,7 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun delete(entryId: UUID, userId: UUID): AppResult<Unit> = either {
         val entry = getById(entryId).bind()
         db.use {
-            it.updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
+            updateOne(queryOf("delete from entry where id = ? and user_id = ?", entryId, userId))
         }.onRight {
             app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
@@ -198,19 +198,19 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun delete(entryId: UUID): AppResult<Unit> = either {
         val entry = getById(entryId).bind()
         db.use {
-            it.updateOne(queryOf("DELETE FROM entry WHERE id = ? CASCADE", entryId))
+            updateOne(queryOf("DELETE FROM entry WHERE id = ? CASCADE", entryId))
         }.onRight {
             app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
     suspend fun deleteAll(): AppResult<Unit> = db.use {
-        it.exec(queryOf("DELETE FROM entry CASCADE"))
+        exec(queryOf("DELETE FROM entry CASCADE"))
     }
 
     suspend fun setQualified(entryId: UUID, state: Boolean): AppResult<Unit> =
         db.use {
-            it.one(
+            one(
                 queryOf(
                     "update entry set qualified = ? where id = ? returning compo_id",
                     state,
@@ -223,7 +223,7 @@ class EntryRepository(app: AppServices) : Service(app) {
 
     suspend fun allowEdit(entryId: UUID, state: Boolean): AppResult<Unit> =
         db.use {
-            it.updateOne(
+            updateOne(
                 queryOf(
                     "update entry set allow_edit = ? where id = ? returning compo_id",
                     state,
@@ -233,7 +233,7 @@ class EntryRepository(app: AppServices) : Service(app) {
         }
 
     suspend fun assertCanSubmit(entryId: UUID, isAdmin: Boolean): AppResult<Unit> = db.use {
-        it.one(
+        one(
             queryOf(
                 "select ? or allow_edit from entry where id = ?",
                 isAdmin,
@@ -244,11 +244,11 @@ class EntryRepository(app: AppServices) : Service(app) {
 
     suspend fun setRunOrder(entryId: UUID, order: Int): AppResult<Unit> =
         db.use {
-            it.updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
+            updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
         }
 
     suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> = db.use {
-        it.many(
+        many(
             queryOf(
                 """
                 SELECT

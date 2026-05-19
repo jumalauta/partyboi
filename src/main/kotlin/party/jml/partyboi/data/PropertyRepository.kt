@@ -43,12 +43,12 @@ class PropertyRepository(app: AppServices) : Service(app) {
         )
 
     suspend fun get(key: String, private: Boolean): AppResult<Option<PropertyRow>> = db.use {
-        it.option(queryOf("SELECT * FROM ${table(private)} WHERE key = ?", key).map(PropertyRow.fromRow))
+        option(queryOf("SELECT * FROM ${table(private)} WHERE key = ?", key).map(PropertyRow.fromRow))
     }
 
     suspend fun store(key: String, private: Boolean, jsonValue: String) =
         db.use {
-            it.exec(
+            exec(
                 queryOf(
                     """
                     INSERT INTO ${table(private)} (key, value)
