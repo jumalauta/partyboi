@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kotlin_version = "2.3.0"
-val logback_version: String = "1.5.13"
-val postgres_version: String = "42.7.9"
+val logback_version: String = "1.5.32"
+val postgres_version: String = "42.7.11"
 val h2_version: String = "2.4.240"
 val kotlinx_html_version: String = "0.12.0"
-val flyway_version: String = "12.0.0"
+val flyway_version: String = "12.6.1"
 val arrow_version: String = "2.2.1"
 
 plugins {
@@ -39,8 +39,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation-jvm")
     implementation("org.postgresql:postgresql:$postgres_version")
     implementation("com.h2database:h2:$h2_version")
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("com.github.seratch:kotliquery:1.9.1")
+    implementation("com.zaxxer:HikariCP:6.3.3")
     implementation("org.flywaydb:flyway-core:$flyway_version")
     implementation("org.flywaydb:flyway-database-postgresql:$flyway_version")
     implementation("io.ktor:ktor-server-html-builder-jvm")
@@ -63,14 +63,14 @@ dependencies {
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
     implementation("io.arrow-kt:arrow-core-serialization:$arrow_version")
     implementation("org.mindrot:jbcrypt:0.4")
-    implementation("org.apache.commons:commons-compress:1.27.1")
-    implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
+    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("com.sksamuel.scrimage:scrimage-core:4.5.4")
     implementation("org.jetbrains:markdown:0.7.3")
-    implementation("org.jsoup:jsoup:1.18.3")
+    implementation("org.jsoup:jsoup:1.22.2")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-    implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
-    implementation("com.github.docker-java:docker-java:3.5.2")
-    implementation("com.github.docker-java:docker-java-transport-httpclient5:3.6.0")
+    implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
+    implementation("com.github.docker-java:docker-java:3.7.1")
+    implementation("com.github.docker-java:docker-java-transport-httpclient5:3.7.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     testImplementation("it.skrape:skrapeit:1.2.2")

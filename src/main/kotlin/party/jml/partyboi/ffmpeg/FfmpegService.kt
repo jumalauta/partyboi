@@ -13,7 +13,7 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         val client = Docker.getClient()
 
         val imageExists = client.listImagesCmd()
-            .withImageNameFilter(IMAGE)
+            .withReferenceFilter(IMAGE)
             .exec()
             .any { it.repoTags?.contains(IMAGE) == true }
 

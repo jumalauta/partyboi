@@ -197,19 +197,20 @@ class SubmitEntryPageTest : PartyboiTester {
         it.login()
 
         // Update entry
+        val e = entry!!
         val updated = EntryUpdate(
-            id = entry!!.id,
+            id = e.id,
             title = "Mega Turbo Färjan 2000 Deluxe Plus Nitro",
             author = "Jumalauta Game Committee",
             file = FileUpload.Empty,
-            compoId = entry!!.compoId,
-            userId = entry!!.userId,
+            compoId = e.compoId,
+            userId = e.userId,
             screenComment = "Turbo!!!",
             orgComment = "Yeah!!!"
         )
 
-        it.post("/entries/${entry.id}", updated) {
-            it.redirectsTo("/entries/${entry.id}")
+        it.post("/entries/${e.id}", updated) {
+            it.redirectsTo("/entries/${e.id}")
         }
     }
 
