@@ -65,6 +65,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
     implementation("org.jetbrains:markdown:0.7.3")
+    implementation("org.jsoup:jsoup:1.18.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
     implementation("com.github.docker-java:docker-java:3.5.2")
