@@ -54,6 +54,7 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions-jvm")
     implementation("io.ktor:ktor-server-sessions")
     implementation("io.ktor:ktor-server-auth")
+    implementation("io.ktor:ktor-server-rate-limit")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("io.ktor:ktor-network-jvm")
     implementation("ch.qos.logback:logback-classic:$logback_version")

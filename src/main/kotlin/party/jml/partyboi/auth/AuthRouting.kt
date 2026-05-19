@@ -2,6 +2,7 @@ package party.jml.partyboi.auth
 
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
@@ -10,6 +11,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.plugins.LoginRateLimit
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
@@ -23,30 +25,32 @@ fun Application.configureLoginRouting(app: AppServices) {
             )
         }
 
-        post("/login") {
-            call.sessions.clear<User>()
+        rateLimit(LoginRateLimit) {
+            post("/login") {
+                call.sessions.clear<User>()
 
-            call.processForm<LoginPage.UserLogin>(
-                { login ->
-                    val user = app.users.getUserByName(login.name).bind()
-                    val session = user.authenticate(login.password).bind()
-                    call.sessions.set(session)
-                    val redirect = call.request.cookies["afterLogin"] ?: "/"
-                    call.response.cookies.append("afterLogin", "", expires = GMTDate.START)
-                    Redirection(redirect)
-                },
-                { form ->
-                    LoginPage.render(
-                        formData = form.mapError {
-                            when (it) {
-                                is NotFound -> Notice("Invalid user name or password")
-                                else -> it
-                            }
-                        },
-                        emailServiceConfigured = app.email.isConfigured(),
-                    )
-                }
-            )
+                call.processForm<LoginPage.UserLogin>(
+                    { login ->
+                        val user = app.users.getUserByName(login.name).bind()
+                        val session = user.authenticate(login.password).bind()
+                        call.sessions.set(session)
+                        val redirect = call.request.cookies["afterLogin"] ?: "/"
+                        call.response.cookies.append("afterLogin", "", expires = GMTDate.START)
+                        Redirection(redirect)
+                    },
+                    { form ->
+                        LoginPage.render(
+                            formData = form.mapError {
+                                when (it) {
+                                    is NotFound -> Notice("Invalid user name or password")
+                                    else -> it
+                                }
+                            },
+                            emailServiceConfigured = app.email.isConfigured(),
+                        )
+                    }
+                )
+            }
         }
 
         get("/register") {
