@@ -564,3 +564,27 @@ body > footer {
 .sync-status-running td {
     opacity: 50%;
 }
+
+/* Asset management */
+
+#asset-list summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#asset-list summary > span {
+    flex-grow: 1;
+}
+
+#asset-list td.file-size {
+    white-space: nowrap;
+}
+
+article.hidden-asset, tr.hidden-asset {
+    display: none;
+}
+
+.show-hidden article.hidden-asset, .show-hidden tr.hidden-asset {
+    display: revert;
+}
