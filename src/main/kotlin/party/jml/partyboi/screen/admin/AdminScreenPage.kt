@@ -87,6 +87,7 @@ object AdminScreenPage {
                     }
                 }
                 article {
+                    id = "slide-list"
                     table {
                         tbody(classes = "sortable") {
                             attributes.put("data-draggable", "tr")
@@ -118,12 +119,16 @@ object AdminScreenPage {
                                     td(classes = "wide") {
                                         if (slide.slide is NonEditable) {
                                             tooltip("This slide cannot be edited")
-                                            val type = slide.slide.getType()
-                                            icon(type.icon, type.description)
-                                            +" "
-                                            +slide.getName()
+                                            span(classes = "slide-name") {
+                                                title = slide.getName()
+                                                val type = slide.slide.getType()
+                                                icon(type.icon, type.description)
+                                                +" "
+                                                +slide.getName()
+                                            }
                                         } else {
-                                            a(href = "/admin/screen/${slideSet}/${slide.id}") {
+                                            a(href = "/admin/screen/${slideSet}/${slide.id}", classes = "slide-name") {
+                                                title = slide.getName()
                                                 val type = slide.slide.getType()
                                                 icon(type.icon, type.description)
                                                 +" "

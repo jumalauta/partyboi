@@ -604,3 +604,18 @@ article.hidden-asset, tr.hidden-asset {
 .show-hidden article.hidden-asset, .show-hidden tr.hidden-asset {
     display: revert;
 }
+
+#slide-list table {
+    width: 100%;
+}
+
+#slide-list td.wide {
+    max-width: 0;
+}
+
+#slide-list td.wide .slide-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
