@@ -581,6 +581,22 @@ body > footer {
     white-space: nowrap;
 }
 
+#asset-list table {
+    width: 100%;
+}
+
+#asset-list td:first-child {
+    max-width: 0;
+    width: 100%;
+}
+
+#asset-list td:first-child a {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 article.hidden-asset, tr.hidden-asset {
     display: none;
 }
