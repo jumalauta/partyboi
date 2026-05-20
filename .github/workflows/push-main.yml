@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run tests
         uses: ./.github/actions/run-tests
   build:
@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build an image
         uses: ./.github/actions/build-image
   publish:
@@ -32,7 +32,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Publish the image
         uses: ./.github/actions/publish-image
         with:
@@ -45,7 +45,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: ilkkahanninen/partyboi-infra
           ssh-key: ${{ secrets.INFRA_REPOSITORY_PRIVATE_KEY }}
