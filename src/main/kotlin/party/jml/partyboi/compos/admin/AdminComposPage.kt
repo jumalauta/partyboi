@@ -54,12 +54,14 @@ object AdminComposPage {
                                             toggleButton(
                                                 compo.allowSubmit,
                                                 IconSet.submitting,
-                                                "/admin/compos/${compo.id}/setSubmit"
+                                                "/admin/compos/${compo.id}/setSubmit",
+                                                disabled = compo.manualResults
                                             )
                                             toggleButton(
                                                 compo.allowVote,
                                                 IconSet.voting,
-                                                "/admin/compos/${compo.id}/setVoting"
+                                                "/admin/compos/${compo.id}/setVoting",
+                                                disabled = compo.manualResults
                                             )
                                             toggleButton(
                                                 compo.publicResults,

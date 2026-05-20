@@ -116,8 +116,8 @@ object AdminEditCompoPage {
                                 td {
                                     switchLink(
                                         compo.visible,
-                                        "Everyone can see this compo",
-                                        "This compo is hidden",
+                                        "Compo visible",
+                                        "Compo hidden",
                                         "/admin/compos/${compo.id}/setVisible"
                                     )
                                 }
@@ -128,10 +128,9 @@ object AdminEditCompoPage {
                                     td {
                                         switchLink(
                                             compo.allowSubmit,
-                                            "Users can submit and update entries",
-                                            "Users cannot submit and update entries",
-                                            "/admin/compos/${compo.id}/setSubmit",
-                                            compo.allowVote
+                                            "Submitting open",
+                                            "Submitting closed",
+                                            "/admin/compos/${compo.id}/setSubmit"
                                         )
                                     }
                                 }
@@ -140,10 +139,9 @@ object AdminEditCompoPage {
                                     td {
                                         switchLink(
                                             compo.allowVote,
-                                            "Users can vote the entries of this compo",
-                                            "Users cannot vote the entries of this compo",
-                                            "/admin/compos/${compo.id}/setVoting",
-                                            compo.allowSubmit
+                                            "Voting open",
+                                            "Voting closed",
+                                            "/admin/compos/${compo.id}/setVoting"
                                         )
                                     }
                                 }
@@ -153,8 +151,8 @@ object AdminEditCompoPage {
                                 td {
                                     switchLink(
                                         compo.publicResults,
-                                        "Everyone can see the results of this compo",
-                                        "The results of this compo are hidden",
+                                        "Results published",
+                                        "Results hidden",
                                         "/admin/compos/${compo.id}/publishResults"
                                     )
                                 }

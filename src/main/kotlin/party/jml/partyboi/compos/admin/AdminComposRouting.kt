@@ -14,11 +14,7 @@ import kotlinx.html.pre
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
-import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.compos.GeneralRules
-import party.jml.partyboi.compos.ManualResult
-import party.jml.partyboi.compos.NewCompo
-import party.jml.partyboi.compos.NewManualResult
+import party.jml.partyboi.compos.*
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.respondFileShow
 import party.jml.partyboi.entries.respondNamedFileDownload
@@ -291,15 +287,42 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         }
 
         put("/admin/compos/{id}/setSubmit/{state}") {
-            call.switchApiUuid { id, state -> app.compos.allowSubmit(id, state) }
+            call.switchApiUuid { id, state ->
+                either {
+                    if (state) {
+                        app.compos.allowVoting(id, false).bind()
+                        app.compos.publishResults(id, false).bind()
+                        app.compos.setVisible(id, true).bind()
+                    }
+                    app.compos.allowSubmit(id, state).bind()
+                }
+            }
         }
 
         put("/admin/compos/{id}/setVoting/{state}") {
-            call.switchApiUuid { id, state -> app.compos.allowVoting(id, state) }
+            call.switchApiUuid { id, state ->
+                either {
+                    if (state) {
+                        app.compos.allowSubmit(id, false).bind()
+                        app.compos.publishResults(id, false).bind()
+                        app.compos.setVisible(id, true).bind()
+                    }
+                    app.compos.allowVoting(id, state).bind()
+                }
+            }
         }
 
         put("/admin/compos/{id}/publishResults/{state}") {
-            call.switchApiUuid { id, state -> app.compos.publishResults(id, state) }
+            call.switchApiUuid { id, state ->
+                either {
+                    if (state) {
+                        app.compos.allowSubmit(id, false).bind()
+                        app.compos.allowVoting(id, false).bind()
+                        app.compos.setVisible(id, true).bind()
+                    }
+                    app.compos.publishResults(id, state).bind()
+                }
+            }
         }
 
         put("/admin/compos/entries/{id}/setQualified/{state}") {

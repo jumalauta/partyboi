@@ -82,7 +82,7 @@ class CompoRepository(app: AppServices) : Service(app) {
     suspend fun allowSubmit(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         updateOne(
             queryOf(
-                "update compo set allow_submit = ? where id = ? and (not ? or not allow_vote)",
+                "update compo set allow_submit = ? where id = ? and (not ? or (not allow_vote and not manual_results))",
                 state,
                 compoId,
                 state
@@ -93,7 +93,7 @@ class CompoRepository(app: AppServices) : Service(app) {
     suspend fun allowVoting(compoId: UUID, state: Boolean): AppResult<Unit> = db.use {
         updateOne(
             queryOf(
-                "update compo set allow_vote = ? where id = ? and (not ? or not allow_submit)",
+                "update compo set allow_vote = ? where id = ? and (not ? or (not allow_submit and not manual_results))",
                 state,
                 compoId,
                 state

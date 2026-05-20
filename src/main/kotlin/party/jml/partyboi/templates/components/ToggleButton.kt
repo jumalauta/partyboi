@@ -21,9 +21,11 @@ fun FlowContent.toggleButton(
     toggled: Boolean,
     icons: IconSet,
     urlPrefix: String,
+    disabled: Boolean = false,
 ) {
     val shownIcon = icons.get(toggled)
     button(classes = "flat-button ${if (toggled) "on" else "off"}") {
+        if (disabled) attributes["disabled"] = "disabled"
         tooltip(shownIcon.tooltip)
         onClick = Javascript.build {
             httpPut("$urlPrefix/${!toggled}")
@@ -59,12 +61,12 @@ data class IconSet(
     fun get(state: Boolean) = if (state) toggled else notToggled
 
     companion object {
-        val visibility = IconSet(Icon.visible, Icon.hidden)
-        val submitting = IconSet(Icon("file-arrow-up", "Close submitting"), Icon("file-arrow-up", "Open submitting"))
-        val voting = IconSet(Icon("check-to-slot", "Close voting"), Icon("check-to-slot", "Open voting"))
+        val visibility = IconSet(Icon("eye", "Visible"), Icon("eye-slash", "Hidden"))
+        val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
+        val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
         val resultsPublic = IconSet(
-            Icon("square-poll-horizontal", "Hide results"),
-            Icon("square-poll-horizontal", "Publish results")
+            Icon("square-poll-horizontal", "Results published"),
+            Icon("square-poll-horizontal", "Results hidden")
         )
         val qualified = IconSet(Icon("star", "Non-/disqualify"), Icon("star", "Qualify"))
         val scheduled = IconSet(Icon("clock", "Pending"), Icon("ban", "Disabled"))
@@ -85,8 +87,8 @@ data class Icon(
     val classes = "fa-solid fa-$icon"
 
     companion object {
-        val visible = Icon("eye", "Hide")
-        val hidden = Icon("eye-slash", "Publish")
+        val visible = Icon("eye", "Visible")
+        val hidden = Icon("eye-slash", "Hidden")
         val admin = Icon("brain", "Admin")
         val next = Icon("arrow-right", "Next")
     }
