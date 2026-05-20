@@ -17,6 +17,6 @@ object BuildInfo {
 
     val buildYear: Int by lazy {
         timestamp.substringBefore("-").toIntOrNull()
-            ?: kotlinx.datetime.Clock.System.now().toDate().year
+            ?: kotlin.time.Clock.System.now().toDate().year
     }
 }

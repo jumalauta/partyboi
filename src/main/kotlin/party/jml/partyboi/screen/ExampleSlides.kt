@@ -4,6 +4,7 @@ import arrow.core.none
 import arrow.core.right
 import arrow.core.some
 import kotlinx.datetime.*
+import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.entries.Entry
@@ -166,8 +167,8 @@ class MockEventRepository(events: EventRepository) : EventRepository by events {
         fun time(hours: Int, minutes: Int): Instant =
             LocalDateTime(
                 year = date.year,
-                monthNumber = date.monthNumber,
-                dayOfMonth = date.dayOfMonth,
+                month = date.month,
+                day = date.day,
                 hour = hours,
                 minute = minutes
             ).toInstant(tz)

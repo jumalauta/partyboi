@@ -6,8 +6,8 @@ import arrow.core.raise.either
 import io.ktor.client.request.forms.*
 import io.ktor.util.cio.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind

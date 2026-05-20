@@ -2,7 +2,7 @@ package party.jml.partyboi.schedule
 
 import arrow.core.getOrElse
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import java.util.*

@@ -1,6 +1,6 @@
 package party.jml.partyboi.templates.components
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.html.FlowContent
 import kotlinx.html.span

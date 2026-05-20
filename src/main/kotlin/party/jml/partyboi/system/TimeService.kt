@@ -4,6 +4,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.format.char
+import kotlin.time.Clock
+import kotlin.time.Instant
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.AppServicesImpl
 import party.jml.partyboi.Service
@@ -53,7 +55,7 @@ fun LocalDate.displayDate(): String {
         .lowercase()
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() }
     val dateStr = format(LocalDate.Format {
-        dayOfMonth()
+        day()
         char('.')
         monthNumber()
         char('.')

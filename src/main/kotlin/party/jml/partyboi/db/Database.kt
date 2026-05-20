@@ -4,8 +4,8 @@ import arrow.core.*
 import arrow.core.raise.either
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 import kotlinx.datetime.toJavaLocalDateTime
 import kotliquery.*
 import kotliquery.action.*

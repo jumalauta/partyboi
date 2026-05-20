@@ -2,9 +2,9 @@ package party.jml.partyboi.triggers
 
 import arrow.core.flatten
 import arrow.core.raise.either
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row

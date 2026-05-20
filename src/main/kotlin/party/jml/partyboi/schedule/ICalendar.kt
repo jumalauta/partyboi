@@ -2,6 +2,8 @@ package party.jml.partyboi.schedule
 
 import kotlinx.datetime.*
 import kotlinx.datetime.format.char
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 object ICalendar {
     fun eventsToIcs(hostname: String, instanceName: String, events: List<Event>): String {
@@ -54,7 +56,7 @@ object ICalendar {
                 .format(LocalDateTime.Format {
                     year()
                     monthNumber()
-                    dayOfMonth()
+                    day()
                     char('T')
                     hour()
                     minute()

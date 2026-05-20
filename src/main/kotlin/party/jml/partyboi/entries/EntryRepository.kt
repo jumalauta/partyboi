@@ -7,8 +7,8 @@ package party.jml.partyboi.entries
 import arrow.core.*
 import arrow.core.raise.either
 import arrow.core.serialization.OptionSerializer
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotliquery.Row

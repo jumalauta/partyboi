@@ -5,6 +5,8 @@ import arrow.core.Some
 import arrow.core.raise.either
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession

@@ -1,7 +1,7 @@
 package party.jml
 
 import arrow.core.raise.either
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 import org.junit.Test
 import party.jml.partyboi.compos.NewCompo

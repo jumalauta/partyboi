@@ -2,8 +2,8 @@ package party.jml.partyboi.workqueue
 
 import arrow.core.Either
 import arrow.core.flatten
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import party.jml.partyboi.AppServices

@@ -2,8 +2,8 @@ package party.jml.partyboi.sync
 
 import arrow.core.flatten
 import arrow.core.raise.either
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service

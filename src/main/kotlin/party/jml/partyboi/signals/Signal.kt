@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.catchError

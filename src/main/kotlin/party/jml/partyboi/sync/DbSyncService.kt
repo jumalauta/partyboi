@@ -2,8 +2,8 @@ package party.jml.partyboi.sync
 
 import arrow.core.*
 import arrow.core.raise.either
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import kotliquery.Session

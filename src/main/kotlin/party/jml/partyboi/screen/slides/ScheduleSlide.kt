@@ -9,6 +9,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.serializers.LocalDateIso8601Serializer
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toJavaDayOfWeek
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -32,7 +33,7 @@ data class ScheduleSlide(
         val from = LocalDateTime(date, SplitDateAt).toInstant(tz)
         val eventsE = app.events.getBetween(from, from.plus(1.days))
         with(ctx) {
-            h1 { +"${date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK)}" }
+            h1 { +"${date.dayOfWeek.toJavaDayOfWeek().getDisplayName(TextStyle.FULL, Locale.UK)}" }
             eventsE.map { events ->
                 table {
                     events.forEach { event ->

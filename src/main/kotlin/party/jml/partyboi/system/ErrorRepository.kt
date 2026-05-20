@@ -1,8 +1,8 @@
 package party.jml.partyboi.system
 
 import arrow.core.toOption
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import party.jml.partyboi.AppServices
