@@ -27,6 +27,13 @@ class ManualResultRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun countByCompo(): AppResult<Map<UUID, Int>> = db.use {
+        many(
+            queryOf("SELECT compo_id, count(*) AS n FROM manual_result GROUP BY compo_id")
+                .map { row -> row.uuid("compo_id") to row.int("n") }
+        ).map { it.toMap() }
+    }
+
     suspend fun add(result: NewManualResult): AppResult<ManualResult> = db.use {
         one(
             queryOf(

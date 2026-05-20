@@ -20,6 +20,7 @@ object AdminComposPage {
         generalRulesForm: Form<GeneralRules>,
         compos: List<Compo>,
         entries: Map<UUID, List<Entry>>,
+        manualResultCounts: Map<UUID, Int>,
     ) = Page(
         title = "Compos",
         subLinks = compos.map { it.toNavItem() },
@@ -42,7 +43,11 @@ object AdminComposPage {
                                     tr {
                                         td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
                                         td {
-                                            val count = entries[compo.id]?.size ?: 0
+                                            val count = if (compo.manualResults) {
+                                                manualResultCounts[compo.id] ?: 0
+                                            } else {
+                                                entries[compo.id]?.size ?: 0
+                                            }
                                             +count.toString()
                                         }
                                         td(classes = "settings") {

@@ -45,6 +45,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             ),
             compos = app.compos.getAllCompos().bind(),
             entries = app.entries.getAllEntriesByCompo().bind(),
+            manualResultCounts = app.manualResults.countByCompo().bind(),
         )
     }
 
