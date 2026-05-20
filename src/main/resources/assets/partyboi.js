@@ -42,6 +42,28 @@ function initInteractions(target) {
                     },
                 });
             });
+
+            // Renumber .place-number cells once the drag fully ends. Defer to
+            // a later tick so Draggable can finish swapping the original source
+            // element back in for its clone and removing the mirror.
+            sortable.on("sortable:stop", () => {
+                setTimeout(() => {
+                    const rows = container.querySelectorAll(
+                        `${container.dataset.draggable}[data-dragid]`
+                    );
+                    // Skip any leftover Draggable clone/mirror elements.
+                    const real = Array.from(rows).filter(
+                        (r) =>
+                            !r.classList.contains("draggable-mirror") &&
+                            !r.classList.contains("draggable--original") &&
+                            !r.classList.contains("draggable-source--is-dragging")
+                    );
+                    real.forEach((row, idx) => {
+                        const placeCell = row.querySelector(".place-number");
+                        if (placeCell) placeCell.textContent = `${idx + 1}.`;
+                    });
+                }, 0);
+            });
         });
     }
 

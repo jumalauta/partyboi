@@ -160,7 +160,12 @@ class ScreenService(app: AppServices) : Service(app) {
             val minPlace = places.min()
             val maxPlace = places.max()
             val rows = placeAndResults.flatMap { pr ->
-                pr.results.map { "* ${pr.place}. ${it.author} – ${it.title} (${it.points} pts.)" }
+                pr.results.map {
+                    val score = if (it.isManual) it.scoreText ?: "" else "${it.points} pts."
+                    val suffix = if (score.isNotBlank()) " ($score)" else ""
+                    val name = if (it.title.isBlank()) it.author else "${it.author} – ${it.title}"
+                    "* ${pr.place}. $name$suffix"
+                }
             }
             TextSlide(
                 title = if (minPlace == 1) "Winner" else if (minPlace == maxPlace) "Place $minPlace" else "Places $minPlace-$maxPlace",

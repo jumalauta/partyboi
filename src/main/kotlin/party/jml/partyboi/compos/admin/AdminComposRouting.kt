@@ -1,6 +1,7 @@
 package party.jml.partyboi.compos.admin
 
 import arrow.core.raise.either
+import arrow.core.toOption
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
@@ -15,7 +16,9 @@ import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.GeneralRules
+import party.jml.partyboi.compos.ManualResult
 import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.compos.NewManualResult
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.respondFileShow
 import party.jml.partyboi.entries.respondNamedFileDownload
@@ -52,12 +55,16 @@ fun Application.configureAdminComposRouting(app: AppServices) {
     suspend fun renderAdminEditCompoPage(
         compoId: AppResult<UUID>,
         compoForm: Form<Compo>? = null,
+        manualResultForm: Form<NewManualResult>? = null,
     ) = either {
         val id = compoId.bind()
+        val compo = compoForm?.data ?: app.compos.getById(id).bind()
         AdminEditCompoPage.render(
-            compoForm = compoForm ?: Form(Compo::class, app.compos.getById(id).bind(), initial = true),
-            entries = app.entries.getEntriesForCompo(id).bind(),
+            compoForm = compoForm ?: Form(Compo::class, compo, initial = true),
+            entries = if (compo.manualResults) emptyList() else app.entries.getEntriesForCompo(id).bind(),
             compos = app.compos.getAllCompos().bind(),
+            manualResults = if (compo.manualResults) app.manualResults.getByCompoId(id).bind() else emptyList(),
+            manualResultForm = manualResultForm,
         )
     }
 
@@ -95,6 +102,80 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             call.processForm<Compo>(
                 { app.compos.update(it).map { redirectionToCompos }.bind() },
                 { renderAdminEditCompoPage(call.parameterUUID("id"), it).bind() }
+            )
+        }
+
+        post("/admin/compos/{id}/manual-results") {
+            val compoId = call.parameterUUID("id")
+            val redirectToCompo = Redirection("/admin/compos/${call.parameters["id"]}")
+            call.processForm<NewManualResult>(
+                {
+                    val id = compoId.bind()
+                    app.manualResults.add(it.copy(compoId = id)).bind()
+                    redirectToCompo
+                },
+                { renderAdminEditCompoPage(compoId, manualResultForm = it).bind() }
+            )
+        }
+
+        get("/admin/compos/{id}/manual-results/{rid}") {
+            call.respondEither {
+                val compoId = call.parameterUUID("id").bind()
+                val resultId = call.parameterUUID("rid").bind()
+                val compo = app.compos.getById(compoId).bind()
+                val result = app.manualResults.getByCompoId(compoId).bind()
+                    .find { it.id == resultId } ?: raise(NotFound("Manual result"))
+                AdminEditManualResultPage.render(
+                    compo = compo,
+                    resultId = resultId.toString(),
+                    form = Form(
+                        NewManualResult::class,
+                        NewManualResult(
+                            title = result.title,
+                            author = result.author,
+                            scoreText = result.scoreText,
+                            screenComment = result.screenComment.getOrNull() ?: "",
+                            compoId = compoId,
+                        ),
+                        initial = true,
+                    ),
+                )
+            }
+        }
+
+        post("/admin/compos/{id}/manual-results/{rid}") {
+            val compoId = call.parameterUUID("id")
+            val resultId = call.parameterUUID("rid")
+            val redirectToCompo = Redirection("/admin/compos/${call.parameters["id"]}")
+            call.processForm<NewManualResult>(
+                {
+                    val cid = compoId.bind()
+                    val rid = resultId.bind()
+                    val existing = app.manualResults.getByCompoId(cid).bind()
+                        .find { it.id == rid } ?: raise(NotFound("Manual result"))
+                    app.manualResults.update(
+                        ManualResult(
+                            id = rid,
+                            compoId = cid,
+                            title = it.title,
+                            author = it.author,
+                            scoreText = it.scoreText,
+                            screenComment = it.screenComment.takeIf { s -> s.isNotBlank() }.toOption(),
+                            position = existing.position,
+                        )
+                    ).bind()
+                    redirectToCompo
+                },
+                {
+                    either {
+                        val compo = app.compos.getById(compoId.bind()).bind()
+                        AdminEditManualResultPage.render(
+                            compo = compo,
+                            resultId = call.parameters["rid"] ?: "",
+                            form = it,
+                        )
+                    }.bind()
+                }
             )
         }
 
@@ -227,6 +308,23 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         put("/admin/compos/entries/{id}/allowEdit/{state}") {
             call.switchApiUuid { id, state -> app.entries.allowEdit(id, state) }
+        }
+
+        delete("/admin/compos/{id}/manual-results/{rid}") {
+            call.apiRespond {
+                val resultId = call.parameterUUID("rid").bind()
+                app.manualResults.delete(resultId).bind()
+            }
+        }
+
+        post("/admin/compos/{id}/manual-results/order") {
+            either {
+                val order = call.receive<List<String>>()
+                order
+                    .mapIndexed { index, rid -> app.manualResults.setPosition(UUID.fromString(rid), index + 1) }
+                    .bindAll()
+                call.respondText("OK")
+            }
         }
 
         post("/admin/compos/{compoId}/runOrder") {

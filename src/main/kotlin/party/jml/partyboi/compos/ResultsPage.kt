@@ -16,6 +16,10 @@ object ResultsPage {
         }
 
         CompoResult.groupResults(results).forEach { (compo, results) ->
+            val isManual = results.any { it.results.any { r -> r.isManual } }
+            val hasScores = isManual && results.any { it.results.any { r -> !r.scoreText.isNullOrBlank() } }
+            val hasTitles = !isManual || results.any { it.results.any { r -> r.title.isNotBlank() } }
+
             article {
                 a { attributes["name"] = compo.id.toString() }
                 cardHeader("${compo.name} compo")
@@ -24,8 +28,12 @@ object ResultsPage {
                         tr {
                             th(classes = "narrow") { +"Place" }
                             th { +"Author" }
-                            th { +"Title" }
-                            th { +"Points" }
+                            if (hasTitles) th { +"Title" }
+                            if (isManual) {
+                                if (hasScores) th { +"Score" }
+                            } else {
+                                th { +"Points" }
+                            }
                         }
                     }
                     tbody {
@@ -34,7 +42,7 @@ object ResultsPage {
                                 tr {
                                     td { if (index == 0) +"$place." }
                                     td { +result.author }
-                                    td {
+                                    if (hasTitles) td {
                                         if (result.downloadLink != null) {
                                             a(href = result.downloadLink) {
                                                 +result.title
@@ -43,7 +51,11 @@ object ResultsPage {
                                             +result.title
                                         }
                                     }
-                                    td { +result.points.toString() }
+                                    if (isManual) {
+                                        if (hasScores) td { +(result.scoreText ?: "") }
+                                    } else {
+                                        td { +result.points.toString() }
+                                    }
                                 }
                             }
                         }

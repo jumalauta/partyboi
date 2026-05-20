@@ -51,16 +51,22 @@ class CompoRepository(app: AppServices) : Service(app) {
                     """
                 UPDATE compo
                 SET
-                    name = ?, 
+                    name = ?,
                     rules = ?,
                     formats = ?,
-                    require_file = ?::boolean
+                    require_file = ?::boolean,
+                    manual_results = ?,
+                    allow_submit = CASE WHEN ? THEN false ELSE allow_submit END,
+                    allow_vote = CASE WHEN ? THEN false ELSE allow_vote END
                 WHERE id = ?
                 """,
                     compo.name,
                     compo.rules,
                     compo.fileFormats.map { it.name }.toTypedArray(),
                     compo.requireFile.toDatabaseEnum(),
+                    compo.manualResults,
+                    compo.manualResults,
+                    compo.manualResults,
                     compo.id,
                 )
             )
@@ -144,6 +150,8 @@ data class Compo(
     val allowVote: Boolean,
     val publicResults: Boolean,
     @Custom
+    val manualResults: Boolean,
+    @Custom
     @Contextual
     val requireFile: Option<Boolean>,
     @Custom
@@ -177,6 +185,7 @@ data class Compo(
                 allowSubmit = row.boolean("allow_submit"),
                 allowVote = row.boolean("allow_vote"),
                 publicResults = row.boolean("public_results"),
+                manualResults = row.boolean("manual_results"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
                 requireFile = row.optionalBoolean("require_file"),
             )
@@ -190,6 +199,7 @@ data class Compo(
             allowSubmit = false,
             allowVote = false,
             publicResults = false,
+            manualResults = false,
             fileFormats = emptyList(),
             requireFile = none(),
         )

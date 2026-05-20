@@ -27,6 +27,8 @@ object ResultsFileGenerator {
                         title = result.title,
                         author = result.author,
                         info = if (includeInfo) result.info else none(),
+                        scoreText = result.scoreText,
+                        isManual = result.isManual,
                     )
                 }
             }
@@ -65,15 +67,21 @@ object ResultsFileGenerator {
         title: String,
         author: String,
         info: Option<String>,
+        scoreText: String? = null,
+        isManual: Boolean = false,
     ) {
         builder.append((if (place == null) "" else "$place.").padStart(PLACE_COL_WIDTH, ' '))
-        builder.append("$points pts".padStart(POINTS_COL_WIDTH, ' '))
+        val scoreColumn = if (isManual) (scoreText ?: "").padStart(POINTS_COL_WIDTH, ' ')
+            else "$points pts".padStart(POINTS_COL_WIDTH, ' ')
+        builder.append(scoreColumn)
         builder.append(" ".repeat(SPACE_BEFORE_ENTRY))
 
-        val singleLine = "$title by $author"
+        val singleLine = if (title.isBlank()) author else "$title by $author"
         if (singleLine.length <= ENTRY_WIDTH) {
             builder.append(singleLine)
             builder.append("\n")
+        } else if (title.isBlank()) {
+            multiline(builder, LINE_WIDTH - ENTRY_WIDTH, author)
         } else {
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH, title)
             builder.append(" ".repeat(LINE_WIDTH - ENTRY_WIDTH))

@@ -97,14 +97,18 @@ class VoteService(app: AppServices) : Service(app) {
 
     suspend fun getAllVotes(): AppResult<List<VoteRow>> = repository.getAllVotes()
 
-    suspend fun getResults(): AppResult<List<CompoResult>> =
-        repository.getResults(onlyPublic = false)
+    suspend fun getResults(): AppResult<List<CompoResult>> = either {
+        val voteResults = repository.getResults(onlyPublic = false).bind()
+        val manualResults = app.manualResults.getResults(onlyPublic = false).bind()
+        voteResults + manualResults
+    }
 
     suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
         either {
+            val onlyPublic = user.fold({ true }, { !it.isAdmin })
             val downloads = app.files.getEntryIdsWithFiles(includeProcessedFiles = false).bind()
-            repository
-                .getResults(onlyPublic = user.fold({ true }, { !it.isAdmin }))
+            val voteResults = repository
+                .getResults(onlyPublic = onlyPublic)
                 .bind()
                 .map { entry ->
                     val download = downloads.find { it.entryId == entry.entryId }
@@ -114,6 +118,8 @@ class VoteService(app: AppServices) : Service(app) {
                         entry
                     }
                 }
+            val manualResults = app.manualResults.getResults(onlyPublic = onlyPublic).bind()
+            voteResults + manualResults
         }
 
     suspend fun getResultsFileContent(includeInfo: Boolean): AppResult<String> = either {

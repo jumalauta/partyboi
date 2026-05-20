@@ -89,6 +89,9 @@ data class CompoResult(
     val author: String,
     val info: Option<String>,
     val downloadLink: String?,
+    val scoreText: String? = null,
+    val isManual: Boolean = false,
+    val position: Int = 0,
 ) {
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
@@ -107,12 +110,18 @@ data class CompoResult(
         fun groupResults(results: List<CompoResult>): Map<CompoGroup, List<GroupedCompoResult>> = results
             .groupBy { CompoGroup(it.compoId, it.compoName) }
             .mapValues { (_, compoResults) ->
-                val grouped = compoResults
-                    .sortedBy { -it.points }
-                    .groupBy { it.points }
-                    .map { it.value }
-                val places = grouped.scan(1) { place, rs -> place + rs.size }
-                places.zip(grouped).map { (place, rs) -> GroupedCompoResult(place, rs) }
+                if (compoResults.any { it.isManual }) {
+                    compoResults
+                        .sortedBy { it.position }
+                        .mapIndexed { index, result -> GroupedCompoResult(index + 1, listOf(result)) }
+                } else {
+                    val grouped = compoResults
+                        .sortedBy { -it.points }
+                        .groupBy { it.points }
+                        .map { it.value }
+                    val places = grouped.scan(1) { place, rs -> place + rs.size }
+                    places.zip(grouped).map { (place, rs) -> GroupedCompoResult(place, rs) }
+                }
             }
 
         data class CompoGroup(

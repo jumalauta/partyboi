@@ -9,6 +9,7 @@ import party.jml.partyboi.auth.RecaptchaService
 import party.jml.partyboi.auth.SessionRepository
 import party.jml.partyboi.auth.UserService
 import party.jml.partyboi.compos.CompoRepository
+import party.jml.partyboi.compos.ManualResultRepository
 import party.jml.partyboi.compos.admin.CompoRunService
 import party.jml.partyboi.data.PersistentCachedValue
 import party.jml.partyboi.data.PropertyRepository
@@ -45,6 +46,7 @@ interface AppServices {
     val users: UserService
     val sessions: SessionRepository
     val compos: CompoRepository
+    val manualResults: ManualResultRepository
     val entries: EntryRepository
     val files: FileRepository
     val votes: VoteService
@@ -78,6 +80,7 @@ class AppServicesImpl(
     override val users = UserService(this)
     override val sessions = SessionRepository(db)
     override val compos = CompoRepository(this)
+    override val manualResults = ManualResultRepository(this)
     override val entries = EntryRepository(this)
     override val files = FileRepository(this)
     override val votes = VoteService(this)
