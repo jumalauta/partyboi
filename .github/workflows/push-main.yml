@@ -23,9 +23,19 @@ jobs:
       - uses: actions/checkout@v6
       - name: Build an image
         uses: ./.github/actions/build-image
+  smoke:
+    needs: build
+    name: "Smoke test"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Smoke-test the image
+        uses: ./.github/actions/smoke-test
   publish:
     needs:
-      - build
+      - smoke
       - tests
     name: "Publish"
     runs-on: ubuntu-latest

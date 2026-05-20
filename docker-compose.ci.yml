@@ -1,0 +1,31 @@
+services:
+  appserver:
+    image: ilkkahanninen/partyboi:latest
+    ports:
+      - "8123:8123"
+    environment:
+      INSTANCE_NAME: "Partyboi (CI smoke)"
+      HOST_ADDRESS: "localhost"
+      SESSION_SIGN_KEY: "0123456789abcdef0123456789abcdef"
+      ADMIN_USERNAME: "admin"
+      ADMIN_PASSWORD: "password"
+      DB_PASSWORD: "password"
+      DB_USER: "postgres"
+      DB_DATABASE: "partyboi"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "partyboi"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30

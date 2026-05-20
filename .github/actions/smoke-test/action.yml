@@ -1,0 +1,37 @@
+name: "Smoke-test the built image"
+runs:
+  using: "composite"
+  steps:
+    - name: Get image from artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: partyboi-image
+    - name: Load the image
+      shell: bash
+      run: docker load -i partyboi.tar
+    - name: Start the stack
+      shell: bash
+      run: docker compose -f docker-compose.ci.yml up -d
+    - name: Wait for /health
+      shell: bash
+      run: |
+        for i in $(seq 1 60); do
+          if curl -fsS --max-time 3 http://localhost:8123/health >/dev/null; then
+            echo "Health endpoint responded after ${i}s"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "Health endpoint never responded within 60s"
+        exit 1
+    - name: GET /
+      shell: bash
+      run: curl -fsSL --max-time 5 -o /dev/null http://localhost:8123/
+    - name: Dump container logs on failure
+      if: failure()
+      shell: bash
+      run: docker compose -f docker-compose.ci.yml logs --no-color appserver db
+    - name: Tear down the stack
+      if: always()
+      shell: bash
+      run: docker compose -f docker-compose.ci.yml down -v
