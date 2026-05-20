@@ -10,5 +10,5 @@
     "before 11pm on wednesday",
     "before 11pm on thursday"
   ],
-  "rebaseWhen": "auto"
+  "rebaseWhen": "behind-base-branch"
 }
