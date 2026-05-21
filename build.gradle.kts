@@ -61,7 +61,6 @@ dependencies {
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.arrow-kt:arrow-core:$arrow_version")
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
-    implementation("io.arrow-kt:arrow-core-serialization:$arrow_version")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("com.sksamuel.scrimage:scrimage-core:4.5.4")

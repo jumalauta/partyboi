@@ -1,7 +1,5 @@
 package party.jml.partyboi.form
 
-import arrow.core.Option
-import arrow.core.none
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
@@ -111,11 +109,6 @@ sealed interface Property {
                 Instant::class -> InstantProp(name, optional, meta)
                 FileUpload::class -> FileUploadProp(name, optional, meta)
                 TimeZone::class -> TimeZoneProp(name, optional, meta)
-                Option::class -> type.arguments.first().type?.let {
-                    formValueToProperty(it, meta, name)
-                        ?.let { OptionProp(it, optional) }
-                }
-
                 List::class -> type.arguments.first().type?.let {
                     formValueToProperty(it, meta, name)
                         ?.let { ListProp(it, optional) }
@@ -295,14 +288,6 @@ data class TimeZoneProp(
 
         ): TimeZone? =
         values.firstOrNull()?.let { TimeZone.of(it) }
-}
-
-class OptionProp(
-    property: Property,
-    override val optional: Boolean,
-) : WrapperProperty(property) {
-    override val defaultValue = none<Any>()
-    override fun wrap(values: List<Any?>): Any? = Option.fromNullable(values.firstOrNull())
 }
 
 class ListProp(

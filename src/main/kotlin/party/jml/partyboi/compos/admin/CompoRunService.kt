@@ -340,7 +340,7 @@ sealed interface CompoStep {
             app.votes.removeEntryFromLiveVoting(entry)
         }
 
-        override fun notes(): String? = entry.orgComment.getOrNull()
+        override fun notes(): String? = entry.orgComment
     }
 }
 

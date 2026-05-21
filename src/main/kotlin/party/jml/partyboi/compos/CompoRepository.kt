@@ -1,7 +1,8 @@
 package party.jml.partyboi.compos
 
-import arrow.core.*
-import kotlinx.serialization.Contextual
+import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import kotliquery.TransactionalSession
@@ -152,8 +153,7 @@ data class Compo(
     @Custom
     val manualResults: Boolean,
     @Custom
-    @Contextual
-    val requireFile: Option<Boolean>,
+    val requireFile: Boolean?,
     @Custom
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
@@ -163,7 +163,7 @@ data class Compo(
         value = id.toString(),
         label = name,
         dataFields = mapOf(
-            "uploadEnabled" to if (requireFile.isFalse()) null else "true",
+            "uploadEnabled" to if (requireFile == false) null else "true",
             "accept" to acceptedFormatsString(),
         ),
     )
@@ -187,7 +187,7 @@ data class Compo(
                 publicResults = row.boolean("public_results"),
                 manualResults = row.boolean("manual_results"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
-                requireFile = row.optionalBoolean("require_file"),
+                requireFile = row.optionalBooleanOrNull("require_file"),
             )
         }
 
@@ -201,7 +201,7 @@ data class Compo(
             publicResults = false,
             manualResults = false,
             fileFormats = emptyList(),
-            requireFile = none(),
+            requireFile = null,
         )
     }
 }

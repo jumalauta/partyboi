@@ -1,7 +1,5 @@
 package party.jml.partyboi.compos
 
-import arrow.core.Option
-import arrow.core.none
 import party.jml.partyboi.voting.CompoResult
 
 object ResultsFileGenerator {
@@ -26,7 +24,7 @@ object ResultsFileGenerator {
                         points = result.points,
                         title = result.title,
                         author = result.author,
-                        info = if (includeInfo) result.info else none(),
+                        info = if (includeInfo) result.info else null,
                         scoreText = result.scoreText,
                         isManual = result.isManual,
                     )
@@ -66,7 +64,7 @@ object ResultsFileGenerator {
         points: Int,
         title: String,
         author: String,
-        info: Option<String>,
+        info: String?,
         scoreText: String? = null,
         isManual: Boolean = false,
     ) {
@@ -88,7 +86,7 @@ object ResultsFileGenerator {
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH + 1, author, "  by ")
         }
 
-        info.onSome {
+        info?.let {
             builder.append("\n")
             builder.append(" ".repeat(LINE_WIDTH - ENTRY_WIDTH))
             multiline(builder, LINE_WIDTH - ENTRY_WIDTH + 1, it, "")

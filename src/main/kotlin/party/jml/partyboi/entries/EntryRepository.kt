@@ -1,16 +1,12 @@
-@file:UseSerializers(
-    OptionSerializer::class,
-)
-
 package party.jml.partyboi.entries
 
-import arrow.core.*
+import arrow.core.flatMap
+import arrow.core.left
 import arrow.core.raise.either
-import arrow.core.serialization.OptionSerializer
+import arrow.core.right
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
@@ -121,7 +117,7 @@ class EntryRepository(app: AppServices) : Service(app) {
         db.transaction {
             either {
                 val compo = app.compos.getById(newEntry.compoId, this@transaction).bind()
-                if (compo.requireFile.isTrue() && !newEntry.file.isDefined) {
+                if (compo.requireFile == true && !newEntry.file.isDefined) {
                     FormError("${compo.name} compo requires a file").left().bind<Unit>()
                 }
 
@@ -140,7 +136,7 @@ class EntryRepository(app: AppServices) : Service(app) {
                 if (newEntry.file.isDefined) {
                     val storedFile = storeFile(newEntry.file, entry.id, this@transaction).bind()
 
-                    app.previews.scanForScreenshotSource(storedFile).map { source ->
+                    app.previews.scanForScreenshotSource(storedFile)?.let { source ->
                         app.previews.store(entry.id, source)
                     }
                 }
@@ -286,8 +282,8 @@ data class Entry(
     override val id: UUID,
     override val title: String,
     override val author: String,
-    val screenComment: Option<String>,
-    val orgComment: Option<String>,
+    val screenComment: String?,
+    val orgComment: String?,
     @Serializable(with = UUIDSerializer::class)
     override val compoId: UUID,
     @Serializable(with = UUIDSerializer::class)
@@ -303,8 +299,8 @@ data class Entry(
                 row.uuid("id"),
                 row.string("title"),
                 row.string("author"),
-                Option.fromNullable(row.stringOrNull("screen_comment")),
-                Option.fromNullable(row.stringOrNull("org_comment")),
+                row.stringOrNull("screen_comment"),
+                row.stringOrNull("org_comment"),
                 row.uuid("compo_id"),
                 row.uuid("user_id"),
                 row.boolean("qualified"),
@@ -320,16 +316,16 @@ data class EntryWithLatestFile(
     override val id: UUID,
     override val title: String,
     override val author: String,
-    val screenComment: Option<String>,
-    val orgComment: Option<String>,
+    val screenComment: String?,
+    val orgComment: String?,
     override val compoId: UUID,
     val userId: UUID,
     val qualified: Boolean,
     val runOrder: Int,
     val timestamp: Instant,
-    val originalFilename: Option<String>,
-    val uploadedAt: Option<Instant>,
-    val fileSize: Option<Long>,
+    val originalFilename: String?,
+    val uploadedAt: Instant?,
+    val fileSize: Long?,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> EntryWithLatestFile = { row ->
@@ -337,16 +333,16 @@ data class EntryWithLatestFile(
                 row.uuid("id"),
                 row.string("title"),
                 row.string("author"),
-                Option.fromNullable(row.stringOrNull("screen_comment")),
-                Option.fromNullable(row.stringOrNull("org_comment")),
+                row.stringOrNull("screen_comment"),
+                row.stringOrNull("org_comment"),
                 row.uuid("compo_id"),
                 row.uuid("user_id"),
                 row.boolean("qualified"),
                 row.int("run_order"),
                 row.instant("timestamp").toKotlinInstant(),
-                row.stringOrNull("orig_filename").toOption(),
-                row.instantOrNull("uploaded_at")?.toKotlinInstant().toOption(),
-                row.longOrNull("size").toOption(),
+                row.stringOrNull("orig_filename"),
+                row.instantOrNull("uploaded_at")?.toKotlinInstant(),
+                row.longOrNull("size"),
             )
         }
     }
@@ -428,8 +424,8 @@ data class EntryUpdate(
             file = FileUpload.Empty,
             compoId = e.compoId,
             userId = e.userId,
-            screenComment = e.screenComment.getOrElse { "" },
-            orgComment = e.orgComment.getOrElse { "" },
+            screenComment = e.screenComment ?: "",
+            orgComment = e.orgComment ?: "",
         )
     }
 }
@@ -441,8 +437,8 @@ data class VotableEntry(
     val runOrder: Int,
     override val title: String,
     override val author: String,
-    val points: Option<Int>,
-    val info: Option<String>,
+    val points: Int?,
+    val info: String?,
 ) : EntryBase {
     override val id = entryId
 
@@ -455,8 +451,8 @@ data class VotableEntry(
                 runOrder = row.int("run_order"),
                 title = row.string("title"),
                 author = row.string("author"),
-                points = Option.fromNullable(row.intOrNull("points")),
-                info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
+                points = row.intOrNull("points"),
+                info = row.stringOrNull("screen_comment")?.nonEmptyString(),
             )
         }
 
@@ -467,7 +463,7 @@ data class VotableEntry(
             runOrder = entry.runOrder,
             title = entry.title,
             author = entry.author,
-            points = Option.fromNullable(points),
+            points = points,
             info = entry.screenComment,
         )
     }

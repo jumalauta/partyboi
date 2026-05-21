@@ -4,8 +4,6 @@ import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ManualResult
 import party.jml.partyboi.compos.NewManualResult
-import party.jml.partyboi.data.isFalse
-import party.jml.partyboi.data.isTrue
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.entries.FileFormatCategory
@@ -54,17 +52,17 @@ object AdminEditCompoPage {
                             fieldSet {
                                 p { +"File uploads" }
                                 radioInput(name = "requireFile") {
-                                    checked = compo.requireFile.isTrue()
+                                    checked = compo.requireFile == true
                                     value = "true"
                                     label { +"Required" }
                                 }
                                 radioInput(name = "requireFile") {
-                                    checked = compo.requireFile.isNone()
+                                    checked = compo.requireFile == null
                                     value = "none"
                                     label { +"Optional" }
                                 }
                                 radioInput(name = "requireFile") {
-                                    checked = compo.requireFile.isFalse()
+                                    checked = compo.requireFile == false
                                     value = "false"
                                     label { +"File uploads disabled" }
                                 }

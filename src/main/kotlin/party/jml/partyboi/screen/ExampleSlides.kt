@@ -1,8 +1,6 @@
 package party.jml.partyboi.screen
 
-import arrow.core.none
 import arrow.core.right
-import arrow.core.some
 import kotlinx.datetime.*
 import kotlin.time.Instant
 import kotlinx.serialization.Serializable
@@ -130,17 +128,17 @@ fun getExampleSlides() = listOf(
                 title = "Lorem Ipsum Mega Blast 2000",
                 author = "Jumalauta + Matt Current",
                 screenComment = """
-                Lorem ipsum **dolor** sit amet consectetur adipiscing *elit*. Quisque faucibus ex sapien vitae 
-                pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu 
-                aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
-                Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class 
+                Lorem ipsum **dolor** sit amet consectetur adipiscing *elit*. Quisque faucibus ex sapien vitae
+                pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
+                aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+                Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
                 aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-                        
+
                 - LOL
                 - NSFW
                 - RTFM
-            """.trimIndent().some(),
-                orgComment = none(),
+            """.trimIndent(),
+                orgComment = null,
                 compoId = UUID.randomUUID(),
                 userId = UUID.randomUUID(),
                 qualified = true,

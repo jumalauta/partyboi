@@ -1,6 +1,5 @@
 package party.jml.partyboi.voting.admin
 
-import arrow.core.toOption
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.form.DropdownOption
@@ -48,12 +47,10 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
         .map {
             Pair(
                 it,
-                it.userId.flatMap { userId ->
-                    users.find { user -> user.id == userId }.toOption()
-                }
+                it.userId?.let { userId -> users.find { user -> user.id == userId } }
             )
         }
-        .sortedBy { it.second.fold({ "" }, { user -> user.name.lowercase() }) }
+        .sortedBy { it.second?.name?.lowercase() ?: "" }
 
     val keySets = sorted.mapNotNull { it.first.set }
     val includePrintLinks = keySets.isNotEmpty()
@@ -76,7 +73,7 @@ fun FlowContent.renderVoteKeyTable(title: String, voteKeys: List<VoteKeyRow>, us
                     sorted.forEach { (key, user) ->
                         tr {
                             td { +key.key.toString() }
-                            td { user.map { a(href = "/admin/users/${it.id}") { +it.name } } }
+                            td { user?.let { a(href = "/admin/users/${it.id}") { +it.name } } }
                             if (includePrintLinks) {
                                 td {
                                     if (key.set != null) {

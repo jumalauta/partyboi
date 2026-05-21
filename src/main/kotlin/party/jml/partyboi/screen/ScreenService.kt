@@ -28,7 +28,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
     init {
         runBlocking {
-            repository.getAdHoc().map { it.map { state.emit(ScreenState.fromRow(it)) } }
+            repository.getAdHoc().map { row -> row?.let { state.emit(ScreenState.fromRow(it)) } }
             if (autoRunOn.getOrNull() == true) {
                 startAutoRunScheduler()
             }

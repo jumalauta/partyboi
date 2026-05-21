@@ -1,7 +1,5 @@
 package party.jml.partyboi.voting
 
-import arrow.core.Option
-import arrow.core.toOption
 import kotlinx.serialization.Serializable
 import kotliquery.Row
 import party.jml.partyboi.AppServices
@@ -87,7 +85,7 @@ data class CompoResult(
     val entryId: UUID,
     val title: String,
     val author: String,
-    val info: Option<String>,
+    val info: String?,
     val downloadLink: String?,
     val scoreText: String? = null,
     val isManual: Boolean = false,
@@ -102,7 +100,7 @@ data class CompoResult(
                 entryId = row.uuid("entry_id"),
                 title = row.string("title"),
                 author = row.string("author"),
-                info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
+                info = row.stringOrNull("screen_comment")?.nonEmptyString(),
                 downloadLink = null,
             )
         }

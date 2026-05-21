@@ -1,6 +1,5 @@
 package party.jml.partyboi.screen.slides
 
-import arrow.core.some
 import kotlinx.html.FlowContent
 import kotlinx.html.h1
 import kotlinx.serialization.Serializable
@@ -52,9 +51,8 @@ data class TextSlide(
         fun compoSlide(index: Int, entry: Entry): TextSlide =
             TextSlide(
                 "#${index + 1} ${entry.title}",
-                listOf("## ${entry.author}".some(), entry.screenComment)
-                    .flatMap { it.toList() }
-                    .joinToString(separator = "\n\n") { it },
+                listOfNotNull("## ${entry.author}", entry.screenComment)
+                    .joinToString(separator = "\n\n"),
                 CompoEntryVariant
             )
 

@@ -1,15 +1,8 @@
-@file:UseSerializers(
-    OptionSerializer::class,
-)
-
 package party.jml.partyboi.voting
 
 import arrow.core.NonEmptyList
-import arrow.core.Option
 import arrow.core.raise.either
-import arrow.core.serialization.OptionSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
@@ -175,14 +168,15 @@ data class VoteKey(val keyType: VoteKeyType, val id: String? = null) {
 @Serializable
 data class VoteKeyRow(
     val key: VoteKey,
-    val userId: Option<@Serializable(with = UUIDSerializer::class) UUID>,
+    @Serializable(with = UUIDSerializer::class)
+    val userId: UUID?,
     val set: String?,
 ) {
     companion object {
         val fromRow: (Row) -> VoteKeyRow = { row ->
             VoteKeyRow(
                 key = VoteKey.fromKey(row.string("key")),
-                userId = Option.fromNullable(row.uuidOrNull("user_id")),
+                userId = row.uuidOrNull("user_id"),
                 set = row.stringOrNull("key_set"),
             )
         }

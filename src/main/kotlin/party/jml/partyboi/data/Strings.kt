@@ -1,8 +1,5 @@
 package party.jml.partyboi.data
 
-import arrow.core.Option
-import arrow.core.none
-import arrow.core.some
 import org.apache.commons.lang3.RandomStringUtils
 import java.net.URI
 import java.util.Locale.getDefault
@@ -10,7 +7,7 @@ import java.util.regex.Pattern
 
 fun String.nonEmptyString(): String? = this.ifEmpty { null }
 
-fun String?.nonEmptyStringOption(): Option<String> = if (this == null || this.isEmpty()) none() else this.some()
+fun String?.nonEmptyStringOrNull(): String? = if (this.isNullOrEmpty()) null else this
 
 fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? =
     this

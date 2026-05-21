@@ -1,7 +1,6 @@
 package party.jml.partyboi.compos.admin
 
 import arrow.core.raise.either
-import arrow.core.toOption
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
@@ -131,7 +130,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                             title = result.title,
                             author = result.author,
                             scoreText = result.scoreText,
-                            screenComment = result.screenComment.getOrNull() ?: "",
+                            screenComment = result.screenComment ?: "",
                             compoId = compoId,
                         ),
                         initial = true,
@@ -157,7 +156,7 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                             title = it.title,
                             author = it.author,
                             scoreText = it.scoreText,
-                            screenComment = it.screenComment.takeIf { s -> s.isNotBlank() }.toOption(),
+                            screenComment = it.screenComment.takeIf { s -> s.isNotBlank() },
                             position = existing.position,
                         )
                     ).bind()

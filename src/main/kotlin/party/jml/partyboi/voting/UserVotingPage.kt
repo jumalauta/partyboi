@@ -1,6 +1,5 @@
 package party.jml.partyboi.voting
 
-import arrow.core.Option
 import kotlinx.html.*
 import party.jml.partyboi.entries.Preview
 import party.jml.partyboi.entries.VotableEntry
@@ -15,25 +14,25 @@ object UserVotingPage {
     fun render(
         entries: List<VotableEntry>,
         previews: List<Preview>,
-        liveVote: Option<LiveVoteState>,
+        liveVote: LiveVoteState?,
     ) = Page("Voting") {
         refreshOnSignal(SignalType.vote)
         refreshOnSignal(SignalType.liveVote)
 
         h1 { +"Voting" }
 
-        if (entries.isEmpty() && liveVote.isNone()) {
+        if (entries.isEmpty() && liveVote == null) {
             article { +"Nothing to vote at the moment." }
         }
 
-        liveVote.map { live ->
+        liveVote?.let { live ->
             if (live.entries.isEmpty()) {
                 article { +"Live voting for ${live.compo.name} compo begins soon!" }
             }
         }
 
         entries.groupBy { it.compoId }.forEach { compo ->
-            val isLiveVote = compo.value.first().compoId == liveVote.getOrNull()?.compo?.id
+            val isLiveVote = compo.value.first().compoId == liveVote?.compo?.id
             article {
                 cardHeader(compo.value.first().compoName)
                 section {
@@ -69,11 +68,11 @@ object UserVotingPage {
                                     }
                                     th(classes = "wide title") {
                                         +"${entry.author} – ${entry.title}"
-                                        entry.info.onSome { small(classes = "entry-info") { +it } }
+                                        entry.info?.let { small(classes = "entry-info") { +it } }
                                     }
                                     for (points in VoteService.POINT_RANGE) {
                                         td(classes = "tight center points") {
-                                            voteButton(entry.id, points, entry.points.getOrNull() == points)
+                                            voteButton(entry.id, points, entry.points == points)
                                         }
                                     }
                                 }

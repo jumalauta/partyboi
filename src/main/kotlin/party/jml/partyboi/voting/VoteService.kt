@@ -73,7 +73,7 @@ class VoteService(app: AppServices) : Service(app) {
         app.signals.emit(Signal.liveVotingClosed())
     }
 
-    fun getLiveVoteState(): Option<LiveVoteState> = if (live.value.open) live.value.some() else none()
+    fun getLiveVoteState(): LiveVoteState? = if (live.value.open) live.value else null
 
     suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> =
         either {
@@ -103,9 +103,9 @@ class VoteService(app: AppServices) : Service(app) {
         voteResults + manualResults
     }
 
-    suspend fun getResultsForUser(user: Option<User>): AppResult<List<CompoResult>> =
+    suspend fun getResultsForUser(user: User?): AppResult<List<CompoResult>> =
         either {
-            val onlyPublic = user.fold({ true }, { !it.isAdmin })
+            val onlyPublic = user?.let { !it.isAdmin } ?: true
             val downloads = app.files.getEntryIdsWithFiles(includeProcessedFiles = false).bind()
             val voteResults = repository
                 .getResults(onlyPublic = onlyPublic)

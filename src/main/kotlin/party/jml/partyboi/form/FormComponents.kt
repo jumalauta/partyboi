@@ -1,6 +1,5 @@
 package party.jml.partyboi.form
 
-import arrow.core.Option
 import io.ktor.util.logging.*
 import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
@@ -112,12 +111,12 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
     }
 }
 
-fun FlowContent.formDescription(description: Option<String>) {
-    description.map { small(classes = "description") { +it } }
+fun FlowContent.formDescription(description: String?) {
+    description?.let { small(classes = "description") { +it } }
 }
 
-fun FlowContent.formError(error: Option<String>) {
-    error.map { small(classes = "error") { +it } }
+fun FlowContent.formError(error: String?) {
+    error?.let { small(classes = "error") { +it } }
 }
 
 inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(

@@ -1,9 +1,7 @@
 package party.jml.partyboi.auth
 
-import arrow.core.Option
-import arrow.core.none
-import arrow.core.recover
-import arrow.core.toOption
+import arrow.core.left
+import arrow.core.right
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -72,20 +70,19 @@ suspend fun ApplicationCall.forwardToLogin() {
     respondRedirect("/login")
 }
 
-suspend fun ApplicationCall.optionalUserSession(app: AppServices?): Option<User> =
-    (attributes.getOrNull(UpdatedUser) ?: principal<User>())
-        .toOption()
-        .flatMap { user ->
-            (app?.users?.consumeUserSessionReloadRequest(user.id) ?: none())
-                .onSome {
-                    attributes.put(UpdatedUser, it)
-                    sessions.set(it)
-                }
-                .recover { user }
-        }
+suspend fun ApplicationCall.optionalUserSession(app: AppServices?): User? {
+    val user = attributes.getOrNull(UpdatedUser) ?: principal<User>() ?: return null
+    val refreshed = app?.users?.consumeUserSessionReloadRequest(user.id)
+    if (refreshed != null) {
+        attributes.put(UpdatedUser, refreshed)
+        sessions.set(refreshed)
+        return refreshed
+    }
+    return user
+}
 
 suspend fun ApplicationCall.userSession(app: AppServices?): AppResult<User> =
-    optionalUserSession(app).toEither { RedirectInterruption("/login") }
+    optionalUserSession(app)?.right() ?: RedirectInterruption("/login").left()
 
 fun Application.publicRouting(block: Route.() -> Unit) {
     routing {

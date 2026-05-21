@@ -1,10 +1,6 @@
 package party.jml.partyboi.entries
 
-import arrow.core.Option
-import arrow.core.none
 import arrow.core.raise.either
-import arrow.core.some
-import arrow.core.toOption
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
 import kotliquery.Row
@@ -24,9 +20,9 @@ import java.nio.file.Path
 import java.util.*
 
 class PreviewRepository(val app: AppServices) {
-    fun scanForScreenshotSource(file: FileDesc): Option<Path> {
+    fun scanForScreenshotSource(file: FileDesc): Path? {
         if (file.type == FileDesc.IMAGE) {
-            return file.getStorageFile().toPath().some()
+            return file.getStorageFile().toPath()
         }
         if (file.type == FileDesc.ZIP_ARCHIVE) {
             return ZipFile.builder()
@@ -38,8 +34,7 @@ class PreviewRepository(val app: AppServices) {
                         .map { it to heuristicsScore(it.name) }
                         .sortedBy { -it.second }
                         .firstOrNull()
-                        .toOption()
-                        .map { (entry, _) ->
+                        ?.let { (entry, _) ->
                             val tempFile = createTemporaryFile().toPath()
                             zip.getInputStream(entry).use { inputStream ->
                                 tempFile.toFile().outputStream().use { outputStream ->
@@ -50,7 +45,7 @@ class PreviewRepository(val app: AppServices) {
                         }
                 }
         }
-        return none()
+        return null
     }
 
     suspend fun store(entryId: UUID, source: Path): AppResult<Unit> = either {

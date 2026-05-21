@@ -1,7 +1,7 @@
 package party.jml.partyboi.screen
 
-import arrow.core.Option
 import arrow.core.raise.either
+import arrow.core.raise.ensureNotNull
 import arrow.core.toNonEmptyListOrNone
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -11,7 +11,7 @@ import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.InvalidInput
-import party.jml.partyboi.data.Numbers.positiveInt
+import party.jml.partyboi.data.Numbers.positiveIntOrNull
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
@@ -58,7 +58,7 @@ class ScreenRepository(app: AppServices) : Service(app) {
         one(queryOf("SELECT count(*) FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
     }
 
-    suspend fun getAdHoc(): AppResult<Option<ScreenRow>> = db.use {
+    suspend fun getAdHoc(): AppResult<ScreenRow?> = db.use {
         option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
     }
 
@@ -150,9 +150,9 @@ class ScreenRepository(app: AppServices) : Service(app) {
 
     suspend fun getNext(slideSet: String, currentId: UUID): AppResult<ScreenRow> = either {
         val screens = getSlideSetSlides(slideSet).bind()
-        val index = positiveInt(screens.indexOfFirst { it.id == currentId })
-            .toEither { InvalidInput("$currentId not in slide set '$slideSet'") }
-            .bind()
+        val index = ensureNotNull(positiveIntOrNull(screens.indexOfFirst { it.id == currentId })) {
+            InvalidInput("$currentId not in slide set '$slideSet'")
+        }
         (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
             .filter { it.visible }
             .toNonEmptyListOrNone()

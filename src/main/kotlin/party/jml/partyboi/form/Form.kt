@@ -1,9 +1,7 @@
 package party.jml.partyboi.form
 
-import arrow.core.Option
 import arrow.core.left
 import arrow.core.right
-import arrow.core.toNonEmptyListOrNone
 import io.ktor.http.content.*
 import kotlinx.html.InputType
 import party.jml.partyboi.data.*
@@ -42,8 +40,8 @@ class Form<T : Validateable<T>>(
                 val value = kclass.memberProperties.find { it.name == prop.name }?.get(data)
                 val error = errors
                     .filter { it.target == prop.name }
-                    .toNonEmptyListOrNone()
-                    .map { it.joinToString { it.message } }
+                    .takeIf { it.isNotEmpty() }
+                    ?.joinToString { it.message }
 
                 block(
                     FieldData(
@@ -53,7 +51,7 @@ class Form<T : Validateable<T>>(
                         error = error,
                         type = prop.getInputType(),
                         presentation = meta.presentation ?: FieldPresentation.normal,
-                        description = meta.description.nonEmptyStringOption(),
+                        description = meta.description.nonEmptyStringOrNull(),
                         suggestedValue = suggestedValues[prop.name],
                     )
                 )
@@ -79,10 +77,10 @@ class Form<T : Validateable<T>>(
         val label: String,
         val key: String,
         val value: String,
-        val error: Option<String>,
+        val error: String?,
         val type: InputType,
         val presentation: FieldPresentation,
-        val description: Option<String>,
+        val description: String?,
         val suggestedValue: String? = null,
     )
 

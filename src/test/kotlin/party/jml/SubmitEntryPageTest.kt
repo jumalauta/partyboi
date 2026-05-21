@@ -177,7 +177,7 @@ class SubmitEntryPageTest : PartyboiTester {
             either {
                 val wildCompo = compos.add(NewCompo("Wild", "")).bind()
                 compos.setVisible(wildCompo.id, true).bind()
-                compos.update(wildCompo.copy(requireFile = false.some())).bind()
+                compos.update(wildCompo.copy(requireFile = false)).bind()
 
                 val user = addTestUser(app).bind()
                 entry = entries.add(

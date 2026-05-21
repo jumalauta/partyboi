@@ -71,20 +71,20 @@ fun Session.runSafely(query: ExecuteQueryAction): AppResult<Boolean> =
 fun Session.runSafely(query: UpdateQueryAction): AppResult<Int> =
     Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun Session.runSafely(query: UpdateAndReturnGeneratedKeyQueryAction): AppResult<Option<Long>> =
-    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
+fun Session.runSafely(query: UpdateAndReturnGeneratedKeyQueryAction): AppResult<Long?> =
+    Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
 fun <A> Session.runSafely(query: ListResultQueryAction<A>): AppResult<List<A>> =
     Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun <A> Session.runSafely(query: NullableResultQueryAction<A>): AppResult<Option<A>> =
-    Either.catch { run(query).toOption() }.mapLeft { DatabaseError(it) }
+fun <A> Session.runSafely(query: NullableResultQueryAction<A>): AppResult<A?> =
+    Either.catch { run(query) }.mapLeft { DatabaseError(it) }
 
-fun <A> Session.option(query: ResultQueryActionBuilder<A>): AppResult<Option<A>> =
+fun <A> Session.option(query: ResultQueryActionBuilder<A>): AppResult<A?> =
     runSafely(query.asSingle)
 
 fun <A> Session.one(query: ResultQueryActionBuilder<A>): AppResult<A> =
-    option(query).flatMap { it.toEither { NotFound("Not found") } }
+    option(query).flatMap { it?.right() ?: NotFound("Not found").left() }
 
 fun <A> Session.many(query: ResultQueryActionBuilder<A>): AppResult<List<A>> =
     runSafely(query.asList)
@@ -144,7 +144,6 @@ fun queryOf(statement: String, vararg params: Any?): Query {
 }
 
 fun convertQueryParam(param: Any?): Any? = when (param) {
-    is Option<*> -> param.getOrNull()
     is kotlinx.datetime.LocalDateTime -> Timestamp.valueOf(param.toJavaLocalDateTime())
     is Instant -> Timestamp.from(param.toJavaInstant())
     is Path -> param.toString()

@@ -1,7 +1,5 @@
 package party.jml.partyboi.compos
 
-import arrow.core.Option
-import arrow.core.toOption
 import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
@@ -63,7 +61,7 @@ class ManualResultRepository(app: AppServices) : Service(app) {
                 result.title,
                 result.author,
                 result.scoreText,
-                result.screenComment.getOrNull(),
+                result.screenComment,
                 result.id,
             )
         )
@@ -104,7 +102,7 @@ class ManualResultRepository(app: AppServices) : Service(app) {
                     entryId = row.uuid("entry_id"),
                     title = row.string("title"),
                     author = row.string("author"),
-                    info = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
+                    info = row.stringOrNull("screen_comment")?.nonEmptyString(),
                     downloadLink = null,
                     scoreText = row.stringOrNull("score_text")?.nonEmptyString(),
                     isManual = true,
@@ -125,7 +123,7 @@ data class ManualResult(
     val title: String,
     val author: String,
     val scoreText: String,
-    val screenComment: Option<String>,
+    val screenComment: String?,
     val position: Int,
 ) {
     companion object {
@@ -136,7 +134,7 @@ data class ManualResult(
                 title = row.string("title"),
                 author = row.string("author"),
                 scoreText = row.string("score_text"),
-                screenComment = row.stringOrNull("screen_comment")?.nonEmptyString().toOption(),
+                screenComment = row.stringOrNull("screen_comment")?.nonEmptyString(),
                 position = row.int("position"),
             )
         }

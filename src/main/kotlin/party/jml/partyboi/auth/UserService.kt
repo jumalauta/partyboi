@@ -2,7 +2,6 @@ package party.jml.partyboi.auth
 
 import arrow.core.Either
 import arrow.core.Option
-import arrow.core.none
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
@@ -184,12 +183,12 @@ class UserService(private val app: AppServices) {
         userSessionReloadRequests.add(userId)
     }
 
-    suspend fun consumeUserSessionReloadRequest(userId: UUID): Option<User> =
+    suspend fun consumeUserSessionReloadRequest(userId: UUID): User? =
         if (userSessionReloadRequests.contains(userId)) {
             userSessionReloadRequests.remove(userId)
-            userRepository.getUser(userId).getOrNone()
+            userRepository.getUser(userId).getOrNull()
         } else {
-            none()
+            null
         }
 
     suspend fun generatePasswordResetCode(email: String): AppResult<String> = either {

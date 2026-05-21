@@ -133,7 +133,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 val fileId = call.parameterUUID("fileId").bind()
                 val user = call.optionalUserSession(app)
                 val entry = app.entries.getByFileId(fileId).bind()
-                if (user.isSome { it.isAdmin || it.id === entry.userId }
+                if (user?.let { it.isAdmin || it.id === entry.userId } == true
                     || app.compos.getById(entry.compoId).bind().publicResults
                 ) {
                     app.files.getById(fileId).bind()
@@ -169,7 +169,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
                     if (entry.file.isDefined) {
                         val file = app.entries.storeFile(entry.file, entry.id).bind()
-                        app.previews.scanForScreenshotSource(file).map { source ->
+                        app.previews.scanForScreenshotSource(file)?.let { source ->
                             app.previews.store(entry.id, source)
                         }
                         app.messages.sendMessage(

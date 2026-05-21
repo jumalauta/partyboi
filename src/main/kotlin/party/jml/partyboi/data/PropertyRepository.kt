@@ -1,7 +1,5 @@
 package party.jml.partyboi.data
 
-import arrow.core.Option
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -26,10 +24,9 @@ class PropertyRepository(app: AppServices) : Service(app) {
         PersistentCachedValue(
             fetchValue = {
                 either {
-                    get(key, private)
-                        .bind()
-                        .flatMap { Option.catch { Json.decodeFromString<T>(it.json) } }
-                        .getOrElse { defaultValue }
+                    val row = get(key, private).bind()
+                    row?.let { runCatching { Json.decodeFromString<T>(it.json) }.getOrNull() }
+                        ?: defaultValue
                 }
             },
             storeValue = { value ->
@@ -42,7 +39,7 @@ class PropertyRepository(app: AppServices) : Service(app) {
             }
         )
 
-    suspend fun get(key: String, private: Boolean): AppResult<Option<PropertyRow>> = db.use {
+    suspend fun get(key: String, private: Boolean): AppResult<PropertyRow?> = db.use {
         option(queryOf("SELECT * FROM ${table(private)} WHERE key = ?", key).map(PropertyRow.fromRow))
     }
 

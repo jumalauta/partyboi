@@ -1,6 +1,5 @@
 package party.jml.partyboi.screen.admin
 
-import arrow.core.getOrElse
 import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -27,9 +26,8 @@ import java.util.*
 fun Application.configureAdminScreenRouting(app: AppServices) {
     suspend fun renderAdHocEdit(form: Form<*>? = null): AppResult<Page> = either {
         AdminScreenPage.renderAdHocForm(
-            form = form ?: app.screen.getAddHoc().bind()
-                .map { it.getSlide().getForm() }
-                .getOrElse { Form(TextSlide::class, TextSlide.Empty, true) },
+            form = form ?: (app.screen.getAddHoc().bind()?.getSlide()?.getForm()
+                ?: Form(TextSlide::class, TextSlide.Empty, true)),
             slideSets = app.screen.getSlideSets().bind(),
         )
     }
