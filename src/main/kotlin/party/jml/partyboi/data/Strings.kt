@@ -20,6 +20,19 @@ fun String.toFilenameToken(removeSpaces: Boolean, maxLength: Int = 32): String? 
         .take(maxLength)
         .nonEmptyString()
 
+fun String.toSceneOrgToken(maxLength: Int = 64): String? =
+    this
+        .lowercase()
+        .replace('ä', 'a')
+        .replace('ö', 'o')
+        .replace('å', 'a')
+        .replace(Regex("[^a-z0-9_]+"), "_")
+        .replace(Regex("_+"), "_")
+        .trim('_')
+        .take(maxLength)
+        .trim('_')
+        .nonEmptyString()
+
 fun randomShortId() = randomStringId(3) + "-" + randomStringId(3)
 
 fun randomStringId(length: Int): String = RandomStringUtils.secure().next(length, true, false).uppercase()

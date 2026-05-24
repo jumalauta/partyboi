@@ -250,10 +250,8 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/entries.zip") {
             either {
-                call.respondNamedFileDownload(
-                    app.compoRun.compressAllEntries().bind(),
-                    "entries.zip"
-                )
+                val pkg = app.compoRun.compressAllEntries().bind()
+                call.respondNamedFileDownload(pkg.file, "${pkg.name}.zip")
             }.onLeft {
                 call.respondPage(it)
             }

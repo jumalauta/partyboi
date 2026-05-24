@@ -25,6 +25,7 @@ import party.jml.partyboi.data.FileChecksums
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.toFilenameToken
+import party.jml.partyboi.data.toSceneOrgToken
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
@@ -167,12 +168,12 @@ class FileRepository(app: AppServices) : Service(app) {
         compo: Compo,
         targetDir: Path,
     ): Path {
-        val compoName = compo.name.toFilenameToken(true) ?: "compo-${compo.id}"
-        val authorClean = entry.author.toFilenameToken(false, 128)
-        val titleClean = entry.title.toFilenameToken(false, 128)
-        val extension = fileDesc.extension
+        val compoName = compo.name.toSceneOrgToken() ?: "compo_${compo.id}"
+        val authorClean = entry.author.toSceneOrgToken(128) ?: "author"
+        val titleClean = entry.title.toSceneOrgToken(128) ?: "untitled"
+        val extension = fileDesc.extension.toSceneOrgToken() ?: "bin"
 
-        return Paths.get(targetDir.absolutePathString(), compoName, "$authorClean-$titleClean.$extension")
+        return Paths.get(targetDir.absolutePathString(), compoName, "${authorClean}_${titleClean}.$extension")
     }
 
     private suspend fun add(file: FileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {

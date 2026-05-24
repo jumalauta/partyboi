@@ -21,6 +21,7 @@ import java.nio.file.Path
 import java.util.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
 
 
@@ -98,19 +99,22 @@ class CompoRunService(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun compressAllEntries(): AppResult<File> = either {
-        val dir = createTempDirectory()
+    suspend fun compressAllEntries(): AppResult<DistributionPackage> = either {
+        val tempRoot = createTempDirectory()
+        val year = app.time.today().year
+        val packageName = (app.config.instanceName.toSceneOrgToken() ?: "party") + year
+        val packageDir = tempRoot.resolve(packageName).also { it.createDirectories() }
 
         // Write results
         val results = app.votes.getResultsFileContent(includeInfo = false).bind()
         catchError {
-            dir.resolve("results.txt").toFile().writeText(results)
+            packageDir.resolve("results.txt").toFile().writeText(results)
         }.bind()
 
         val resultsWithInfo = app.votes.getResultsFileContent(includeInfo = true).bind()
         if (resultsWithInfo != results) {
             catchError {
-                dir.resolve("results-with-info.txt").toFile().writeText(resultsWithInfo)
+                packageDir.resolve("results_with_info.txt").toFile().writeText(resultsWithInfo)
             }.bind()
         }
 
@@ -126,7 +130,7 @@ class CompoRunService(app: AppServices) : Service(app) {
                             file,
                             entry,
                             compo,
-                            dir,
+                            packageDir,
                         )
                     copyFile(file, target).bind()
                 }
@@ -134,7 +138,7 @@ class CompoRunService(app: AppServices) : Service(app) {
         }
 
         // Compress zip file
-        compressDirectory(dir).bind()
+        DistributionPackage(file = compressDirectory(tempRoot).bind(), name = packageName)
     }
 
     suspend fun initCompoSteps(compo: Compo): AppResult<CompoSteps> = either {
@@ -208,6 +212,11 @@ class CompoRunService(app: AppServices) : Service(app) {
 data class ExtractedEntry(
     val isFolder: Boolean,
     val dir: File
+)
+
+data class DistributionPackage(
+    val file: File,
+    val name: String,
 )
 
 @Serializable
