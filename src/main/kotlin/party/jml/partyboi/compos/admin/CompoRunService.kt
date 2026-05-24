@@ -102,7 +102,8 @@ class CompoRunService(app: AppServices) : Service(app) {
     suspend fun compressAllEntries(): AppResult<DistributionPackage> = either {
         val tempRoot = createTempDirectory()
         val year = app.time.today().year
-        val packageName = (app.config.instanceName.toSceneOrgToken() ?: "party") + year
+        val partyName = app.config.instanceName.toSceneOrgToken() ?: "party"
+        val packageName = "$partyName$year"
         val packageDir = tempRoot.resolve(packageName).also { it.createDirectories() }
 
         // Write results
@@ -117,6 +118,14 @@ class CompoRunService(app: AppServices) : Service(app) {
                 packageDir.resolve("results_with_info.txt").toFile().writeText(resultsWithInfo)
             }.bind()
         }
+
+        // Write scene.org upload scripts
+        catchError {
+            packageDir.resolve(SceneOrgUploadScripts.BASH_FILENAME).toFile()
+                .writeText(SceneOrgUploadScripts.bashScript(partyName, year))
+            packageDir.resolve(SceneOrgUploadScripts.BATCH_FILENAME).toFile()
+                .writeText(SceneOrgUploadScripts.batchScript(partyName, year))
+        }.bind()
 
         // Copy latest file version of each qualified entry
         val entries = app.entries.getAllEntries().bind().filter { it.qualified }

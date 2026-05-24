@@ -79,7 +79,7 @@ class AdminComposTest : PartyboiTester {
         val topLevelDirRegex = Regex("^[a-z0-9_]+\\d{4}$")
 
         val rootDirs = mutableSetOf<String>()
-        var foundResultsTxt = false
+        val topLevelFiles = mutableSetOf<String>()
         ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
             generateSequence { zip.nextEntry }.forEach { entry ->
                 val parts = entry.name.trimEnd('/').split('/')
@@ -98,8 +98,8 @@ class AdminComposTest : PartyboiTester {
                         )
                     }
                 }
-                if (parts.size == 2 && parts[1] == "results.txt") {
-                    foundResultsTxt = true
+                if (parts.size == 2 && !entry.isDirectory) {
+                    topLevelFiles.add(parts[1])
                 }
             }
         }
@@ -110,6 +110,8 @@ class AdminComposTest : PartyboiTester {
             topLevelDirRegex.matches(rootDir),
             "top-level dir '$rootDir' should match <partyname><year>"
         )
-        assertTrue(foundResultsTxt, "results.txt missing at top of package dir")
+        assertTrue("results.txt" in topLevelFiles, "results.txt missing at top of package dir")
+        assertTrue("upload.sh" in topLevelFiles, "upload.sh missing at top of package dir")
+        assertTrue("upload.bat" in topLevelFiles, "upload.bat missing at top of package dir")
     }
 }
