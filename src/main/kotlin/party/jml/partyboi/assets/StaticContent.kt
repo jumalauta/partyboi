@@ -19,10 +19,14 @@ fun Application.configureStaticContent() {
 
             val assetFile = File("$uploadedAssetsDir/$path")
             if (assetFile.exists() && assetFile.isFile) {
+                call.applyAggressiveCaching()
                 call.respondFile(assetFile)
             } else {
                 this::class.java.classLoader.getResourceAsStream("assets/$path")
-                    ?.let { call.respondBytes(it.readBytes(), ContentType.defaultForFile(assetFile)) }
+                    ?.let {
+                        call.applyAggressiveCaching()
+                        call.respondBytes(it.readBytes(), ContentType.defaultForFile(assetFile))
+                    }
                     ?: call.respondPage(NotFound("File not found"))
             }
         }
@@ -35,12 +39,16 @@ fun Application.configureStaticContent() {
 
 fun StaticContentConfig<*>.aggressiveCaching() {
     cacheControl {
-        listOf(
-            CacheControl.MaxAge(
-                maxAgeSeconds = 31536000,
-                proxyMaxAgeSeconds = 600,
-                visibility = CacheControl.Visibility.Public
-            )
-        )
+        listOf(AGGRESSIVE_CACHE)
     }
+}
+
+private val AGGRESSIVE_CACHE = CacheControl.MaxAge(
+    maxAgeSeconds = 31536000,
+    proxyMaxAgeSeconds = 600,
+    visibility = CacheControl.Visibility.Public
+)
+
+private fun ApplicationCall.applyAggressiveCaching() {
+    response.header(HttpHeaders.CacheControl, AGGRESSIVE_CACHE.toString())
 }
