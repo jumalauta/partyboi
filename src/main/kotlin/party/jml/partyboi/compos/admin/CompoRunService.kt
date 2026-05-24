@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.compos.withCompoSuffix
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
@@ -279,7 +280,7 @@ sealed interface CompoStep {
         @Serializable(with = UUIDSerializer::class)
         val compoId: UUID,
     ) : CompoStep {
-        override fun title() = "$compoName compo starts soon"
+        override fun title() = "${compoName.withCompoSuffix()} starts soon"
         override fun icon() = "comment"
         override fun getSlide() = TextSlide.compoStartsSoon(compoName)
 
@@ -298,7 +299,7 @@ sealed interface CompoStep {
         @Serializable(with = UUIDSerializer::class)
         val compoId: UUID,
     ) : CompoStep {
-        override fun title() = "$compoName compo starts now"
+        override fun title() = "${compoName.withCompoSuffix()} starts now"
         override fun icon() = "circle-play"
         override fun getSlide() = TextSlide.compoStartsNow(compoName)
 
@@ -319,7 +320,7 @@ sealed interface CompoStep {
         @Serializable(with = UUIDSerializer::class)
         val compoId: UUID,
     ) : CompoStep {
-        override fun title() = "$compoName compo has ended!"
+        override fun title() = "${compoName.withCompoSuffix()} has ended!"
         override fun icon() = "circle-stop"
         override fun getSlide() = TextSlide.compoHasEnded(compoName)
 

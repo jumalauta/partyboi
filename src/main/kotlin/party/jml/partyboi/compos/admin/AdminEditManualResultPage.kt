@@ -12,7 +12,7 @@ object AdminEditManualResultPage {
         resultId: String,
         form: Form<NewManualResult>,
     ) = Page(title = "Edit result") {
-        h1 { +"${compo.name} compo — edit result" }
+        h1 { +"${compo.displayName} — edit result" }
 
         dataForm("/admin/compos/${compo.id}/manual-results/$resultId") {
             article {

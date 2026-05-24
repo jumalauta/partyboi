@@ -22,7 +22,7 @@ data class OpenCloseVoting(
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
         val compo = app.compos.getById(compoId).bind()
-        "${if (open) "Open" else "Close"} voting in ${compo.name} compo"
+        "${if (open) "Open" else "Close"} voting in ${compo.displayName}"
     }
 
     override suspend fun apply(app: AppServices): AppResult<Unit> = app.compos.allowVoting(compoId, open)
@@ -37,7 +37,7 @@ data class OpenCloseSubmitting(
 ) : Action {
     override suspend fun description(app: AppServices): AppResult<String> = either {
         val compo = app.compos.getById(compoId).bind()
-        "${if (open) "Open" else "Close"} submitting entries to ${compo.name} compo"
+        "${if (open) "Open" else "Close"} submitting entries to ${compo.displayName}"
     }
 
     override suspend fun apply(app: AppServices): AppResult<Unit> = app.compos.allowSubmit(compoId, open)

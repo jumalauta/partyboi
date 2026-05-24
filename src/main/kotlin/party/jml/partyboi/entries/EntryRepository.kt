@@ -118,7 +118,7 @@ class EntryRepository(app: AppServices) : Service(app) {
             either {
                 val compo = app.compos.getById(newEntry.compoId, this@transaction).bind()
                 if (compo.requireFile == true && !newEntry.file.isDefined) {
-                    FormError("${compo.name} compo requires a file").left().bind<Unit>()
+                    FormError("${compo.displayName} requires a file").left().bind<Unit>()
                 }
 
                 val entry = one(

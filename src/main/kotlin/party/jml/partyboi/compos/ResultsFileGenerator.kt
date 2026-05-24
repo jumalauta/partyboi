@@ -15,7 +15,7 @@ object ResultsFileGenerator {
         txt.append(header + "\n\n")
 
         CompoResult.groupResults(results).forEach { compo, compoResults ->
-            heading(txt, "${compo.name} compo")
+            heading(txt, compo.name.withCompoSuffix())
             compoResults.forEach { (place, resultsForPlace) ->
                 resultsForPlace.forEachIndexed { index, result ->
                     entry(

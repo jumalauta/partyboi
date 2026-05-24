@@ -26,7 +26,7 @@ object AdminEditCompoPage {
         val compo = compoForm.data
         val isManual = compo.manualResults
 
-        h1 { +"${compo.name} compo" }
+        h1 { +compo.displayName }
 
         columns(
             {

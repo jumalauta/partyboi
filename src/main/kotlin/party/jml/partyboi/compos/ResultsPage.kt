@@ -22,7 +22,7 @@ object ResultsPage {
 
             article {
                 a { attributes["name"] = compo.id.toString() }
-                cardHeader("${compo.name} compo")
+                cardHeader(compo.name.withCompoSuffix())
                 table {
                     thead {
                         tr {

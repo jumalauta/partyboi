@@ -153,7 +153,7 @@ class ScreenService(app: AppServices) : Service(app) {
             }.reversed()
 
         val hypeSlides = listOf(
-            TextSlide("Next: ${compo.name} compo results", "", "compo-info")
+            TextSlide("Next: ${compo.displayName} results", "", "compo-info")
         )
         val resultSlides = resultsBySlide.map { placeAndResults ->
             val places = placeAndResults.map { it.place }

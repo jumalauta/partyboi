@@ -12,8 +12,8 @@ object CompoScreenRunningPage {
     fun render(
         compo: Compo,
         steps: CompoSteps,
-    ) = Page("${compo.name} compo info screen") {
-        h1 { +"${compo.name} compo info screen" }
+    ) = Page("${compo.displayName} info screen") {
+        h1 { +"${compo.displayName} info screen" }
 
         renderWithScreenMonitoring(true) {
             reloadSection {

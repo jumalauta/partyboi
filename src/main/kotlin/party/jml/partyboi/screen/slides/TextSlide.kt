@@ -5,6 +5,7 @@ import kotlinx.html.h1
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.compos.withCompoSuffix
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Hidden
@@ -57,12 +58,12 @@ data class TextSlide(
             )
 
         fun compoStartsSoon(compoName: String): TextSlide =
-            TextSlide("${compoName} compo starts soon", "", CompoInfoVariant)
+            TextSlide("${compoName.withCompoSuffix()} starts soon", "", CompoInfoVariant)
 
         fun compoStartsNow(compoName: String): TextSlide =
-            TextSlide("${compoName} compo starts NOW!", "", CompoInfoVariant)
+            TextSlide("${compoName.withCompoSuffix()} starts NOW!", "", CompoInfoVariant)
 
         fun compoHasEnded(compoName: String): TextSlide =
-            TextSlide("${compoName} compo has ended", "", CompoInfoVariant)
+            TextSlide("${compoName.withCompoSuffix()} has ended", "", CompoInfoVariant)
     }
 }

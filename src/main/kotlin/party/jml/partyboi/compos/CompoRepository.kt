@@ -157,6 +157,8 @@ data class Compo(
     @Custom
     val fileFormats: List<FileFormat>,
 ) : Validateable<Compo>, DropdownOptionSupport {
+    val displayName: String get() = name.withCompoSuffix()
+
     fun canSubmit(user: User): Boolean = user.isAdmin || (visible && allowSubmit)
 
     override fun toDropdownOption() = DropdownOption(
@@ -225,3 +227,8 @@ data class GeneralRules(
     @Field(label = "General compo rules", presentation = FieldPresentation.large)
     val rules: String
 ) : Validateable<GeneralRules>
+
+private val compoWordRegex = Regex("\\bcompo\\b", RegexOption.IGNORE_CASE)
+
+fun String.withCompoSuffix(): String =
+    if (compoWordRegex.containsMatchIn(this)) this else "$this compo"
