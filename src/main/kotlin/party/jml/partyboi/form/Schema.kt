@@ -2,13 +2,14 @@ package party.jml.partyboi.form
 
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
-import kotlinx.datetime.format.DateTimeComponents
-import kotlinx.datetime.parse
+import kotlinx.datetime.toInstant
 import kotlinx.html.InputType
 import party.jml.partyboi.data.UUIDv7
+import party.jml.partyboi.system.LOCAL_ISO_DATETIME_FORMAT
 import party.jml.partyboi.system.TimeService
+import party.jml.partyboi.system.toLocalIsoString
 import io.ktor.util.logging.*
 import java.net.URI
 import java.util.*
@@ -216,13 +217,12 @@ data class InstantProp(
     override val optional: Boolean,
     override val meta: PropertyMeta,
 ) : Property {
-    val format = DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET
     override val defaultValue = Clock.System.now()
     override val defaultInputType: InputType = InputType.dateTime
     override fun serialize(value: Any?): String =
         when (value) {
             null -> ""
-            is Instant -> value.format(format)
+            is Instant -> value.toLocalIsoString()
             else -> TODO("Only Instant supported for datetime values. Unsupported type: $name $value")
         }
 
@@ -232,7 +232,10 @@ data class InstantProp(
     ): Any? =
         values.firstOrNull()?.let {
             if (it.isEmpty()) null
-            else Instant.parse(it, format)
+            else {
+                val ldt = LocalDateTime.parse(it, LOCAL_ISO_DATETIME_FORMAT)
+                ldt.toInstant(TimeService.timeZoneAt(ldt.date))
+            }
         }
 
 }

@@ -13,6 +13,16 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale.getDefault
 import kotlin.time.Duration
 
+val LOCAL_ISO_DATETIME_FORMAT = LocalDateTime.Format {
+    date(LocalDate.Formats.ISO)
+    char('T')
+    hour()
+    char(':')
+    minute()
+    char(':')
+    second()
+}
+
 class TimeService(app: AppServices) : Service(app) {
     val fallbackTime = Instant.DISTANT_PAST
     val timeZone = property("timeZone", TimeZone.currentSystemDefault())
@@ -41,12 +51,6 @@ class TimeService(app: AppServices) : Service(app) {
             runBlocking { AppServicesImpl.globalInstance!!.time.timeZoneAt(date) }
 
         fun timeZone(): TimeZone = runBlocking { AppServicesImpl.globalInstance!!.time.timeZone() }
-
-        fun isoOffset(): String {
-            val offset = timeZone().offsetAt(Clock.System.now())
-            val formatted = offset.format(UtcOffset.Formats.ISO)
-            return if (formatted == "Z") "+00:00" else formatted
-        }
     }
 }
 
@@ -83,6 +87,11 @@ fun Instant.displayDuration(): String {
 fun Instant.toDate(): LocalDate = toLocalDateTime(TimeService.timeZone()).date
 
 fun Instant.toIsoString(): String = format(DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET)
+
+fun Instant.toLocalIsoString(): String {
+    val date = toLocalDateTime(TimeService.timeZone()).date
+    return toLocalDateTime(TimeService.timeZoneAt(date)).format(LOCAL_ISO_DATETIME_FORMAT)
+}
 
 fun Instant.utcToTimeZone(tz: TimeZone): Instant = this.toLocalDateTime(tz).toInstant(TimeZone.UTC)
 

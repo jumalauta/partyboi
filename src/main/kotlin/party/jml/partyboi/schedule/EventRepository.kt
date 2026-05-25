@@ -140,7 +140,7 @@ interface ValidateableEvent<T : Validateable<T>> : Validateable<T> {
         )
 
     override fun suggestedValues(): Map<String, String> = mapOf(
-        "endTime" to startTime.plus(1.hours).toIsoString()
+        "endTime" to startTime.plus(1.hours).toLocalIsoString()
     )
 }
 

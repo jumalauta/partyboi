@@ -5,7 +5,6 @@ import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.randomShortId
-import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.components.tooltip
 import party.jml.partyboi.validation.Validateable
@@ -128,9 +127,6 @@ inline fun FlowOrInteractiveOrPhrasingContent.formTextInput(
         textInput(name = data.key) {
             value = data.value
             type = data.type
-            if (data.type == InputType.dateTime) {
-                this.attributes["data-tz"] = TimeService.isoOffset()
-            }
             if (data.suggestedValue != null) {
                 this.attributes["data-suggested-value"] = data.suggestedValue
             }

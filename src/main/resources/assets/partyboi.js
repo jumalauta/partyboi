@@ -119,11 +119,10 @@ function initInteractions(target) {
 
     // Date time pickers
     target.querySelectorAll("input[type=datetime]").forEach(input => {
-        const tz = input.attributes["data-tz"]?.value || "Z"
         const defaultDate = input.attributes["data-suggested-value"]?.value
         const self = flatpickr(input, {
             locale: {firstDayOfWeek: 1},
-            dateFormat: 'Y-m-d\\TH:i:S' + tz,
+            dateFormat: 'Y-m-d\\TH:i:S',
             enableTime: true,
             time_24hr: true,
             altInput: true,
