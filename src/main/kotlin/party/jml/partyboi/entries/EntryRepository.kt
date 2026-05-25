@@ -250,6 +250,7 @@ class EntryRepository(app: AppServices) : Service(app) {
                 SELECT
                     compo_id,
                     compo.name AS compo_name,
+                    compo.hide_author AS hide_author,
                     entry.id AS entry_id,
                     run_order,
                     title,
@@ -433,6 +434,7 @@ data class EntryUpdate(
 data class VotableEntry(
     override val compoId: UUID,
     val compoName: String,
+    val hideAuthor: Boolean,
     val entryId: UUID,
     val runOrder: Int,
     override val title: String,
@@ -447,6 +449,7 @@ data class VotableEntry(
             VotableEntry(
                 compoId = row.uuid("compo_id"),
                 compoName = row.string("compo_name"),
+                hideAuthor = row.boolean("hide_author"),
                 entryId = row.uuid("entry_id"),
                 runOrder = row.int("run_order"),
                 title = row.string("title"),
@@ -456,9 +459,10 @@ data class VotableEntry(
             )
         }
 
-        fun apply(entry: Entry, compoName: String, points: Int?) = VotableEntry(
+        fun apply(entry: Entry, compoName: String, hideAuthor: Boolean, points: Int?) = VotableEntry(
             compoId = entry.compoId,
             compoName = compoName,
+            hideAuthor = hideAuthor,
             entryId = entry.id,
             runOrder = entry.runOrder,
             title = entry.title,

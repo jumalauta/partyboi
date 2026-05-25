@@ -162,7 +162,7 @@ class CompoRunService(app: AppServices) : Service(app) {
                 CompoStep.StartsNow(compo.name, compo.id),
             ) + entries
                 .filter { it.qualified }
-                .mapIndexed { idx, entry -> CompoStep.Entry(entry, idx) } +
+                .mapIndexed { idx, entry -> CompoStep.Entry(entry, idx, compo.hideAuthor) } +
                     listOf(CompoStep.End(compo.name, compo.id))
 
             val result = CompoSteps(compo.id, null, steps)
@@ -346,10 +346,11 @@ sealed interface CompoStep {
     data class Entry(
         val entry: party.jml.partyboi.entries.Entry,
         val index: Int,
+        val hideAuthor: Boolean = false,
     ) : CompoStep {
         override fun title() = "#${index + 1}: ${entry.author} - ${entry.title}"
         override fun icon() = "eye"
-        override fun getSlide() = TextSlide.compoSlide(index, entry)
+        override fun getSlide() = TextSlide.compoSlide(index, entry, hideAuthor)
 
         override suspend fun activate(app: AppServices) {
             app.votes.addEntryToLiveVoting(entry)

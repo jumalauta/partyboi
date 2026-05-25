@@ -46,6 +46,15 @@ object AdminEditCompoPage {
                                 }
                                 +"Manual results (admin enters results directly, no submissions or voting)"
                             }
+                            label {
+                                input(name = "hideAuthor") {
+                                    type = InputType.checkBox
+                                    role = "switch"
+                                    checked = compo.hideAuthor
+                                    value = "true"
+                                }
+                                +"Hide author (author is not shown on voting page or info screen during compo)"
+                            }
                         }
 
                         if (!isManual) {

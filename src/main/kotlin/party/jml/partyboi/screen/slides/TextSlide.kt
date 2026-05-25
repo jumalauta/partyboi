@@ -49,11 +49,13 @@ data class TextSlide(
         const val CompoInfoVariant = "compo-info"
         const val CompoEntryVariant = "compo-entry"
 
-        fun compoSlide(index: Int, entry: Entry): TextSlide =
+        fun compoSlide(index: Int, entry: Entry, hideAuthor: Boolean): TextSlide =
             TextSlide(
                 "#${index + 1} ${entry.title}",
-                listOfNotNull("## ${entry.author}", entry.screenComment)
-                    .joinToString(separator = "\n\n"),
+                listOfNotNull(
+                    if (hideAuthor) null else "## ${entry.author}",
+                    entry.screenComment,
+                ).joinToString(separator = "\n\n"),
                 CompoEntryVariant
             )
 

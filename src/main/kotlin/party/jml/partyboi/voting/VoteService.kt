@@ -87,6 +87,7 @@ class VoteService(app: AppServices) : Service(app) {
                         VotableEntry.apply(
                             entry,
                             "Live: ${live.value.compo.name}",
+                            live.value.compo.hideAuthor,
                             userVotes.find { it.entryId == entry.id }?.points
                         )
                     }

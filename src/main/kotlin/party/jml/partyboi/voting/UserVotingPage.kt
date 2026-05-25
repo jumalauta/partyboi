@@ -67,7 +67,11 @@ object UserVotingPage {
                                         }
                                     }
                                     th(classes = "wide title") {
-                                        +"${entry.author} – ${entry.title}"
+                                        if (entry.hideAuthor) {
+                                            +entry.title
+                                        } else {
+                                            +"${entry.author} – ${entry.title}"
+                                        }
                                         entry.info?.let { small(classes = "entry-info") { +it } }
                                     }
                                     for (points in VoteService.POINT_RANGE) {

@@ -57,6 +57,7 @@ class CompoRepository(app: AppServices) : Service(app) {
                     formats = ?,
                     require_file = ?::boolean,
                     manual_results = ?,
+                    hide_author = ?,
                     allow_submit = CASE WHEN ? THEN false ELSE allow_submit END,
                     allow_vote = CASE WHEN ? THEN false ELSE allow_vote END
                 WHERE id = ?
@@ -66,6 +67,7 @@ class CompoRepository(app: AppServices) : Service(app) {
                     compo.fileFormats.map { it.name }.toTypedArray(),
                     compo.requireFile.toDatabaseEnum(),
                     compo.manualResults,
+                    compo.hideAuthor,
                     compo.manualResults,
                     compo.manualResults,
                     compo.id,
@@ -153,6 +155,8 @@ data class Compo(
     @Custom
     val manualResults: Boolean,
     @Custom
+    val hideAuthor: Boolean,
+    @Custom
     val requireFile: Boolean?,
     @Custom
     val fileFormats: List<FileFormat>,
@@ -188,6 +192,7 @@ data class Compo(
                 allowVote = row.boolean("allow_vote"),
                 publicResults = row.boolean("public_results"),
                 manualResults = row.boolean("manual_results"),
+                hideAuthor = row.boolean("hide_author"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
                 requireFile = row.optionalBooleanOrNull("require_file"),
             )
@@ -202,6 +207,7 @@ data class Compo(
             allowVote = false,
             publicResults = false,
             manualResults = false,
+            hideAuthor = false,
             fileFormats = emptyList(),
             requireFile = null,
         )

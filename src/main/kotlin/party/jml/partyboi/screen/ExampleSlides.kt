@@ -145,7 +145,8 @@ fun getExampleSlides() = listOf(
                 runOrder = 0,
                 timestamp = Instant.DISTANT_PAST,
                 allowEdit = false,
-            )
+            ),
+            hideAuthor = false,
         )
     ),
     ExampleSlide(
