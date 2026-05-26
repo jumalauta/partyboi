@@ -93,6 +93,13 @@ fun Instant.toLocalIsoString(): String {
     return toLocalDateTime(TimeService.timeZoneAt(date)).format(LOCAL_ISO_DATETIME_FORMAT)
 }
 
+// Parse a wall-clock datetime string (no offset, e.g. "2026-07-15T22:00:00") into an
+// Instant using the timezone effective on that date, so DST is handled correctly.
+fun parseLocalDateTime(value: String): Instant {
+    val ldt = LocalDateTime.parse(value, LOCAL_ISO_DATETIME_FORMAT)
+    return ldt.toInstant(TimeService.timeZoneAt(ldt.date))
+}
+
 fun Instant.utcToTimeZone(tz: TimeZone): Instant = this.toLocalDateTime(tz).toInstant(TimeZone.UTC)
 
 fun Duration.displayDuration(): String {

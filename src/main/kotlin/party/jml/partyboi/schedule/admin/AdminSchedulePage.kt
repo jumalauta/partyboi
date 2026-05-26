@@ -9,6 +9,8 @@ import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.displayDate
 import party.jml.partyboi.system.toDate
+import party.jml.partyboi.system.toLocalIsoString
+import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.FailedTriggerRow
@@ -25,52 +27,115 @@ object AdminSchedulePage {
         Page("Schedule") {
             h1 { +"Schedule" }
 
-            columns(
+            reloadSection {
                 if (events.isNotEmpty()) {
-                    {
-                        events
-                            .groupBy { it.startTime.toDate() }
-                            .forEach { (date, events) ->
-                                article {
-                                    header { +date.displayDate() }
-                                    table {
-                                        thead {
-                                            tr {
-                                                th(classes = "narrow") { +"Time" }
-                                                th { +"Name" }
-                                                th(classes = "narrow") {}
-                                            }
+                    label(classes = "shift-step") {
+                        +"Running late? Shift step (minutes): "
+                        numberInput {
+                            id = "shift-step"
+                            value = "15"
+                            attributes["min"] = "1"
+                        }
+                    }
+                    events
+                        .groupBy { it.startTime.toDate() }
+                        .forEach { (date, events) ->
+                            article {
+                                header { +date.displayDate() }
+                                table(classes = "schedule") {
+                                    thead {
+                                        tr {
+                                            th { +"Time" }
+                                            th { +"Name" }
+                                            th(classes = "settings") {}
                                         }
-                                        tbody {
-                                            events.forEach { event ->
-                                                tr {
-                                                    td { +event.formatTime(timeZone) }
-                                                    td { a(href = "/admin/schedule/events/${event.id}") { +event.name } }
-                                                    td(classes = "settings") {
-                                                        deleteButton(
-                                                            url = "/admin/schedule/events/${event.id}",
-                                                            tooltipText = "Delete event",
-                                                            confirmation = "Are you sure you want to delete event '${event.name}'?"
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
+                                    }
+                                    tbody {
+                                        events.forEach { event -> eventRow(event) }
                                     }
                                 }
                             }
-                    }
-                } else null
-            ) {
+                        }
+                }
                 renderForm(
                     title = "New Event",
                     url = "/admin/schedule/events",
                     form = newEventForm,
                     submitButtonLabel = "Add event",
+                    ajax = true,
                 )
             }
             flatpickr()
         }
+
+    // A single editable schedule row: in-place time/name inputs that save on change,
+    // and one compact column with all controls (nudge, visibility, shift, triggers, delete).
+    private fun TBODY.eventRow(event: Event) {
+        val id = event.id
+        tr {
+            td(classes = "event-time") {
+                textInput {
+                    type = InputType.dateTime
+                    value = event.startTime.toLocalIsoString()
+                    attributes["data-save-url"] = "/admin/schedule/events/$id/startTime"
+                    attributes["data-time-only"] = "true"
+                    attributes["aria-label"] = "Start time"
+                }
+                textInput {
+                    type = InputType.dateTime
+                    value = event.endTime?.toLocalIsoString() ?: ""
+                    attributes["data-save-url"] = "/admin/schedule/events/$id/endTime"
+                    attributes["data-time-only"] = "true"
+                    attributes["aria-label"] = "End time"
+                }
+            }
+            td(classes = "event-name wide") {
+                textInput {
+                    value = event.name
+                    attributes["data-save-url"] = "/admin/schedule/events/$id/name"
+                    attributes["aria-label"] = "Event name"
+                }
+            }
+            td(classes = "settings") {
+                button(classes = "flat-button") {
+                    tooltip("15 minutes earlier")
+                    onClick = Javascript.build {
+                        httpPut("/admin/schedule/events/$id/nudge/-15")
+                        refresh()
+                    }
+                    icon("minus")
+                }
+                button(classes = "flat-button") {
+                    tooltip("15 minutes later")
+                    onClick = Javascript.build {
+                        httpPut("/admin/schedule/events/$id/nudge/15")
+                        refresh()
+                    }
+                    icon("plus")
+                }
+                toggleButton(
+                    event.visible,
+                    IconSet.visibility,
+                    "/admin/schedule/events/$id/setVisible",
+                )
+                button(classes = "flat-button") {
+                    tooltip("Shift this and all later events by the step above")
+                    onClick = "shiftRest('$id')"
+                    icon("forward")
+                }
+                button(classes = "flat-button") {
+                    tooltip("Triggers")
+                    onClick = Javascript.build { goto("/admin/schedule/events/$id") }
+                    icon("bolt")
+                }
+                deleteButton(
+                    url = "/admin/schedule/events/$id",
+                    tooltipText = "Delete event",
+                    confirmation = "Are you sure you want to delete event '${event.name}'?"
+                )
+            }
+        }
+    }
 
     fun renderEdit(
         eventForm: Form<Event>,

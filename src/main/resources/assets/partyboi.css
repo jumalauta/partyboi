@@ -201,8 +201,11 @@ summary > header {
     width: calc(100% - 4ex);
 }
 
-button.flat-button {
+button.flat-button,
+a.flat-button {
+    display: inline-block;
     color: inherit;
+    text-decoration: none;
     background: none;
     border: none;
     padding: 0;
@@ -212,7 +215,8 @@ button.flat-button {
     min-width: 2.5ex;
 }
 
-button.flat-button.off > * {
+button.flat-button.off > *,
+a.flat-button.off > * {
     opacity: 0.25;
 }
 
@@ -618,4 +622,57 @@ article.hidden-asset, tr.hidden-asset {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Editable schedule */
+
+.shift-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 1ex;
+    margin-bottom: var(--pico-spacing);
+}
+
+.shift-step input {
+    width: 7em;
+    margin-bottom: 0;
+}
+
+table.schedule td,
+table.schedule th {
+    vertical-align: middle;
+}
+
+/* Compact, borderless-feeling inline inputs that fit inside table cells */
+table.schedule input:not([type=checkbox]) {
+    margin-bottom: 0;
+    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35)
+             calc(var(--pico-form-element-spacing-horizontal) * 0.5);
+    height: auto;
+    font-size: 90%;
+}
+
+table.schedule td.event-time {
+    white-space: nowrap;
+    width: 1px;
+}
+
+/* Start and end times sit side by side, both compact. Cells show time only
+   (events are grouped by day), so the fields are narrow. flatpickr turns each
+   original input into a hidden one (no box) and shows a text alt input, so the
+   inline-block + right margin only spaces the two visible fields. */
+table.schedule td.event-time input {
+    display: inline-block;
+    vertical-align: middle;
+    width: 5em;
+    margin: 0 0.4em 0 0;
+}
+
+table.schedule td.event-name input {
+    width: 100%;
+}
+
+/* All row controls live in one compact column; keep the icon buttons tight. */
+table.schedule td.settings .flat-button {
+    margin-right: 0.5ex;
 }

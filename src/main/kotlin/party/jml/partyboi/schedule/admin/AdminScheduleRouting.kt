@@ -3,13 +3,16 @@ package party.jml.partyboi.schedule.admin
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import kotlinx.datetime.TimeZone
+import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.data.processForm
 import party.jml.partyboi.data.switchApiUuid
@@ -17,10 +20,15 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.parseLocalDateTime
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.triggers.NewScheduledTrigger
 import java.util.*
+import kotlin.time.Duration.Companion.minutes
+
+@Serializable
+data class ValueUpdate(val value: String)
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
 
@@ -97,6 +105,64 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val eventId = call.parameterUUID("id").bind()
                 app.events.delete(eventId).bind()
+            }
+        }
+
+        // Inline editing: each editable cell PUTs its single value.
+        put("/admin/schedule/events/{id}/name") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterUUID("id").bind()
+                val value = call.receive<ValueUpdate>().value
+                app.events.setName(id, value).bind()
+            }
+        }
+
+        put("/admin/schedule/events/{id}/startTime") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterUUID("id").bind()
+                val startTime = parseLocalDateTime(call.receive<ValueUpdate>().value)
+                val event = app.events.get(id).bind()
+                event.copy(startTime = startTime).validate(Event::class).bind()
+                app.events.setStartTime(id, startTime).bind()
+            }
+        }
+
+        put("/admin/schedule/events/{id}/endTime") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterUUID("id").bind()
+                val raw = call.receive<ValueUpdate>().value
+                val endTime = if (raw.isBlank()) null else parseLocalDateTime(raw)
+                val event = app.events.get(id).bind()
+                event.copy(endTime = endTime).validate(Event::class).bind()
+                app.events.setEndTime(id, endTime).bind()
+            }
+        }
+
+        put("/admin/schedule/events/{id}/setVisible/{state}") {
+            call.switchApiUuid { id, state -> app.events.setVisible(id, state) }
+        }
+
+        // Bump a single event by N minutes, preserving its duration.
+        put("/admin/schedule/events/{id}/nudge/{minutes}") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterUUID("id").bind()
+                val minutes = call.parameterInt("minutes").bind()
+                app.events.nudge(id, minutes.minutes).bind()
+            }
+        }
+
+        // "Running late": shift the given event and every later one by N minutes.
+        put("/admin/schedule/shift/{id}/{minutes}") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterUUID("id").bind()
+                val minutes = call.parameterInt("minutes").bind()
+                val event = app.events.get(id).bind()
+                app.events.shiftFrom(event.startTime, minutes.minutes).bind()
             }
         }
 

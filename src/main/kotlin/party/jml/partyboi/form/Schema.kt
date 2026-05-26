@@ -2,13 +2,11 @@ package party.jml.partyboi.form
 
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 import kotlinx.html.InputType
 import party.jml.partyboi.data.UUIDv7
-import party.jml.partyboi.system.LOCAL_ISO_DATETIME_FORMAT
 import party.jml.partyboi.system.TimeService
+import party.jml.partyboi.system.parseLocalDateTime
 import party.jml.partyboi.system.toLocalIsoString
 import io.ktor.util.logging.*
 import java.net.URI
@@ -232,10 +230,7 @@ data class InstantProp(
     ): Any? =
         values.firstOrNull()?.let {
             if (it.isEmpty()) null
-            else {
-                val ldt = LocalDateTime.parse(it, LOCAL_ISO_DATETIME_FORMAT)
-                ldt.toInstant(TimeService.timeZoneAt(ldt.date))
-            }
+            else parseLocalDateTime(it)
         }
 
 }

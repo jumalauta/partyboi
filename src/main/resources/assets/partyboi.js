@@ -5,13 +5,34 @@ function initInteractions(target) {
     const submitBtns = target.querySelectorAll('input[type="submit"]');
 
     submitBtns.forEach((submitBtn) => {
-        submitBtn.addEventListener("click", () => {
+        submitBtn.addEventListener("click", (event) => {
+            const form = submitBtn.form;
             submitBtn.setAttribute("disabled", "disabled");
             const progress = document.createElement("progress");
             submitBtn.after(progress);
-            submitBtn.form.submit();
+            // Forms marked data-ajax submit without navigating: the response (a
+            // redirect to the list on success, or the re-rendered form with errors)
+            // both carry #reload-section, which we patch in place.
+            if (form && form.dataset.ajax) {
+                event.preventDefault();
+                fetch(form.action, {method: form.method || "POST", body: new FormData(form)})
+                    .then((res) => res.text())
+                    .then((html) => applyReloadSection(html))
+                    .catch((err) => console.error(err));
+                return;
+            }
+            form.submit();
         });
     });
+
+    // Inline editable cells: PUT the single value on change, then refresh the section.
+    // Datetime inputs are handled via the flatpickr onChange below instead, to avoid
+    // firing on the initial value parse.
+    target
+        .querySelectorAll('[data-save-url]:not([type="datetime"])')
+        .forEach((el) => {
+            el.addEventListener("change", () => saveField(el));
+        });
 
     // Activate sortable lists
     if (window.Draggable) {
@@ -126,40 +147,71 @@ function initInteractions(target) {
             enableTime: true,
             time_24hr: true,
             altInput: true,
-            altFormat: "H:i d.m.Y",
+            // Editable schedule cells are grouped by day, so they only show the time.
+            altFormat: input.dataset.timeOnly ? "H:i" : "H:i d.m.Y",
             allowInput: true,
             onOpen: (value) => {
                 if (value.length === 0) {
                     if (defaultDate) self.setDate(defaultDate)
                 }
+            },
+            // An inline editable cell saves its new time directly (form datetime
+            // inputs have no data-save-url and submit with the rest of the form).
+            onChange: () => {
+                if (input.dataset.saveUrl) saveField(input)
             }
         })
     })
+}
+
+// Patch the page from a fetched HTML string: replace #reload-section if both the
+// response and the current page have one, otherwise swap the whole <body>.
+function applyReloadSection(html) {
+    const reloadSection = html.match(
+        /.*(<output id="reload-section">.*<\/output>).*/is
+    );
+    const reloadTarget = document.querySelector("#reload-section");
+
+    if (reloadSection && reloadTarget) {
+        setContent(reloadTarget, reloadSection[1]);
+    } else {
+        const body = html.match(/.*(<body.*?>.*<\/body>).*/is);
+        if (body) {
+            setContent(document.body, body[1]);
+        }
+    }
+    window.dispatchEvent(new Event("resize"));
 }
 
 // Smooth page reload
 async function smoothReload() {
     try {
         const response = await fetch(location);
-        const html = await response.text();
-
-        const reloadSection = html.match(
-            /.*(<output id="reload-section">.*<\/output>).*/is
-        );
-        const reloadTarget = document.querySelector("#reload-section");
-
-        if (reloadSection && reloadTarget) {
-            setContent(reloadTarget, reloadSection[1]);
-        } else {
-            const body = html.match(/.*(<body.*?>.*<\/body>).*/is);
-            if (body) {
-                setContent(document.body, body[1]);
-            }
-        }
-        window.dispatchEvent(new Event("resize"));
+        applyReloadSection(await response.text());
     } catch (err) {
         console.error(err);
     }
+}
+
+// PUT a single inline-edited value, then refresh the section so the server's
+// ordering/formatting (e.g. a re-sorted event row) is reflected.
+function saveField(el) {
+    const value = el.type === "checkbox" ? String(el.checked) : el.value;
+    fetch(el.dataset.saveUrl, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({value}),
+    })
+        .then(() => smoothReload())
+        .catch((err) => console.error(err));
+}
+
+// "Running late": shift the given event and every later one by the shared step.
+function shiftRest(eventId) {
+    const minutes = parseInt(document.querySelector("#shift-step")?.value, 10) || 15;
+    fetch(`/admin/schedule/shift/${eventId}/${minutes}`, {method: "PUT"})
+        .then(() => smoothReload())
+        .catch((err) => console.error(err));
 }
 
 function setContent(target, html) {

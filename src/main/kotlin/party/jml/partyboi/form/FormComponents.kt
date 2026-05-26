@@ -10,8 +10,9 @@ import party.jml.partyboi.templates.components.tooltip
 import party.jml.partyboi.validation.Validateable
 import kotlin.enums.enumEntries
 
-fun FlowContent.dataForm(url: String, block: FORM.() -> Unit) {
+fun FlowContent.dataForm(url: String, ajax: Boolean = false, block: FORM.() -> Unit) {
     form(action = url, method = FormMethod.post, encType = FormEncType.multipartFormData) {
+        if (ajax) attributes["data-ajax"] = "true"
         block()
     }
 }
@@ -247,9 +248,10 @@ fun <T : Validateable<T>> FlowContent.renderForm(
     form: Form<T>,
     title: String? = null,
     submitButtonLabel: String = "Save changes",
-    options: Map<String, List<DropdownOptionSupport>>? = null
+    options: Map<String, List<DropdownOptionSupport>>? = null,
+    ajax: Boolean = false,
 ) {
-    dataForm(url) {
+    dataForm(url, ajax) {
         article {
             if (title != null) header { +title }
             fieldSet { renderFields(form, options) }
