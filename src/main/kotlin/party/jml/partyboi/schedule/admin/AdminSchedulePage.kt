@@ -9,7 +9,7 @@ import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.displayDate
 import party.jml.partyboi.system.toDate
-import party.jml.partyboi.system.toLocalIsoString
+import party.jml.partyboi.system.toLocalTimeString
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
@@ -76,14 +76,14 @@ object AdminSchedulePage {
             td(classes = "event-time") {
                 textInput {
                     type = InputType.dateTime
-                    value = event.startTime.toLocalIsoString()
+                    value = event.startTime.toLocalTimeString()
                     attributes["data-save-url"] = "/admin/schedule/events/$id/startTime"
                     attributes["data-time-only"] = "true"
                     attributes["aria-label"] = "Start time"
                 }
                 textInput {
                     type = InputType.dateTime
-                    value = event.endTime?.toLocalIsoString() ?: ""
+                    value = event.endTime?.toLocalTimeString() ?: ""
                     attributes["data-save-url"] = "/admin/schedule/events/$id/endTime"
                     attributes["data-time-only"] = "true"
                     attributes["aria-label"] = "End time"

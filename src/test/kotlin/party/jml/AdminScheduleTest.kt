@@ -114,19 +114,21 @@ class AdminScheduleTest : PartyboiTester {
 
         try {
             it.putJson("/admin/schedule/events/$summerId/name", """{"value":"Renamed"}""")
-            it.putJson("/admin/schedule/events/$summerId/startTime", """{"value":"2026-07-15T22:00:00"}""")
-            it.putJson("/admin/schedule/events/$winterId/startTime", """{"value":"2026-12-31T22:00:00"}""")
+            // Inline time edits are time-only: the value is a wall-clock time of day that
+            // is combined with the event's existing date (DST-correct for that date).
+            it.putJson("/admin/schedule/events/$summerId/startTime", """{"value":"22:00"}""")
+            it.putJson("/admin/schedule/events/$winterId/startTime", """{"value":"22:00"}""")
             it.buttonClick("/admin/schedule/events/$summerId/setVisible/false")
 
             val events = app!!.events.getAll().getOrNull()!!.associateBy { it.id }
             assertEquals("Renamed", events[summerId]!!.name)
             assertEquals(false, events[summerId]!!.visible)
-            // 22:00 Helsinki July (+03:00) → 19:00 UTC
+            // 22:00 on 2026-07-15 in Helsinki (DST, +03:00) → 19:00 UTC
             assertEquals(
                 LocalDateTime(2026, 7, 15, 19, 0).toInstant(TimeZone.UTC),
                 events[summerId]!!.startTime,
             )
-            // 22:00 Helsinki December (+02:00) → 20:00 UTC
+            // 22:00 on 2026-12-31 in Helsinki (standard, +02:00) → 20:00 UTC
             assertEquals(
                 LocalDateTime(2026, 12, 31, 20, 0).toInstant(TimeZone.UTC),
                 events[winterId]!!.startTime,

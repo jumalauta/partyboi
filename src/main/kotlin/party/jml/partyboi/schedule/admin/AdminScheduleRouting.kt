@@ -20,7 +20,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.system.parseLocalDateTime
+import party.jml.partyboi.system.withTimeOfDay
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.triggers.NewScheduledTrigger
@@ -118,12 +118,15 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             }
         }
 
+        // Inline time edits are time-only: combine the submitted time of day with the
+        // event's existing date so the date can't be changed here by accident.
         put("/admin/schedule/events/{id}/startTime") {
             call.apiRespond {
                 call.userSession(app).bind()
                 val id = call.parameterUUID("id").bind()
-                val startTime = parseLocalDateTime(call.receive<ValueUpdate>().value)
+                val time = call.receive<ValueUpdate>().value
                 val event = app.events.get(id).bind()
+                val startTime = event.startTime.withTimeOfDay(time)
                 event.copy(startTime = startTime).validate(Event::class).bind()
                 app.events.setStartTime(id, startTime).bind()
             }
@@ -134,8 +137,8 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val id = call.parameterUUID("id").bind()
                 val raw = call.receive<ValueUpdate>().value
-                val endTime = if (raw.isBlank()) null else parseLocalDateTime(raw)
                 val event = app.events.get(id).bind()
+                val endTime = if (raw.isBlank()) null else (event.endTime ?: event.startTime).withTimeOfDay(raw)
                 event.copy(endTime = endTime).validate(Event::class).bind()
                 app.events.setEndTime(id, endTime).bind()
             }

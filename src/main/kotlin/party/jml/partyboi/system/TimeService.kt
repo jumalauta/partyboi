@@ -23,6 +23,12 @@ val LOCAL_ISO_DATETIME_FORMAT = LocalDateTime.Format {
     second()
 }
 
+val LOCAL_TIME_FORMAT = LocalTime.Format {
+    hour()
+    char(':')
+    minute()
+}
+
 class TimeService(app: AppServices) : Service(app) {
     val fallbackTime = Instant.DISTANT_PAST
     val timeZone = property("timeZone", TimeZone.currentSystemDefault())
@@ -98,6 +104,20 @@ fun Instant.toLocalIsoString(): String {
 fun parseLocalDateTime(value: String): Instant {
     val ldt = LocalDateTime.parse(value, LOCAL_ISO_DATETIME_FORMAT)
     return ldt.toInstant(TimeService.timeZoneAt(ldt.date))
+}
+
+// The time of day (e.g. "18:30") in the timezone effective on this instant's date.
+fun Instant.toLocalTimeString(): String {
+    val date = toLocalDateTime(TimeService.timeZone()).date
+    return toLocalDateTime(TimeService.timeZoneAt(date)).time.format(LOCAL_TIME_FORMAT)
+}
+
+// Keep this instant's calendar date but replace its time of day (e.g. "18:30").
+// Used by inline time-only editing, where the date must not change by accident.
+fun Instant.withTimeOfDay(time: String): Instant {
+    val date = toLocalDateTime(TimeService.timeZone()).date
+    val tz = TimeService.timeZoneAt(date)
+    return LocalDateTime(date, LocalTime.parse(time, LOCAL_TIME_FORMAT)).toInstant(tz)
 }
 
 fun Instant.utcToTimeZone(tz: TimeZone): Instant = this.toLocalDateTime(tz).toInstant(TimeZone.UTC)

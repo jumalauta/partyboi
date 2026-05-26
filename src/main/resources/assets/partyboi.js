@@ -141,15 +141,18 @@ function initInteractions(target) {
     // Date time pickers
     target.querySelectorAll("input[type=datetime]").forEach(input => {
         const defaultDate = input.attributes["data-suggested-value"]?.value
+        // Editable schedule cells are time-only: the date is fixed (changing it by
+        // accident is too easy), so they show no calendar and their value is just H:i.
+        const timeOnly = !!input.dataset.timeOnly
+        const config = timeOnly
+            ? {noCalendar: true, dateFormat: "H:i"}
+            : {dateFormat: 'Y-m-d\\TH:i:S', altInput: true, altFormat: "H:i d.m.Y"}
         const self = flatpickr(input, {
             locale: {firstDayOfWeek: 1},
-            dateFormat: 'Y-m-d\\TH:i:S',
             enableTime: true,
             time_24hr: true,
-            altInput: true,
-            // Editable schedule cells are grouped by day, so they only show the time.
-            altFormat: input.dataset.timeOnly ? "H:i" : "H:i d.m.Y",
             allowInput: true,
+            ...config,
             onOpen: (value) => {
                 if (value.length === 0) {
                     if (defaultDate) self.setDate(defaultDate)
