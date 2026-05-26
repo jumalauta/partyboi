@@ -13,6 +13,8 @@ import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
 import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertFalse
 
 class VotingTest : PartyboiTester {
     @Test
@@ -102,6 +104,62 @@ class VotingTest : PartyboiTester {
             }
         }
         it.buttonClick("/vote/${entry.id}/3")
+    }
+
+    @Test
+    fun testVotingHidesAuthor() = test {
+        setupServices {
+            val app = this
+            either {
+                settings.automaticVoteKeys.set(AutomaticVoteKeys.PER_USER).bind()
+                val submitter = addTestUser(app, "submitter").bind()
+
+                val hidden = compos.add(NewCompo("Hidden", "")).bind()
+                compos.update(compos.getById(hidden.id).bind().copy(hideAuthor = true)).bind()
+                compos.setVisible(hidden.id, true).bind()
+                compos.allowSubmit(hidden.id, false).bind()
+                compos.allowVoting(hidden.id, true).bind()
+                entries.add(
+                    NewEntry(
+                        title = "Secret Title",
+                        author = "SecretAuthor",
+                        file = FileUpload.createTestData("secret.dat", 256),
+                        compoId = hidden.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = submitter.id,
+                    )
+                ).bind()
+
+                val visible = compos.add(NewCompo("Visible", "")).bind()
+                compos.setVisible(visible.id, true).bind()
+                compos.allowSubmit(visible.id, false).bind()
+                compos.allowVoting(visible.id, true).bind()
+                entries.add(
+                    NewEntry(
+                        title = "Public Title",
+                        author = "PublicAuthor",
+                        file = FileUpload.createTestData("public.dat", 256),
+                        compoId = visible.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = submitter.id,
+                    )
+                ).bind()
+            }
+        }
+
+        it.login()
+        it.get("/vote") {
+            relaxed = true
+            assertContains(text, "PublicAuthor")
+            assertContains(text, "Public Title")
+            assertContains(text, "Secret Title")
+            assertFalse(
+                text.contains("SecretAuthor"),
+                "Author must not appear on /vote when compo has hideAuthor=true (got: $text)",
+            )
+        }
     }
 
     private suspend fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {
