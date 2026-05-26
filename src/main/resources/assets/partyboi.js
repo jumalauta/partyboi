@@ -25,7 +25,7 @@ function initInteractions(target) {
         });
     });
 
-    // Inline editable cells: PUT the single value on change, then refresh the section.
+    // Inline editable cells: PUT the single value on change.
     // Datetime inputs are handled via the flatpickr onChange below instead, to avoid
     // firing on the initial value parse.
     target
@@ -33,6 +33,27 @@ function initInteractions(target) {
         .forEach((el) => {
             el.addEventListener("change", () => saveField(el));
         });
+
+    // Enter moves to the next editable cell (start -> end -> name -> next row's start).
+    // Moving focus blurs the current cell, which saves it. Enter on the very last cell
+    // creates a new empty event row and focuses its start time.
+    target.querySelectorAll("[data-save-url]").forEach((el) => {
+        el.addEventListener("keydown", async (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const cells = [...document.querySelectorAll("#reload-section [data-save-url]")];
+            const next = cells[cells.indexOf(el) + 1];
+            if (next) {
+                // Moving focus blurs this cell, which saves it (change / flatpickr onChange).
+                next.focus();
+                if (next.select) next.select();
+            } else {
+                // Last cell: no blur happens, so persist this edit before the row is added.
+                await saveField(el);
+                createEmptyEventRow();
+            }
+        });
+    });
 
     // Activate sortable lists
     if (window.Draggable) {
@@ -196,17 +217,32 @@ async function smoothReload() {
     }
 }
 
-// PUT a single inline-edited value, then refresh the section so the server's
-// ordering/formatting (e.g. a re-sorted event row) is reflected.
+// PUT a single inline-edited value. No reload: this keeps focus put while the user
+// edits/tabs through cells (the list re-sorts by time on the next reload). Saving is
+// triggered by the field's change/flatpickr-onChange, which fire when focus moves.
 function saveField(el) {
     const value = el.type === "checkbox" ? String(el.checked) : el.value;
-    fetch(el.dataset.saveUrl, {
+    return fetch(el.dataset.saveUrl, {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value}),
-    })
-        .then(() => smoothReload())
-        .catch((err) => console.error(err));
+    }).catch((err) => console.error(err));
+}
+
+// Set before a reload to move focus to a specific editable cell once it re-renders
+// (used when Enter on the last cell creates a new event row).
+let pendingFocus = null;
+
+// Enter on the last editable cell adds an empty event row, then focuses its start time.
+async function createEmptyEventRow() {
+    try {
+        const res = await fetch("/admin/schedule/events/new", {method: "POST"});
+        const {id} = await res.json();
+        pendingFocus = `/admin/schedule/events/${id}/startTime`;
+        smoothReload();
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 // "Running late": shift the given event and every later one by the shared step.
@@ -220,6 +256,14 @@ function shiftRest(eventId) {
 function setContent(target, html) {
     target.innerHTML = html;
     initInteractions(target);
+    if (pendingFocus) {
+        const el = document.querySelector(`[data-save-url="${pendingFocus}"]`);
+        pendingFocus = null;
+        if (el) {
+            el.focus();
+            if (el.select) el.select();
+        }
+    }
 }
 
 // Resize screen monitoring

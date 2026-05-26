@@ -12,6 +12,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.schedule.NewEvent
 import java.util.UUID
 import kotlin.test.Test
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 
 class AdminScheduleTest : PartyboiTester {
@@ -204,6 +206,65 @@ class AdminScheduleTest : PartyboiTester {
         assertEquals(at(14, 30), events[e2]!!.startTime)  // gap 12->14 is 2h, still cascades
         assertEquals(at(18, 0), events[e3]!!.startTime)   // >= 3h gap: not shifted
         assertEquals(at(19, 0), events[e4]!!.startTime)   // everything after the gap stays put
+    }
+
+    // The "new event row" endpoint scaffolds a blank event whose start time follows
+    // the last one, so repeated use chains events for keyboard-driven entry.
+    @Test
+    fun testCreateEmptyEventRow() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either { addTestAdmin(this@setupServices).bind() }
+        }
+
+        it.login("admin")
+
+        it.client.post("/admin/schedule/events/new").apply { assertEquals(HttpStatusCode.OK, status) }
+        var events = app!!.events.getAll().getOrNull()!!
+        assertEquals(1, events.size)
+        assertEquals("", events[0].name)
+
+        it.client.post("/admin/schedule/events/new").apply { assertEquals(HttpStatusCode.OK, status) }
+        events = app!!.events.getAll().getOrNull()!!
+        assertEquals(2, events.size)
+        assertTrue(events[1].startTime >= events[0].startTime)
+    }
+
+    // Regression: editing the time of a freshly-scaffolded (still unnamed) row must
+    // succeed — the inline time endpoints validate only start/end ordering, not the
+    // required name. Ordering is still enforced.
+    @Test
+    fun testInlineTimeEditOnUnnamedRow() = test {
+        var app: AppServices? = null
+        val tz = TimeZone.currentSystemDefault()
+        fun at(h: Int, m: Int) = LocalDateTime(2026, 6, 1, h, m).toInstant(tz)
+        var id: UUID? = null
+
+        setupServices {
+            app = this
+            either {
+                addTestAdmin(this@setupServices).bind()
+                id = events.add(NewEvent("", at(18, 0), null, true)).bind().id
+            }
+        }
+
+        it.login("admin")
+
+        // Times save despite the empty name
+        it.putJson("/admin/schedule/events/$id/startTime", """{"value":"23:00"}""")
+        it.putJson("/admin/schedule/events/$id/endTime", """{"value":"23:30"}""")
+        val saved = app!!.events.get(id!!).getOrNull()!!
+        assertEquals("", saved.name)
+        assertEquals(at(23, 0), saved.startTime)
+        assertEquals(at(23, 30), saved.endTime)
+
+        // Ordering is still enforced: an end before the start is rejected and ignored
+        it.client.put("/admin/schedule/events/$id/endTime") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"value":"22:00"}""")
+        }.apply { assertNotEquals(HttpStatusCode.OK, status) }
+        assertEquals(at(23, 30), app!!.events.get(id!!).getOrNull()!!.endTime)
     }
 
     private suspend fun TestHtmlClient.putJson(url: String, body: String) {

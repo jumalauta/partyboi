@@ -1,7 +1,10 @@
 package party.jml.partyboi.schedule.admin
 
+import arrow.core.flattenOption
+import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
+import arrow.core.toNonEmptyListOrNull
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
@@ -11,7 +14,9 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.data.apiRespond
+import party.jml.partyboi.data.jsonRespond
 import party.jml.partyboi.data.parameterInt
 import party.jml.partyboi.data.parameterUUID
 import party.jml.partyboi.data.processForm
@@ -29,6 +34,16 @@ import kotlin.time.Duration.Companion.minutes
 
 @Serializable
 data class ValueUpdate(val value: String)
+
+@Serializable
+data class CreatedEvent(val id: String)
+
+// Validate only the start/end ordering of an event (not other field constraints like a
+// required name), so inline time edits work on a not-yet-named scaffold row.
+private fun Event.assertTimeOrder(): AppResult<Unit> =
+    validationErrors().flattenOption().toNonEmptyListOrNull()
+        ?.let { ValidationError(it).left() }
+        ?: Unit.right()
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
 
@@ -108,6 +123,17 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             }
         }
 
+        // Scaffold a blank event row (empty name, start time following the last event)
+        // for keyboard-driven entry; returns its id so the client can focus the new row.
+        post("/admin/schedule/events/new") {
+            call.jsonRespond {
+                call.userSession(app).bind()
+                val events = app.events.getAll().bind()
+                val created = app.events.add(NewEvent.make(events, app.time)).bind()
+                CreatedEvent(created.id.toString())
+            }
+        }
+
         // Inline editing: each editable cell PUTs its single value.
         put("/admin/schedule/events/{id}/name") {
             call.apiRespond {
@@ -119,7 +145,9 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         }
 
         // Inline time edits are time-only: combine the submitted time of day with the
-        // event's existing date so the date can't be changed here by accident.
+        // event's existing date so the date can't be changed here by accident. Only the
+        // start/end ordering is validated (not e.g. the name, which may still be blank
+        // on a freshly scaffolded row being filled in).
         put("/admin/schedule/events/{id}/startTime") {
             call.apiRespond {
                 call.userSession(app).bind()
@@ -127,7 +155,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val time = call.receive<ValueUpdate>().value
                 val event = app.events.get(id).bind()
                 val startTime = event.startTime.withTimeOfDay(time)
-                event.copy(startTime = startTime).validate(Event::class).bind()
+                event.copy(startTime = startTime).assertTimeOrder().bind()
                 app.events.setStartTime(id, startTime).bind()
             }
         }
@@ -139,7 +167,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val raw = call.receive<ValueUpdate>().value
                 val event = app.events.get(id).bind()
                 val endTime = if (raw.isBlank()) null else (event.endTime ?: event.startTime).withTimeOfDay(raw)
-                event.copy(endTime = endTime).validate(Event::class).bind()
+                event.copy(endTime = endTime).assertTimeOrder().bind()
                 app.events.setEndTime(id, endTime).bind()
             }
         }
