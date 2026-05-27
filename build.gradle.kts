@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kotlin_version = "2.3.21"
-val logback_version: String = "1.5.32"
+val logback_version: String = "1.5.33"
 val postgres_version: String = "42.7.11"
 val h2_version: String = "2.4.240"
 val kotlinx_html_version: String = "0.12.0"
