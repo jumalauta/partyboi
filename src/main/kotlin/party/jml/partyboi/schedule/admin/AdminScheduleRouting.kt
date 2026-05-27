@@ -84,7 +84,11 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
 
         post("/admin/schedule/events") {
             call.processForm<NewEvent>(
-                { app.events.add(it).map { redirectionToSchedules }.bind() },
+                {
+                    app.events.add(it).bind()
+                    app.screen.syncScheduleSlides().bind()
+                    redirectionToSchedules
+                },
                 {
                     renderSchedulesPage(
                         newEventForm = it,
@@ -100,7 +104,11 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
 
         post("/admin/schedule/events/{id}") {
             call.processForm<Event>(
-                { app.events.update(it).map { redirectionToSchedules }.bind() },
+                {
+                    app.events.update(it).bind()
+                    app.screen.syncScheduleSlides().bind()
+                    redirectionToSchedules
+                },
                 { renderEditSchedulePage(call.parameterUUID("id"), eventForm = it).bind() }
             )
         }
@@ -120,6 +128,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val eventId = call.parameterUUID("id").bind()
                 app.events.delete(eventId).bind()
+                app.screen.syncScheduleSlides().bind()
             }
         }
 
@@ -130,6 +139,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val events = app.events.getAll().bind()
                 val created = app.events.add(NewEvent.make(events, app.time)).bind()
+                app.screen.syncScheduleSlides().bind()
                 CreatedEvent(created.id.toString())
             }
         }
@@ -172,8 +182,15 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             }
         }
 
+        // Toggling visibility changes which dates have a public event, so re-sync the
+        // schedule slides (hiding the last public event on a date removes its slide).
         put("/admin/schedule/events/{id}/setVisible/{state}") {
-            call.switchApiUuid { id, state -> app.events.setVisible(id, state) }
+            call.switchApiUuid { id, state ->
+                either {
+                    app.events.setVisible(id, state).bind()
+                    app.screen.syncScheduleSlides().bind()
+                }
+            }
         }
 
         // Bump a single event by N minutes, preserving its duration.
@@ -183,6 +200,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val id = call.parameterUUID("id").bind()
                 val minutes = call.parameterInt("minutes").bind()
                 app.events.nudge(id, minutes.minutes).bind()
+                app.screen.syncScheduleSlides().bind()
             }
         }
 
@@ -194,6 +212,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
                 val minutes = call.parameterInt("minutes").bind()
                 val event = app.events.get(id).bind()
                 app.events.shiftFrom(event.startTime, minutes.minutes).bind()
+                app.screen.syncScheduleSlides().bind()
             }
         }
 

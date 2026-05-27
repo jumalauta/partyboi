@@ -183,12 +183,6 @@ object AdminScreenPage {
                             +" Full screen image"
                         }
                     }
-                    li {
-                        flatPostButton("/admin/screen/${slideSet}/schedule") {
-                            icon(Icon("calendar"))
-                            +" All missing schedule slides"
-                        }
-                    }
                 }
             }
         }

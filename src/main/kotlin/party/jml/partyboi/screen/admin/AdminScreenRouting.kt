@@ -15,7 +15,6 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.Renderable
@@ -128,27 +127,6 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 call.userSession(app).bind()
                 val slideSetName = call.parameterString("slideSet").bind()
                 app.screen.addSlide(slideSetName, ImageSlide.Empty).bind()
-            }
-        }
-
-        post("/admin/screen/{slideSet}/schedule") {
-            call.apiRespond {
-                call.userSession(app).bind()
-                val slideSetName = call.parameterString("slideSet").bind()
-                val events = app.events.getPublic().bind()
-                val allDates = events.map { it.startTime.toDate() }.distinct().sorted()
-                val existingSlides = app.screen.getSlideSet(slideSetName).bind()
-                val existingDates = existingSlides.flatMap {
-                    val slide = it.getSlide()
-                    when (slide) {
-                        is ScheduleSlide -> listOf(slide.date)
-                        else -> emptyList()
-                    }
-                }.distinct()
-
-                allDates.minus(existingDates).forEach { date ->
-                    app.screen.addSlide(slideSetName, ScheduleSlide(date)).bind()
-                }
             }
         }
 

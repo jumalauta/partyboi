@@ -10,10 +10,12 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.UUIDv7
+import party.jml.partyboi.screen.slides.ScheduleSlide
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
@@ -59,6 +61,27 @@ class ScreenService(app: AppServices) : Service(app) {
 
     suspend fun addSlide(slideSet: String, slide: Slide<*>) =
         repository.add(slideSet, slide, makeVisible = false, readOnly = false)
+
+    // Keep the slide set's schedule slides in sync with the dates that have a public
+    // event: add a (visible) slide for any such date that lacks one, and remove slides
+    // for dates that no longer have a public event. Idempotent, so it is safe to call
+    // after any event change.
+    suspend fun syncScheduleSlides(slideSet: String = SlideSetRow.DEFAULT): AppResult<Unit> = either {
+        val publicDates = app.events.getPublic().bind()
+            .map { it.startTime.toDate() }
+            .toSet()
+        val scheduleSlides = repository.getSlideSetSlides(slideSet).bind()
+            .mapNotNull { row -> (row.getSlide() as? ScheduleSlide)?.let { it.date to row.id } }
+        val existingDates = scheduleSlides.map { it.first }.toSet()
+
+        scheduleSlides
+            .filter { (date, _) -> date !in publicDates }
+            .forEach { (_, id) -> repository.delete(id).bind() }
+
+        publicDates.minus(existingDates).sorted().forEach { date ->
+            repository.add(slideSet, ScheduleSlide(date), makeVisible = true, readOnly = false).bind()
+        }
+    }
 
     suspend fun update(id: UUID, slide: Slide<*>) = either {
         val updatedRow = repository.update(id, slide).bind()
