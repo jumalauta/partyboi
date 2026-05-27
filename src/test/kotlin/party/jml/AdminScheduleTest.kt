@@ -5,11 +5,14 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import it.skrape.matchers.toBe
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.schedule.NewEvent
+import party.jml.partyboi.screen.SlideSetRow
+import party.jml.partyboi.screen.slides.ScheduleSlide
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
@@ -266,6 +269,80 @@ class AdminScheduleTest : PartyboiTester {
         }.apply { assertNotEquals(HttpStatusCode.OK, status) }
         assertEquals(at(23, 30), app!!.events.get(id!!).getOrNull()!!.endTime)
     }
+
+    // Adding (or moving) an event to a date that has no schedule slide yet generates a
+    // visible schedule slide for it in the default slide set. Generation is idempotent:
+    // adding more events on a date that already has a slide does not duplicate it.
+    @Test
+    fun testEventChangesGenerateScheduleSlides() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either { addTestAdmin(this@setupServices).bind() }
+        }
+
+        it.login("admin")
+
+        // A new date produces a visible schedule slide
+        it.post("/admin/schedule/events", eventForm("First", 1)) { _ -> }
+        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+
+        // Another event on the same date does not create a duplicate slide
+        it.post("/admin/schedule/events", eventForm("Second", 1)) { _ -> }
+        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+
+        // A second date adds a second slide
+        it.post("/admin/schedule/events", eventForm("Third", 2)) { _ -> }
+        assertEquals(setOf(LocalDate(2026, 6, 1), LocalDate(2026, 6, 2)), visibleScheduleSlideDates(app!!))
+    }
+
+    // When a date loses its last public event — by deletion or by being hidden — its
+    // now-empty schedule slide is removed. A date that still has other public events
+    // keeps its slide.
+    @Test
+    fun testEmptyScheduleSlidesAreRemoved() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either { addTestAdmin(this@setupServices).bind() }
+        }
+
+        it.login("admin")
+
+        // Day 1 has two events, day 2 has one -> a slide for each date
+        it.post("/admin/schedule/events", eventForm("A1", 1)) { _ -> }
+        it.post("/admin/schedule/events", eventForm("A2", 1)) { _ -> }
+        it.post("/admin/schedule/events", eventForm("B", 2)) { _ -> }
+        assertEquals(setOf(LocalDate(2026, 6, 1), LocalDate(2026, 6, 2)), visibleScheduleSlideDates(app!!))
+
+        suspend fun eventId(name: String) = app!!.events.getAll().getOrNull()!!.first { it.name == name }.id
+
+        // Deleting the only event on day 2 removes its slide
+        it.client.delete("/admin/schedule/events/${eventId("B")}")
+            .apply { assertEquals(HttpStatusCode.OK, status) }
+        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+
+        // Deleting one of two events on day 1 keeps the slide (still a public event there)
+        it.client.delete("/admin/schedule/events/${eventId("A1")}")
+            .apply { assertEquals(HttpStatusCode.OK, status) }
+        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+
+        // Hiding the last remaining event on day 1 removes its slide too
+        it.buttonClick("/admin/schedule/events/${eventId("A2")}/setVisible/false")
+        assertEquals(emptySet(), visibleScheduleSlideDates(app!!))
+    }
+
+    private fun eventForm(name: String, day: Int) = formData {
+        append("name", name)
+        append("startTime", "2026-06-0${day}T12:00:00")
+        append("endTime", "")
+        append("visible", "true")
+    }
+
+    private suspend fun visibleScheduleSlideDates(app: AppServices): Set<LocalDate> =
+        app.screen.getSlideSet(SlideSetRow.DEFAULT).getOrNull()!!
+            .mapNotNull { row -> (row.getSlide() as? ScheduleSlide)?.takeIf { row.visible }?.date }
+            .toSet()
 
     private suspend fun TestHtmlClient.putJson(url: String, body: String) {
         client.put(url) {
