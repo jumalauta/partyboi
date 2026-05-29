@@ -4,10 +4,7 @@ import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
-import party.jml.partyboi.form.DropdownOption
-import party.jml.partyboi.form.Form
-import party.jml.partyboi.form.renderForm
-import party.jml.partyboi.form.renderReadonlyFields
+import party.jml.partyboi.form.*
 import party.jml.partyboi.screen.*
 import party.jml.partyboi.screen.slides.Slide
 import party.jml.partyboi.templates.Javascript
@@ -178,9 +175,9 @@ object AdminScreenPage {
                         }
                     }
                     li {
-                        flatPostButton("/admin/screen/${slideSet}/image") {
+                        a(href = "/admin/screen/${slideSet}/new/imageslide", classes = "flat-button") {
                             icon(Icon("image"))
-                            +" Full screen image"
+                            +" Full screen images"
                         }
                     }
                 }
@@ -226,6 +223,86 @@ object AdminScreenPage {
             form = if (errors == null) form else form.with(errors),
             submitButtonLabel = "Create slide",
         )
+    }
+
+    // Picker for creating many image slides at once. Lists image assets that aren't
+    // yet referenced by an ImageSlide in this slide set, plus an embedded asset
+    // upload form so new images can be added without leaving the picker.
+    fun renderImageSlidesPicker(
+        slideSet: String,
+        availableImages: List<Asset>,
+        uploadError: String? = null,
+        slideSets: List<SlideSetRow>,
+    ) = Page(
+        title = "Add image slides",
+        subLinks = slideSets.map { it.toNavItem() },
+    ) {
+        h1 { +"Add image slides / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
+
+        form(
+            action = "/admin/screen/${slideSet}/new/imageslide/upload",
+            method = FormMethod.post,
+            encType = FormEncType.multipartFormData,
+        ) {
+            article {
+                header { +"Upload images" }
+                fieldSet {
+                    if (uploadError != null) {
+                        section(classes = "error") { +uploadError }
+                    }
+                    label {
+                        span { +"Upload files" }
+                        fileInput(name = "files") {
+                            multiple = true
+                        }
+                    }
+                }
+                submitButton("Upload")
+            }
+        }
+
+        form(
+            action = "/admin/screen/${slideSet}/new/imageslide",
+            method = FormMethod.post,
+        ) {
+            article {
+                header { +"Pick images to add as slides" }
+                if (availableImages.isEmpty()) {
+                    p { +"No unused images — upload some above." }
+                } else {
+                    button(type = ButtonType.button, classes = "secondary outline") {
+                        id = "select-all-images"
+                        +"Select all"
+                    }
+                    div(classes = "image-picker-grid") {
+                        availableImages.forEach { asset ->
+                            label(classes = "image-picker-item") {
+                                checkBoxInput(name = "assetImage") {
+                                    value = asset.fullName
+                                }
+                                img(src = "/assets/${asset.fullName}", alt = asset.displayName)
+                                span { +asset.displayName }
+                            }
+                        }
+                    }
+                    submitButton("Create slides")
+                }
+            }
+        }
+
+        // Toggle all checkboxes from a single button: clicking when any is unchecked
+        // selects all; clicking again (when all are checked) clears the selection.
+        script {
+            unsafe {
+                +"""
+                document.getElementById('select-all-images')?.addEventListener('click', () => {
+                    const boxes = document.querySelectorAll('input[name="assetImage"]');
+                    const allChecked = [...boxes].every(b => b.checked);
+                    boxes.forEach(b => { b.checked = !allChecked; });
+                });
+                """.trimIndent()
+            }
+        }
     }
 
     fun renderSlideForm(

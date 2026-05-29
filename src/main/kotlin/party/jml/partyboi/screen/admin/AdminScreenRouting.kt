@@ -1,6 +1,7 @@
 package party.jml.partyboi.screen.admin
 
 import arrow.core.raise.either
+import arrow.core.right
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -12,8 +13,12 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.collect
 import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.*
+import party.jml.partyboi.screen.slides.ImageSlide
+import party.jml.partyboi.screen.slides.QrCodeSlide
+import party.jml.partyboi.screen.slides.Slide
+import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
@@ -75,6 +80,26 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
+    // Render the image-slides picker: every image asset not already used by an
+    // ImageSlide in this slide set, with an embedded upload form for adding more.
+    suspend fun renderImageSlidesPicker(
+        slideSetName: AppResult<String>,
+        uploadError: String? = null,
+    ) = either {
+        val slideSet = slideSetName.bind()
+        val usedImages = app.screen.getSlideSet(slideSet).bind()
+            .mapNotNull { (it.getSlide() as? ImageSlide)?.assetImage }
+            .toSet()
+        val availableImages = app.assets.getList(FileDesc.IMAGE)
+            .filterNot { it.fullName in usedImages }
+        AdminScreenPage.renderImageSlidesPicker(
+            slideSet = slideSet,
+            availableImages = availableImages,
+            uploadError = uploadError,
+            slideSets = app.screen.getSlideSets().bind(),
+        )
+    }
+
     adminRouting {
         fun redirectionToSet(name: String) = Redirection("/admin/screen/$name")
 
@@ -121,6 +146,51 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.createSlide<QrCodeSlide>(app) { s, e -> renderNewSlideEdit(s, QrCodeSlide.Empty, e) }
         }
 
+        // Image-slides picker: one page, many slides at once. The GET renders the
+        // unused-images list plus an upload form; the main POST creates one visible
+        // ImageSlide per checked asset; the upload sub-route writes new asset files
+        // (mirroring AdminAssetsRouting.kt) and redirects back to the picker.
+        get("/admin/screen/{slideSet}/new/imageslide") {
+            call.respondEither {
+                renderImageSlidesPicker(call.parameterString("slideSet")).bind()
+            }
+        }
+
+        post("/admin/screen/{slideSet}/new/imageslide") {
+            val slideSetName = call.parameterString("slideSet").getOrNull() ?: return@post
+            val params = call.receiveParameters()
+            val picks = (params.getAll("assetImage") ?: emptyList()).filter { it.isNotBlank() }
+            picks.forEach { assetImage ->
+                app.screen.addSlide(slideSetName, ImageSlide(assetImage), makeVisible = true)
+            }
+            call.respondRedirect("/admin/screen/$slideSetName")
+        }
+
+        post("/admin/screen/{slideSet}/new/imageslide/upload") {
+            val slideSetName = call.parameterString("slideSet").getOrNull() ?: return@post
+            val (_, files) = call.receiveMultipart(app.config.maxFileUploadSize).collect()
+            val uploadedFiles = (files["files"] ?: emptyList()).filter { it.isDefined }
+
+            if (uploadedFiles.isEmpty()) {
+                call.respondEither {
+                    renderImageSlidesPicker(slideSetName.right(), uploadError = "No files selected").bind()
+                }
+                return@post
+            }
+
+            val errors = uploadedFiles.mapNotNull { file ->
+                app.assets.write(file).fold({ "${file.name}: ${it.message}" }, { null })
+            }
+
+            if (errors.isNotEmpty()) {
+                call.respondEither {
+                    renderImageSlidesPicker(slideSetName.right(), uploadError = errors.joinToString("; ")).bind()
+                }
+            } else {
+                call.respondRedirect("/admin/screen/$slideSetName/new/imageslide")
+            }
+        }
+
         get("/admin/screen/{slideSet}/{slideId}") {
             call.respondEither {
                 renderSlideEdit(
@@ -144,14 +214,6 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
     }
 
     adminApiRouting {
-        post("/admin/screen/{slideSet}/image") {
-            call.apiRespond {
-                call.userSession(app).bind()
-                val slideSetName = call.parameterString("slideSet").bind()
-                app.screen.addSlide(slideSetName, ImageSlide.Empty).bind()
-            }
-        }
-
         post("/admin/screen/{slideSet}/start") {
             call.apiRespond {
                 call.userSession(app).bind()
