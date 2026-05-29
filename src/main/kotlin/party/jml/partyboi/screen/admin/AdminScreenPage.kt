@@ -49,7 +49,7 @@ object AdminScreenPage {
 
         renderWithScreenMonitoring(true) {
             reloadSection {
-                nav {
+                nav(classes = "slide-set-toolbar") {
                     ul {
                         if (!willHaltAutoRun) {
                             if (screenState.slideSet != slideSet || !isRunning) {
@@ -78,6 +78,33 @@ object AdminScreenPage {
                                 postButton("/admin/screen/${slideSet}/next") {
                                     icon(Icon.next)
                                     +" Show next slide"
+                                }
+                            }
+                        }
+                    }
+                    ul {
+                        li {
+                            details(classes = "dropdown") {
+                                summary { +"Add slide" }
+                                ul {
+                                    li {
+                                        a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
+                                            icon(Icon("list-ul"))
+                                            +" Normal text slide"
+                                        }
+                                    }
+                                    li {
+                                        a(href = "/admin/screen/${slideSet}/new/qrcodeslide", classes = "flat-button") {
+                                            icon(Icon("qrcode"))
+                                            +" Slide with a QR code"
+                                        }
+                                    }
+                                    li {
+                                        a(href = "/admin/screen/${slideSet}/new/imageslide", classes = "flat-button") {
+                                            icon(Icon("image"))
+                                            +" Full screen images"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -154,30 +181,6 @@ object AdminScreenPage {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            details(classes = "dropdown") {
-                summary { +"Add slide" }
-                ul {
-                    li {
-                        a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
-                            icon(Icon("list-ul"))
-                            +" Normal text slide"
-                        }
-                    }
-                    li {
-                        a(href = "/admin/screen/${slideSet}/new/qrcodeslide", classes = "flat-button") {
-                            icon(Icon("qrcode"))
-                            +" Slide with a QR code"
-                        }
-                    }
-                    li {
-                        a(href = "/admin/screen/${slideSet}/new/imageslide", classes = "flat-button") {
-                            icon(Icon("image"))
-                            +" Full screen images"
                         }
                     }
                 }

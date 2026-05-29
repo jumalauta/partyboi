@@ -609,6 +609,22 @@ article.hidden-asset, tr.hidden-asset {
     display: revert;
 }
 
+.slide-set-toolbar {
+    align-items: center;
+}
+
+.slide-set-toolbar > ul {
+    margin: 0;
+}
+
+.slide-set-toolbar details.dropdown {
+    margin: 0;
+}
+
+.slide-set-toolbar details.dropdown summary {
+    margin: 0;
+}
+
 #slide-list table {
     width: 100%;
 }
