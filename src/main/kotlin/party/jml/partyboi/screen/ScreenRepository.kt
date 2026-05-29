@@ -131,6 +131,12 @@ class ScreenRepository(app: AppServices) : Service(app) {
         updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
     }
 
+    // Removes the slide set row. The screen.slideset_id FK is ON DELETE CASCADE,
+    // so any slides in the set are removed too.
+    suspend fun deleteSlideSet(id: String): AppResult<Unit> = db.use {
+        updateOne(queryOf("DELETE FROM slideset WHERE id = ?", id))
+    }
+
     suspend fun deleteAll(): AppResult<Unit> = db.use {
         exec(queryOf("DELETE FROM screen"))
     }

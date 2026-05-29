@@ -1,5 +1,6 @@
 package party.jml.partyboi.screen
 
+import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.Flow
@@ -8,6 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.Forbidden
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.screen.slides.ScheduleSlide
@@ -51,6 +53,15 @@ class ScreenService(app: AppServices) : Service(app) {
         repository.upsertSlideSet(id, name, "tv").bind()
         id
     }
+
+    // Delete a slide set and all its slides (FK cascades). The built-in ad-hoc and
+    // default sets are protected because other code paths assume they always exist.
+    suspend fun deleteSlideSet(id: String): AppResult<Unit> =
+        if (id == SlideSetRow.ADHOC || id == SlideSetRow.DEFAULT) {
+            Forbidden().left()
+        } else {
+            repository.deleteSlideSet(id)
+        }
 
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
@@ -191,7 +202,7 @@ class ScreenService(app: AppServices) : Service(app) {
 
 // Slide set ids that look like URLs handled by other routes under /admin/screen/.
 // Generated slugs must avoid these to keep redirects working.
-private val reservedSlideSetIds = setOf("new", "adhoc", "default")
+private val reservedSlideSetIds = setOf("new", "adhoc", "default", "slideset")
 
 private fun String.slugify(): String =
     lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')

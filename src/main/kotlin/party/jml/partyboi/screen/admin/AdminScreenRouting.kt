@@ -316,6 +316,14 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
         }
 
+        delete("/admin/screen/slideset/{id}") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterString("id").bind()
+                app.screen.deleteSlideSet(id).bind()
+            }
+        }
+
         delete("/admin/screen/{slideId}") {
             call.apiRespond {
                 call.userSession(app).bind()

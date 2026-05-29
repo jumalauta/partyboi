@@ -46,11 +46,23 @@ object AdminScreenPage {
         } != null
 
         div(classes = "title-row") {
-            h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
-            a(href = "/admin/screen/new") {
-                attributes["role"] = "button"
-                icon("plus")
-                +" New slideset"
+            val slideSetName = slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"
+            h1 { +slideSetName }
+            div(classes = "title-row-actions") {
+                a(href = "/admin/screen/new") {
+                    attributes["role"] = "button"
+                    icon("plus")
+                    +" New slideset"
+                }
+                if (slideSet != SlideSetRow.ADHOC && slideSet != SlideSetRow.DEFAULT) {
+                    deleteButton(
+                        url = "/admin/screen/slideset/$slideSet",
+                        confirmation = "Delete the \"$slideSetName\" slideset and all its slides?",
+                        label = "Delete",
+                        redirectUrl = "/admin/screen",
+                        classes = "primary",
+                    )
+                }
             }
         }
 
