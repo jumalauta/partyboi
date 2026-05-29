@@ -202,6 +202,31 @@ fun Application.configureAdminComposRouting(app: AppServices) {
             }
         }
 
+        get("/admin/compos/{id}/run-results") {
+            call.respondEither {
+                val compoId = call.parameterUUID("id").bind()
+                val compo = app.compos.getById(compoId).bind()
+                val steps = app.resultsRun.initResultsSteps(compo).bind()
+
+                ResultsScreenRunningPage.render(
+                    compo = compo,
+                    steps = steps,
+                )
+            }
+        }
+
+        post("/admin/compos/{id}/run-results/next") {
+            call.apiRespond {
+                app.resultsRun.nextResultsStep().bind()
+            }
+        }
+
+        post("/admin/compos/{id}/run-results/prev") {
+            call.apiRespond {
+                app.resultsRun.prevResultsStep().bind()
+            }
+        }
+
         get("/admin/compos/{id}/download") {
             either {
                 val compoId = call.parameterUUID("id").bind()
@@ -221,14 +246,6 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                     ).toString()
                 )
                 call.respondFile(zipFile)
-            }
-        }
-
-        get("/admin/compos/{id}/generate-result-slides") {
-            either {
-                val compoId = call.parameterUUID("id").bind()
-                val slideEditUrl = app.screen.generateResultSlidesForCompo(compoId).bind()
-                call.respondRedirect(slideEditUrl)
             }
         }
 

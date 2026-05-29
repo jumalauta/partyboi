@@ -16,7 +16,6 @@ import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.toDate
-import party.jml.partyboi.voting.CompoResult
 import java.util.*
 import kotlin.concurrent.schedule
 import kotlin.io.path.readText
@@ -152,55 +151,6 @@ class ScreenService(app: AppServices) : Service(app) {
         } else {
             repository.getFirstSlide(slideSetName).map { showSlide(it) }
         }
-
-    suspend fun generateResultSlidesForCompo(compoId: UUID): AppResult<String> = either {
-        val slideSet = "results-${compoId}"
-        val compo = app.compos.getById(compoId).bind()
-        upsertSlideSet(slideSet, "Results: ${compo.name}", "square-poll-horizontal")
-        val results = app.votes.getResults().bind().filter { it.compoId == compoId }
-        val resultsByPlace = CompoResult.groupResults(results).values.first()
-        val resultsBySlide =
-            resultsByPlace.fold(emptyList<List<CompoResult.Companion.GroupedCompoResult>>()) { acc, placeAndResult ->
-                when (placeAndResult.place) {
-                    in 1..4 -> acc + listOf(listOf(placeAndResult))
-                    else -> {
-                        val last = acc.last()
-                        val entriesCollected = last.sumOf { it.results.size }
-                        if (entriesCollected + placeAndResult.results.size > 5) {
-                            acc + listOf(listOf(placeAndResult))
-                        } else {
-                            acc.take(acc.size - 1) + listOf(last + placeAndResult)
-                        }
-                    }
-                }
-            }.reversed()
-
-        val hypeSlides = listOf(
-            TextSlide("Next: ${compo.displayName} results", "", "compo-info")
-        )
-        val resultSlides = resultsBySlide.map { placeAndResults ->
-            val places = placeAndResults.map { it.place }
-            val minPlace = places.min()
-            val maxPlace = places.max()
-            val rows = placeAndResults.flatMap { pr ->
-                pr.results.map {
-                    val score = if (it.isManual) it.scoreText ?: "" else "${it.points} pts."
-                    val suffix = if (score.isNotBlank()) " ($score)" else ""
-                    val name = if (it.title.isBlank()) it.author else "${it.author} – ${it.title}"
-                    "* ${pr.place}. $name$suffix"
-                }
-            }
-            TextSlide(
-                title = if (minPlace == 1) "Winner" else if (minPlace == maxPlace) "Place $minPlace" else "Places $minPlace-$maxPlace",
-                rows.joinToString(separator = "\n"),
-                "results"
-            )
-        }
-
-        repository.replaceGeneratedSlideSet(slideSet, hypeSlides + resultSlides).bind()
-
-        "/admin/screen/${slideSet}"
-    }
 
     fun getThemeInfo(): ThemeInfo {
         return try {

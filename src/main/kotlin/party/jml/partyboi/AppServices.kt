@@ -11,6 +11,7 @@ import party.jml.partyboi.auth.UserService
 import party.jml.partyboi.compos.CompoRepository
 import party.jml.partyboi.compos.ManualResultRepository
 import party.jml.partyboi.compos.admin.CompoRunService
+import party.jml.partyboi.compos.admin.ResultsRunService
 import party.jml.partyboi.data.PersistentCachedValue
 import party.jml.partyboi.data.PropertyRepository
 import party.jml.partyboi.db.DatabasePool
@@ -52,6 +53,7 @@ interface AppServices {
     val votes: VoteService
     val voteKeys: VoteKeyRepository
     val compoRun: CompoRunService
+    val resultsRun: ResultsRunService
     val screen: ScreenService
     val previews: PreviewRepository
     val events: EventRepository
@@ -86,6 +88,7 @@ class AppServicesImpl(
     override val votes = VoteService(this)
     override val voteKeys = VoteKeyRepository(this)
     override val compoRun = CompoRunService(this)
+    override val resultsRun = ResultsRunService(this)
     override val previews = PreviewRepository(this)
     override val events = EventRepositoryImpl(this)
     override val triggers = TriggerRepository(this)

@@ -177,11 +177,11 @@ object AdminEditCompoPage {
                     )
 
                     buttonGroup {
-                        a(href = "/admin/compos/${compo.id}/generate-result-slides") {
+                        a(href = "/admin/compos/${compo.id}/run-results") {
                             attributes.put("role", "button")
                             icon("square-poll-horizontal")
                             br {}
-                            +"Result slides"
+                            +"Run results"
                         }
                     }
                 }
@@ -283,11 +283,11 @@ object AdminEditCompoPage {
                             br {}
                             +"Run info screen"
                         }
-                        a(href = "/admin/compos/${compo.id}/generate-result-slides") {
+                        a(href = "/admin/compos/${compo.id}/run-results") {
                             attributes.put("role", "button")
                             icon("square-poll-horizontal")
                             br {}
-                            +"Result slides"
+                            +"Run results"
                         }
                     }
                 }
