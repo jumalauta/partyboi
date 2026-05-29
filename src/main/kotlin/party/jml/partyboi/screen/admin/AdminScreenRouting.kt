@@ -14,6 +14,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.collect
+import party.jml.partyboi.screen.NewSlideSet
 import party.jml.partyboi.screen.SlideSetRow
 import party.jml.partyboi.screen.slides.ImageSlide
 import party.jml.partyboi.screen.slides.QrCodeSlide
@@ -115,6 +116,33 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.processForm<TextSlide>(
                 { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") }.bind() },
                 { renderAdHocEdit(it).bind() }
+            )
+        }
+
+        // New-slideset form: registered before the {slideSet} catch-all so Ktor's
+        // literal-segment preference routes /admin/screen/new here even if some
+        // future migration introduces a slide set called "new".
+        get("/admin/screen/new") {
+            call.respondEither {
+                AdminScreenPage.renderNewSlideSetForm(
+                    form = Form(NewSlideSet::class, NewSlideSet.Empty, initial = true),
+                    slideSets = app.screen.getSlideSets().bind(),
+                )
+            }
+        }
+
+        post("/admin/screen/new") {
+            call.processForm<NewSlideSet>(
+                { data ->
+                    val id = app.screen.createSlideSet(data.name).bind()
+                    Redirection("/admin/screen/$id")
+                },
+                { form ->
+                    AdminScreenPage.renderNewSlideSetForm(
+                        form = form,
+                        slideSets = app.screen.getSlideSets().bind(),
+                    )
+                }
             )
         }
 

@@ -16,10 +16,14 @@ import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
+import party.jml.partyboi.form.Label
 import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
+import party.jml.partyboi.validation.MaxLength
+import party.jml.partyboi.validation.NotEmpty
+import party.jml.partyboi.validation.Validateable
 import java.util.*
 
 class ScreenRepository(app: AppServices) : Service(app) {
@@ -195,6 +199,17 @@ data class SlideSetRow(
                 icon = row.string("icon"),
             )
         }
+    }
+}
+
+data class NewSlideSet(
+    @Label("Name")
+    @NotEmpty
+    @MaxLength(64)
+    val name: String,
+) : Validateable<NewSlideSet> {
+    companion object {
+        val Empty = NewSlideSet("")
     }
 }
 

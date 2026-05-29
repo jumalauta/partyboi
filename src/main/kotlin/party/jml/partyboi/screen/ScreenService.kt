@@ -40,6 +40,18 @@ class ScreenService(app: AppServices) : Service(app) {
     suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
         repository.upsertSlideSet(id, name, icon)
 
+    // Create a new slide set with a unique URL-friendly id derived from the name.
+    // Returns the id of the created slide set so the caller can redirect to it.
+    suspend fun createSlideSet(name: String): AppResult<String> = either {
+        val taken = repository.getSlideSets().bind().map { it.id }.toSet() + reservedSlideSetIds
+        val base = name.slugify().ifBlank { "slideset" }
+        val id = generateSequence(0) { it + 1 }
+            .map { if (it == 0) base else "$base-${it + 1}" }
+            .first { it !in taken }
+        repository.upsertSlideSet(id, name, "tv").bind()
+        id
+    }
+
     fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
@@ -176,6 +188,13 @@ class ScreenService(app: AppServices) : Service(app) {
         return app.signals.emit(Signal.slideShown(row.id))
     }
 }
+
+// Slide set ids that look like URLs handled by other routes under /admin/screen/.
+// Generated slugs must avoid these to keep redirects working.
+private val reservedSlideSetIds = setOf("new", "adhoc", "default")
+
+private fun String.slugify(): String =
+    lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
 
 @Serializable
 data class ScreenState(

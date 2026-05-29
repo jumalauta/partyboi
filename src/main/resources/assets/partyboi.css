@@ -195,6 +195,23 @@ article header h3 {
     justify-content: space-between;
 }
 
+.title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: var(--pico-spacing);
+}
+
+.title-row h1 {
+    margin-bottom: 0;
+}
+
+.title-row [role=button] {
+    padding: calc(var(--pico-nav-link-spacing-vertical) - var(--pico-border-width) * 2) var(--pico-nav-link-spacing-horizontal);
+}
+
 summary > header {
     display: inline-flex;
     justify-content: space-between;
@@ -615,6 +632,10 @@ article.hidden-asset, tr.hidden-asset {
 
 .slide-set-toolbar > ul {
     margin: 0;
+}
+
+.slide-set-toolbar > ul li {
+    padding-top: 0;
 }
 
 .slide-set-toolbar details.dropdown {

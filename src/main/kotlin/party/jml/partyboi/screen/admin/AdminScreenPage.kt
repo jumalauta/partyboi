@@ -45,7 +45,14 @@ object AdminScreenPage {
             it.slide is AutoRunHalting && it.slide.haltAutoRun()
         } != null
 
-        h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
+        div(classes = "title-row") {
+            h1 { +(slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet") }
+            a(href = "/admin/screen/new") {
+                attributes["role"] = "button"
+                icon("plus")
+                +" New slideset"
+            }
+        }
 
         renderWithScreenMonitoring(true) {
             reloadSection {
@@ -225,6 +232,21 @@ object AdminScreenPage {
             url = "/admin/screen/${slideSet}/new/${slide.javaClass.simpleName.lowercase()}",
             form = if (errors == null) form else form.with(errors),
             submitButtonLabel = "Create slide",
+        )
+    }
+
+    fun renderNewSlideSetForm(
+        form: Form<NewSlideSet>,
+        slideSets: List<SlideSetRow>,
+    ) = Page(
+        title = "New slideset",
+        subLinks = slideSets.map { it.toNavItem() },
+    ) {
+        h1 { +"New slideset" }
+        renderForm(
+            url = "/admin/screen/new",
+            form = form,
+            submitButtonLabel = "Create slideset",
         )
     }
 
