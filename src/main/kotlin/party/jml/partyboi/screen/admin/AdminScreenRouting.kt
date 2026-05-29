@@ -59,6 +59,22 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
+    // Render an empty edit form for creating a new slide of the given type. The slide
+    // isn't persisted yet; the matching POST handler does that only after the admin
+    // submits, so abandoning the form leaves no row behind.
+    suspend fun renderNewSlideEdit(
+        slideSetName: AppResult<String>,
+        template: Slide<*>,
+        errors: AppError? = null,
+    ) = either {
+        AdminScreenPage.renderNewSlideForm(
+            slideSet = slideSetName.bind(),
+            slide = template,
+            errors = errors,
+            slideSets = app.screen.getSlideSets().bind(),
+        )
+    }
+
     adminRouting {
         fun redirectionToSet(name: String) = Redirection("/admin/screen/$name")
 
@@ -81,6 +97,28 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             call.respondEither {
                 renderSlideSetPage(call.parameterString("slideSet")).bind()
             }
+        }
+
+        // Create flow for text and QR-code slides: the dropdown links here, the form
+        // is rendered with an empty template, and only the POST persists the slide.
+        get("/admin/screen/{slideSet}/new/textslide") {
+            call.respondEither {
+                renderNewSlideEdit(call.parameterString("slideSet"), TextSlide.Empty).bind()
+            }
+        }
+
+        post("/admin/screen/{slideSet}/new/textslide") {
+            call.createSlide<TextSlide>(app) { s, e -> renderNewSlideEdit(s, TextSlide.Empty, e) }
+        }
+
+        get("/admin/screen/{slideSet}/new/qrcodeslide") {
+            call.respondEither {
+                renderNewSlideEdit(call.parameterString("slideSet"), QrCodeSlide.Empty).bind()
+            }
+        }
+
+        post("/admin/screen/{slideSet}/new/qrcodeslide") {
+            call.createSlide<QrCodeSlide>(app) { s, e -> renderNewSlideEdit(s, QrCodeSlide.Empty, e) }
         }
 
         get("/admin/screen/{slideSet}/{slideId}") {
@@ -106,22 +144,6 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
     }
 
     adminApiRouting {
-        post("/admin/screen/{slideSet}/text") {
-            call.apiRespond {
-                call.userSession(app).bind()
-                val slideSetName = call.parameterString("slideSet").bind()
-                app.screen.addSlide(slideSetName, TextSlide.Empty).bind()
-            }
-        }
-
-        post("/admin/screen/{slideSet}/qrcode") {
-            call.apiRespond {
-                call.userSession(app).bind()
-                val slideSetName = call.parameterString("slideSet").bind()
-                app.screen.addSlide(slideSetName, QrCodeSlide.Empty).bind()
-            }
-        }
-
         post("/admin/screen/{slideSet}/image") {
             call.apiRespond {
                 call.userSession(app).bind()
@@ -212,6 +234,27 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
             }
         }
     }
+}
+
+// Process a "create slide" form submission: persist a new slide of type T in the
+// given slide set (visible by default, matching the new dropdown flow) and redirect
+// back to the slide-set page. On validation errors, re-render the new-slide form.
+suspend inline fun <reified T> ApplicationCall.createSlide(
+    app: AppServices,
+    crossinline onError: suspend (AppResult<String>, AppError?) -> AppResult<Renderable>
+) where
+        T : Slide<T>,
+        T : Validateable<T> {
+    processForm<T>(
+        { slide ->
+            val slideSetName = parameterString("slideSet").bind()
+            app.screen.addSlide(slideSetName, slide, makeVisible = true).bind()
+            Redirection("/admin/screen/$slideSetName")
+        },
+        { form ->
+            onError(parameterString("slideSet"), form.error).bind()
+        }
+    )
 }
 
 suspend inline fun <reified T> ApplicationCall.updateSlide(

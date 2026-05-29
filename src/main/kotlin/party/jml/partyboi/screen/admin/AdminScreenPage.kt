@@ -166,13 +166,13 @@ object AdminScreenPage {
                 summary { +"Add slide" }
                 ul {
                     li {
-                        flatPostButton("/admin/screen/${slideSet}/text") {
+                        a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
                             icon(Icon("list-ul"))
                             +" Normal text slide"
                         }
                     }
                     li {
-                        flatPostButton("/admin/screen/${slideSet}/qrcode") {
+                        a(href = "/admin/screen/${slideSet}/new/qrcodeslide", classes = "flat-button") {
                             icon(Icon("qrcode"))
                             +" Slide with a QR code"
                         }
@@ -208,6 +208,24 @@ object AdminScreenPage {
         if (refreshOnSlideChange) {
             script(src = "/assets/refreshOnSlideChange.js") {}
         }
+    }
+
+    fun renderNewSlideForm(
+        slideSet: String,
+        slide: Slide<*>,
+        errors: AppError? = null,
+        slideSets: List<SlideSetRow>,
+    ) = Page(
+        title = "New slide",
+        subLinks = slideSets.map { it.toNavItem() },
+    ) {
+        h1 { +"New slide / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
+        val form = slide.getForm()
+        renderForm(
+            url = "/admin/screen/${slideSet}/new/${slide.javaClass.simpleName.lowercase()}",
+            form = if (errors == null) form else form.with(errors),
+            submitButtonLabel = "Create slide",
+        )
     }
 
     fun renderSlideForm(

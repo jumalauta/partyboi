@@ -59,8 +59,8 @@ class ScreenService(app: AppServices) : Service(app) {
 
     suspend fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
 
-    suspend fun addSlide(slideSet: String, slide: Slide<*>) =
-        repository.add(slideSet, slide, makeVisible = false, readOnly = false)
+    suspend fun addSlide(slideSet: String, slide: Slide<*>, makeVisible: Boolean = false) =
+        repository.add(slideSet, slide, makeVisible = makeVisible, readOnly = false)
 
     // Keep the slide set's schedule slides in sync with the dates that have a public
     // event: add a (visible) slide for any such date that lacks one, and remove slides
