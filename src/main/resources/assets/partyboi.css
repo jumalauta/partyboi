@@ -625,6 +625,19 @@ article.hidden-asset, tr.hidden-asset {
     margin: 0;
 }
 
+/* Pico sets nav dropdowns to `display: inline`, which doesn't reliably
+   establish a containing block for the absolutely positioned menu — the menu
+   ends up anchored to the viewport instead of the summary. inline-block fixes
+   the containing block, and width: auto sizes the menu to its own contents. */
+nav details.dropdown {
+    display: inline-block;
+}
+
+nav details.dropdown > summary + ul {
+    width: auto;
+    min-width: max-content;
+}
+
 #slide-list table {
     width: 100%;
 }

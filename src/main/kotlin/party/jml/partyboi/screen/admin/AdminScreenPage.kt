@@ -87,6 +87,7 @@ object AdminScreenPage {
                             details(classes = "dropdown") {
                                 summary { +"Add slide" }
                                 ul {
+                                    attributes.put("dir", "rtl")
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
                                             icon(Icon("list-ul"))
