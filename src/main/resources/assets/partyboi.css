@@ -609,6 +609,35 @@ article.hidden-asset, tr.hidden-asset {
     display: revert;
 }
 
+.slide-set-toolbar {
+    align-items: center;
+}
+
+.slide-set-toolbar > ul {
+    margin: 0;
+}
+
+.slide-set-toolbar details.dropdown {
+    margin: 0;
+}
+
+.slide-set-toolbar details.dropdown summary {
+    margin: 0;
+}
+
+/* Pico sets nav dropdowns to `display: inline`, which doesn't reliably
+   establish a containing block for the absolutely positioned menu — the menu
+   ends up anchored to the viewport instead of the summary. inline-block fixes
+   the containing block, and width: auto sizes the menu to its own contents. */
+nav details.dropdown {
+    display: inline-block;
+}
+
+nav details.dropdown > summary + ul {
+    width: auto;
+    min-width: max-content;
+}
+
 #slide-list table {
     width: 100%;
 }
@@ -622,6 +651,77 @@ article.hidden-asset, tr.hidden-asset {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Image-slides picker: thumbnail grid with checkable items */
+.image-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--pico-spacing);
+    margin-bottom: var(--pico-spacing);
+}
+
+@media (min-width: 576px) {
+    .image-picker-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .image-picker-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.image-picker-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: calc(var(--pico-spacing) * 0.5);
+    row-gap: calc(var(--pico-spacing) * 0.5);
+    padding: calc(var(--pico-spacing) * 0.5);
+    border: var(--pico-border-width) solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+    min-width: 0;
+}
+
+.image-picker-item:hover {
+    border-color: var(--pico-primary);
+}
+
+.image-picker-item:has(input:checked) {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+    color: var(--pico-background-color);
+}
+
+.image-picker-item img {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background-color: var(--pico-background-color);
+    border-radius: calc(var(--pico-border-radius) * 0.5);
+}
+
+.image-picker-item input[type="checkbox"] {
+    grid-row: 2;
+    grid-column: 1;
+    margin: 0;
+}
+
+.image-picker-item span {
+    grid-row: 2;
+    grid-column: 2;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 90%;
+    min-width: 0;
 }
 
 /* Editable schedule */
@@ -646,8 +746,7 @@ table.schedule th {
 /* Compact, borderless-feeling inline inputs that fit inside table cells */
 table.schedule input:not([type=checkbox]) {
     margin-bottom: 0;
-    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35)
-             calc(var(--pico-form-element-spacing-horizontal) * 0.5);
+    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35) calc(var(--pico-form-element-spacing-horizontal) * 0.5);
     height: auto;
     font-size: 90%;
 }
