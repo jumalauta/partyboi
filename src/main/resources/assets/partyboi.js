@@ -271,6 +271,10 @@ function resizePreview() {
     const container = document.querySelector(".screen-preview-container");
     if (container) {
         const frame = document.querySelector(".screen-preview");
+        // Clear pinned dimensions from the previous call so offsetWidth reflects
+        // the current layout width rather than the value we last set.
+        container.style.width = "";
+        container.style.height = "";
         const ratio = container.offsetWidth / frame.offsetWidth;
         const scale = ratio * 100 + "%";
         const width = frame.offsetWidth * ratio;
