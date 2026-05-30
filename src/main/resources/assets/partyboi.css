@@ -899,3 +899,7 @@ dialog.preview-modal .close {
     line-height: 1;
     cursor: pointer;
 }
+
+img.entry-edit-preview {
+    width: 100%;
+}

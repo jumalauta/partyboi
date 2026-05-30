@@ -58,7 +58,9 @@ object EditEntryPage {
                 },
                 {
                     preview?.let {
-                        figure { img(src = it) }
+                        article {
+                            img(src = it, classes = "entry-edit-preview")
+                        }
                     }
                     renderForm(
                         url = "/entries/${entryUpdateForm.data.id}/preview",

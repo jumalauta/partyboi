@@ -182,7 +182,7 @@ data class Preview(
 }
 
 data class NewPreview(
-    @Label("Upload file")
+    @Label("Upload a new preview file:")
     @NotEmpty
     val file: FileUpload
 ) : Validateable<NewPreview> {
