@@ -83,3 +83,16 @@ data class GeneratePreviewForAudio(
         ).bind()
     }
 }
+
+@Serializable
+data class ExtractDuration(
+    val file: FileDesc
+) : Task {
+    override suspend fun execute(app: AppServices): AppResult<Unit> = either {
+        val fileDesc = app.files.getById(file.id).bind()
+        val entry = app.entries.getByFileId(fileDesc.id).bind()
+        val inputFile = app.files.getStorageFile(fileDesc.id)
+        val duration = app.ffmpeg.probeDuration(inputFile)
+        app.entries.setDuration(entry.id, duration).bind()
+    }
+}

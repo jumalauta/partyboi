@@ -243,6 +243,11 @@ class EntryRepository(app: AppServices) : Service(app) {
             updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
         }
 
+    suspend fun setDuration(entryId: UUID, duration: Double): AppResult<Unit> =
+        db.use {
+            updateOne(queryOf("update entry set duration = ? where id = ?", duration, entryId))
+        }
+
     suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> = db.use {
         many(
             queryOf(
@@ -293,6 +298,7 @@ data class Entry(
     val runOrder: Int,
     val timestamp: Instant,
     val allowEdit: Boolean,
+    val duration: Double?,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> Entry = { row ->
@@ -308,6 +314,7 @@ data class Entry(
                 row.int("run_order"),
                 row.instant("timestamp").toKotlinInstant(),
                 row.boolean("allow_edit"),
+                row.doubleOrNull("duration"),
             )
         }
     }

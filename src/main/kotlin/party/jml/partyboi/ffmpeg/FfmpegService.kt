@@ -52,6 +52,14 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         }
     }
 
+    fun probeDuration(input: File): Double {
+        ensureFfmpegExists()
+
+        return app.dockerFileShare.use(input) { sharedInput ->
+            probeDurationSeconds(sharedInput)
+        }
+    }
+
     fun generateAudioPreview(input: File): Triple<File, File, File> {
         ensureFfmpegExists()
 

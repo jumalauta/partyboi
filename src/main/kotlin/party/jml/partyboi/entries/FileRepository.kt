@@ -32,6 +32,7 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.workqueue.ExtractDuration
 import party.jml.partyboi.workqueue.GeneratePreviewForAudio
 import party.jml.partyboi.workqueue.GeneratePreviewForVideo
 import party.jml.partyboi.workqueue.NormalizeLoudness
@@ -256,8 +257,12 @@ class FileRepository(app: AppServices) : Service(app) {
             in streamingAudio -> {
                 app.workQueue.addTask(NormalizeLoudness(file))
                 app.workQueue.addTask(GeneratePreviewForAudio(file))
+                app.workQueue.addTask(ExtractDuration(file))
             }
-            in video -> app.workQueue.addTask(GeneratePreviewForVideo(file))
+            in video -> {
+                app.workQueue.addTask(GeneratePreviewForVideo(file))
+                app.workQueue.addTask(ExtractDuration(file))
+            }
         }
     }
 
