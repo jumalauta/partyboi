@@ -37,6 +37,12 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
         )
     }
 
+    suspend fun renderCompoRunners(): AppResult<Page> = either {
+        val compos = app.compos.getAllCompos().bind()
+        val slideSets = app.screen.getSlideSets().bind()
+        AdminScreenPage.renderCompoRunnerPage(compos, slideSets)
+    }
+
     suspend fun renderSlideSetPage(slideSetName: AppResult<String>) = either {
         val slides = app.screen.getSlideSet(slideSetName.bind()).bind()
         val (state, isRunning) = app.screen.currentState()
@@ -117,6 +123,10 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                 { app.screen.addAdHoc(it).map { redirectionToSet("adhoc") }.bind() },
                 { renderAdHocEdit(it).bind() }
             )
+        }
+
+        get("/admin/screen/compos") {
+            call.respondEither { renderCompoRunners().bind() }
         }
 
         // New-slideset form: registered before the {slideSet} catch-all so Ktor's

@@ -2,12 +2,14 @@ package party.jml.partyboi.infoscreen.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
+import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.*
 import party.jml.partyboi.infoscreen.*
 import party.jml.partyboi.infoscreen.slides.Slide
 import party.jml.partyboi.templates.Javascript
+import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.TriggerRow
@@ -19,7 +21,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "Screen admin",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets),
     ) {
         renderWithScreenMonitoring(false) {
             renderForm(
@@ -39,7 +41,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "Screen admin",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets)
     ) {
         val willHaltAutoRun = slides.find {
             it.slide is AutoRunHalting && it.slide.haltAutoRun()
@@ -209,6 +211,46 @@ object AdminScreenPage {
         script(src = "/assets/draggable.min.js") {}
     }
 
+    fun renderCompoRunnerPage(
+        compos: List<Compo>,
+        slideSets: List<SlideSetRow>,
+    ) = Page(
+        title = "Compo screens",
+        subLinks = generateSubLinks(slideSets)
+    ) {
+        h1 { +"Compo screens" }
+        article {
+            table {
+                thead {
+                    tr {
+                        th { +"Compo" }
+                        th {}
+                        th {}
+                    }
+                }
+                tbody {
+                    compos.forEach { compo ->
+                        tr {
+                            td { +compo.displayName }
+                            td {
+                                a(href = "/admin/compos/${compo.id}/run") {
+                                    icon("image")
+                                    +" Compo slides"
+                                }
+                            }
+                            td {
+                                a(href = "/admin/compos/${compo.id}/run-results") {
+                                    icon("square-poll-horizontal")
+                                    +" Result slides"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun FlowContent.renderWithScreenMonitoring(refreshOnSlideChange: Boolean, block: FlowContent.() -> Unit) {
         columns({
             block()
@@ -236,7 +278,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "New slide",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets),
     ) {
         h1 { +"New slide / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
         val form = slide.getForm()
@@ -252,7 +294,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "New slideset",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets),
     ) {
         h1 { +"New slideset" }
         renderForm(
@@ -272,7 +314,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "Add image slides",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets),
     ) {
         h1 { +"Add image slides / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
 
@@ -351,7 +393,7 @@ object AdminScreenPage {
         slideSets: List<SlideSetRow>,
     ) = Page(
         title = "Edit slide",
-        subLinks = slideSets.map { it.toNavItem() },
+        subLinks = generateSubLinks(slideSets),
     ) {
         h1 { +"${slide.getName()} / ${slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"}" }
         val form = slide.slide.getForm()
@@ -373,20 +415,18 @@ object AdminScreenPage {
             }
         }
     }
+
+    private fun generateSubLinks(slideSets: List<SlideSetRow>): List<NavItem> =
+        slideSets.map { it.toNavItem() } + listOf(
+            NavItem(
+                url = "/admin/screen/compos",
+                label = "Compos",
+            )
+        )
 }
 
 fun FlowContent.postButton(url: String, block: BUTTON.() -> Unit) {
     button {
-        onClick = Javascript.build {
-            httpPost(url)
-            refresh()
-        }
-        block()
-    }
-}
-
-fun FlowContent.flatPostButton(url: String, block: BUTTON.() -> Unit) {
-    button(classes = "flat-button") {
         onClick = Javascript.build {
             httpPost(url)
             refresh()

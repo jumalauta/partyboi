@@ -173,17 +173,12 @@ object AdminEditCompoPage {
                     renderManualResultsEditor(
                         compo = compo,
                         manualResults = manualResults,
-                        form = manualResultForm ?: Form(NewManualResult::class, NewManualResult.empty(compo.id), initial = true),
+                        form = manualResultForm ?: Form(
+                            NewManualResult::class,
+                            NewManualResult.empty(compo.id),
+                            initial = true
+                        ),
                     )
-
-                    buttonGroup {
-                        a(href = "/admin/compos/${compo.id}/run-results") {
-                            attributes.put("role", "button")
-                            icon("square-poll-horizontal")
-                            br {}
-                            +"Run results"
-                        }
-                    }
                 }
             } else if (qualified.isNotEmpty() || nonQualified.isNotEmpty()) {
                 {
@@ -274,20 +269,7 @@ object AdminEditCompoPage {
                         a(href = "/admin/compos/${compo.id}/download", classes = "osSpecific") {
                             attributes.put("role", "button")
                             icon("download")
-                            br {}
                             +"Download files"
-                        }
-                        a(href = "/admin/compos/${compo.id}/run") {
-                            attributes.put("role", "button")
-                            icon("image")
-                            br {}
-                            +"Run info screen"
-                        }
-                        a(href = "/admin/compos/${compo.id}/run-results") {
-                            attributes.put("role", "button")
-                            icon("square-poll-horizontal")
-                            br {}
-                            +"Run results"
                         }
                     }
                 }
