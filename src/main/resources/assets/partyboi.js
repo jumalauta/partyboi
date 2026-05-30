@@ -132,8 +132,7 @@ function initInteractions(target) {
             const option = event.target.querySelector(`option[value="${value}"]`);
             updateFileUploadInput(option);
         };
-        const defaultOption = compoSelector.querySelector("option:first-child");
-        updateFileUploadInput(defaultOption);
+        updateFileUploadInput(compoSelector.selectedOptions[0]);
     }
 
     // Add Windows detection to specific links
