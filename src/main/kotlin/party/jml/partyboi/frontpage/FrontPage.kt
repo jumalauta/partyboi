@@ -4,18 +4,18 @@ import kotlinx.html.a
 import kotlinx.html.article
 import kotlinx.html.h2
 import kotlinx.html.p
+import party.jml.partyboi.infoscreen.SlideRow
+import party.jml.partyboi.infoscreen.slides.QrCodeSlide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.schedule
-import party.jml.partyboi.screen.ScreenRow
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.markdown
 
 object FrontPage {
-    fun render(events: List<Event>, infoScreen: List<ScreenRow>) = Page("Home") {
+    fun render(events: List<Event>, infoScreen: List<SlideRow>) = Page("Home") {
         columns(
             {
                 h2 { +"Info" }

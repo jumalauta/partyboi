@@ -1,20 +1,20 @@
 package party.jml
 
 import arrow.core.raise.either
-import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 import org.junit.Test
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.entries.FileFormat
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.messages.MessageType
 import party.jml.partyboi.schedule.NewEvent
-import party.jml.partyboi.screen.slides.TextSlide
 import party.jml.partyboi.sync.SyncedTable
 import party.jml.partyboi.triggers.OpenCloseSubmitting
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.time.Clock
 
 class DbSyncTest : PartyboiTester {
     @Test

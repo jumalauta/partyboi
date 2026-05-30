@@ -4,7 +4,7 @@ import arrow.core.right
 import io.ktor.http.*
 import kotlin.test.Test
 
-class ScreenPageTest : PartyboiTester {
+class InfoScreenPageTest : PartyboiTester {
     @Test
     fun testScreenPageLoads() = test {
         setupServices { Unit.right() }

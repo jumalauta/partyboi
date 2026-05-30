@@ -7,8 +7,8 @@ import party.jml.partyboi.Service
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.withCompoSuffix
 import party.jml.partyboi.data.UUIDSerializer
-import party.jml.partyboi.screen.slides.Slide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.voting.CompoResult
 import java.util.*

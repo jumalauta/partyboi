@@ -1,4 +1,4 @@
-package party.jml.partyboi.screen
+package party.jml.partyboi.infoscreen
 
 import arrow.core.left
 import arrow.core.raise.either
@@ -12,9 +12,9 @@ import party.jml.partyboi.Service
 import party.jml.partyboi.data.Forbidden
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.UUIDv7
-import party.jml.partyboi.screen.slides.ScheduleSlide
-import party.jml.partyboi.screen.slides.Slide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.slides.ScheduleSlide
+import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.toDate
@@ -23,15 +23,15 @@ import kotlin.concurrent.schedule
 import kotlin.io.path.readText
 
 
-class ScreenService(app: AppServices) : Service(app) {
-    private val repository = ScreenRepository(app)
-    private val state = property("state", ScreenState.Empty).toState()
+class InfoScreenService(app: AppServices) : Service(app) {
+    private val repository = InfoScreenRepository(app)
+    private val state = property("state", InfoScreenState.Empty).toState()
     private var autoRunScheduler: TimerTask? = null
     private val autoRunOn = property("autoRunOn", false)
 
     init {
         runBlocking {
-            repository.getAdHoc().map { row -> row?.let { state.emit(ScreenState.fromRow(it)) } }
+            repository.getAdHoc().map { row -> row?.let { state.emit(InfoScreenState.fromRow(it)) } }
             if (autoRunOn.getOrNull() == true) {
                 startAutoRunScheduler()
             }
@@ -63,23 +63,23 @@ class ScreenService(app: AppServices) : Service(app) {
             repository.deleteSlideSet(id)
         }
 
-    fun currentState(): Pair<ScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
+    fun currentState(): Pair<InfoScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
-    fun waitForNext(): Flow<ScreenState> = state.waitForNext()
+    fun waitForNext(): Flow<InfoScreenState> = state.waitForNext()
 
     suspend fun getAddHoc() = repository.getAdHoc()
 
     suspend fun addAdHoc(screen: TextSlide): AppResult<Unit> = either {
-        val newState = ScreenState.fromRow(repository.setAdHoc(screen).bind())
+        val newState = InfoScreenState.fromRow(repository.setAdHoc(screen).bind())
         stopSlideSet()
         state.emit(newState)
     }
 
-    suspend fun getSlide(slideId: UUID): AppResult<ScreenRow> = repository.getSlide(slideId)
-    suspend fun getAllSlides(): AppResult<List<ScreenRow>> = repository.getAllSlides()
+    suspend fun getSlide(slideId: UUID): AppResult<SlideRow> = repository.getSlide(slideId)
+    suspend fun getAllSlides(): AppResult<List<SlideRow>> = repository.getAllSlides()
 
-    suspend fun getSlideSet(slideSet: String): AppResult<List<ScreenRow>> = repository.getSlideSetSlides(slideSet)
+    suspend fun getSlideSet(slideSet: String): AppResult<List<SlideRow>> = repository.getSlideSetSlides(slideSet)
 
     suspend fun addSlide(slideSet: String, slide: Slide<*>, makeVisible: Boolean = false) =
         repository.add(slideSet, slide, makeVisible = makeVisible, readOnly = false)
@@ -148,7 +148,7 @@ class ScreenService(app: AppServices) : Service(app) {
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
             stopSlideSet()
         }
-        val newState = ScreenState.fromSlide(slide)
+        val newState = InfoScreenState.fromSlide(slide)
         state.emit(newState)
         return app.signals.emit(Signal.slideShown(newState.id))
     }
@@ -190,12 +190,12 @@ class ScreenService(app: AppServices) : Service(app) {
         }
     }
 
-    private suspend fun showSlide(row: ScreenRow) {
+    private suspend fun showSlide(row: SlideRow) {
         val slide = row.getSlide()
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
             stopSlideSet()
         }
-        state.emit(ScreenState.fromRow(row))
+        state.emit(InfoScreenState.fromRow(row))
         return app.signals.emit(Signal.slideShown(row.id))
     }
 }
@@ -208,30 +208,30 @@ private fun String.slugify(): String =
     lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
 
 @Serializable
-data class ScreenState(
+data class InfoScreenState(
     val slideSet: String?,
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val slide: Slide<*>,
 ) {
     companion object {
-        val fromRow: (ScreenRow) -> ScreenState = { row ->
-            ScreenState(
+        val fromRow: (SlideRow) -> InfoScreenState = { row ->
+            InfoScreenState(
                 slideSet = row.slideSet,
                 id = row.id,
                 slide = row.getSlide(),
             )
         }
 
-        val fromSlide: (Slide<*>) -> ScreenState = { slide ->
-            ScreenState(
+        val fromSlide: (Slide<*>) -> InfoScreenState = { slide ->
+            InfoScreenState(
                 slideSet = null,
                 id = UUID.randomUUID(),
                 slide = slide,
             )
         }
 
-        val Empty = ScreenState("adhoc", UUIDv7.Empty, TextSlide.Empty)
+        val Empty = InfoScreenState("adhoc", UUIDv7.Empty, TextSlide.Empty)
     }
 }
 

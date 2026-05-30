@@ -1,4 +1,4 @@
-package party.jml.partyboi.screen
+package party.jml.partyboi.infoscreen
 
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
@@ -17,7 +17,7 @@ import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
 import party.jml.partyboi.form.Label
-import party.jml.partyboi.screen.slides.*
+import party.jml.partyboi.infoscreen.slides.*
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.NavItem
@@ -26,7 +26,7 @@ import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
 import java.util.*
 
-class ScreenRepository(app: AppServices) : Service(app) {
+class InfoScreenRepository(app: AppServices) : Service(app) {
     val db = app.db
     val assets = app.assets
 
@@ -59,39 +59,39 @@ class ScreenRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
-        one(queryOf("SELECT count(*) FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
+        one(queryOf("SELECT count(*) FROM slide WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
     }
 
-    suspend fun getAdHoc(): AppResult<ScreenRow?> = db.use {
-        option(queryOf("SELECT * FROM screen WHERE slideset_id = ?", SlideSetRow.ADHOC).map(ScreenRow.fromRow))
+    suspend fun getAdHoc(): AppResult<SlideRow?> = db.use {
+        option(queryOf("SELECT * FROM slide WHERE slideset_id = ?", SlideSetRow.ADHOC).map(SlideRow.fromRow))
     }
 
-    suspend fun getSlide(id: UUID): AppResult<ScreenRow> = db.use {
-        one(queryOf("SELECT * FROM screen WHERE id = ?", id).map(ScreenRow.fromRow))
+    suspend fun getSlide(id: UUID): AppResult<SlideRow> = db.use {
+        one(queryOf("SELECT * FROM slide WHERE id = ?", id).map(SlideRow.fromRow))
     }
 
-    suspend fun getAllSlides(): AppResult<List<ScreenRow>> = db.use {
-        many(queryOf("SELECT * FROM screen").map(ScreenRow.fromRow))
+    suspend fun getAllSlides(): AppResult<List<SlideRow>> = db.use {
+        many(queryOf("SELECT * FROM slide").map(SlideRow.fromRow))
     }
 
-    suspend fun getSlideSetSlides(name: String): AppResult<List<ScreenRow>> = db.use {
+    suspend fun getSlideSetSlides(name: String): AppResult<List<SlideRow>> = db.use {
         many(
             queryOf(
-                "SELECT * FROM screen WHERE slideset_id = ? ORDER BY run_order, id",
+                "SELECT * FROM slide WHERE slideset_id = ? ORDER BY run_order, id",
                 name
-            ).map(ScreenRow.fromRow)
+            ).map(SlideRow.fromRow)
         )
     }
 
-    suspend fun setAdHoc(slide: Slide<*>): AppResult<ScreenRow> = db.transaction {
+    suspend fun setAdHoc(slide: Slide<*>): AppResult<SlideRow> = db.transaction {
         either {
             val (type, content) = getTypeAndJson(slide)
             val query = if (adHocExists(this@transaction).bind()) {
-                "UPDATE screen SET type = ?, content = ?::jsonb WHERE slideset_id = '${SlideSetRow.ADHOC}' RETURNING *"
+                "UPDATE slide SET type = ?, content = ?::jsonb WHERE slideset_id = '${SlideSetRow.ADHOC}' RETURNING *"
             } else {
-                "INSERT INTO screen(slideset_id, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
+                "INSERT INTO slide(slideset_id, type, content) VALUES('adhoc', ?, ?::jsonb) RETURNING *"
             }
-            one(queryOf(query, type, content).map(ScreenRow.fromRow)).bind()
+            one(queryOf(query, type, content).map(SlideRow.fromRow)).bind()
         }
     }
 
@@ -101,69 +101,70 @@ class ScreenRepository(app: AppServices) : Service(app) {
         makeVisible: Boolean,
         readOnly: Boolean,
         tx: TransactionalSession? = null
-    ): AppResult<ScreenRow> = db.use(tx) {
+    ): AppResult<SlideRow> = db.use(tx) {
         val (type, content) = getTypeAndJson(slide)
         one(
             queryOf(
-                "INSERT INTO screen(slideset_id, type, content, visible, readonly) VALUES(?, ?, ?::jsonb, ?, ?) RETURNING *",
+                "INSERT INTO slide(slideset_id, type, content, visible, readonly) VALUES(?, ?, ?::jsonb, ?, ?) RETURNING *",
                 slideSet,
                 type,
                 content,
                 makeVisible,
                 readOnly,
-            ).map(ScreenRow.fromRow)
+            ).map(SlideRow.fromRow)
         )
     }
 
-    suspend fun update(id: UUID, slide: Slide<*>): AppResult<ScreenRow> = db.use {
+    suspend fun update(id: UUID, slide: Slide<*>): AppResult<SlideRow> = db.use {
         val (type, content) = getTypeAndJson(slide)
         one(
             queryOf(
-                "UPDATE screen SET type = ?, content = ?::jsonb WHERE id = ? AND NOT readonly RETURNING *",
+                "UPDATE slide SET type = ?, content = ?::jsonb WHERE id = ? AND NOT readonly RETURNING *",
                 type,
                 content,
                 id
-            ).map(ScreenRow.fromRow)
+            ).map(SlideRow.fromRow)
         )
     }
 
     suspend fun delete(id: UUID): AppResult<Unit> = db.use {
-        updateOne(queryOf("DELETE FROM screen WHERE id = ?", id))
+        updateOne(queryOf("DELETE FROM slide WHERE id = ?", id))
     }
 
-    // Removes the slide set row. The screen.slideset_id FK is ON DELETE CASCADE,
+    // Removes the slide set row. The slide.slideset_id FK is ON DELETE CASCADE,
     // so any slides in the set are removed too.
     suspend fun deleteSlideSet(id: String): AppResult<Unit> = db.use {
         updateOne(queryOf("DELETE FROM slideset WHERE id = ?", id))
     }
 
     suspend fun deleteAll(): AppResult<Unit> = db.use {
-        exec(queryOf("DELETE FROM screen"))
+        exec(queryOf("DELETE FROM slide"))
     }
 
-    suspend fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<ScreenRow>> =
+    suspend fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<SlideRow>> =
         db.transaction {
             either {
-                exec(queryOf("DELETE FROM screen WHERE slideset_id = ? AND readonly", slideSet)).bind()
-                slides.map { slide -> add(slideSet, slide, makeVisible = true, readOnly = true, this@transaction) }.bindAll()
+                exec(queryOf("DELETE FROM slide WHERE slideset_id = ? AND readonly", slideSet)).bind()
+                slides.map { slide -> add(slideSet, slide, makeVisible = true, readOnly = true, this@transaction) }
+                    .bindAll()
             }
         }
 
-    suspend fun getFirstSlide(slideSet: String): AppResult<ScreenRow> = db.use {
+    suspend fun getFirstSlide(slideSet: String): AppResult<SlideRow> = db.use {
         one(
             queryOf(
-                "SELECT * FROM screen WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
+                "SELECT * FROM slide WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
                 slideSet
-            ).map(ScreenRow.fromRow)
+            ).map(SlideRow.fromRow)
         )
     }
 
-    suspend fun getNext(slideSet: String, currentId: UUID): AppResult<ScreenRow> = either {
-        val screens = getSlideSetSlides(slideSet).bind()
-        val index = ensureNotNull(positiveIntOrNull(screens.indexOfFirst { it.id == currentId })) {
+    suspend fun getNext(slideSet: String, currentId: UUID): AppResult<SlideRow> = either {
+        val slides = getSlideSetSlides(slideSet).bind()
+        val index = ensureNotNull(positiveIntOrNull(slides.indexOfFirst { it.id == currentId })) {
             InvalidInput("$currentId not in slide set '$slideSet'")
         }
-        (screens.slice((index + 1)..<(screens.size)) + screens.slice(0..index))
+        (slides.slice((index + 1)..<(slides.size)) + slides.slice(0..index))
             .filter { it.visible }
             .toNonEmptyListOrNone()
             .toEither { InvalidInput("No visible slides in slide set '$slideSet'") }
@@ -172,15 +173,15 @@ class ScreenRepository(app: AppServices) : Service(app) {
     }
 
     suspend fun setVisible(id: UUID, visible: Boolean): AppResult<Unit> = db.use {
-        updateOne(queryOf("UPDATE screen SET visible = ? WHERE id = ?", visible, id))
+        updateOne(queryOf("UPDATE slide SET visible = ? WHERE id = ?", visible, id))
     }
 
     suspend fun showOnInfo(id: UUID, visible: Boolean): AppResult<Unit> = db.use {
-        updateOne(queryOf("UPDATE screen SET show_on_info = ? WHERE id = ?", visible, id))
+        updateOne(queryOf("UPDATE slide SET show_on_info = ? WHERE id = ?", visible, id))
     }
 
     suspend fun setRunOrder(id: UUID, order: Int): AppResult<Unit> = db.use {
-        updateOne(queryOf("UPDATE screen SET run_order = ? WHERE id = ?", order, id))
+        updateOne(queryOf("UPDATE slide SET run_order = ? WHERE id = ?", order, id))
     }
 
     private fun getTypeAndJson(slide: Slide<*>) = Pair(slide.javaClass.name, slide.toJson())
@@ -220,7 +221,7 @@ data class NewSlideSet(
 }
 
 @Serializable
-data class ScreenRow(
+data class SlideRow(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
     val slideSet: String,
@@ -243,8 +244,8 @@ data class ScreenRow(
     fun whenShown(): Signal = Signal.slideShown(id)
 
     companion object {
-        val fromRow: (Row) -> ScreenRow = { row ->
-            ScreenRow(
+        val fromRow: (Row) -> SlideRow = { row ->
+            SlideRow(
                 id = row.uuid("id"),
                 slideSet = row.string("slideset_id"),
                 type = row.string("type"),

@@ -1,4 +1,4 @@
-package party.jml.partyboi.screen.slides
+package party.jml.partyboi.infoscreen.slides
 
 import kotlinx.html.FlowContent
 import kotlinx.html.div
@@ -10,8 +10,8 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.form.Large
+import party.jml.partyboi.infoscreen.SlideType
 import party.jml.partyboi.qrcode.QrCode
-import party.jml.partyboi.screen.SlideType
 import party.jml.partyboi.templates.components.markdown
 import party.jml.partyboi.validation.Validateable
 

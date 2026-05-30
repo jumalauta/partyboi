@@ -2,8 +2,8 @@ package party.jml.partyboi.compos.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
-import party.jml.partyboi.screen.admin.AdminScreenPage.renderWithScreenMonitoring
-import party.jml.partyboi.screen.admin.postButton
+import party.jml.partyboi.infoscreen.admin.AdminScreenPage.renderWithScreenMonitoring
+import party.jml.partyboi.infoscreen.admin.postButton
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.icon
 import party.jml.partyboi.templates.components.reloadSection
