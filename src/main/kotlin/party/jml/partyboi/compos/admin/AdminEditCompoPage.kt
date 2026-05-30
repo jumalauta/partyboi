@@ -269,7 +269,7 @@ object AdminEditCompoPage {
                         a(href = "/admin/compos/${compo.id}/download", classes = "osSpecific") {
                             attributes.put("role", "button")
                             icon("download")
-                            +"Download files"
+                            +" Download files"
                         }
                     }
                 }
