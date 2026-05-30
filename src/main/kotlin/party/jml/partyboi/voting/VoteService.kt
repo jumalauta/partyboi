@@ -150,6 +150,11 @@ class VoteService(app: AppServices) : Service(app) {
     companion object {
         const val MIN_POINTS = 1
         const val MAX_POINTS = 5
+
+        // Neutral middle of the range. Awarded by getResults() to entries that a voter
+        // skipped in a compo they otherwise participated in, so skipping isn't equivalent
+        // to voting zero against them.
+        const val MEAN_POINTS = (MIN_POINTS + MAX_POINTS) / 2
         val POINT_RANGE = MIN_POINTS..MAX_POINTS
     }
 }

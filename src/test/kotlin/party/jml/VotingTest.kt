@@ -12,8 +12,10 @@ import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.voting.VoteService
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 class VotingTest : PartyboiTester {
@@ -160,6 +162,74 @@ class VotingTest : PartyboiTester {
                 "Author must not appear on /vote when compo has hideAuthor=true (got: $text)",
             )
         }
+    }
+
+    @Test
+    fun testParticipationGrantsMeanPoints() = test {
+        var entryIds = emptyList<java.util.UUID>()
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either {
+                settings.automaticVoteKeys.set(AutomaticVoteKeys.PER_USER).bind()
+                val (_, entries) = setupCompoWithEntries(app, count = 3).bind()
+                entryIds = entries.map { it.id }
+                val voter = addTestUser(app, "voter").bind()
+                votes.castVote(voter, entries[0].id, 5).bind()
+            }
+        }
+
+        // Touch the app over HTTP so `setupServices`' `application {}` block runs and `app` is set.
+        it.login()
+        val results = runBlocking { app!!.votes.getResults() }.getOrNull()!!
+        val byEntry = results.associateBy { it.entryId }
+        assertEquals(5, byEntry[entryIds[0]]?.points, "voted entry keeps its explicit points")
+        assertEquals(VoteService.MEAN_POINTS, byEntry[entryIds[1]]?.points, "skipped entry gets MEAN_POINTS")
+        assertEquals(VoteService.MEAN_POINTS, byEntry[entryIds[2]]?.points, "skipped entry gets MEAN_POINTS")
+    }
+
+    @Test
+    fun testNoVotesYieldsZero() = test {
+        var entryIds = emptyList<java.util.UUID>()
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either {
+                settings.automaticVoteKeys.set(AutomaticVoteKeys.PER_USER).bind()
+                val (_, entries) = setupCompoWithEntries(app, count = 3).bind()
+                entryIds = entries.map { it.id }
+                addTestUser(app, "lurker").bind()
+            }
+        }
+
+        it.login()
+        val results = runBlocking { app!!.votes.getResults() }.getOrNull()!!
+        val byEntry = results.associateBy { it.entryId }
+        entryIds.forEach { id ->
+            assertEquals(0, byEntry[id]?.points, "no participation → no implicit points")
+        }
+    }
+
+    private suspend fun setupCompoWithEntries(app: AppServices, count: Int): AppResult<Pair<Compo, List<Entry>>> = either {
+        val compo = app.compos.add(NewCompo("Demo", "")).bind()
+        app.compos.setVisible(compo.id, true).bind()
+        app.compos.allowSubmit(compo.id, false).bind()
+        val submitter = addTestUser(app, "submitter").bind()
+        val entries = (1..count).map { i ->
+            app.entries.add(
+                NewEntry(
+                    title = "Entry $i",
+                    author = "Author $i",
+                    file = FileUpload.createTestData("entry$i.dat", 256),
+                    compoId = compo.id,
+                    screenComment = "",
+                    orgComment = "",
+                    userId = submitter.id,
+                )
+            ).bind()
+        }
+        app.compos.allowVoting(compo.id, true).bind()
+        Pair(compo, entries)
     }
 
     private suspend fun setupCompo(app: AppServices): AppResult<Pair<Compo, Entry>> = either {

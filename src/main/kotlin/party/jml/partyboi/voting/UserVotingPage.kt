@@ -111,6 +111,26 @@ object UserVotingPage {
                     }
                 }
             }
+
+            article {
+                cardHeader("How voting works")
+                section {
+                    ul {
+                        li {
+                            +"Rate each entry from ${VoteService.MIN_POINTS} (worst) to ${VoteService.MAX_POINTS} (best). Click a number — your vote is saved immediately."
+                        }
+                        li {
+                            +"You can change your vote at any time while the compo is open for voting."
+                        }
+                        li {
+                            +"Once you have voted at least one entry in a compo, every other entry in that compo automatically receives ${VoteService.MEAN_POINTS} points from you. Skipping an entry is not the same as voting against it."
+                        }
+                        li {
+                            +"If you do not vote any entry in a compo, you contribute no points there."
+                        }
+                    }
+                }
+            }
         }
     }
 }
