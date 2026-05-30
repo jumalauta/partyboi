@@ -355,7 +355,9 @@ td.screenshot figure {
     height: 80px;
     margin-top: calc(var(--pico-spacing) * -0.5);
     margin-bottom: calc(var(--pico-spacing) * -0.5);
-    background-color: var(--pico-primary-background);
+    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
+       stay visible against the white card. */
+    background-color: #000;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -857,6 +859,31 @@ table.schedule td.settings .flat-button {
    lives at the body level (in Page.kt) so it survives reload-section swaps. */
 .clickable-preview {
     cursor: zoom-in;
+    position: relative;
+}
+
+/* Audio entries get a centered play-circle overlay on the thumbnail so voters
+   know the tile plays a clip instead of opening a still image. */
+.clickable-preview.has-audio {
+    cursor: pointer;
+}
+
+.clickable-preview.has-audio .play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5em;
+    color: #fff;
+    text-shadow: 0 0 0.4em rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    opacity: 0.85;
+    transition: opacity 0.15s ease;
+}
+
+.clickable-preview.has-audio:hover .play-overlay,
+.clickable-preview.has-audio:focus .play-overlay {
+    opacity: 1;
 }
 
 dialog.preview-modal {
@@ -874,6 +901,24 @@ dialog.preview-modal video {
     max-width: 95vw;
     max-height: 90vh;
     object-fit: contain;
+}
+
+/* Audio playback: cover image fills the modal, native <audio> controls float
+   over the bottom against a translucent dark bar for legibility. */
+#preview-modal-media.has-audio {
+    position: relative;
+    display: inline-block;
+}
+
+dialog.preview-modal .audio-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 0.75em 1em;
+    background: rgba(0, 0, 0, 0.55);
+    box-sizing: border-box;
 }
 
 dialog.preview-modal::backdrop {
@@ -902,4 +947,7 @@ dialog.preview-modal .close {
 
 img.entry-edit-preview {
     width: 100%;
+    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
+       stay visible against the white card. */
+    background-color: #000;
 }

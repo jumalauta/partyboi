@@ -52,6 +52,21 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         }
     }
 
+    fun generateAudioPreview(input: File): Triple<File, File, File> {
+        ensureFfmpegExists()
+
+        return app.dockerFileShare.use(input) { sharedInput ->
+            val duration = probeDurationSeconds(sharedInput)
+            val waveformThumb = app.dockerFileShare.createTempFile("audioWaveformThumb", ".png")
+            val waveformFull = app.dockerFileShare.createTempFile("audioWaveformFull", ".png")
+            val clip = app.dockerFileShare.createTempFile("audioPreview", ".webm")
+            generateWaveform(sharedInput, waveformThumb, width = 400, height = 120)
+            generateWaveform(sharedInput, waveformFull, width = 1200, height = 360)
+            generateAudioClip(sharedInput, clip, duration)
+            Triple(waveformThumb.localFile, waveformFull.localFile, clip.localFile)
+        }
+    }
+
     private fun generateAnimatedThumbnail(input: SharedFile, output: SharedFile, duration: Double) {
         val frameCount = 6
         val outputFps = 2 // each frame lasts 0.5 s → 3-second loop
@@ -101,6 +116,43 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
             }
         } finally {
             frameFiles.forEach { it.delete() }
+        }
+    }
+
+    private fun generateAudioClip(input: SharedFile, output: SharedFile, duration: Double) {
+        val clipSec = minOf(30.0, duration).coerceAtLeast(0.1)
+        // Start a quarter of the way into the leftover tail so we skip pure-intro silence
+        // but stay before the song's ending.
+        val startSec = ((duration - clipSec) * 0.25).coerceIn(0.0, (duration - clipSec).coerceAtLeast(0.0))
+        val fadeSec = minOf(0.5, clipSec / 4).coerceAtLeast(0.0)
+        val fadeOutStart = (clipSec - fadeSec).coerceAtLeast(0.0)
+        runFfmpeg {
+            hideBanner()
+            seek(startSec)
+            input(input)
+            duration(clipSec)
+            noVideo()
+            arg(
+                "-af",
+                "afade=t=in:st=0:d=$fadeSec,afade=t=out:st=$fadeOutStart:d=$fadeSec",
+            )
+            audioCodec("libopus")
+            arg("-b:a", "96k")
+            arg("-f", "webm")
+            output(output)
+        }
+    }
+
+    private fun generateWaveform(input: SharedFile, output: SharedFile, width: Int, height: Int) {
+        runFfmpeg {
+            hideBanner()
+            input(input)
+            arg(
+                "-filter_complex",
+                "[0:a]aformat=channel_layouts=mono,showwavespic=s=${width}x${height}:colors=#ffffff",
+            )
+            arg("-frames:v", "1")
+            output(output)
         }
     }
 
@@ -291,6 +343,10 @@ class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
 
     fun noAudio() {
         arguments.add("-an")
+    }
+
+    fun noVideo() {
+        arguments.add("-vn")
     }
 
     fun loop(n: Int) {

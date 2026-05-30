@@ -141,6 +141,18 @@ fun Application.configureEntriesRouting(app: AppServices) {
             )
         }
 
+        get("/entries/{id}/preview-audio") {
+            either {
+                val id = call.parameterUUID("id").bind()
+                app.previews.getPreviewAudioFileDesc(id)
+                    .mapLeft { NotFound("Audio preview is missing") }
+                    .bind()
+            }.fold(
+                { call.respondPage(it) },
+                { call.respondPreviewAsset(it) }
+            )
+        }
+
         get("/entries/download/{fileId}") {
             either {
                 val fileId = call.parameterUUID("fileId").bind()

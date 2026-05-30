@@ -155,7 +155,11 @@ function initInteractions(target) {
     // Preview modal: enlarge entry preview on click/Enter/Space.
     setupPreviewModal();
     target.querySelectorAll("[data-preview-url]").forEach((el) => {
-        const open = () => openPreviewModal(el.dataset.previewUrl, el.dataset.previewType);
+        const open = () => openPreviewModal(
+            el.dataset.previewUrl,
+            el.dataset.previewType,
+            el.dataset.previewAudioUrl,
+        );
         el.addEventListener("click", open);
         el.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -463,12 +467,26 @@ function setupMobileNav(target) {
 // The <dialog> itself lives in Page.kt (outside #reload-section) so it survives
 // applyReloadSection swaps; only the per-element listeners re-bind on each call
 // to initInteractions(target).
-function openPreviewModal(url, type) {
+function openPreviewModal(url, type, audioUrl) {
     const dialog = document.getElementById("preview-modal");
     const slot = document.getElementById("preview-modal-media");
     if (!dialog || !slot || !url) return;
     slot.replaceChildren();
-    if (type === "video") {
+    slot.classList.toggle("has-audio", !!audioUrl);
+    if (audioUrl) {
+        // Audio entry: cover image fills the modal; native controls overlay the bottom.
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "";
+        img.className = "cover";
+        const audio = document.createElement("audio");
+        audio.src = audioUrl;
+        audio.controls = true;
+        audio.autoplay = true;
+        audio.className = "audio-overlay";
+        slot.appendChild(img);
+        slot.appendChild(audio);
+    } else if (type === "video") {
         const v = document.createElement("video");
         v.src = url;
         v.controls = true;
@@ -492,10 +510,13 @@ function setupPreviewModal() {
     dialog.addEventListener("click", (e) => {
         if (e.target === dialog) dialog.close();
     });
-    // Empty the media slot on close so the browser can reclaim memory and stop video playback.
+    // Empty the media slot on close so the browser can reclaim memory and stop playback.
     dialog.addEventListener("close", () => {
         const slot = document.getElementById("preview-modal-media");
-        if (slot) slot.replaceChildren();
+        if (slot) {
+            slot.replaceChildren();
+            slot.classList.remove("has-audio");
+        }
     });
 }
 

@@ -1,12 +1,14 @@
 package party.jml.partyboi.entries
 
 import arrow.core.raise.either
+import arrow.core.raise.ensureNotNull
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.JpegWriter
 import kotliquery.Row
 import kotliquery.queryOf
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.one
 import party.jml.partyboi.form.FileUpload
@@ -83,6 +85,7 @@ class PreviewRepository(val app: AppServices) {
             systemPath = app.files.getStorageFile(entry.fileId).toPath(),
             previewFilePath = entry.previewFileId?.let { app.files.getStorageFile(it).toPath() },
             previewFileIsVideo = previewFileDesc?.extension in videoExtensions,
+            previewAudioFilePath = entry.previewAudioFileId?.let { app.files.getStorageFile(it).toPath() },
         )
     }
 
@@ -107,6 +110,12 @@ class PreviewRepository(val app: AppServices) {
         app.files.getById(fileId).bind()
     }
 
+    suspend fun getPreviewAudioFileDesc(entryId: UUID): AppResult<FileDesc> = either {
+        val entry = getPreviewEntry(entryId).bind()
+        val fileId = ensureNotNull(entry.previewAudioFileId) { NotFound("Audio preview is missing") }
+        app.files.getById(fileId).bind()
+    }
+
     suspend fun storeAssets(
         entryId: UUID,
         thumbnailFile: Path,
@@ -128,6 +137,38 @@ class PreviewRepository(val app: AppServices) {
             entryId = entryId,
             fileId = thumbnailDesc.id,
             previewFileId = previewDesc.id,
+        ).bind()
+    }
+
+    suspend fun storeAudioPreview(
+        entryId: UUID,
+        audioFile: Path,
+        audioFilename: String,
+        waveformThumbnailFile: Path,
+        waveformPreviewFile: Path,
+        waveformThumbnailFilename: String,
+        waveformPreviewFilename: String,
+    ): AppResult<Unit> = either {
+        val audioDesc = app.files.store(
+            tempFile = audioFile.toFile(),
+            originalFilename = audioFilename,
+            processed = true,
+        ).bind()
+        val waveformThumbnailDesc = app.files.store(
+            tempFile = waveformThumbnailFile.toFile(),
+            originalFilename = waveformThumbnailFilename,
+            processed = true,
+        ).bind()
+        val waveformPreviewDesc = app.files.store(
+            tempFile = waveformPreviewFile.toFile(),
+            originalFilename = waveformPreviewFilename,
+            processed = true,
+        ).bind()
+        saveAudioPreviewEntry(
+            entryId = entryId,
+            waveformThumbnailFileId = waveformThumbnailDesc.id,
+            waveformPreviewFileId = waveformPreviewDesc.id,
+            audioFileId = audioDesc.id,
         ).bind()
     }
 
@@ -159,6 +200,32 @@ class PreviewRepository(val app: AppServices) {
             )
         }
 
+    // Insert waveform thumbnail/preview only when the entry has no preview row yet — if a row
+    // already exists (e.g. the user uploaded a cover image), keep their thumbnail and preview
+    // file and only update the audio column.
+    private suspend fun saveAudioPreviewEntry(
+        entryId: UUID,
+        waveformThumbnailFileId: UUID,
+        waveformPreviewFileId: UUID,
+        audioFileId: UUID,
+    ): AppResult<Unit> =
+        app.db.use {
+            exec(
+                queryOf(
+                    """
+                    INSERT INTO preview (entry_id, file_id, preview_file_id, preview_audio_file_id)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(entry_id) DO UPDATE SET
+                        preview_audio_file_id = EXCLUDED.preview_audio_file_id
+                    """.trimIndent(),
+                    entryId,
+                    waveformThumbnailFileId,
+                    waveformPreviewFileId,
+                    audioFileId,
+                )
+            )
+        }
+
     private fun heuristicsScore(filename: String): Int {
         val magicWords = mapOf(
             "final" to 5,
@@ -176,9 +243,11 @@ data class Preview(
     val systemPath: Path,
     val previewFilePath: Path? = null,
     val previewFileIsVideo: Boolean = false,
+    val previewAudioFilePath: Path? = null,
 ) {
     fun externalUrl() = "/entries/$entryId/preview-thumbnail"
     fun externalPreviewFileUrl() = "/entries/$entryId/preview-file"
+    fun externalPreviewAudioFileUrl() = "/entries/$entryId/preview-audio"
 }
 
 data class NewPreview(
@@ -195,6 +264,7 @@ data class PreviewEntry(
     val entryId: UUID,
     val fileId: UUID,
     val previewFileId: UUID?,
+    val previewAudioFileId: UUID?,
 ) {
     companion object {
         val fromRow: (Row) -> PreviewEntry = { row ->
@@ -202,6 +272,7 @@ data class PreviewEntry(
                 entryId = row.uuid("entry_id"),
                 fileId = row.uuid("file_id"),
                 previewFileId = row.uuidOrNull("preview_file_id"),
+                previewAudioFileId = row.uuidOrNull("preview_audio_file_id"),
             )
         }
     }

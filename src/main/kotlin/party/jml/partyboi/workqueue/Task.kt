@@ -60,3 +60,26 @@ data class GeneratePreviewForVideo(
         ).bind()
     }
 }
+
+@Serializable
+data class GeneratePreviewForAudio(
+    val file: FileDesc
+) : Task {
+    override suspend fun execute(app: AppServices): AppResult<Unit> = either {
+        val fileDesc = app.files.getById(file.id).bind()
+        val entry = app.entries.getByFileId(fileDesc.id).bind()
+        val inputFile = app.files.getStorageFile(fileDesc.id)
+
+        val (waveformThumb, waveformFull, clip) = app.ffmpeg.generateAudioPreview(inputFile)
+
+        app.previews.storeAudioPreview(
+            entryId = entry.id,
+            audioFile = clip.toPath(),
+            audioFilename = "preview-${entry.id}.webm",
+            waveformThumbnailFile = waveformThumb.toPath(),
+            waveformPreviewFile = waveformFull.toPath(),
+            waveformThumbnailFilename = "waveform-${entry.id}-thumbnail.png",
+            waveformPreviewFilename = "waveform-${entry.id}.png",
+        ).bind()
+    }
+}
