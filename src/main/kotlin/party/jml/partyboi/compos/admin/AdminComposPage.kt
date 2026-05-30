@@ -9,7 +9,6 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
-import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.toggleButton
 import java.util.*
@@ -79,18 +78,27 @@ object AdminComposPage {
                             }
                         }
                     }
-                    buttonGroup {
-                        a(href = "/admin/compos/results.txt") {
-                            role = "button"
-                            +"Get results.txt"
+                    details(classes = "dropdown") {
+                        summary {
+                            attributes["role"] = "button"
+                            +"Download"
                         }
-                        a(href = "/admin/compos/results-with-info.txt") {
-                            role = "button"
-                            +"Get results-with-info.txt"
-                        }
-                        a(href = "/admin/compos/entries.zip") {
-                            role = "button"
-                            +"Download entries for distribution"
+                        ul {
+                            li {
+                                a(href = "/admin/compos/results.txt") {
+                                    +"Results"
+                                }
+                            }
+                            li {
+                                a(href = "/admin/compos/results-with-info.txt") {
+                                    +"Results with info screen comments"
+                                }
+                            }
+                            li {
+                                a(href = "/admin/compos/entries.zip") {
+                                    +"All entries for scene.org"
+                                }
+                            }
                         }
                     }
                 }
