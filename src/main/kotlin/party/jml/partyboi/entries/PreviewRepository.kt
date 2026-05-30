@@ -20,6 +20,8 @@ import java.nio.file.Path
 import java.util.*
 
 class PreviewRepository(val app: AppServices) {
+    private val videoExtensions = FileFormatCategory.video.formats().flatMap { it.extensions }.toSet()
+
     fun scanForScreenshotSource(file: FileDesc): Path? {
         if (file.type == FileDesc.IMAGE) {
             return file.getStorageFile().toPath()
@@ -55,7 +57,13 @@ class PreviewRepository(val app: AppServices) {
             inputImage.scaleToHeight(400).output(writer, thumbnailImage)
             useTempFile { previewImage ->
                 inputImage.output(writer, previewImage)
-                saveScreenshot(entryId, thumbnailImage, previewImage).bind()
+                storeAssets(
+                    entryId = entryId,
+                    thumbnailFile = thumbnailImage,
+                    previewFile = previewImage,
+                    thumbnailFilename = "screenshot-${entryId}-thumbnail.jpg",
+                    previewFilename = "screenshot-${entryId}.jpg",
+                ).bind()
             }
         }
     }
@@ -69,10 +77,12 @@ class PreviewRepository(val app: AppServices) {
 
     suspend fun get(entryId: UUID): AppResult<Preview> = either {
         val entry = getPreviewEntry(entryId).bind()
+        val previewFileDesc = entry.previewFileId?.let { app.files.getById(it).bind() }
         Preview(
             entryId = entryId,
             systemPath = app.files.getStorageFile(entry.fileId).toPath(),
             previewFilePath = entry.previewFileId?.let { app.files.getStorageFile(it).toPath() },
+            previewFileIsVideo = previewFileDesc?.extension in videoExtensions,
         )
     }
 
@@ -86,22 +96,33 @@ class PreviewRepository(val app: AppServices) {
         app.files.getStorageFile(entry.fileId).toPath()
     }
 
-    suspend fun getPreviewFile(entryId: UUID): AppResult<Path> = either {
+    suspend fun getThumbnailFileDesc(entryId: UUID): AppResult<FileDesc> = either {
         val entry = getPreviewEntry(entryId).bind()
-        val fileId = entry.previewFileId ?: entry.fileId
-        app.files.getStorageFile(fileId).toPath()
+        app.files.getById(entry.fileId).bind()
     }
 
-    private suspend fun saveScreenshot(entryId: UUID, thumbnailFile: Path, previewFile: Path): AppResult<Unit> = either {
+    suspend fun getPreviewFileDesc(entryId: UUID): AppResult<FileDesc> = either {
+        val entry = getPreviewEntry(entryId).bind()
+        val fileId = entry.previewFileId ?: entry.fileId
+        app.files.getById(fileId).bind()
+    }
+
+    suspend fun storeAssets(
+        entryId: UUID,
+        thumbnailFile: Path,
+        previewFile: Path,
+        thumbnailFilename: String,
+        previewFilename: String,
+    ): AppResult<Unit> = either {
         val thumbnailDesc = app.files.store(
             tempFile = thumbnailFile.toFile(),
-            originalFilename = "screenshot-${entryId}-thumbnail.jpg",
-            processed = true
+            originalFilename = thumbnailFilename,
+            processed = true,
         ).bind()
         val previewDesc = app.files.store(
             tempFile = previewFile.toFile(),
-            originalFilename = "screenshot-${entryId}.jpg",
-            processed = true
+            originalFilename = previewFilename,
+            processed = true,
         ).bind()
         savePreviewEntry(
             entryId = entryId,
@@ -154,9 +175,10 @@ data class Preview(
     val entryId: UUID,
     val systemPath: Path,
     val previewFilePath: Path? = null,
+    val previewFileIsVideo: Boolean = false,
 ) {
-    fun externalUrl() = "/entries/$entryId/preview.jpg"
-    fun externalPreviewFileUrl() = "/entries/$entryId/preview-file.jpg"
+    fun externalUrl() = "/entries/$entryId/preview-thumbnail"
+    fun externalPreviewFileUrl() = "/entries/$entryId/preview-file"
 }
 
 data class NewPreview(

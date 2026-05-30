@@ -61,11 +61,14 @@ object UserVotingPage {
                                         if (!isLiveVote) {
                                             td(classes = "screenshot") {
                                                 if (preview != null) {
+                                                    val isVideo = preview.previewFileIsVideo
                                                     figure(classes = "clickable-preview") {
                                                         attributes["style"] =
                                                             "background-image: url(${preview.externalUrl()})"
                                                         attributes["data-preview-url"] =
                                                             preview.externalPreviewFileUrl()
+                                                        attributes["data-preview-type"] =
+                                                            if (isVideo) "video" else "image"
                                                         attributes["role"] = "button"
                                                         attributes["tabindex"] = "0"
                                                         attributes["aria-label"] = "Open full-size preview"

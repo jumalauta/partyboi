@@ -104,10 +104,7 @@ data class Page(
                             +"×"
                         }
                     }
-                    img {
-                        id = "preview-modal-img"
-                        alt = ""
-                    }
+                    div { id = "preview-modal-media" }
                 }
                 script(src = "/assets/partyboi.js") {}
             }

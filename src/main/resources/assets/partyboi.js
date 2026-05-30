@@ -156,11 +156,12 @@ function initInteractions(target) {
     // Preview modal: enlarge entry preview on click/Enter/Space.
     setupPreviewModal();
     target.querySelectorAll("[data-preview-url]").forEach((el) => {
-        el.addEventListener("click", () => openPreviewModal(el.dataset.previewUrl));
+        const open = () => openPreviewModal(el.dataset.previewUrl, el.dataset.previewType);
+        el.addEventListener("click", open);
         el.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                openPreviewModal(el.dataset.previewUrl);
+                open();
             }
         });
     });
@@ -463,11 +464,24 @@ function setupMobileNav(target) {
 // The <dialog> itself lives in Page.kt (outside #reload-section) so it survives
 // applyReloadSection swaps; only the per-element listeners re-bind on each call
 // to initInteractions(target).
-function openPreviewModal(url) {
+function openPreviewModal(url, type) {
     const dialog = document.getElementById("preview-modal");
-    const img = document.getElementById("preview-modal-img");
-    if (!dialog || !img || !url) return;
-    img.src = url;
+    const slot = document.getElementById("preview-modal-media");
+    if (!dialog || !slot || !url) return;
+    slot.replaceChildren();
+    if (type === "video") {
+        const v = document.createElement("video");
+        v.src = url;
+        v.controls = true;
+        v.autoplay = true;
+        v.playsInline = true;
+        slot.appendChild(v);
+    } else {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "";
+        slot.appendChild(img);
+    }
     dialog.showModal();
 }
 
@@ -475,14 +489,14 @@ function setupPreviewModal() {
     const dialog = document.getElementById("preview-modal");
     if (!dialog || window.__previewModalInit) return;
     window.__previewModalInit = true;
-    // Click on the backdrop (outside the image and close button) closes the dialog.
+    // Click on the backdrop (outside the media and close button) closes the dialog.
     dialog.addEventListener("click", (e) => {
         if (e.target === dialog) dialog.close();
     });
-    // Drop the src on close so the browser can reclaim large images.
+    // Empty the media slot on close so the browser can reclaim memory and stop video playback.
     dialog.addEventListener("close", () => {
-        const img = document.getElementById("preview-modal-img");
-        if (img) img.removeAttribute("src");
+        const slot = document.getElementById("preview-modal-media");
+        if (slot) slot.replaceChildren();
     });
 }
 

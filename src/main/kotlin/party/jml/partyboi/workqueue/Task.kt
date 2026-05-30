@@ -39,3 +39,24 @@ data class NormalizeLoudness(
         }
     }
 }
+
+@Serializable
+data class GeneratePreviewForVideo(
+    val file: FileDesc
+) : Task {
+    override suspend fun execute(app: AppServices): AppResult<Unit> = either {
+        val fileDesc = app.files.getById(file.id).bind()
+        val entry = app.entries.getByFileId(fileDesc.id).bind()
+        val inputFile = app.files.getStorageFile(fileDesc.id)
+
+        val (thumb, clip) = app.ffmpeg.generateVideoPreview(inputFile)
+
+        app.previews.storeAssets(
+            entryId = entry.id,
+            thumbnailFile = thumb.toPath(),
+            previewFile = clip.toPath(),
+            thumbnailFilename = "thumb-${entry.id}.webp",
+            previewFilename = "preview-${entry.id}.webm",
+        ).bind()
+    }
+}

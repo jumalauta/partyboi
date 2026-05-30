@@ -4,6 +4,7 @@ package party.jml.partyboi.entries
 
 import arrow.core.raise.either
 import io.ktor.http.*
+import io.ktor.server.http.content.LocalFileContent
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -116,33 +117,27 @@ fun Application.configureEntriesRouting(app: AppServices) {
             }
         }
 
-        get("/entries/{id}/preview.jpg") {
+        get("/entries/{id}/preview-thumbnail") {
             either {
                 val id = call.parameterUUID("id").bind()
-                app.previews.get(id)
+                app.previews.getThumbnailFileDesc(id)
                     .mapLeft { NotFound("Preview image is missing") }
                     .bind()
             }.fold(
                 { call.respondPage(it) },
-                {
-                    call.response.headers.append(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
-                    call.respondFile(it.systemPath.toFile())
-                }
+                { call.respondPreviewAsset(it) }
             )
         }
 
-        get("/entries/{id}/preview-file.jpg") {
+        get("/entries/{id}/preview-file") {
             either {
                 val id = call.parameterUUID("id").bind()
-                app.previews.getPreviewFile(id)
-                    .mapLeft { NotFound("Preview image is missing") }
+                app.previews.getPreviewFileDesc(id)
+                    .mapLeft { NotFound("Preview file is missing") }
                     .bind()
             }.fold(
                 { call.respondPage(it) },
-                {
-                    call.response.headers.append(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
-                    call.respondFile(it.toFile())
-                }
+                { call.respondPreviewAsset(it) }
             )
         }
 
@@ -246,4 +241,18 @@ fun Application.configureEntriesRouting(app: AppServices) {
             }
         }
     }
+}
+
+// Stored files are saved as bare UUIDs on disk (no extension), so respondFile would
+// fall back to application/octet-stream and browsers refuse to play it as <video> or
+// download it with the URL's last path segment as filename. Use the FileDesc's
+// originalFilename (e.g. "preview-…​.webm") to derive the right Content-Type instead.
+private suspend fun io.ktor.server.application.ApplicationCall.respondPreviewAsset(fileDesc: FileDesc) {
+    response.headers.append(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
+    respond(
+        LocalFileContent(
+            file = fileDesc.getStorageFile(),
+            contentType = ContentType.defaultForFilePath(fileDesc.originalFilename),
+        )
+    )
 }

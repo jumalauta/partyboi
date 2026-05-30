@@ -32,6 +32,7 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.workqueue.GeneratePreviewForVideo
 import party.jml.partyboi.workqueue.NormalizeLoudness
 import java.io.File
 import java.nio.file.Files
@@ -247,11 +248,12 @@ class FileRepository(app: AppServices) : Service(app) {
         app.config.filesDir.resolve(fileId.toString()).toFile()
 
     suspend fun postProcessUpload(file: FileDesc) {
-        if (!file.processed) {
-            val streamingAudioFormats = FileFormatCategory.streamingAudio.formats().flatMap { it.extensions }
-            if (streamingAudioFormats.contains(file.extension)) {
-                app.workQueue.addTask(NormalizeLoudness(file))
-            }
+        if (file.processed) return
+        val streamingAudio = FileFormatCategory.streamingAudio.formats().flatMap { it.extensions }
+        val video = FileFormatCategory.video.formats().flatMap { it.extensions }
+        when (file.extension) {
+            in streamingAudio -> app.workQueue.addTask(NormalizeLoudness(file))
+            in video -> app.workQueue.addTask(GeneratePreviewForVideo(file))
         }
     }
 

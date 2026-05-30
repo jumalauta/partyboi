@@ -39,6 +39,111 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         }
     }
 
+    fun generateVideoPreview(input: File): Pair<File, File> {
+        ensureFfmpegExists()
+
+        return app.dockerFileShare.use(input) { sharedInput ->
+            val duration = probeDurationSeconds(sharedInput)
+            val thumb = app.dockerFileShare.createTempFile("videoThumb", ".webp")
+            val clip = app.dockerFileShare.createTempFile("videoPreview", ".webm")
+            generateAnimatedThumbnail(sharedInput, thumb, duration)
+            generateClip(sharedInput, clip, duration)
+            thumb.localFile to clip.localFile
+        }
+    }
+
+    private fun generateAnimatedThumbnail(input: SharedFile, output: SharedFile, duration: Double) {
+        val frameCount = 6
+        val outputFps = 2 // each frame lasts 0.5 s → 3-second loop
+        val safeDuration = duration.coerceAtLeast(0.1)
+        val timestamps = (0 until frameCount).map { i ->
+            ((i + 0.5) * safeDuration / frameCount).coerceIn(0.0, safeDuration)
+        }
+        val scaleCrop = "scale=240:160:force_original_aspect_ratio=increase,crop=240:160"
+
+        val frameFiles = mutableListOf<SharedFile>()
+        try {
+            // Extract one PNG per timestamp via fast keyframe seek + -frames:v 1. Doing this as
+            // separate ffmpeg invocations is more reliable than a single multi-input concat:
+            // there each post-seek input streams ALL its post-T frames into the filter graph,
+            // and the output ends up being the whole source video re-encoded.
+            timestamps.forEach { t ->
+                val frame = app.dockerFileShare.createTempFile("videoThumbFrame", ".png")
+                frameFiles += frame
+                runFfmpeg {
+                    hideBanner()
+                    seek(t)
+                    input(input)
+                    arg("-frames:v", "1")
+                    videoFilter(scaleCrop)
+                    noAudio()
+                    output(frame)
+                }
+            }
+
+            // Stitch the 6 single-frame PNGs into an animated WebP. setpts rebases per-frame
+            // PTS so libwebp emits a constant 0.5 s delay between frames regardless of how
+            // PNG defaults would have spaced them.
+            val filterComplex = buildString {
+                frameFiles.indices.forEach { i -> append("[$i:v]") }
+                append("concat=n=$frameCount:v=1,setpts=N/($outputFps*TB)[out]")
+            }
+            runFfmpeg {
+                hideBanner()
+                frameFiles.forEach { input(it) }
+                arg("-filter_complex", filterComplex)
+                arg("-map", "[out]")
+                arg("-r", outputFps.toString())
+                loop(0)
+                noAudio()
+                videoCodec("libwebp")
+                output(output)
+            }
+        } finally {
+            frameFiles.forEach { it.delete() }
+        }
+    }
+
+    private fun generateClip(input: SharedFile, output: SharedFile, duration: Double) {
+        val clipSec = minOf(10.0, duration).coerceAtLeast(0.1)
+        val startSec = (duration * 2.0 / 3.0).coerceIn(0.0, (duration - clipSec).coerceAtLeast(0.0))
+        // Fade duration capped at a quarter of the clip so very short videos still have
+        // visible content between the fades meeting in the middle.
+        val fadeSec = minOf(0.5, clipSec / 4).coerceAtLeast(0.0)
+        val fadeOutStart = (clipSec - fadeSec).coerceAtLeast(0.0)
+        runFfmpeg {
+            hideBanner()
+            seek(startSec)
+            input(input)
+            duration(clipSec)
+            videoFilter(
+                "scale=-2:'min(480,ih)'," +
+                        "fade=t=in:st=0:d=$fadeSec," +
+                        "fade=t=out:st=$fadeOutStart:d=$fadeSec"
+            )
+            arg(
+                "-af",
+                "afade=t=in:st=0:d=$fadeSec,afade=t=out:st=$fadeOutStart:d=$fadeSec",
+            )
+            videoCodec("libvpx-vp9")
+            arg("-crf", "32", "-b:v", "0")
+            audioCodec("libopus")
+            arg("-b:a", "96k")
+            output(output)
+        }
+    }
+
+    fun probeDurationSeconds(file: SharedFile): Double {
+        val out = runFfprobe(
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "csv=p=0",
+            "/files/${file.localFile.name}",
+        )
+        return out.lines().firstNotNullOfOrNull { it.trim().toDoubleOrNull() }
+            ?: throw IllegalArgumentException("Could not parse duration from ffprobe output: $out")
+    }
+
     private fun measureLoudness(file: SharedFile): LoudnessMeasurement =
         runFfmpeg {
             hideBanner()
@@ -79,6 +184,13 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
 
     private fun runFfmpeg(dsl: FfmpegDsl.() -> Unit): String {
         val settings = FfmpegDsl { dsl() }
+        return runContainer(entrypoint = null, args = settings.arguments, label = "FFmpeg")
+    }
+
+    private fun runFfprobe(vararg args: String): String =
+        runContainer(entrypoint = "ffprobe", args = args.toList(), label = "ffprobe")
+
+    private fun runContainer(entrypoint: String?, args: List<String>, label: String): String {
         val client = Docker.getClient()
 
         val binds = listOfNotNull(
@@ -91,7 +203,8 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
 
         val container = client.createContainerCmd(IMAGE)
             .withHostConfig(hostConfig)
-            .withCmd(settings.arguments)
+            .apply { if (entrypoint != null) withEntrypoint(entrypoint) }
+            .withCmd(args)
             .withTty(false)
             .withAttachStdout(true)
             .withAttachStderr(true)
@@ -100,7 +213,7 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         client.startContainerCmd(container.id).exec()
         client.waitContainerCmd(container.id).start().awaitCompletion()
 
-        log.info("Run FFmpeg with arguments: ${settings.arguments} and bindings: $binds")
+        log.info("Run $label with arguments: $args and bindings: $binds")
 
         val logs = StringBuilder()
         client.logContainerCmd(container.id)
@@ -159,6 +272,44 @@ class FfmpegDsl(dsl: FfmpegDsl.() -> Unit) {
     fun audioFilter(filterName: String, vararg args: Pair<String, Any>) {
         arguments.add("-af")
         arguments.add("$filterName=${args.joinToString(":") { (key, value) -> "$key=$value" }}")
+    }
+
+    fun videoFilter(expr: String) {
+        arguments.add("-vf")
+        arguments.add(expr)
+    }
+
+    fun videoCodec(name: String) {
+        arguments.add("-c:v")
+        arguments.add(name)
+    }
+
+    fun audioCodec(name: String) {
+        arguments.add("-c:a")
+        arguments.add(name)
+    }
+
+    fun noAudio() {
+        arguments.add("-an")
+    }
+
+    fun loop(n: Int) {
+        arguments.add("-loop")
+        arguments.add(n.toString())
+    }
+
+    fun seek(seconds: Double) {
+        arguments.add("-ss")
+        arguments.add(seconds.toString())
+    }
+
+    fun duration(seconds: Double) {
+        arguments.add("-t")
+        arguments.add(seconds.toString())
+    }
+
+    fun arg(vararg parts: String) {
+        arguments.addAll(parts)
     }
 
     fun format(containerFormat: Format) {

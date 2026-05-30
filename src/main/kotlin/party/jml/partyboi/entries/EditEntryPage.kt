@@ -29,22 +29,23 @@ object EditEntryPage {
         return Page(title) {
             h1 { +title }
 
-            columns(
-                {
-                    uploader?.let { user ->
-                        p {
-                            +"Submitted by "
-                            a(href = "/admin/users/${user.id}") {
-                                +user.name
-                            }
-                            user.email?.let { email ->
-                                +" "
-                                a(href = "mailto:$email") {
-                                    +"(${email})"
-                                }
-                            }
+            uploader?.let { user ->
+                p {
+                    +"Submitted by "
+                    a(href = "/admin/users/${user.id}") {
+                        +user.name
+                    }
+                    user.email?.let { email ->
+                        +" "
+                        a(href = "mailto:$email") {
+                            +"(${email})"
                         }
                     }
+                }
+            }
+
+            columns(
+                {
                     if (!allowEdit) {
                         entryDetails(compos, entryUpdateForm)
                     } else {
