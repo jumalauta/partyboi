@@ -153,6 +153,18 @@ function initInteractions(target) {
         })
     })
 
+    // Preview modal: enlarge entry preview on click/Enter/Space.
+    setupPreviewModal();
+    target.querySelectorAll("[data-preview-url]").forEach((el) => {
+        el.addEventListener("click", () => openPreviewModal(el.dataset.previewUrl));
+        el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openPreviewModal(el.dataset.previewUrl);
+            }
+        });
+    });
+
     // Date time pickers
     target.querySelectorAll("input[type=datetime]").forEach(input => {
         const defaultDate = input.attributes["data-suggested-value"]?.value
@@ -445,6 +457,33 @@ function setupMobileNav(target) {
     if (mobileMq.matches && !drawer.classList.contains("open")) {
         drawer.setAttribute("aria-hidden", "true");
     }
+}
+
+// Preview modal: opened on click/Enter/Space on any [data-preview-url] element.
+// The <dialog> itself lives in Page.kt (outside #reload-section) so it survives
+// applyReloadSection swaps; only the per-element listeners re-bind on each call
+// to initInteractions(target).
+function openPreviewModal(url) {
+    const dialog = document.getElementById("preview-modal");
+    const img = document.getElementById("preview-modal-img");
+    if (!dialog || !img || !url) return;
+    img.src = url;
+    dialog.showModal();
+}
+
+function setupPreviewModal() {
+    const dialog = document.getElementById("preview-modal");
+    if (!dialog || window.__previewModalInit) return;
+    window.__previewModalInit = true;
+    // Click on the backdrop (outside the image and close button) closes the dialog.
+    dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) dialog.close();
+    });
+    // Drop the src on close so the browser can reclaim large images.
+    dialog.addEventListener("close", () => {
+        const img = document.getElementById("preview-modal-img");
+        if (img) img.removeAttribute("src");
+    });
 }
 
 // Init

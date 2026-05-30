@@ -50,10 +50,13 @@ class PreviewRepository(val app: AppServices) {
 
     suspend fun store(entryId: UUID, source: Path): AppResult<Unit> = either {
         val inputImage = ImmutableImage.loader().fromPath(source)
-        useTempFile { outputImage ->
-            val writer = JpegWriter()
-            inputImage.scaleToHeight(400).output(writer, outputImage)
-            saveScreenshot(entryId, outputImage).bind()
+        val writer = JpegWriter()
+        useTempFile { thumbnailImage ->
+            inputImage.scaleToHeight(400).output(writer, thumbnailImage)
+            useTempFile { previewImage ->
+                inputImage.output(writer, previewImage)
+                saveScreenshot(entryId, thumbnailImage, previewImage).bind()
+            }
         }
     }
 
@@ -64,8 +67,14 @@ class PreviewRepository(val app: AppServices) {
         }
     }
 
-    suspend fun get(entryId: UUID): AppResult<Preview> =
-        getFile(entryId).map { Preview(entryId, it) }
+    suspend fun get(entryId: UUID): AppResult<Preview> = either {
+        val entry = getPreviewEntry(entryId).bind()
+        Preview(
+            entryId = entryId,
+            systemPath = app.files.getStorageFile(entry.fileId).toPath(),
+            previewFilePath = entry.previewFileId?.let { app.files.getStorageFile(it).toPath() },
+        )
+    }
 
     suspend fun getEntryPreviews(entries: List<EntryBase>): List<Preview> =
         entries
@@ -77,15 +86,27 @@ class PreviewRepository(val app: AppServices) {
         app.files.getStorageFile(entry.fileId).toPath()
     }
 
-    private suspend fun saveScreenshot(entryId: UUID, file: Path): AppResult<Unit> = either {
-        val fileDesc = app.files.store(
-            tempFile = file.toFile(),
+    suspend fun getPreviewFile(entryId: UUID): AppResult<Path> = either {
+        val entry = getPreviewEntry(entryId).bind()
+        val fileId = entry.previewFileId ?: entry.fileId
+        app.files.getStorageFile(fileId).toPath()
+    }
+
+    private suspend fun saveScreenshot(entryId: UUID, thumbnailFile: Path, previewFile: Path): AppResult<Unit> = either {
+        val thumbnailDesc = app.files.store(
+            tempFile = thumbnailFile.toFile(),
+            originalFilename = "screenshot-${entryId}-thumbnail.jpg",
+            processed = true
+        ).bind()
+        val previewDesc = app.files.store(
+            tempFile = previewFile.toFile(),
             originalFilename = "screenshot-${entryId}.jpg",
             processed = true
         ).bind()
         savePreviewEntry(
             entryId = entryId,
-            fileId = fileDesc.id,
+            fileId = thumbnailDesc.id,
+            previewFileId = previewDesc.id,
         ).bind()
     }
 
@@ -99,17 +120,20 @@ class PreviewRepository(val app: AppServices) {
             )
         }
 
-    private suspend fun savePreviewEntry(entryId: UUID, fileId: UUID): AppResult<Unit> =
+    private suspend fun savePreviewEntry(entryId: UUID, fileId: UUID, previewFileId: UUID?): AppResult<Unit> =
         app.db.use {
             exec(
                 queryOf(
                     """
-                    INSERT INTO preview (entry_id, file_id)
-                    VALUES (?, ?)
-                    ON CONFLICT(entry_id) DO UPDATE SET file_id = EXCLUDED.file_id
+                    INSERT INTO preview (entry_id, file_id, preview_file_id)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(entry_id) DO UPDATE SET
+                        file_id = EXCLUDED.file_id,
+                        preview_file_id = EXCLUDED.preview_file_id
                     """.trimIndent(),
                     entryId,
-                    fileId
+                    fileId,
+                    previewFileId,
                 )
             )
         }
@@ -129,8 +153,10 @@ class PreviewRepository(val app: AppServices) {
 data class Preview(
     val entryId: UUID,
     val systemPath: Path,
+    val previewFilePath: Path? = null,
 ) {
     fun externalUrl() = "/entries/$entryId/preview.jpg"
+    fun externalPreviewFileUrl() = "/entries/$entryId/preview-file.jpg"
 }
 
 data class NewPreview(
@@ -146,12 +172,14 @@ data class NewPreview(
 data class PreviewEntry(
     val entryId: UUID,
     val fileId: UUID,
+    val previewFileId: UUID?,
 ) {
     companion object {
         val fromRow: (Row) -> PreviewEntry = { row ->
             PreviewEntry(
                 entryId = row.uuid("entry_id"),
                 fileId = row.uuid("file_id"),
+                previewFileId = row.uuidOrNull("preview_file_id"),
             )
         }
     }

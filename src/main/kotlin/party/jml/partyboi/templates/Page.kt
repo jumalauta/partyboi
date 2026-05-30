@@ -95,6 +95,20 @@ data class Page(
                         }
                     }
                 }
+                dialog(classes = "preview-modal") {
+                    id = "preview-modal"
+                    form {
+                        attributes["method"] = "dialog"
+                        button(classes = "close") {
+                            attributes["aria-label"] = "Close"
+                            +"×"
+                        }
+                    }
+                    img {
+                        id = "preview-modal-img"
+                        alt = ""
+                    }
+                }
                 script(src = "/assets/partyboi.js") {}
             }
         }

@@ -82,3 +82,7 @@ Started in `Application.kt`: triggers, vote processing, and work queue.
 ### FFmpeg/Docker integration
 
 FFmpeg runs inside Docker containers for media processing. Files are shared via `DockerFileShare`.
+
+## Naming conventions
+
+Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry preview assets. Future previews will include audio snippets and video clips, so use neutral, capability-oriented names like `thumbnail` (small inline representation) and `previewFile` / `preview_file` (the full asset the user opens). The 400px JPEG in the `preview` table's `file_id` column is conceptually the thumbnail; the new full version goes in `preview_file_id`.

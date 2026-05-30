@@ -124,7 +124,25 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     .bind()
             }.fold(
                 { call.respondPage(it) },
-                { call.respondFile(it.systemPath.toFile()) }
+                {
+                    call.response.headers.append(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
+                    call.respondFile(it.systemPath.toFile())
+                }
+            )
+        }
+
+        get("/entries/{id}/preview-file.jpg") {
+            either {
+                val id = call.parameterUUID("id").bind()
+                app.previews.getPreviewFile(id)
+                    .mapLeft { NotFound("Preview image is missing") }
+                    .bind()
+            }.fold(
+                { call.respondPage(it) },
+                {
+                    call.response.headers.append(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
+                    call.respondFile(it.toFile())
+                }
             )
         }
 
