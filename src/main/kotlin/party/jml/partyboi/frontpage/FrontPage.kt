@@ -10,12 +10,23 @@ import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.schedule
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.markdown
+import party.jml.partyboi.voting.LiveVoteState
 
 object FrontPage {
-    fun render(events: List<Event>, infoScreen: List<SlideRow>) = Page("Home") {
+    fun render(events: List<Event>, infoScreen: List<SlideRow>, liveVote: LiveVoteState?) = Page("Home") {
+        if (liveVote?.open == true) {
+            buttonGroup {
+                a(href = "/vote") {
+                    attributes["role"] = "button"
+                    +"Live vote in ${liveVote.compo.displayName}"
+                }
+            }
+        }
+
         columns(
             {
                 h2 { +"Info" }

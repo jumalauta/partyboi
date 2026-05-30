@@ -17,7 +17,8 @@ fun Application.configureFrontPageRouting(app: AppServices) {
                 val infoScreen = app.screen
                     .getSlideSet(SlideSetRow.DEFAULT).bind()
                     .filter { it.showOnInfoPage }
-                FrontPage.render(events, infoScreen)
+                val liveVote = app.votes.getLiveVoteState()
+                FrontPage.render(events, infoScreen, liveVote)
             }
         }
     }
