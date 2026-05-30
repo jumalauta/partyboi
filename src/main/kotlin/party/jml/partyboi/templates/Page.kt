@@ -48,6 +48,9 @@ data class Page(
                             ul {
                                 li {
                                     button(classes = "mobile-nav-button flat-button") {
+                                        attributes["aria-label"] = "Open navigation"
+                                        attributes["aria-expanded"] = "false"
+                                        attributes["aria-controls"] = "main-nav-drawer"
                                         span {
                                             icon("bars")
                                         }
@@ -66,6 +69,9 @@ data class Page(
                     }
 
                     section(classes = "nav-and-content") {
+                        div(classes = "main-nav-backdrop") {
+                            attributes["hidden"] = "hidden"
+                        }
                         navigation(user, path, subLinks)
                         div(classes = "content") {
                             children()

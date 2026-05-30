@@ -109,14 +109,8 @@ function initInteractions(target) {
         });
     }
 
-    // Mobile menu button
-    target.querySelectorAll(".mobile-nav-button").forEach((button) => {
-        button.onclick = () => {
-            document.body
-                .querySelector(".nav-and-content > aside")
-                .classList.toggle("open");
-        };
-    });
+    // Mobile navigation drawer
+    setupMobileNav(target);
 
     // Update file uploader according to the selected compo
     const compoSelector = target.querySelector('select[name="compoId"]');
@@ -342,6 +336,116 @@ window.addEventListener("focus", async () => {
         await smoothReload()
     }
 });
+
+// Mobile navigation drawer. Idempotent across initInteractions() reruns: local
+// listeners re-bind to whatever nodes initInteractions was called against;
+// document/matchMedia listeners install once and read the current drawer at
+// invocation time so they survive full-body swaps from applyReloadSection.
+function setupMobileNav(target) {
+    const trigger = target.querySelector(".mobile-nav-button");
+    const drawer = target.querySelector(".nav-and-content > aside.main-nav");
+    const backdrop = target.querySelector(".main-nav-backdrop");
+    const closeBtn = target.querySelector(".mobile-nav-close");
+    if (!trigger || !drawer || !backdrop) return;
+
+    const mobileMq = window.matchMedia("(max-width: 1023.99px)");
+    const state = (window.__navDrawer = window.__navDrawer || {});
+
+    function findDrawer() {
+        return document.querySelector(".nav-and-content > aside.main-nav");
+    }
+
+    function findBackdrop() {
+        return document.querySelector(".main-nav-backdrop");
+    }
+
+    function findTrigger() {
+        return document.querySelector(".mobile-nav-button");
+    }
+
+    function setOpen(open) {
+        const d = findDrawer();
+        const b = findBackdrop();
+        const t = findTrigger();
+        if (!d || !b) return;
+        if (open) {
+            state.lastFocused = document.activeElement;
+            b.removeAttribute("hidden");
+            // Force reflow so the opacity transition runs from 0.
+            void b.offsetWidth;
+            d.classList.add("open");
+            b.classList.add("open");
+            if (t) t.setAttribute("aria-expanded", "true");
+            d.removeAttribute("aria-hidden");
+            if (mobileMq.matches) document.body.classList.add("nav-open");
+            const focusTarget = d.querySelector(".mobile-nav-close") || d;
+            focusTarget.focus({preventScroll: true});
+        } else {
+            d.classList.remove("open");
+            b.classList.remove("open");
+            if (t) t.setAttribute("aria-expanded", "false");
+            if (mobileMq.matches) d.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("nav-open");
+            const onEnd = (e) => {
+                if (e.target !== b || e.propertyName !== "opacity") return;
+                b.removeEventListener("transitionend", onEnd);
+                if (!b.classList.contains("open")) b.setAttribute("hidden", "");
+            };
+            b.addEventListener("transitionend", onEnd);
+            if (state.lastFocused && typeof state.lastFocused.focus === "function") {
+                state.lastFocused.focus({preventScroll: true});
+            }
+        }
+    }
+
+    state.setOpen = setOpen;
+
+    // Make the drawer container focusable so focus can move into it.
+    if (!drawer.hasAttribute("tabindex")) drawer.setAttribute("tabindex", "-1");
+
+    // Local listeners: rebind to the freshly found nodes each call.
+    trigger.addEventListener("click", () => setOpen(!findDrawer()?.classList.contains("open")));
+    backdrop.addEventListener("click", () => setOpen(false));
+    if (closeBtn) closeBtn.addEventListener("click", () => setOpen(false));
+    drawer.addEventListener("click", (e) => {
+        const a = e.target.closest("a[href]");
+        if (a && drawer.contains(a)) setOpen(false);
+    });
+
+    // Document-level listeners install once.
+    if (!state.docHandlersInstalled) {
+        document.addEventListener("keydown", (e) => {
+            if (e.key !== "Escape") return;
+            const d = findDrawer();
+            if (d && d.classList.contains("open")) {
+                e.stopPropagation();
+                state.setOpen(false);
+            }
+        });
+        mobileMq.addEventListener("change", (e) => {
+            if (e.matches) return;
+            const d = findDrawer();
+            const b = findBackdrop();
+            const t = findTrigger();
+            if (d) {
+                d.classList.remove("open");
+                d.removeAttribute("aria-hidden");
+            }
+            if (b) {
+                b.classList.remove("open");
+                b.setAttribute("hidden", "");
+            }
+            if (t) t.setAttribute("aria-expanded", "false");
+            document.body.classList.remove("nav-open");
+        });
+        state.docHandlersInstalled = true;
+    }
+
+    // Initial ARIA state for mobile.
+    if (mobileMq.matches && !drawer.classList.contains("open")) {
+        drawer.setAttribute("aria-hidden", "true");
+    }
+}
 
 // Init
 initInteractions(document);

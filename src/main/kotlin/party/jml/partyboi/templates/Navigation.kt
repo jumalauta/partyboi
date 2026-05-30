@@ -1,7 +1,6 @@
 package party.jml.partyboi.templates
 
 import kotlinx.html.*
-import party.jml.partyboi.Config
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.templates.components.icon
 
@@ -90,22 +89,13 @@ fun UL.navigationDropdown(path: String, label: String, items: List<NavItem>) {
 
 fun SECTION.navigation(user: User?, path: String, subLinks: List<NavItem>) {
     aside(classes = "main-nav") {
-        header(classes = "mobile-only") {
-            nav {
-                ul {
-                    li {
-                        strong { a(href = "/") { +Config.get().instanceName } }
-                    }
-                }
-                ul {
-                    li {
-                        button(classes = "mobile-nav-button flat-button") {
-                            span {
-                                icon("xmark")
-                            }
-                        }
-                    }
-                }
+        id = "main-nav-drawer"
+        attributes["aria-label"] = "Site navigation"
+
+        button(classes = "mobile-nav-close mobile-only flat-button") {
+            attributes["aria-label"] = "Close navigation"
+            span {
+                icon("xmark")
             }
         }
 
