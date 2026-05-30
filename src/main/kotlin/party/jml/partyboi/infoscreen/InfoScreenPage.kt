@@ -1,12 +1,12 @@
-package party.jml.partyboi.screen
+package party.jml.partyboi.infoscreen
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.screen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.Slide
 
-object ScreenPage {
+object InfoScreenPage {
     fun renderContent(slide: Slide<*>, app: AppServices) =
         createHTML().article(
             classes = classes(slide)

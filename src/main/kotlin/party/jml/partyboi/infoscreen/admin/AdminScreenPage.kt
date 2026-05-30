@@ -1,12 +1,12 @@
-package party.jml.partyboi.screen.admin
+package party.jml.partyboi.infoscreen.admin
 
 import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.nonEmptyString
 import party.jml.partyboi.form.*
-import party.jml.partyboi.screen.*
-import party.jml.partyboi.screen.slides.Slide
+import party.jml.partyboi.infoscreen.*
+import party.jml.partyboi.infoscreen.slides.Slide
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
@@ -33,7 +33,7 @@ object AdminScreenPage {
 
     fun renderSlideSetForms(
         slideSet: String,
-        screenState: ScreenState,
+        screenState: InfoScreenState,
         isRunning: Boolean,
         slides: List<SlideEditData>,
         slideSets: List<SlideSetRow>,
@@ -406,7 +406,7 @@ data class SlideEditData(
         slide.getName().nonEmptyString() ?: "New slide"
 
     companion object {
-        val fromRow: (ScreenRow) -> SlideEditData = { row ->
+        val fromRow: (SlideRow) -> SlideEditData = { row ->
             SlideEditData(
                 id = row.id,
                 visible = row.visible,

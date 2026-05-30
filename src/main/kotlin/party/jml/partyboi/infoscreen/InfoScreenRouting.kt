@@ -1,4 +1,4 @@
-package party.jml.partyboi.screen
+package party.jml.partyboi.infoscreen
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,14 +13,14 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureScreenRouting(app: AppServices) {
     routing {
         get("/screen") {
-            val page = HtmlString(ScreenPage.render(app.screen.currentSlide(), app))
+            val page = HtmlString(InfoScreenPage.render(app.screen.currentSlide(), app))
             call.respondEither { page }
         }
 
         get("/screen/next") {
             longPolling(app.screen.waitForNext()) { screen ->
                 call.response.headers.append("X-SlideId", screen.id.toString())
-                call.respondText(ScreenPage.renderContent(screen.slide, app), ContentType.Text.Html)
+                call.respondText(InfoScreenPage.renderContent(screen.slide, app), ContentType.Text.Html)
             }
         }
 

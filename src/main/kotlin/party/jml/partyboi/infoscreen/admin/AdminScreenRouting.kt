@@ -1,4 +1,4 @@
-package party.jml.partyboi.screen.admin
+package party.jml.partyboi.infoscreen.admin
 
 import arrow.core.raise.either
 import arrow.core.right
@@ -14,12 +14,12 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.collect
-import party.jml.partyboi.screen.NewSlideSet
-import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.ImageSlide
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.Slide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.NewSlideSet
+import party.jml.partyboi.infoscreen.SlideSetRow
+import party.jml.partyboi.infoscreen.slides.ImageSlide
+import party.jml.partyboi.infoscreen.slides.QrCodeSlide
+import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection

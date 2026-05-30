@@ -23,11 +23,11 @@ import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.PreviewRepository
 import party.jml.partyboi.ffmpeg.DockerFileShare
 import party.jml.partyboi.ffmpeg.FfmpegService
+import party.jml.partyboi.infoscreen.InfoScreenService
 import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.schedule.EventRepositoryImpl
 import party.jml.partyboi.schedule.EventSignalEmitter
-import party.jml.partyboi.screen.ScreenService
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
 import party.jml.partyboi.sync.SyncService
@@ -54,7 +54,7 @@ interface AppServices {
     val voteKeys: VoteKeyRepository
     val compoRun: CompoRunService
     val resultsRun: ResultsRunService
-    val screen: ScreenService
+    val screen: InfoScreenService
     val previews: PreviewRepository
     val events: EventRepository
     val triggers: TriggerRepository
@@ -93,7 +93,7 @@ class AppServicesImpl(
     override val events = EventRepositoryImpl(this)
     override val triggers = TriggerRepository(this)
     override val signals = SignalService(this)
-    override val screen = ScreenService(this)
+    override val screen = InfoScreenService(this)
     override val assets = AssetsRepository(this)
     override val errors = ErrorRepository(this)
     override val email = EmailServiceFacade(this)

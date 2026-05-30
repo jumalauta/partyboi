@@ -8,7 +8,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import party.jml.partyboi.schedule.NewEvent
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import kotlin.test.Test
 
 class InfoPageTest : PartyboiTester {

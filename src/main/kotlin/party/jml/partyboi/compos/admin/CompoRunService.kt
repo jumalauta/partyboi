@@ -11,8 +11,8 @@ import party.jml.partyboi.compos.withCompoSuffix
 import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.Entry
 import party.jml.partyboi.entries.FileDesc
-import party.jml.partyboi.screen.slides.Slide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TempDir
 import party.jml.partyboi.system.createTemporaryFile

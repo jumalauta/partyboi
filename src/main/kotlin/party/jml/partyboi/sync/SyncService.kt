@@ -60,7 +60,7 @@ enum class SyncedTable(
     Messages("message"),
     Properties("property"),
     SlideSets("slideset"),
-    InfoScreens("screen"),
+    InfoScreenSlides("slide"),
     Triggers("trigger"),
     Votes("vote"),
     VoteKeys("votekey")

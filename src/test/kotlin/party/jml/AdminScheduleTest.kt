@@ -11,8 +11,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.schedule.NewEvent
-import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.ScheduleSlide
+import party.jml.partyboi.infoscreen.SlideSetRow
+import party.jml.partyboi.infoscreen.slides.ScheduleSlide
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertNotEquals

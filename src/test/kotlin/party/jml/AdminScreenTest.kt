@@ -8,10 +8,10 @@ import io.ktor.http.*
 import it.skrape.matchers.toBe
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.form.FileUpload
-import party.jml.partyboi.screen.SlideSetRow
-import party.jml.partyboi.screen.slides.ImageSlide
-import party.jml.partyboi.screen.slides.QrCodeSlide
-import party.jml.partyboi.screen.slides.TextSlide
+import party.jml.partyboi.infoscreen.SlideSetRow
+import party.jml.partyboi.infoscreen.slides.ImageSlide
+import party.jml.partyboi.infoscreen.slides.QrCodeSlide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

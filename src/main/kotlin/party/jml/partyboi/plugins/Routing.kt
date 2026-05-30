@@ -15,11 +15,11 @@ import party.jml.partyboi.compos.admin.configureAdminComposRouting
 import party.jml.partyboi.compos.configureComposRouting
 import party.jml.partyboi.entries.configureEntriesRouting
 import party.jml.partyboi.frontpage.configureFrontPageRouting
+import party.jml.partyboi.infoscreen.admin.configureAdminScreenRouting
+import party.jml.partyboi.infoscreen.configureScreenRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.admin.configureAdminScheduleRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
-import party.jml.partyboi.screen.admin.configureAdminScreenRouting
-import party.jml.partyboi.screen.configureScreenRouting
 import party.jml.partyboi.settings.configureSettingsRouting
 import party.jml.partyboi.signals.configureSignalRouting
 import party.jml.partyboi.sync.configureSyncRouting

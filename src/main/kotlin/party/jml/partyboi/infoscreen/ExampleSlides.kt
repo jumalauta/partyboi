@@ -1,17 +1,20 @@
-package party.jml.partyboi.screen
+package party.jml.partyboi.infoscreen
 
 import arrow.core.right
-import kotlinx.datetime.*
-import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.entries.Entry
+import party.jml.partyboi.infoscreen.slides.*
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.EventRepository
-import party.jml.partyboi.screen.slides.*
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 import java.util.*
+import kotlin.time.Instant
 
 data class ExampleSlide(
     val name: String,
@@ -30,13 +33,13 @@ fun getRenderedExampleSlides(app: AppServices): List<RenderedExampleSlide> {
 
     val initialPage = RenderedExampleSlide(
         name = "__INIT__",
-        content = ScreenPage.render(slides.first().slide, mockApp)
+        content = InfoScreenPage.render(slides.first().slide, mockApp)
     )
 
     return listOf(initialPage) + getExampleSlides().map {
         RenderedExampleSlide(
             name = it.name,
-            content = ScreenPage.renderContent(it.slide, mockApp),
+            content = InfoScreenPage.renderContent(it.slide, mockApp),
         )
     }
 }
@@ -123,7 +126,8 @@ fun getExampleSlides() = listOf(
     ExampleSlide(
         "Compo entry",
         TextSlide.compoSlide(
-            0, Entry(
+            0,
+            Entry(
                 id = UUID.randomUUID(),
                 title = "Lorem Ipsum Mega Blast 2000",
                 author = "Jumalauta + Matt Current",
