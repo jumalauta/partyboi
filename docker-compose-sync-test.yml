@@ -19,7 +19,11 @@ services:
       retries: 30
 
   appserver-master:
+    # Tagged with the same name the CI Build job produces so that loading the
+    # partyboi-image artifact tarball lets docker compose skip the build step.
+    image: ilkkahanninen/partyboi:latest
     build: .
+    pull_policy: never
     environment:
       INSTANCE_ID: "master"
       INSTANCE_NAME: "Master"
@@ -47,7 +51,9 @@ services:
       retries: 30
 
   appserver-remote:
+    image: ilkkahanninen/partyboi:latest
     build: .
+    pull_policy: never
     environment:
       INSTANCE_ID: "remote"
       INSTANCE_NAME: "Remote"
