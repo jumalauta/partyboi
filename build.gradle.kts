@@ -101,6 +101,37 @@ sourceSets {
     main {
         resources.srcDir(layout.buildDirectory.dir("generated/resources/build-info"))
     }
+    create("syncHarness") {
+        compileClasspath += sourceSets["main"].output
+        runtimeClasspath += sourceSets["main"].output
+    }
+}
+
+val syncHarnessImplementation: Configuration by configurations.getting {
+    extendsFrom(configurations["implementation"])
+}
+val syncHarnessRuntimeOnly: Configuration by configurations.getting {
+    extendsFrom(configurations["runtimeOnly"])
+}
+
+dependencies {
+    syncHarnessImplementation("io.ktor:ktor-client-core")
+    syncHarnessImplementation("io.ktor:ktor-client-cio")
+    syncHarnessImplementation("io.ktor:ktor-client-content-negotiation-jvm")
+    syncHarnessImplementation("io.ktor:ktor-client-encoding")
+    syncHarnessImplementation("io.ktor:ktor-serialization-kotlinx-json")
+    syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    syncHarnessImplementation("org.jsoup:jsoup:1.22.2")
+    syncHarnessImplementation("io.arrow-kt:arrow-core:$arrow_version")
+    syncHarnessImplementation(kotlin("stdlib-jdk8"))
+}
+
+tasks.register<JavaExec>("syncHarness") {
+    group = "verification"
+    description = "Run the two-instance sync end-to-end harness against a docker-compose stack."
+    mainClass.set("party.jml.partyboi.syncharness.MainKt")
+    classpath = sourceSets["syncHarness"].runtimeClasspath
+    standardInput = System.`in`
 }
 
 tasks.named("shadowJar", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java) {
