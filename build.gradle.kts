@@ -120,7 +120,7 @@ dependencies {
     syncHarnessImplementation("io.ktor:ktor-client-content-negotiation-jvm")
     syncHarnessImplementation("io.ktor:ktor-client-encoding")
     syncHarnessImplementation("io.ktor:ktor-serialization-kotlinx-json")
-    syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     syncHarnessImplementation("org.jsoup:jsoup:1.22.2")
     syncHarnessImplementation("io.arrow-kt:arrow-core:$arrow_version")
     syncHarnessImplementation(kotlin("stdlib-jdk8"))
