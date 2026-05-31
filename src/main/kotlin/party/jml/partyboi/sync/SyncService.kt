@@ -26,8 +26,10 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
+import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.catchResult
+import party.jml.partyboi.system.encodeToStringSafe
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.ValidURI
 import party.jml.partyboi.validation.Validateable
@@ -67,7 +69,11 @@ enum class SyncedTable(
 }
 
 class SyncService(app: AppServices) : Service(app) {
-    val expectedApiKey = property<String?>("apiKey", null)
+    // expectedApiKey is read straight from the property table on every call. Caching it
+    // would race with syncDown, which rewrites the property row through a raw INSERT and
+    // can't invalidate an in-memory cache on the owning instance. BCrypt dominates the cost
+    // of validating a token anyway, so the extra DB round-trip is negligible.
+    private val apiKeyPropertyKey = "SyncService.apiKey"
     val remoteInstance = property<RemoteInstance?>("remoteInstance", null, private = true)
 
     private val db = DbSyncService(app)
@@ -99,14 +105,25 @@ class SyncService(app: AppServices) : Service(app) {
 
     suspend fun generateNewToken(): AppResult<String> = either {
         val token = randomToken()
-        expectedApiKey.set(hashToken(token)).bind()
+        setApiKey(hashToken(token)).bind()
         token
     }
 
     suspend fun isValidToken(token: String): AppResult<Boolean> =
-        expectedApiKey.get().map { hashedToken ->
-            BCrypt.checkpw(token, hashedToken)
+        getApiKey().map { hashedToken ->
+            hashedToken != null && BCrypt.checkpw(token, hashedToken)
         }
+
+    suspend fun getApiKey(): AppResult<String?> =
+        app.properties.get(apiKeyPropertyKey, private = false).map { row ->
+            row?.let { runCatching { Json.decodeFromString<String?>(it.json) }.getOrNull() }
+        }
+
+    private suspend fun setApiKey(hashed: String): AppResult<Unit> = either {
+        val json = Json.encodeToStringSafe<String?>(hashed).bind()
+        app.properties.store(apiKeyPropertyKey, private = false, json).bind()
+        app.signals.emit(Signal.propertyUpdated(apiKeyPropertyKey))
+    }
 
     suspend fun getTable(table: SyncedTable) = db.getTable(table.tableName)
     suspend fun putTable(table: Table) =

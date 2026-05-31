@@ -26,7 +26,7 @@ import party.jml.partyboi.templates.respondPage
 
 fun Application.configureSyncRouting(app: AppServices) {
     suspend fun renderPage(remoteForm: Form<RemoteInstance>? = null) = either {
-        val apiKey = app.sync.expectedApiKey.get().bind()
+        val apiKey = app.sync.getApiKey().bind()
         val remoteInstance = app.sync.remoteInstance.get().bind()
         val syncLog = app.sync.getLog().bind()
 

@@ -17,12 +17,10 @@ class Failure(message: String) : RuntimeException(message)
  * Configures the remote to point at the master, triggers syncDown, polls for completion
  * by scraping the admin /sync log table, then compares table contents + file bytes.
  *
- * Polling can't go through `/sync/missing-files` with bearer auth because the property
- * table is synced and the remote's expectedApiKey is a CachedValue with a 1-hour TTL. A
- * fresh sync writes a new hash to the DB but does not invalidate the cache, so bearer
- * auth either NPEs (pre-sync, cache=null) or rejects valid tokens (cache stale). After
- * the sync completes we POST /sync/new-token on the remote — that path updates the cache
- * and the DB atomically — and use that token for the verification GETs.
+ * Both sides accept the master's token: the seed generates it on master, and as soon as
+ * syncDown writes the property table on the remote, the remote's stored apiKey hash is
+ * master's. The harness still polls via the admin HTML log (not the bearer API) so it
+ * doesn't have to race the property-table sync.
  */
 class Verifier(
     private val master: InstanceClient,
@@ -47,11 +45,8 @@ class Verifier(
         println("[verify] First syncDown")
         runOneSyncCycle(expectedTableEntries)
 
-        // Refresh the remote's bearer-token cache so the verifier can use the sync HTTP API.
-        val remoteToken = remote.generateSyncToken()
-
-        val tableMismatches = compareTables(remoteToken)
-        val fileMismatches = compareFiles(remoteToken)
+        val tableMismatches = compareTables()
+        val fileMismatches = compareFiles()
         val report = VerifyReport(tableMismatches = tableMismatches, fileMismatches = fileMismatches)
         report.summarize()
         if (!report.isPassing) {
@@ -60,11 +55,7 @@ class Verifier(
 
         println("[verify] Second syncDown for idempotency smoke check")
         runOneSyncCycle(expectedTableEntries)
-        // The 2nd sync overwrote the property table; the cached token still works (cache
-        // was set when we generated remoteToken; CachedValue doesn't reload from DB unless
-        // refresh() is called or the TTL expires). That's what we want — we keep using
-        // remoteToken for the post-sync comparison.
-        val idempotentMismatches = compareTables(remoteToken)
+        val idempotentMismatches = compareTables()
         if (idempotentMismatches.isNotEmpty()) {
             throw Failure("Idempotency check failed: tables changed after a second syncDown:\n${idempotentMismatches.joinToString("\n")}")
         }
@@ -136,11 +127,11 @@ class Verifier(
      * the sync's name-collision resolver intentionally mutates user names. For Properties
      * we also only verify presence — sync overwrites the remote's apiKey hash.
      */
-    private suspend fun compareTables(remoteToken: String): List<String> {
+    private suspend fun compareTables(): List<String> {
         val mismatches = mutableListOf<String>()
         for (table in SyncedTable.entries) {
             val m: Table = master.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
-            val r: Table = remote.getJsonWithToken("/sync/table/${table.name.lowercase()}", remoteToken)
+            val r: Table = remote.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
             val remoteById = r.data.mapNotNull { row -> rowKey(row)?.let { it to row } }.toMap()
             for (mRow in m.data) {
                 val key = rowKey(mRow)
@@ -153,10 +144,9 @@ class Verifier(
                     mismatches += "[${table.name}] master row id=$key not present on remote"
                     continue
                 }
-                if (table == SyncedTable.Users || table == SyncedTable.Properties) {
+                if (table == SyncedTable.Users) {
                     // Presence is sufficient: name collisions on Users are intentionally
-                    // resolved by sync, and the verifier's own /sync/new-token call rewrites
-                    // the apiKey property hash post-sync.
+                    // resolved by sync (renaming the imported row).
                     continue
                 }
                 if (mRow != rRow) {
@@ -185,7 +175,7 @@ class Verifier(
         }
     }
 
-    private suspend fun compareFiles(remoteToken: String): List<String> {
+    private suspend fun compareFiles(): List<String> {
         val mismatches = mutableListOf<String>()
         val masterFiles: Table = master.getJsonWithToken("/sync/table/files", masterToken)
         for (row in masterFiles.data) {
@@ -200,7 +190,7 @@ class Verifier(
             }
             val masterBytes = masterResp.bodyAsBytes()
 
-            val remoteResp = remote.get("/sync/file/$id") { bearerAuth(remoteToken) }
+            val remoteResp = remote.get("/sync/file/$id") { bearerAuth(masterToken) }
             if (remoteResp.status != HttpStatusCode.OK) {
                 mismatches += "[file $id] remote returned ${remoteResp.status}"
                 continue
