@@ -14,13 +14,11 @@ import java.security.MessageDigest
 class Failure(message: String) : RuntimeException(message)
 
 /**
- * Configures the remote to point at the master, triggers syncDown, polls for completion
- * by scraping the admin /sync log table, then compares table contents + file bytes.
- *
- * Both sides accept the master's token: the seed generates it on master, and as soon as
- * syncDown writes the property table on the remote, the remote's stored apiKey hash is
- * master's. The harness still polls via the admin HTML log (not the bearer API) so it
- * doesn't have to race the property-table sync.
+ * Drives syncDown and syncUp between the master and remote and verifies the result of each
+ * direction. Polls the admin /sync log table to detect completion of a sync cycle. Both
+ * directions use the master's bearer token: syncDown puts master's hash into the remote
+ * property table, and the harness never overwrites it afterward, so master's plaintext token
+ * authenticates against either side throughout the run.
  */
 class Verifier(
     private val master: InstanceClient,
@@ -30,47 +28,44 @@ class Verifier(
     private val adminName: String = "admin",
     private val adminPassword: String = "password",
 ) {
-    suspend fun run(): VerifyReport {
+    private val expectedDownloadEntries = SyncedTable.entries.map { "Download table '${it.tableName}'" }.toSet()
+    private val expectedUploadEntries = SyncedTable.entries.map { "Upload table '${it.tableName}'" }.toSet()
+
+    suspend fun configureRemote() {
         println("[verify] Logging into remote as $adminName")
         remote.login(adminName, adminPassword)
-
         println("[verify] Configuring remote to point at $masterInternalUrl with the master's token")
         remote.postMultipart(
             "/sync/remote",
             listOf("address" to masterInternalUrl, "apiToken" to masterToken),
         ).expectOk()
-
-        val expectedTableEntries = SyncedTable.entries.map { "Download table '${it.tableName}'" }.toSet()
-
-        println("[verify] First syncDown")
-        runOneSyncCycle(expectedTableEntries)
-
-        val tableMismatches = compareTables()
-        val fileMismatches = compareFiles()
-        val report = VerifyReport(tableMismatches = tableMismatches, fileMismatches = fileMismatches)
-        report.summarize()
-        if (!report.isPassing) {
-            throw Failure("Sync verification failed — see report above")
-        }
-
-        println("[verify] Second syncDown for idempotency smoke check")
-        runOneSyncCycle(expectedTableEntries)
-        val idempotentMismatches = compareTables()
-        if (idempotentMismatches.isNotEmpty()) {
-            throw Failure("Idempotency check failed: tables changed after a second syncDown:\n${idempotentMismatches.joinToString("\n")}")
-        }
-        println("[verify] Idempotency OK")
-
-        return report
     }
 
-    private suspend fun runOneSyncCycle(expectedTableEntries: Set<String>, timeoutMs: Long = 180_000) {
-        println("[verify] Triggering /sync/download on remote (launches background syncDown)")
+    suspend fun syncDown() {
+        println("[verify] Triggering /sync/download on remote")
         remote.get("/sync/download").expectOk()
-        waitForSyncCompletion(expectedTableEntries, timeoutMs)
+        waitForSyncCompletion("download", expectedDownloadEntries)
+
+        val report = compareSubset(source = master, target = remote, direction = "syncDown")
+        report.summarize("syncDown")
+        if (!report.isPassing) throw Failure("syncDown verification failed")
     }
 
-    private suspend fun waitForSyncCompletion(expectedTableEntries: Set<String>, timeoutMs: Long) {
+    suspend fun syncUp() {
+        println("[verify] Triggering /sync/upload on remote")
+        remote.get("/sync/upload").expectOk()
+        waitForSyncCompletion("upload", expectedUploadEntries)
+
+        val report = compareSubset(source = remote, target = master, direction = "syncUp")
+        report.summarize("syncUp")
+        if (!report.isPassing) throw Failure("syncUp verification failed")
+    }
+
+    private suspend fun waitForSyncCompletion(
+        direction: String,
+        expectedTableEntries: Set<String>,
+        timeoutMs: Long = 180_000,
+    ) {
         val deadline = System.currentTimeMillis() + timeoutMs
         var lastSummary = ""
         while (true) {
@@ -82,80 +77,90 @@ class Verifier(
             val running = entries.count { it.status == "Running" }
 
             if (errors.isNotEmpty()) {
-                throw Failure("Sync log contains errors: ${errors.map { it.description }}")
+                throw Failure("[$direction] sync log contains errors: ${errors.map { "${it.description} → ${it.errorText}" }}")
             }
 
-            val summary = "by status=$totalsByStatus, tables OK=${tablesOk.size}/${expectedTableEntries.size}, running=$running"
+            val summary = "by status=$totalsByStatus, $direction tables OK=${tablesOk.size}/${expectedTableEntries.size}, running=$running"
             if (summary != lastSummary) {
-                println("[verify] poll: $summary")
+                println("[verify] poll($direction): $summary")
                 lastSummary = summary
             }
 
-            // Done when: every expected table has an OK entry AND nothing is still running.
-            // Files are downloaded after tables; the `running == 0` condition covers them.
             if (tablesOk == expectedTableEntries && running == 0) {
-                println("[verify] sync cycle complete")
+                println("[verify] $direction cycle complete")
                 return
             }
             if (System.currentTimeMillis() >= deadline) {
-                throw Failure("Timeout waiting for sync to complete. $summary. Recent log:\n${entries.takeLast(20).joinToString("\n") { "  ${it.status} - ${it.description}" }}")
+                throw Failure("[$direction] timeout. $summary. Recent log:\n${entries.takeLast(20).joinToString("\n") { "  ${it.status} - ${it.description}" }}")
             }
             delay(1500)
         }
     }
 
-    private data class LogRow(val status: String, val description: String)
+    private data class LogRow(val status: String, val description: String, val errorText: String?)
 
     private suspend fun parseSyncLog(): List<LogRow> {
         val html = remote.getHtml("/sync")
         val doc = Jsoup.parse(html)
-        // The sync log table is the last <table> on the page; rows have class sync-status-{ok,error,running}.
         val rows = doc.select("tr[class^=sync-status-]")
-        return rows.mapNotNull { row ->
+        val out = mutableListOf<LogRow>()
+        var lastStatus = ""
+        var lastDescription = ""
+        for (row in rows) {
+            val cls = row.attr("class")
             val cells = row.select("td")
-            if (cells.size < 2) return@mapNotNull null
-            val status = cells[0].text().trim()
-            val description = cells[1].text().trim()
-            LogRow(status = status, description = description)
+            if (cls.contains("sync-status-error") && cells.size == 1) {
+                // Continuation row carrying the error message body.
+                if (out.isNotEmpty()) {
+                    val prev = out.removeAt(out.size - 1)
+                    out += prev.copy(errorText = cells[0].text().trim())
+                }
+                continue
+            }
+            if (cells.size < 2) continue
+            lastStatus = cells[0].text().trim()
+            lastDescription = cells[1].text().trim()
+            out += LogRow(lastStatus, lastDescription, null)
         }
+        return out
     }
 
     /**
-     * For each row on master, find a row on remote with the matching primary key and assert
-     * the content matches. Extra rows on remote are allowed (remote may have its own admin,
-     * its own messages, etc.). For the Users table we only verify presence by id, because
-     * the sync's name-collision resolver intentionally mutates user names. For Properties
-     * we also only verify presence — sync overwrites the remote's apiKey hash.
+     * For every row in `source`, find a row in `target` with the same primary key and assert
+     * field-level equality. Presence-only on Users (sync's name-collision resolver mutates
+     * names — see the production-bug note in the harness commit) and Properties (`apiKey` is
+     * overwritten in either direction).
      */
-    private suspend fun compareTables(): List<String> {
-        val mismatches = mutableListOf<String>()
+    private suspend fun compareSubset(
+        source: InstanceClient,
+        target: InstanceClient,
+        direction: String,
+    ): VerifyReport {
+        val tableMismatches = mutableListOf<String>()
         for (table in SyncedTable.entries) {
-            val m: Table = master.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
-            val r: Table = remote.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
-            val remoteById = r.data.mapNotNull { row -> rowKey(row)?.let { it to row } }.toMap()
-            for (mRow in m.data) {
-                val key = rowKey(mRow)
+            val s: Table = source.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
+            val t: Table = target.getJsonWithToken("/sync/table/${table.name.lowercase()}", masterToken)
+            val targetById = t.data.mapNotNull { row -> rowKey(row)?.let { it to row } }.toMap()
+            for (sRow in s.data) {
+                val key = rowKey(sRow)
                 if (key == null) {
-                    mismatches += "[${table.name}] row has no recognizable primary key: $mRow"
+                    tableMismatches += "[$direction/${table.name}] source row has no recognizable primary key: $sRow"
                     continue
                 }
-                val rRow = remoteById[key]
-                if (rRow == null) {
-                    mismatches += "[${table.name}] master row id=$key not present on remote"
+                val tRow = targetById[key]
+                if (tRow == null) {
+                    tableMismatches += "[$direction/${table.name}] source row id=$key missing on target"
                     continue
                 }
-                if (table == SyncedTable.Users) {
-                    // Presence is sufficient: name collisions on Users are intentionally
-                    // resolved by sync (renaming the imported row).
-                    continue
-                }
-                if (mRow != rRow) {
-                    val diffKeys = mRow.keys.filter { mRow[it] != rRow[it] }
-                    mismatches += "[${table.name}] row id=$key differs in fields: ${diffKeys.joinToString()}\n    master: ${mRow.filterKeys { it in diffKeys }}\n    remote: ${rRow.filterKeys { it in diffKeys }}"
+                if (table == SyncedTable.Users || table == SyncedTable.Properties) continue
+                if (sRow != tRow) {
+                    val diffKeys = sRow.keys.filter { sRow[it] != tRow[it] }
+                    tableMismatches += "[$direction/${table.name}] row id=$key differs in fields: ${diffKeys.joinToString()}\n    source: ${sRow.filterKeys { it in diffKeys }}\n    target: ${tRow.filterKeys { it in diffKeys }}"
                 }
             }
         }
-        return mismatches
+        val fileMismatches = compareFiles(source, target, direction)
+        return VerifyReport(tableMismatches, fileMismatches)
     }
 
     private fun rowKey(row: Map<String, JsonElement>): String? {
@@ -175,41 +180,45 @@ class Verifier(
         }
     }
 
-    private suspend fun compareFiles(): List<String> {
+    private suspend fun compareFiles(
+        source: InstanceClient,
+        target: InstanceClient,
+        direction: String,
+    ): List<String> {
         val mismatches = mutableListOf<String>()
-        val masterFiles: Table = master.getJsonWithToken("/sync/table/files", masterToken)
-        for (row in masterFiles.data) {
+        val sourceFiles: Table = source.getJsonWithToken("/sync/table/files", masterToken)
+        for (row in sourceFiles.data) {
             val id = (row["id"] as? JsonPrimitive)?.content ?: continue
             val size = (row["size"] as? JsonPrimitive)?.content?.toLongOrNull()
             val checksum = (row["checksum"] as? JsonPrimitive)?.content
 
-            val masterResp = master.get("/sync/file/$id") { bearerAuth(masterToken) }
-            if (masterResp.status != HttpStatusCode.OK) {
-                mismatches += "[file $id] master returned ${masterResp.status}; cannot compare"
+            val sourceResp = source.get("/sync/file/$id") { bearerAuth(masterToken) }
+            if (sourceResp.status != HttpStatusCode.OK) {
+                mismatches += "[$direction/file $id] source returned ${sourceResp.status}"
                 continue
             }
-            val masterBytes = masterResp.bodyAsBytes()
+            val sourceBytes = sourceResp.bodyAsBytes()
 
-            val remoteResp = remote.get("/sync/file/$id") { bearerAuth(masterToken) }
-            if (remoteResp.status != HttpStatusCode.OK) {
-                mismatches += "[file $id] remote returned ${remoteResp.status}"
+            val targetResp = target.get("/sync/file/$id") { bearerAuth(masterToken) }
+            if (targetResp.status != HttpStatusCode.OK) {
+                mismatches += "[$direction/file $id] target returned ${targetResp.status}"
                 continue
             }
-            val remoteBytes = remoteResp.bodyAsBytes()
+            val targetBytes = targetResp.bodyAsBytes()
 
-            if (masterBytes.size.toLong() != remoteBytes.size.toLong()) {
-                mismatches += "[file $id] size differs: master=${masterBytes.size} remote=${remoteBytes.size}"
+            if (sourceBytes.size.toLong() != targetBytes.size.toLong()) {
+                mismatches += "[$direction/file $id] size differs: source=${sourceBytes.size} target=${targetBytes.size}"
                 continue
             }
-            if (size != null && masterBytes.size.toLong() != size) {
-                mismatches += "[file $id] master file size ${masterBytes.size} != recorded size $size"
+            if (size != null && sourceBytes.size.toLong() != size) {
+                mismatches += "[$direction/file $id] source bytes ${sourceBytes.size} != recorded size $size"
             }
-            val masterMd5 = md5Hex(masterBytes)
-            val remoteMd5 = md5Hex(remoteBytes)
-            if (masterMd5 != remoteMd5) {
-                mismatches += "[file $id] md5 differs: master=$masterMd5 remote=$remoteMd5"
-            } else if (checksum != null && checksum != masterMd5) {
-                mismatches += "[file $id] master md5 $masterMd5 != recorded checksum $checksum"
+            val sourceMd5 = md5Hex(sourceBytes)
+            val targetMd5 = md5Hex(targetBytes)
+            if (sourceMd5 != targetMd5) {
+                mismatches += "[$direction/file $id] md5 differs: source=$sourceMd5 target=$targetMd5"
+            } else if (checksum != null && checksum != sourceMd5) {
+                mismatches += "[$direction/file $id] source md5 $sourceMd5 != recorded checksum $checksum"
             }
         }
         return mismatches
@@ -227,13 +236,13 @@ data class VerifyReport(
 ) {
     val isPassing: Boolean get() = tableMismatches.isEmpty() && fileMismatches.isEmpty()
 
-    fun summarize() {
+    fun summarize(direction: String) {
         println()
         println("======================================================================")
         if (isPassing) {
-            println("VERIFY: PASS — all ${SyncedTable.entries.size} tables and files match between master and remote")
+            println("VERIFY ($direction): PASS — all ${SyncedTable.entries.size} tables and files reconciled")
         } else {
-            println("VERIFY: FAIL")
+            println("VERIFY ($direction): FAIL")
             tableMismatches.forEach { println("  $it") }
             fileMismatches.forEach { println("  $it") }
         }

@@ -1,173 +1,275 @@
 package party.jml.partyboi.syncharness
 
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import party.jml.partyboi.sync.SyncedTable
 import party.jml.partyboi.sync.Table
 
-data class SeedResult(
-    val syncToken: String,
-    val compoId: String,
-    val entryId: String,
-    val johnUserId: String,
-)
-
 /**
- * Drives the master instance via existing HTTP routes to create a non-trivial mock dataset:
- * an admin, a user "john", a "Demo" compo with submitting + voting open, an entry with a
- * binary file and a preview image, a schedule event, a slide, vote keys, and a cast vote.
- *
- * Returns a SeedResult with the freshly generated sync token + a handful of UUIDs so the
- * verifier can spot-check specific records without having to rediscover them.
+ * Two-phase scenario seeder. preParty seeds the master with a pre-party cohort: an admin,
+ * five users registering through the public portal, several entries spread across two compos.
+ * partyDay then runs against the remote after a syncDown: three new users register at the
+ * party, submit their entries, then all eight users register a vote key and cast votes.
  */
 class Seeder(
-    private val master: InstanceClient,
     private val adminName: String = "admin",
     private val adminPassword: String = "password",
-    private val johnName: String = "john",
-    private val johnPassword: String = "johnpassword",
 ) {
-    suspend fun seed(): SeedResult {
-        println("[seed] Logging in as $adminName")
+
+    data class UserInfo(val id: String, val name: String, val password: String)
+    data class EntryInfo(val id: String, val title: String, val compoId: String)
+
+    data class PrePartyResult(
+        val syncToken: String,
+        val demoCompoId: String,
+        val musicCompoId: String,
+        val preUsers: List<UserInfo>,
+        val preEntries: List<EntryInfo>,
+    )
+
+    data class PartyDayResult(
+        val partyUsers: List<UserInfo>,
+        val partyEntries: List<EntryInfo>,
+        val votesCast: Int,
+    )
+
+    suspend fun preParty(master: InstanceClient): PrePartyResult {
+        println("[seed/preParty] Logging in as $adminName on master")
         master.login(adminName, adminPassword)
 
-        println("[seed] Generating sync token on master")
+        println("[seed/preParty] Generating master sync token")
         val syncToken = master.generateSyncToken()
 
-        println("[seed] Creating Demo compo")
-        master.postMultipart(
-            "/admin/compos",
-            listOf("name" to "Demo", "rules" to "Make a demo about it"),
-        ).expectOk()
+        println("[seed/preParty] Creating compos")
+        master.postMultipart("/admin/compos", listOf("name" to "Demo", "rules" to "Make a demo")).expectOk()
+        master.postMultipart("/admin/compos", listOf("name" to "Music", "rules" to "Make a song")).expectOk()
 
-        println("[seed] Creating Music compo")
-        master.postMultipart(
-            "/admin/compos",
-            listOf("name" to "Music", "rules" to "Make a song about it"),
-        ).expectOk()
+        val compos = readTable(master, syncToken, SyncedTable.Compos)
+        val demoCompoId = compoIdByName(compos, "Demo")
+        val musicCompoId = compoIdByName(compos, "Music")
+        println("[seed/preParty] Demo=$demoCompoId Music=$musicCompoId")
 
-        val compos = readTable(syncToken, SyncedTable.Compos)
-        val demoCompo = compos.data.firstOrNull { (it["name"] as? JsonPrimitive)?.content == "Demo" }
-            ?: error("[seed] Demo compo not found after creation")
-        val demoCompoId = (demoCompo["id"] as JsonPrimitive).content
-        println("[seed] Demo compo id = $demoCompoId")
-
-        println("[seed] Opening submissions on Demo compo")
+        println("[seed/preParty] Opening submissions on both compos")
         master.put("/admin/compos/$demoCompoId/setSubmit/true").expectOk()
+        master.put("/admin/compos/$musicCompoId/setSubmit/true").expectOk()
 
-        println("[seed] Registering user '$johnName'")
-        // Re-login as admin afterward; /register sets john's session on this client.
-        val johnClient = InstanceClient("master-as-john", master.baseUrl)
-        johnClient.use { jc ->
-            jc.register(johnName, johnPassword, email = "")
-
-            // Just in case the /register flow needs an explicit login (it shouldn't — the route sets the session).
-            // We verify by hitting / which redirects to / if logged in.
-            val johnFile = randomBytes(1024)
-            println("[seed] Submitting entry as john")
-            jc.postMultipartWithFile(
-                path = "/entries",
-                fields = listOf(
-                    "compoId" to demoCompoId,
-                    "title" to "My Glorious Demo",
-                    "author" to "John Doe / Jumalauta",
-                    "screenComment" to "Greez to world healerz!",
-                    "orgComment" to "I love you!",
-                ),
-                fileField = "file",
-                fileName = "demo.xxx",
-                fileBytes = johnFile,
-            ).expectOk()
-        }
-
-        val entries = readTable(syncToken, SyncedTable.Entries)
-        val entry = entries.data.firstOrNull { (it["title"] as? JsonPrimitive)?.content == "My Glorious Demo" }
-            ?: error("[seed] Demo entry not found after creation")
-        val entryId = (entry["id"] as JsonPrimitive).content
-        val johnUserId = (entry["user_id"] as JsonPrimitive).content
-        println("[seed] Demo entry id = $entryId, john user id = $johnUserId")
-
-        println("[seed] Uploading preview image for entry $entryId (as admin)")
-        val previewBytes = this::class.java.getResourceAsStream("/preview.png")?.readBytes()
-            ?: error("[seed] /preview.png resource not found on syncHarness classpath")
-        master.postMultipartWithFile(
-            path = "/entries/$entryId/preview",
-            fields = emptyList(),
-            fileField = "file",
-            fileName = "preview.png",
-            fileBytes = previewBytes,
-            fileContentType = "image/png",
-        ).expectOk()
-
-        println("[seed] Creating schedule event")
-        val startIso = "2030-01-01T12:00:00Z"
-        val endIso = "2030-01-01T13:00:00Z"
-        master.postMultipart(
-            "/admin/schedule/events",
-            listOf(
-                "name" to "Deadline for demo compo",
-                "startTime" to startIso,
-                "endTime" to endIso,
-                "visible" to "true",
-            ),
-        ).expectOk()
-
-        println("[seed] Adding TextSlide to default slide set")
+        println("[seed/preParty] Adding welcome slide and pre-printing 20 vote keys")
         master.postMultipart(
             "/admin/screen/default/new/textslide",
-            listOf("title" to "Hello, world!", "content" to "Welcome to the party!"),
+            listOf("title" to "Welcome to the party", "content" to "Have fun!"),
         ).expectOk()
+        master.postMultipart("/admin/voting/generate", listOf("numberOfKeys" to "20")).expectOk()
 
-        println("[seed] Generating 10 vote keys")
-        master.postMultipart(
-            "/admin/voting/generate",
-            listOf("numberOfKeys" to "10"),
-        ).expectOk()
+        // Five users register through the public portal, total seven entries across both compos.
+        val preCohort = listOf(
+            UploadPlan("alice", "alicepass1", listOf("Glorious Demo" to demoCompoId)),
+            UploadPlan("bob", "bobpass11", listOf("Late Night Beats" to musicCompoId)),
+            UploadPlan(
+                "carol",
+                "carolpass1",
+                listOf("Pixel Adventure" to demoCompoId, "Chiptune Anthem" to musicCompoId),
+            ),
+            UploadPlan("dave", "davepass1", listOf("Drumloop King" to musicCompoId)),
+            UploadPlan("eve", "evepass111", listOf("Polygon Dreams" to demoCompoId)),
+        )
 
-        println("[seed] Opening voting on Demo compo")
-        master.put("/admin/compos/$demoCompoId/setSubmit/false").expectOk()
-        master.put("/admin/compos/$demoCompoId/setVoting/true").expectOk()
-
-        // Read votekey table via sync API, pick a key, register it for john, cast a vote.
-        // The key column stores "ticket:<8char>"; the /vote/register form accepts only the suffix.
-        val voteKeys = readTable(syncToken, SyncedTable.VoteKeys)
-        val freeKey = voteKeys.data.firstOrNull { (it["user_id"] as? JsonPrimitive)?.content == null }
-            ?: voteKeys.data.firstOrNull()
-            ?: error("[seed] no vote keys were generated")
-        val rawKey = (freeKey["key"] as JsonPrimitive).content
-        val freeKeyCode = rawKey.substringAfter("ticket:")
-        println("[seed] Registering vote key $rawKey (code: $freeKeyCode) for john and casting a 3-point vote on the demo entry")
-
-        val johnClient2 = InstanceClient("master-as-john-2", master.baseUrl)
-        johnClient2.use { jc ->
-            jc.login(johnName, johnPassword)
-            jc.postMultipart("/vote/register", listOf("code" to freeKeyCode)).expectOk()
-            jc.put("/vote/$entryId/3").expectOk()
+        val preUsers = mutableListOf<UserInfo>()
+        for (plan in preCohort) {
+            preUsers += registerAndSubmit(master, syncToken, plan)
         }
 
-        printRowCounts(syncToken)
+        val entries = readTable(master, syncToken, SyncedTable.Entries)
+        val preEntries = preCohort.flatMap { plan ->
+            plan.entries.map { (title, compoId) ->
+                EntryInfo(entryIdByTitle(entries, title), title, compoId)
+            }
+        }
+        println("[seed/preParty] ${preUsers.size} users, ${preEntries.size} entries seeded on master")
 
-        return SeedResult(
+        println("[seed/preParty] Closing submissions on both compos (party is starting)")
+        master.put("/admin/compos/$demoCompoId/setSubmit/false").expectOk()
+        master.put("/admin/compos/$musicCompoId/setSubmit/false").expectOk()
+
+        printRowCounts(master, syncToken, "master after pre-party seeding")
+
+        return PrePartyResult(
             syncToken = syncToken,
-            compoId = demoCompoId,
-            entryId = entryId,
-            johnUserId = johnUserId,
+            demoCompoId = demoCompoId,
+            musicCompoId = musicCompoId,
+            preUsers = preUsers,
+            preEntries = preEntries,
         )
     }
 
-    private suspend fun readTable(token: String, table: SyncedTable): Table =
-        master.getJsonWithToken("/sync/table/${table.name.lowercase()}", token)
+    suspend fun partyDay(remote: InstanceClient, pre: PrePartyResult): PartyDayResult {
+        println("[seed/partyDay] Logging in as $adminName on remote (local admin, not master's)")
+        remote.login(adminName, adminPassword)
 
-    private suspend fun printRowCounts(token: String) {
-        println("[seed] Row counts on master:")
+        println("[seed/partyDay] Reopening Demo submissions on the remote only (the party hall is staffed)")
+        remote.put("/admin/compos/${pre.demoCompoId}/setSubmit/true").expectOk()
+
+        val partyCohort = listOf(
+            UploadPlan("frank", "frankpass1", listOf("Last Minute Demo" to pre.demoCompoId)),
+            UploadPlan("grace", "gracepass1", listOf("Onsite Jam" to pre.musicCompoId)),
+            UploadPlan("heidi", "heidipass1", listOf("Hall Floor Hack" to pre.demoCompoId)),
+        )
+        // grace's Music entry needs submitting open on Music too.
+        remote.put("/admin/compos/${pre.musicCompoId}/setSubmit/true").expectOk()
+
+        val partyUsers = mutableListOf<UserInfo>()
+        for (plan in partyCohort) {
+            partyUsers += registerAndSubmit(remote, pre.syncToken, plan)
+        }
+
+        println("[seed/partyDay] Closing submissions, opening voting")
+        remote.put("/admin/compos/${pre.demoCompoId}/setSubmit/false").expectOk()
+        remote.put("/admin/compos/${pre.musicCompoId}/setSubmit/false").expectOk()
+        remote.put("/admin/compos/${pre.demoCompoId}/setVoting/true").expectOk()
+        remote.put("/admin/compos/${pre.musicCompoId}/setVoting/true").expectOk()
+
+        val partyEntries = partyCohort.flatMap { plan ->
+            // Re-read the remote's entries table to pick up the freshly-submitted rows.
+            val entries = readTable(remote, pre.syncToken, SyncedTable.Entries)
+            plan.entries.map { (title, compoId) ->
+                EntryInfo(entryIdByTitle(entries, title), title, compoId)
+            }
+        }
+
+        // Find unregistered vote keys on the remote (they synced down from master with user_id=null).
+        // JsonNull is a JsonPrimitive whose `content` is the literal string "null", not Kotlin null
+        // — so check the element type directly instead of going via .content.
+        val voteKeys = readTable(remote, pre.syncToken, SyncedTable.VoteKeys)
+        val freeKeyCodes = voteKeys.data
+            .filter { row -> row["user_id"].let { it == null || it is JsonNull } }
+            .mapNotNull { (it["key"] as? JsonPrimitive)?.content?.substringAfter("ticket:") }
+
+        val allEntries = pre.preEntries + partyEntries
+        val voters = pre.preUsers + partyUsers
+        require(freeKeyCodes.size >= voters.size) {
+            "Not enough vote keys: have ${freeKeyCodes.size}, need ${voters.size}"
+        }
+
+        // Each voter picks a ballot covering ~half the entries with varied points.
+        var votesCast = 0
+        for ((idx, voter) in voters.withIndex()) {
+            val keyCode = freeKeyCodes[idx]
+            val ballot = pickBallot(idx, allEntries)
+            votesCast += castVotesAs(remote, voter, keyCode, ballot)
+        }
+
+        println("[seed/partyDay] Closing voting")
+        remote.put("/admin/compos/${pre.demoCompoId}/setVoting/false").expectOk()
+        remote.put("/admin/compos/${pre.musicCompoId}/setVoting/false").expectOk()
+
+        printRowCounts(remote, pre.syncToken, "remote after party-day activity")
+
+        return PartyDayResult(
+            partyUsers = partyUsers,
+            partyEntries = partyEntries,
+            votesCast = votesCast,
+        )
+    }
+
+    private data class UploadPlan(
+        val name: String,
+        val password: String,
+        val entries: List<Pair<String, String>>, // (title, compoId)
+    )
+
+    private suspend fun registerAndSubmit(instance: InstanceClient, syncToken: String, plan: UploadPlan): UserInfo {
+        require(plan.password.length >= 8) { "Password for ${plan.name} must be at least 8 chars" }
+        InstanceClient("${instance.label}-as-${plan.name}", instance.baseUrl).use { uc ->
+            uc.register(plan.name, plan.password, email = "")
+            // Confirm registration before attempting to submit entries — /register on
+            // validation failure renders an HTML error page with status 200, which expectOk()
+            // would happily accept.
+            run {
+                val users: Table = instance.getJsonWithToken("/sync/table/users", syncToken)
+                if (users.data.none { (it["name"] as? JsonPrimitive)?.content == plan.name }) {
+                    error("Registration failed for ${plan.name} — user not present after POST /register (check password rules / captcha)")
+                }
+            }
+            for ((idx, titled) in plan.entries.withIndex()) {
+                val (title, compoId) = titled
+                val author = plan.name.replaceFirstChar { it.titlecase() } + " / Group${plan.name.hashCode().and(0xFF)}"
+                val fileBytes = randomBytes(1024 + plan.name.hashCode().and(0x3FF), seed = (plan.name.hashCode().toLong() shl 8) or idx.toLong())
+                uc.postMultipartWithFile(
+                    path = "/entries",
+                    fields = listOf(
+                        "compoId" to compoId,
+                        "title" to title,
+                        "author" to author,
+                        "screenComment" to "Greetings from ${plan.name}",
+                        "orgComment" to "Please run on hardware if possible",
+                    ),
+                    fileField = "file",
+                    fileName = "${plan.name}-${title.replace(' ', '_').lowercase()}.bin",
+                    fileBytes = fileBytes,
+                ).expectOk()
+            }
+        }
+        val users: Table = instance.getJsonWithToken("/sync/table/users", syncToken)
+        val userRow = users.data.firstOrNull { (it["name"] as? JsonPrimitive)?.content == plan.name }
+            ?: error("User ${plan.name} not found after register")
+        val id = (userRow["id"] as JsonPrimitive).content
+        println("[seed] Registered ${plan.name} (id=$id) with ${plan.entries.size} entries")
+        return UserInfo(id, plan.name, plan.password)
+    }
+
+    private suspend fun castVotesAs(
+        instance: InstanceClient,
+        voter: UserInfo,
+        voteKeyCode: String,
+        ballot: List<Pair<String, Int>>,
+    ): Int {
+        InstanceClient("${instance.label}-as-${voter.name}", instance.baseUrl).use { uc ->
+            uc.login(voter.name, voter.password)
+            uc.postMultipart("/vote/register", listOf("code" to voteKeyCode)).expectOk()
+            for ((entryId, points) in ballot) {
+                uc.put("/vote/$entryId/$points").expectOk()
+            }
+        }
+        return ballot.size
+    }
+
+    /**
+     * Pick a deterministic but varied ballot per voter: every voter casts points on a rotating
+     * window of entries with point values that vary by voter index. Self-votes are allowed
+     * (partyboi permits them today; if that ever changes the harness will fail loudly here).
+     */
+    private fun pickBallot(voterIdx: Int, entries: List<EntryInfo>): List<Pair<String, Int>> {
+        val ballotSize = (entries.size / 2).coerceAtLeast(3)
+        return (0 until ballotSize).map { i ->
+            val entry = entries[(voterIdx + i) % entries.size]
+            val points = ((voterIdx + i) % 5) + 1
+            entry.id to points
+        }
+    }
+
+    private suspend fun readTable(instance: InstanceClient, token: String, table: SyncedTable): Table =
+        instance.getJsonWithToken("/sync/table/${table.name.lowercase()}", token)
+
+    private fun compoIdByName(compos: Table, name: String): String =
+        compos.data.firstOrNull { (it["name"] as? JsonPrimitive)?.content == name }
+            ?.let { (it["id"] as JsonPrimitive).content }
+            ?: error("Compo '$name' not found in compo table")
+
+    private fun entryIdByTitle(entries: Table, title: String): String =
+        entries.data.firstOrNull { (it["title"] as? JsonPrimitive)?.content == title }
+            ?.let { (it["id"] as JsonPrimitive).content }
+            ?: error("Entry '$title' not found in entry table")
+
+    private suspend fun printRowCounts(instance: InstanceClient, token: String, label: String) {
+        println("[seed] Row counts ($label):")
         for (table in SyncedTable.entries) {
-            val t = readTable(token, table)
+            val t: Table = instance.getJsonWithToken("/sync/table/${table.name.lowercase()}", token)
             println("  ${table.name.padEnd(20)} -> ${t.data.size}")
         }
     }
 
-    private fun randomBytes(size: Int): ByteArray {
+    private fun randomBytes(size: Int, seed: Long): ByteArray {
         val out = ByteArray(size)
-        java.util.Random(0xC0FFEE).nextBytes(out)
+        java.util.Random(seed).nextBytes(out)
         return out
     }
 }

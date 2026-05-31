@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
     val stack = DockerStack()
 
     println("======================================================================")
-    println("Partyboi two-instance sync harness")
+    println("Partyboi sync harness — full party-day scenario")
     println("  master: $MASTER_URL  (in-network: $MASTER_INTERNAL_URL)")
     println("  remote: $REMOTE_URL")
     println("======================================================================")
@@ -38,15 +38,28 @@ fun main(args: Array<String>) {
 
             InstanceClient("master", MASTER_URL).use { master ->
                 InstanceClient("remote", REMOTE_URL).use { remote ->
-                    val seed = Seeder(master).seed()
+                    val seeder = Seeder()
+
+                    println("\n========== Phase A: pre-party seeding on master ==========")
+                    val pre = seeder.preParty(master)
 
                     val verifier = Verifier(
                         master = master,
                         remote = remote,
                         masterInternalUrl = MASTER_INTERNAL_URL,
-                        masterToken = seed.syncToken,
+                        masterToken = pre.syncToken,
                     )
-                    verifier.run()
+
+                    println("\n========== Phase B: syncDown master → remote ==========")
+                    verifier.configureRemote()
+                    verifier.syncDown()
+
+                    println("\n========== Phase C: party-day activity on remote ==========")
+                    val party = seeder.partyDay(remote, pre)
+                    println("[main] Party-day added ${party.partyUsers.size} users, ${party.partyEntries.size} entries, ${party.votesCast} votes")
+
+                    println("\n========== Phase D: syncUp remote → master ==========")
+                    verifier.syncUp()
                 }
             }
         }
