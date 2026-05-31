@@ -31,16 +31,21 @@ object Navigation {
         },
     )
 
-    val adminItems = listOf(
-        NavItem("/admin/settings", "Settings"),
-        NavItem("/admin/voting", "Vote keys"),
-        NavItem("/admin/users", "Users"),
-        NavItem("/admin/compos", "Compos"),
-        NavItem("/admin/schedule", "Schedule"),
-        NavItem("/admin/screen", "Info screen"),
-        NavItem("/admin/assets", "Assets"),
-        NavItem("/sync", "Synchronization"),
-        NavItem("/admin/errors", "Error log")
+    val adminGroups: List<Pair<String, List<NavItem>>> = listOf(
+        "Admin" to listOf(
+            NavItem("/admin/settings", "Settings"),
+            NavItem("/admin/voting", "Vote keys"),
+            NavItem("/admin/users", "Users"),
+            NavItem("/admin/compos", "Compos"),
+            NavItem("/admin/schedule", "Schedule"),
+            NavItem("/admin/screen", "Info screen"),
+            NavItem("/admin/assets", "Assets"),
+            NavItem("/sync", "Synchronization"),
+        ),
+        "Debug" to listOf(
+            NavItem("/admin/tasks", "Tasks"),
+            NavItem("/admin/errors", "Error log"),
+        ),
     )
 
     val accountItems = listOf(
@@ -111,10 +116,12 @@ fun SECTION.navigation(user: User?, path: String, subLinks: List<NavItem>) {
                 }
             }
             if (user?.isAdmin == true) {
-                details {
-                    attributes["open"] = ""
-                    summary { +"Admin" }
-                    ul { renderItems(path, Navigation.adminItems, subLinks) }
+                Navigation.adminGroups.forEach { (label, items) ->
+                    details {
+                        attributes["open"] = ""
+                        summary { +label }
+                        ul { renderItems(path, items, subLinks) }
+                    }
                 }
             }
         }

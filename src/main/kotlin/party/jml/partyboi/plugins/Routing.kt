@@ -30,6 +30,7 @@ import party.jml.partyboi.templates.respondPage
 import party.jml.partyboi.users.configureUserMgmtRouting
 import party.jml.partyboi.voting.admin.configureAdminVotingRouting
 import party.jml.partyboi.voting.configureVotingRouting
+import party.jml.partyboi.workqueue.admin.configureAdminTasksRouting
 
 @Serializable
 data class ErrorContext(
@@ -80,5 +81,6 @@ fun Application.configureDefaultRouting(app: AppServices) {
     configureUserMgmtRouting(app)
     configureAdminVotingRouting(app)
     configureAdminErrorLogRouting(app)
+    configureAdminTasksRouting(app)
     configureSyncRouting(app)
 }

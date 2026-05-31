@@ -2,6 +2,7 @@ package party.jml.partyboi.workqueue
 
 import arrow.core.Either
 import arrow.core.flatten
+import arrow.core.raise.either
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 import kotlinx.serialization.json.Json
@@ -9,6 +10,7 @@ import kotliquery.Row
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.db.exec
+import party.jml.partyboi.db.many
 import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.db.updateOne
@@ -53,6 +55,19 @@ class WorkQueueRepository(val app: AppServices) {
 
     suspend fun setState(id: UUID, state: TaskState) = db.use {
         updateOne(queryOf("UPDATE task SET state = ? WHERE id = ?", state, id))
+    }
+
+    suspend fun list(limit: Int = 200): AppResult<List<TaskRow>> = db.use {
+        either {
+            many(
+                queryOf("SELECT * FROM task ORDER BY created_at DESC LIMIT ?", limit)
+                    .map(TaskRow.fromRow)
+            ).bind().map { it.bind() }
+        }
+    }
+
+    suspend fun getById(id: UUID): AppResult<TaskRow> = db.use {
+        one(queryOf("SELECT * FROM task WHERE id = ?", id).map(TaskRow.fromRow)).flatten()
     }
 }
 
