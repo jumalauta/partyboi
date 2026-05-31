@@ -35,7 +35,7 @@ class WorkQueueRepository(val app: AppServices) {
             queryOf(
                 """
             UPDATE task
-            SET state = 'Working'
+            SET state = 'Working', started_at = now()
             WHERE id IN (
             	SELECT id
             	FROM task
@@ -50,11 +50,16 @@ class WorkQueueRepository(val app: AppServices) {
     }
 
     suspend fun cancel(): AppResult<Unit> = db.use {
-        exec(queryOf("UPDATE task SET state = 'Discarded' WHERE state = 'Working'"))
+        exec(queryOf("UPDATE task SET state = 'Discarded', finished_at = now() WHERE state = 'Working'"))
     }
 
     suspend fun setState(id: UUID, state: TaskState) = db.use {
-        updateOne(queryOf("UPDATE task SET state = ? WHERE id = ?", state, id))
+        val sql = if (state.isTerminal) {
+            "UPDATE task SET state = ?, finished_at = now() WHERE id = ?"
+        } else {
+            "UPDATE task SET state = ? WHERE id = ?"
+        }
+        updateOne(queryOf(sql, state, id))
     }
 
     suspend fun list(limit: Int = 200): AppResult<List<TaskRow>> = db.use {
@@ -75,6 +80,7 @@ data class TaskRow(
     val id: UUID,
     val task: Task,
     val createdAt: Instant,
+    val startedAt: Instant?,
     val finishedAt: Instant?,
     val state: TaskState
 ) {
@@ -85,6 +91,7 @@ data class TaskRow(
                     id = row.uuid("id"),
                     task = Json.decodeFromString(row.string("task")),
                     createdAt = row.instant("created_at").toKotlinInstant(),
+                    startedAt = row.instantOrNull("started_at")?.toKotlinInstant(),
                     finishedAt = row.instantOrNull("finished_at")?.toKotlinInstant(),
                     state = TaskState.valueOf(row.string("state")),
                 )
@@ -98,5 +105,8 @@ enum class TaskState {
     Working,
     Success,
     Failed,
-    Discarded
+    Discarded;
+
+    val isTerminal: Boolean
+        get() = this == Success || this == Failed || this == Discarded
 }
