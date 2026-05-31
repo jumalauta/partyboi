@@ -1,0 +1,31 @@
+name: "Sync harness — two-instance integration test"
+description: "Bring up master + remote partyboi instances against postgres and run the syncDown/syncUp scenario."
+runs:
+  using: "composite"
+  steps:
+    - name: Get image from artifacts
+      uses: actions/download-artifact@v8
+      with:
+        name: partyboi-image
+    - name: Load the image
+      shell: bash
+      run: docker load -i partyboi.tar
+    - name: Prepare file-share dirs
+      shell: bash
+      run: |
+        mkdir -p build/sync-test/files-master build/sync-test/files-remote
+        chmod -R 777 build/sync-test
+    - name: Start the sync stack
+      shell: bash
+      run: docker compose -f docker-compose-sync-test.yml up -d --wait
+    - name: Run the sync harness
+      shell: bash
+      run: gradle syncHarness --args="--no-docker" -i
+    - name: Dump container logs on failure
+      if: failure()
+      shell: bash
+      run: docker compose -f docker-compose-sync-test.yml logs --no-color appserver-master appserver-remote db
+    - name: Tear down the stack
+      if: always()
+      shell: bash
+      run: docker compose -f docker-compose-sync-test.yml down -v --remove-orphans
