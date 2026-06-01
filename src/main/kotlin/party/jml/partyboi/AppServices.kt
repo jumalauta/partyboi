@@ -23,6 +23,7 @@ import party.jml.partyboi.entries.FileRepository
 import party.jml.partyboi.entries.PreviewRepository
 import party.jml.partyboi.ffmpeg.DockerFileShare
 import party.jml.partyboi.ffmpeg.FfmpegService
+import party.jml.partyboi.ffmpeg.TrackerToolsService
 import party.jml.partyboi.infoscreen.InfoScreenService
 import party.jml.partyboi.messages.MessageRepository
 import party.jml.partyboi.schedule.EventRepository
@@ -66,6 +67,7 @@ interface AppServices {
     val workQueue: WorkQueueService
     val dockerFileShare: DockerFileShare
     val ffmpeg: FfmpegService
+    val trackerTools: TrackerToolsService
     val eventSignalEmitter: EventSignalEmitter
     val sync: SyncService
     val recaptcha: RecaptchaService
@@ -101,6 +103,7 @@ class AppServicesImpl(
     override val workQueue = WorkQueueService(this)
     override val dockerFileShare = DockerFileShare(this)
     override val ffmpeg = FfmpegService(this)
+    override val trackerTools = TrackerToolsService(this)
     override val eventSignalEmitter = EventSignalEmitter(this)
     override val sync = SyncService(this)
     override val recaptcha = RecaptchaService(this)

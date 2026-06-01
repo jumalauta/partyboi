@@ -32,6 +32,7 @@ import party.jml.partyboi.db.one
 import party.jml.partyboi.db.queryOf
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.workqueue.ConvertTrackerModule
 import party.jml.partyboi.workqueue.ExtractDuration
 import party.jml.partyboi.workqueue.GeneratePreviewForAudio
 import party.jml.partyboi.workqueue.GeneratePreviewForVideo
@@ -252,12 +253,16 @@ class FileRepository(app: AppServices) : Service(app) {
     suspend fun postProcessUpload(file: FileDesc) {
         if (file.processed) return
         val streamingAudio = FileFormatCategory.streamingAudio.formats().flatMap { it.extensions }
+        val tracker = FileFormatCategory.tracker.formats().flatMap { it.extensions }
         val video = FileFormatCategory.video.formats().flatMap { it.extensions }
         when (file.extension) {
             in streamingAudio -> {
                 app.workQueue.addTask(NormalizeLoudness(file))
                 app.workQueue.addTask(GeneratePreviewForAudio(file))
                 app.workQueue.addTask(ExtractDuration(file))
+            }
+            in tracker -> {
+                app.workQueue.addTask(ConvertTrackerModule(file))
             }
             in video -> {
                 app.workQueue.addTask(GeneratePreviewForVideo(file))
