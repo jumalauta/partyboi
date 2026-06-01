@@ -62,6 +62,22 @@ class InstanceClient(
         postMultipart("/login", listOf("name" to name, "password" to password)).expectOk()
     }
 
+    /**
+     * Complete the first-run setup wizard. A fresh instance redirects every admin request to
+     * /wizard until the wizard has been submitted, so the harness must run it once right after
+     * logging in as admin. Sends the GeneralSettings step with harmless defaults.
+     */
+    suspend fun completeWizard() {
+        postMultipart(
+            "/wizard",
+            listOf(
+                "resultsFileHeader" to "",
+                "colorScheme" to "Blue",
+                "timeZone" to "UTC",
+            ),
+        ).expectOk()
+    }
+
     suspend fun register(name: String, password: String, email: String = "") {
         val resp = postMultipart(
             "/register",

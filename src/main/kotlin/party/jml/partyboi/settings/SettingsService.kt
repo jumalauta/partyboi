@@ -18,6 +18,7 @@ class SettingsService(app: AppServices) : Service(app) {
     val verifiedEmailsOnly = property("verifiedEmailsOnly", true)
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
+    val wizardCompleted = property("wizardCompleted", false)
 
     suspend fun getGeneralSettings() = either {
         GeneralSettings(

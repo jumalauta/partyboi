@@ -11,6 +11,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.util.*
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.AppServicesImpl
 import party.jml.partyboi.data.RedirectInterruption
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.isTrue
@@ -110,7 +111,19 @@ fun Application.votingRouting(block: Route.() -> Unit) {
 
 fun Application.adminRouting(block: Route.() -> Unit) {
     routing {
-        authenticate("admin") { block() }
+        authenticate("admin") {
+            intercept(ApplicationCallPipeline.Plugins) {
+                val app = AppServicesImpl.globalInstance ?: return@intercept
+                val path = call.request.path()
+                if (path.startsWith("/wizard")) return@intercept
+                val completed = app.settings.wizardCompleted.getOrNull() ?: false
+                if (!completed) {
+                    call.respondRedirect("/wizard")
+                    finish()
+                }
+            }
+            block()
+        }
     }
 }
 

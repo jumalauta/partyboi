@@ -30,6 +30,7 @@ import party.jml.partyboi.templates.respondPage
 import party.jml.partyboi.users.configureUserMgmtRouting
 import party.jml.partyboi.voting.admin.configureAdminVotingRouting
 import party.jml.partyboi.voting.configureVotingRouting
+import party.jml.partyboi.wizard.configureWizardRouting
 import party.jml.partyboi.workqueue.admin.configureAdminTasksRouting
 
 @Serializable
@@ -83,4 +84,5 @@ fun Application.configureDefaultRouting(app: AppServices) {
     configureAdminErrorLogRouting(app)
     configureAdminTasksRouting(app)
     configureSyncRouting(app)
+    configureWizardRouting(app)
 }

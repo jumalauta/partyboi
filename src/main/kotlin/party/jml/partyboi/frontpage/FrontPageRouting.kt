@@ -1,6 +1,7 @@
 package party.jml.partyboi.frontpage
 
 import io.ktor.server.application.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.optionalUserSession
@@ -11,7 +12,11 @@ import party.jml.partyboi.templates.respondEither
 fun Application.configureFrontPageRouting(app: AppServices) {
     publicRouting {
         get("/") {
-            call.optionalUserSession(app) // FIXME: this is a hack to ensure that new session gets loaded before rendering
+            val user = call.optionalUserSession(app)
+            if (user?.isAdmin == true && app.settings.wizardCompleted.getOrNull() != true) {
+                call.respondRedirect("/wizard")
+                return@get
+            }
             call.respondEither {
                 val events = app.events.getAll().bind().filter { it.visible }
                 val infoScreen = app.screen
