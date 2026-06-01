@@ -37,6 +37,9 @@ class Seeder(
         println("[seed/preParty] Logging in as $adminName on master")
         master.login(adminName, adminPassword)
 
+        println("[seed/preParty] Completing setup wizard on master")
+        master.completeWizard()
+
         println("[seed/preParty] Generating master sync token")
         val syncToken = master.generateSyncToken()
 

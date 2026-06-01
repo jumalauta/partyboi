@@ -34,6 +34,8 @@ class Verifier(
     suspend fun configureRemote() {
         println("[verify] Logging into remote as $adminName")
         remote.login(adminName, adminPassword)
+        println("[verify] Completing setup wizard on remote (admin routes redirect to /wizard until done)")
+        remote.completeWizard()
         println("[verify] Configuring remote to point at $masterInternalUrl with the master's token")
         remote.postMultipart(
             "/sync/remote",
