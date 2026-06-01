@@ -1,7 +1,5 @@
 package party.jml.partyboi.ffmpeg
 
-import com.github.dockerjava.api.async.ResultCallback
-import com.github.dockerjava.api.model.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
@@ -9,23 +7,7 @@ import java.io.File
 
 
 class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
-    fun ensureFfmpegExists() {
-        val client = Docker.getClient()
-
-        val imageExists = client.listImagesCmd()
-            .withReferenceFilter(IMAGE)
-            .exec()
-            .any { it.repoTags?.contains(IMAGE) == true }
-
-        if (!imageExists) {
-            log.info("$IMAGE does not exist, pulling it...")
-            client.pullImageCmd(IMAGE)
-                .withTag("latest")
-                .exec(object :
-                    ResultCallback.Adapter<PullResponseItem>() {})
-                .awaitCompletion()
-        }
-    }
+    fun ensureFfmpegExists() = Docker.ensureImageExists(IMAGE, log)
 
     fun normalizeLoudness(input: File): File {
         ensureFfmpegExists()
@@ -250,48 +232,16 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
     private fun runFfprobe(vararg args: String): String =
         runContainer(entrypoint = "ffprobe", args = args.toList(), label = "ffprobe")
 
-    private fun runContainer(entrypoint: String?, args: List<String>, label: String): String {
-        val client = Docker.getClient()
-
-        val binds = listOfNotNull(
-            Bind(app.dockerFileShare.sharedDir.toString(), Volume("/files"))
+    private fun runContainer(entrypoint: String?, args: List<String>, label: String): String =
+        Docker.runContainer(
+            image = IMAGE,
+            sharedDir = app.dockerFileShare.sharedDir,
+            mountPoint = "/files",
+            entrypoint = entrypoint,
+            args = args,
+            label = label,
+            log = log,
         )
-
-        val hostConfig = HostConfig
-            .newHostConfig()
-            .withBinds(binds)
-
-        val container = client.createContainerCmd(IMAGE)
-            .withHostConfig(hostConfig)
-            .apply { if (entrypoint != null) withEntrypoint(entrypoint) }
-            .withCmd(args)
-            .withTty(false)
-            .withAttachStdout(true)
-            .withAttachStderr(true)
-            .exec()
-
-        client.startContainerCmd(container.id).exec()
-        client.waitContainerCmd(container.id).start().awaitCompletion()
-
-        log.info("Run $label with arguments: $args and bindings: $binds")
-
-        val logs = StringBuilder()
-        client.logContainerCmd(container.id)
-            .withStdOut(true)
-            .withStdErr(true)
-            .withTimestamps(false)
-            .exec(object : ResultCallback.Adapter<Frame>() {
-                override fun onNext(frame: Frame) {
-                    logs.append(String(frame.payload))
-                }
-            }).awaitCompletion()
-
-        log.info(logs.toString())
-
-        client.removeContainerCmd(container.id).exec()
-
-        return logs.toString()
-    }
 
     inline fun <reified T> String.extractJson(): T {
         val regex = Regex("""(?s)\{.*?}""")

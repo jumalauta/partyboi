@@ -41,6 +41,35 @@ data class NormalizeLoudness(
 }
 
 @Serializable
+data class ConvertTrackerModule(
+    val file: FileDesc
+) : Task {
+    override suspend fun execute(app: AppServices): AppResult<Unit> = either {
+        val fileDesc = app.files.getById(file.id).bind()
+        val inputFile = app.files.getStorageFile(fileDesc.id)
+
+        val wav = app.trackerTools.convertToWav(inputFile)
+        val normalizedFile = app.ffmpeg.normalizeLoudness(wav)
+
+        val normalizedFileDesc = app.files.store(
+            tempFile = normalizedFile,
+            originalFilename = Path(fileDesc.originalFilename).nameWithoutExtension + " (normalized).flac",
+            processed = true,
+            info = "Converted from tracker module and loudness normalized to -14 LUFS",
+        ).bind()
+
+        app.entries.getByFileId(fileDesc.id).onRight { entry ->
+            app.entries.associateFile(
+                fileId = normalizedFileDesc.id,
+                entryId = entry.id
+            )
+            app.workQueue.addTask(GeneratePreviewForAudio(normalizedFileDesc))
+            app.workQueue.addTask(ExtractDuration(normalizedFileDesc))
+        }
+    }
+}
+
+@Serializable
 data class GeneratePreviewForVideo(
     val file: FileDesc
 ) : Task {
