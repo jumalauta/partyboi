@@ -63,7 +63,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("org.apache.commons:commons-compress:1.28.0")
-    implementation("com.sksamuel.scrimage:scrimage-core:4.6.0")
+    implementation("com.sksamuel.scrimage:scrimage-core:4.6.2")
     implementation("org.jetbrains:markdown:0.7.3")
     implementation("org.jsoup:jsoup:1.22.2")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
