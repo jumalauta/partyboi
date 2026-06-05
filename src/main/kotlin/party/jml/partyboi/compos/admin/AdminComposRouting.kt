@@ -50,17 +50,30 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
     suspend fun renderAdminEditCompoPage(
         compoId: AppResult<UUID>,
+        activeTab: CompoTab = CompoTab.SETTINGS,
         compoForm: Form<Compo>? = null,
         manualResultForm: Form<NewManualResult>? = null,
+        editManualResultId: String? = null,
     ) = either {
         val id = compoId.bind()
         val compo = compoForm?.data ?: app.compos.getById(id).bind()
+        // Entries / results are needed for the second tab's badge count regardless of
+        // which tab is active; the heavier per-entry file & preview lookups are only
+        // needed to render the entries table itself.
+        val entries = if (compo.manualResults) emptyList() else app.entries.getEntriesForCompo(id).bind()
+        val showEntries = activeTab == CompoTab.ENTRIES && !compo.manualResults
+        val files = if (showEntries) app.entries.getLatestFilesByCompo(id).bind() else emptyMap()
+        val previews = if (showEntries) app.previews.getEntryPreviews(entries) else emptyList()
         AdminEditCompoPage.render(
             compoForm = compoForm ?: Form(Compo::class, compo, initial = true),
-            entries = if (compo.manualResults) emptyList() else app.entries.getEntriesForCompo(id).bind(),
+            entries = entries,
             compos = app.compos.getAllCompos().bind(),
+            files = files,
+            previews = previews.associateBy { it.entryId },
             manualResults = if (compo.manualResults) app.manualResults.getByCompoId(id).bind() else emptyList(),
             manualResultForm = manualResultForm,
+            editManualResultId = editManualResultId,
+            activeTab = activeTab,
         )
     }
 
@@ -90,59 +103,74 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         get("/admin/compos/{id}") {
             call.respondEither {
-                renderAdminEditCompoPage(call.parameterUUID("id")).bind()
+                renderAdminEditCompoPage(call.parameterUUID("id"), CompoTab.SETTINGS).bind()
+            }
+        }
+
+        // Second tab (entries for normal compos, results for manual ones). Both render the
+        // same tab; the page branches on the compo type.
+        get("/admin/compos/{id}/entries") {
+            call.respondEither {
+                renderAdminEditCompoPage(call.parameterUUID("id"), CompoTab.ENTRIES).bind()
+            }
+        }
+
+        get("/admin/compos/{id}/results") {
+            call.respondEither {
+                renderAdminEditCompoPage(call.parameterUUID("id"), CompoTab.ENTRIES).bind()
             }
         }
 
         post("/admin/compos/{id}") {
             call.processForm<Compo>(
-                { app.compos.update(it).map { redirectionToCompos }.bind() },
-                { renderAdminEditCompoPage(call.parameterUUID("id"), it).bind() }
+                { compo -> app.compos.update(compo).map { Redirection("/admin/compos/${compo.id}") }.bind() },
+                { renderAdminEditCompoPage(call.parameterUUID("id"), CompoTab.SETTINGS, compoForm = it).bind() }
             )
         }
 
         post("/admin/compos/{id}/manual-results") {
             val compoId = call.parameterUUID("id")
-            val redirectToCompo = Redirection("/admin/compos/${call.parameters["id"]}")
+            val redirectToResults = Redirection("/admin/compos/${call.parameters["id"]}/results")
             call.processForm<NewManualResult>(
                 {
                     val id = compoId.bind()
                     app.manualResults.add(it.copy(compoId = id)).bind()
-                    redirectToCompo
+                    redirectToResults
                 },
-                { renderAdminEditCompoPage(compoId, manualResultForm = it).bind() }
+                { renderAdminEditCompoPage(compoId, CompoTab.ENTRIES, manualResultForm = it).bind() }
             )
         }
 
         get("/admin/compos/{id}/manual-results/{rid}") {
             call.respondEither {
-                val compoId = call.parameterUUID("id").bind()
+                val compoId = call.parameterUUID("id")
+                val cid = compoId.bind()
                 val resultId = call.parameterUUID("rid").bind()
-                val compo = app.compos.getById(compoId).bind()
-                val result = app.manualResults.getByCompoId(compoId).bind()
+                val result = app.manualResults.getByCompoId(cid).bind()
                     .find { it.id == resultId } ?: raise(NotFound("Manual result"))
-                AdminEditManualResultPage.render(
-                    compo = compo,
-                    resultId = resultId.toString(),
-                    form = Form(
+                renderAdminEditCompoPage(
+                    compoId = compoId,
+                    activeTab = CompoTab.ENTRIES,
+                    manualResultForm = Form(
                         NewManualResult::class,
                         NewManualResult(
                             title = result.title,
                             author = result.author,
                             scoreText = result.scoreText,
                             screenComment = result.screenComment ?: "",
-                            compoId = compoId,
+                            compoId = cid,
                         ),
                         initial = true,
                     ),
-                )
+                    editManualResultId = resultId.toString(),
+                ).bind()
             }
         }
 
         post("/admin/compos/{id}/manual-results/{rid}") {
             val compoId = call.parameterUUID("id")
             val resultId = call.parameterUUID("rid")
-            val redirectToCompo = Redirection("/admin/compos/${call.parameters["id"]}")
+            val redirectToResults = Redirection("/admin/compos/${call.parameters["id"]}/results")
             call.processForm<NewManualResult>(
                 {
                     val cid = compoId.bind()
@@ -160,17 +188,15 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                             position = existing.position,
                         )
                     ).bind()
-                    redirectToCompo
+                    redirectToResults
                 },
-                {
-                    either {
-                        val compo = app.compos.getById(compoId.bind()).bind()
-                        AdminEditManualResultPage.render(
-                            compo = compo,
-                            resultId = call.parameters["rid"] ?: "",
-                            form = it,
-                        )
-                    }.bind()
+                { formWithErrors ->
+                    renderAdminEditCompoPage(
+                        compoId = compoId,
+                        activeTab = CompoTab.ENTRIES,
+                        manualResultForm = formWithErrors,
+                        editManualResultId = call.parameters["rid"],
+                    ).bind()
                 }
             )
         }
@@ -346,6 +372,23 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 
         put("/admin/compos/entries/{id}/allowEdit/{state}") {
             call.switchApiUuid { id, state -> app.entries.allowEdit(id, state) }
+        }
+
+        put("/admin/compos/entries/{id}/duration/{seconds}") {
+            call.apiRespond {
+                val id = call.parameterUUID("id").bind()
+                val secondsParam = call.parameterString("seconds").bind()
+                val duration = if (secondsParam == "none") null
+                else secondsParam.toDoubleOrNull() ?: raise(InvalidInput("seconds"))
+                app.entries.setDuration(id, duration).bind()
+            }
+        }
+
+        delete("/admin/compos/entries/{id}") {
+            call.apiRespond {
+                val id = call.parameterUUID("id").bind()
+                app.entries.delete(id).bind()
+            }
         }
 
         delete("/admin/compos/{id}/manual-results/{rid}") {

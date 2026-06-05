@@ -243,10 +243,42 @@ class EntryRepository(app: AppServices) : Service(app) {
             updateOne(queryOf("update entry set run_order = ? where id = ?", order, entryId))
         }
 
-    suspend fun setDuration(entryId: UUID, duration: Double): AppResult<Unit> =
+    suspend fun setDuration(entryId: UUID, duration: Double?): AppResult<Unit> =
         db.use {
-            updateOne(queryOf("update entry set duration = ? where id = ?", duration, entryId))
+            one(
+                queryOf(
+                    "update entry set duration = ? where id = ? returning compo_id",
+                    duration,
+                    entryId
+                ).map { it.uuid("compo_id") }
+            )
+        }.map { compoId ->
+            app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
         }
+
+    /**
+     * Latest uploaded file (if any) per entry in a compo, keyed by entry id. Used by the
+     * compo edit Entries table to show the EXT · SIZE chip. Entries with no file are absent.
+     */
+    suspend fun getLatestFilesByCompo(compoId: UUID): AppResult<Map<UUID, FileDesc>> = db.use {
+        many(
+            queryOf(
+                """
+                SELECT entry.id AS entry_id, f.*
+                FROM entry
+                JOIN LATERAL (
+                    SELECT file.*
+                    FROM file
+                    JOIN entry_file ON entry_file.file_id = file.id
+                    WHERE entry_file.entry_id = entry.id
+                    ORDER BY file.uploaded_at DESC
+                    LIMIT 1
+                ) f ON true
+                WHERE entry.compo_id = ?
+                """.trimIndent(), compoId
+            ).map { row -> row.uuid("entry_id") to FileDesc.fromRow(row) }
+        )
+    }.map { it.toMap() }
 
     suspend fun getVotableEntries(userId: UUID): AppResult<List<VotableEntry>> = db.use {
         many(

@@ -58,6 +58,8 @@ class CompoRepository(app: AppServices) : Service(app) {
                     require_file = ?::boolean,
                     manual_results = ?,
                     hide_author = ?,
+                    changeover_sec = ?,
+                    default_slot_sec = ?,
                     allow_submit = CASE WHEN ? THEN false ELSE allow_submit END,
                     allow_vote = CASE WHEN ? THEN false ELSE allow_vote END
                 WHERE id = ?
@@ -68,6 +70,8 @@ class CompoRepository(app: AppServices) : Service(app) {
                     compo.requireFile.toDatabaseEnum(),
                     compo.manualResults,
                     compo.hideAuthor,
+                    compo.changeoverSec,
+                    compo.defaultSlotSec,
                     compo.manualResults,
                     compo.manualResults,
                     compo.id,
@@ -160,6 +164,10 @@ data class Compo(
     val requireFile: Boolean?,
     @Custom
     val fileFormats: List<FileFormat>,
+    @Custom
+    val changeoverSec: Int,
+    @Custom
+    val defaultSlotSec: Int,
 ) : Validateable<Compo>, DropdownOptionSupport {
     val displayName: String get() = name.withCompoSuffix()
 
@@ -195,6 +203,8 @@ data class Compo(
                 hideAuthor = row.boolean("hide_author"),
                 fileFormats = row.arrayOrNull<String>("formats")?.map { FileFormat.valueOf(it) } ?: emptyList(),
                 requireFile = row.optionalBooleanOrNull("require_file"),
+                changeoverSec = row.int("changeover_sec"),
+                defaultSlotSec = row.int("default_slot_sec"),
             )
         }
 
@@ -210,6 +220,8 @@ data class Compo(
             hideAuthor = false,
             fileFormats = emptyList(),
             requireFile = null,
+            changeoverSec = 20,
+            defaultSlotSec = 60,
         )
     }
 }
