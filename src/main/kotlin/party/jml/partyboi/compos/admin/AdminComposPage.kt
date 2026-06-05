@@ -39,16 +39,20 @@ object AdminComposPage {
                             }
                             tbody {
                                 compos.forEach { compo ->
+                                    val count = if (compo.manualResults) {
+                                        manualResultCounts[compo.id] ?: 0
+                                    } else {
+                                        entries[compo.id]?.size ?: 0
+                                    }
+                                    // Land on the tab that has content, otherwise Settings.
+                                    val href = when {
+                                        count == 0 -> "/admin/compos/${compo.id}"
+                                        compo.manualResults -> "/admin/compos/${compo.id}/results"
+                                        else -> "/admin/compos/${compo.id}/entries"
+                                    }
                                     tr {
-                                        td { a(href = "/admin/compos/${compo.id}") { +compo.name } }
-                                        td {
-                                            val count = if (compo.manualResults) {
-                                                manualResultCounts[compo.id] ?: 0
-                                            } else {
-                                                entries[compo.id]?.size ?: 0
-                                            }
-                                            +count.toString()
-                                        }
+                                        td { a(href = href) { +compo.name } }
+                                        td { +count.toString() }
                                         td(classes = "settings") {
                                             toggleButton(
                                                 compo.visible,

@@ -951,3 +951,95 @@ img.entry-edit-preview {
        stay visible against the white card. */
     background-color: #000;
 }
+
+/* Reusable tabs component (templates/components/Tabs.kt + setupTabs in partyboi.js).
+   No Pico equivalent exists, so it's a small standalone component. */
+.tab-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: var(--pico-spacing);
+    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+}
+
+.tab-bar .tab {
+    width: auto;
+    margin: 0;
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--pico-secondary);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab-bar .tab:hover {
+    color: var(--pico-color);
+}
+
+.tab-bar .tab.active {
+    color: var(--pico-primary);
+    border-bottom-color: var(--pico-primary);
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* Runtime summary: stat blocks laid out with Pico's .grid */
+.compo-edit .pb-summary {
+    text-align: center;
+}
+
+.compo-edit .pb-stat strong {
+    display: block;
+    font-size: 1.5rem;
+    line-height: 1.1;
+}
+
+/* Entries table tweaks */
+.compo-edit td {
+    vertical-align: middle;
+}
+
+.compo-edit tr.not-qualified {
+    opacity: 0.55;
+}
+
+.compo-edit .pb-filter {
+    max-width: 16rem;
+    margin: 0;
+}
+
+.compo-edit .pb-dur-input {
+    width: 6rem;
+    margin: 0;
+    padding-block: 0.25rem;
+}
+
+/* Preview thumbnail (no Pico component) */
+.compo-edit .pb-thumb {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 56px;
+    height: 32px;
+    overflow: hidden;
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-muted-border-color);
+}
+
+.compo-edit .pb-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.compo-edit .pb-thumb-empty {
+    color: var(--pico-muted-color);
+}

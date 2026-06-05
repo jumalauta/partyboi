@@ -6,6 +6,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import it.skrape.matchers.toBe
 import party.jml.partyboi.compos.NewCompo
+import party.jml.partyboi.compos.NewManualResult
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import java.io.ByteArrayInputStream
@@ -32,6 +33,84 @@ class AdminComposTest : PartyboiTester {
         it.get("/admin/compos", HttpStatusCode.OK) {
             relaxed = true
             findFirst("h1") { text.toBe("Compos") }
+        }
+    }
+
+    @Test
+    fun testEditCompoPageRendersTabbedRedesign() = test {
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val user = addTestUser(app, "submitter").bind()
+                val compo = compos.add(NewCompo("Combined Demo", "")).bind()
+                val entry = entries.add(
+                    NewEntry(
+                        title = "Neon Cathedral",
+                        author = "Fairlight",
+                        file = FileUpload.createTestData("demo.dat", 256),
+                        compoId = compo.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = user.id,
+                    )
+                ).bind()
+                entries.setQualified(entry.id, true).bind()
+            }
+        }
+
+        it.login("admin")
+
+        val editHref = it.get("/admin/compos", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("td a") { attribute("href") }
+        }
+
+        it.get(editHref, HttpStatusCode.OK) {
+            relaxed = true
+            findFirst(".compo-edit h1") { text.toBe("Combined Demo compo") }
+            assertEquals(2, findAll(".tab-bar .tab") { size })
+            findFirst("tr[data-search] a") { text.toBe("Neon Cathedral") }
+            findFirst(".pb-stat strong") { text.toBe("1") }
+        }
+    }
+
+    @Test
+    fun testEditManualResultUsesTabbedShell() = test {
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val compo = compos.add(NewCompo("Best Photo", "")).bind()
+                compos.update(compo.copy(manualResults = true)).bind()
+                manualResults.add(
+                    NewManualResult(
+                        title = "",
+                        author = "Alice",
+                        scoreText = "42 pts",
+                        screenComment = "",
+                        compoId = compo.id,
+                    )
+                ).bind()
+            }
+        }
+
+        it.login("admin")
+
+        val compoHref = it.get("/admin/compos", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("td a") { attribute("href") }
+        }
+        val editHref = it.get(compoHref, HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("a[href*='manual-results']") { attribute("href") }
+        }
+
+        it.get(editHref, HttpStatusCode.OK) {
+            relaxed = true
+            // Renders inside the Settings | Results tab shell with the result pre-filled.
+            assertEquals(2, findAll(".tab-bar .tab") { size })
+            findFirst("input[name=author]") { attribute("value").toBe("Alice") }
         }
     }
 

@@ -82,7 +82,14 @@ function initInteractions(target) {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                });
+                })
+                    // Some lists (the compo Entries table) need a re-render after a drop
+                    // so derived values like the qualified order numbers update. Defer to a
+                    // later tick so Draggable can finish swapping its clone/mirror back out.
+                    .then(() => {
+                        if (container.dataset.reloadOnSort) setTimeout(smoothReload, 0);
+                    })
+                    .catch((err) => console.error(err));
             });
 
             // Renumber .place-number cells once the drag fully ends. Defer to
@@ -111,6 +118,48 @@ function initInteractions(target) {
 
     // Mobile navigation drawer
     setupMobileNav(target);
+
+    // Tabs component: client-side switching (active tab survives smooth reloads).
+    setupTabs(target);
+
+    // Compo edit: client-side entries filter over title/author/format.
+    const compoFilter = target.querySelector(".pb-filter");
+    if (compoFilter) {
+        const applyFilter = () => {
+            const q = compoFilter.value.trim().toLowerCase();
+            document.querySelectorAll(".compo-edit tr[data-search]").forEach((row) => {
+                const hit = !q || (row.dataset.search || "").includes(q);
+                row.style.display = hit ? "" : "none";
+            });
+        };
+        compoFilter.addEventListener("input", applyFilter);
+        applyFilter();
+    }
+
+    // Compo edit: inline duration override. Accepts "m:ss" or a plain seconds value;
+    // an empty value clears the override. Reloads so the runtime summary recomputes.
+    target.querySelectorAll(".pb-dur-input").forEach((el) => {
+        el.addEventListener("change", async () => {
+            const id = el.dataset.entryId;
+            if (!id) return;
+            const raw = el.value.trim();
+            let seconds = "none";
+            if (raw) {
+                if (raw.includes(":")) {
+                    const [m, s] = raw.split(":");
+                    seconds = String((parseInt(m, 10) || 0) * 60 + (parseInt(s, 10) || 0));
+                } else {
+                    seconds = String(Math.max(0, Math.round(parseFloat(raw)) || 0));
+                }
+            }
+            try {
+                await fetch(`/admin/compos/entries/${id}/duration/${seconds}`, {method: "PUT"});
+                smoothReload();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    });
 
     // Update file uploader according to the selected compo
     const compoSelector = target.querySelector('select[name="compoId"]');
@@ -461,6 +510,35 @@ function setupMobileNav(target) {
     if (mobileMq.matches && !drawer.classList.contains("open")) {
         drawer.setAttribute("aria-hidden", "true");
     }
+}
+
+// Tabs component (templates/components/Tabs.kt). Pure client-side toggle so unsaved
+// form changes survive a tab switch. The active tab per group is kept in
+// window.__tabState (keyed by the group's data-tabs id) and reapplied after smooth
+// reloads — re-bound each initInteractions call, since groups may live inside
+// #reload-section. Multiple independent tab groups on a page are supported.
+function setupTabs(target) {
+    const state = (window.__tabState = window.__tabState || {});
+    target.querySelectorAll(".tabs[data-tabs]").forEach((group) => {
+        const key = group.dataset.tabs;
+        const tabs = group.querySelectorAll(".tab[data-tab]");
+        const panels = group.querySelectorAll(".tab-panel[data-panel]");
+        if (!tabs.length) return;
+
+        function apply(id) {
+            tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === id));
+            panels.forEach((p) => p.classList.toggle("active", p.dataset.panel === id));
+            state[key] = id;
+        }
+
+        tabs.forEach((t) => t.addEventListener("click", () => apply(t.dataset.tab)));
+
+        const initial =
+            state[key] ||
+            group.querySelector(".tab.active")?.dataset.tab ||
+            tabs[0].dataset.tab;
+        apply(initial);
+    });
 }
 
 // Preview modal: opened on click/Enter/Space on any [data-preview-url] element.
