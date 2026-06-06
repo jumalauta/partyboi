@@ -324,7 +324,7 @@ object AdminScreenPage {
             encType = FormEncType.multipartFormData,
         ) {
             article {
-                header { +"Upload images" }
+                cardHeader("Upload images")
                 fieldSet {
                     if (uploadError != null) {
                         section(classes = "error") { +uploadError }
@@ -345,7 +345,7 @@ object AdminScreenPage {
             method = FormMethod.post,
         ) {
             article {
-                header { +"Pick images to add as slides" }
+                cardHeader("Pick images to add as slides")
                 if (availableImages.isEmpty()) {
                     p { +"No unused images — upload some above." }
                 } else {
@@ -410,7 +410,7 @@ object AdminScreenPage {
 
         if (triggers.isNotEmpty()) {
             article {
-                header { +"When this slide is shown the following actions are executed automatically" }
+                cardHeader("When this slide is shown the following actions are executed automatically")
                 ul { triggers.forEach { li { +it.description } } }
             }
         }

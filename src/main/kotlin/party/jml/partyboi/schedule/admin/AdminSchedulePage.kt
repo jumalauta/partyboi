@@ -41,7 +41,7 @@ object AdminSchedulePage {
                         .groupBy { it.startTime.toDate() }
                         .forEach { (date, events) ->
                             article {
-                                header { +date.displayDate() }
+                                cardHeader(date.displayDate())
                                 table(classes = "schedule") {
                                     thead {
                                         tr {
@@ -154,7 +154,7 @@ object AdminSchedulePage {
             }, {
                 if (triggers.isNotEmpty()) {
                     article {
-                        header { +"Triggers" }
+                        cardHeader("Triggers")
                         p { +"These actions will happen at the scheduled start time of the event" }
                         table {
                             thead {

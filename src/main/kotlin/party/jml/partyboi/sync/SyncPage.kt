@@ -8,6 +8,7 @@ import party.jml.partyboi.system.TimeService
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.buttonGroup
 import party.jml.partyboi.templates.components.buttonLink
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.timestamp
 import java.net.URI
 
@@ -38,7 +39,7 @@ object SyncPage {
 
             if (canSync) {
                 article {
-                    header { +"Sync now" }
+                    cardHeader("Sync now")
                     p {
                         +"Run a sync against the configured remote instance below. Both actions transfer "
                         +"every syncable table (users, compos, entries, votes, schedule, …) and any "
@@ -76,7 +77,7 @@ object SyncPage {
             }
 
             article {
-                header { +"Remote instance configuration" }
+                cardHeader("Remote instance configuration")
                 p {
                     +"Point this instance at another Partyboi server you want to sync with. Fill in "
                     +"that server's public address and the token its admin generated under "
@@ -92,7 +93,7 @@ object SyncPage {
             }
 
             article {
-                header { +"Data master" }
+                cardHeader("Data master")
                 p {
                     +"Controls whether "
                     em { +"other" }
@@ -132,7 +133,7 @@ object SyncPage {
             if (syncLog.isNotEmpty()) {
                 val tz = TimeService.timeZone()
                 article {
-                    header { +"Log" }
+                    cardHeader("Log")
                     p {
                         small {
                             +"Recent sync attempts on this instance, in start order. Each table transfer "

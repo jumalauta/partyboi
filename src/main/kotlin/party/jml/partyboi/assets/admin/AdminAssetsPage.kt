@@ -4,9 +4,10 @@ import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.form.submitButton
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
-import party.jml.partyboi.templates.components.deleteButton
 import party.jml.partyboi.templates.components.confirmDelete
+import party.jml.partyboi.templates.components.deleteButton
 
 object AdminAssetsPage {
     fun render(assets: List<Asset>, error: String? = null) =
@@ -93,7 +94,7 @@ object AdminAssetsPage {
             ) {
                 form(action = "/admin/assets", method = FormMethod.post, encType = FormEncType.multipartFormData) {
                     article {
-                        header { +"Add assets" }
+                        cardHeader("Add assets")
                         fieldSet {
                             if (error != null) {
                                 section(classes = "error") { +error }

@@ -31,7 +31,7 @@ object UserEditPage {
                 },
                 {
                     article {
-                        header { +"Vote keys" }
+                        cardHeader("Vote keys")
                         if (voteKeys.isEmpty()) {
                             p { +"User does not have any vote keys" }
                         } else {
@@ -56,7 +56,7 @@ object UserEditPage {
                     }
                     if (showAdminControls) {
                         article {
-                            header { +"Permissions" }
+                            cardHeader("Permissions")
                             buttonGroup {
                                 labeledToggleButton(
                                     toggled = user.isAdmin,

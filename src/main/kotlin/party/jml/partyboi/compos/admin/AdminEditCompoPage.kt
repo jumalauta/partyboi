@@ -101,12 +101,12 @@ object AdminEditCompoPage {
         columns({
             dataForm("/admin/compos/${compo.id}") {
                 article {
-                    header { +"General" }
+                    cardHeader("General")
                     fieldSet { renderFields(compoForm) }
                 }
 
                 article {
-                    header { +"Visibility & results" }
+                    cardHeader("Visibility & results")
                     p { small { +"How this compo behaves during the party." } }
                     fieldSet {
                         picoSwitch(
@@ -126,7 +126,7 @@ object AdminEditCompoPage {
 
                 if (!isManual) {
                     article {
-                        header { +"Submissions" }
+                        cardHeader("Submissions")
 
                         fieldSet {
                             legend { +"File uploads" }
@@ -160,7 +160,7 @@ object AdminEditCompoPage {
                     }
 
                     article {
-                        header { +"Timing" }
+                        cardHeader("Timing")
                         p { small { +"Feeds the runtime estimate on the Entries tab." } }
                         div(classes = "grid") {
                             label {
@@ -198,7 +198,7 @@ object AdminEditCompoPage {
             // Live state controls live outside the settings form: toggling them PUTs and
             // reloads immediately, independent of the unsaved form fields above.
             article {
-                header { +"State" }
+                cardHeader("State")
                 table {
                     tbody {
                         tr {
@@ -484,7 +484,7 @@ object AdminEditCompoPage {
         if (manualResults.isNotEmpty()) {
             val hasTitles = manualResults.any { it.title.isNotBlank() }
             article {
-                header { +"Results" }
+                cardHeader("Results")
                 table {
                     thead {
                         tr {
@@ -532,7 +532,7 @@ object AdminEditCompoPage {
 
         article {
             if (editResultId != null) {
-                header { +"Edit result" }
+                cardHeader("Edit result")
                 dataForm("/admin/compos/${compo.id}/manual-results/$editResultId") {
                     fieldSet {
                         renderFields(form)
