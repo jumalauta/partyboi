@@ -55,7 +55,7 @@ class SettingsService(app: AppServices) : Service(app) {
             raise(
                 ValidationError(
                     "automaticVoteKeys",
-                    "This option cannot be selected because email service has not been configured",
+                    "Requires a configured email service",
                     ""
                 )
             )

@@ -10,16 +10,16 @@ object EmailTemplates {
     fun emailVerification(recipient: User, verificationCode: String, instanceName: String, hostName: String) =
         EmailMessage.build(
             recipient = requireNotNull(recipient.email) { "Cannot send verification email to user without email address" },
-            subject = "Verify your email address to $instanceName",
+            subject = "Verify your $instanceName email address",
         ) {
             p { +"Hi, ${recipient.name}!" }
-            p { +"Thank you for signing up to $instanceName! Please verify your email address by clicking the link below:" }
+            p { +"Thanks for signing up to $instanceName! Verify your email address with the link below:" }
             p {
                 a(href = "$hostName/verify/${recipient.id}/$verificationCode") {
                     +"\uD83D\uDC49 Verify email"
                 }
             }
-            p { +"If you didn’t request this, you can safely ignore this message." }
+            p { +"If you didn't request this, you can safely ignore this message." }
             signature(instanceName)
         }
 
@@ -29,13 +29,13 @@ object EmailTemplates {
             subject = "Reset your $instanceName password",
         ) {
             p { +"Hi!" }
-            p { +"We received a request to reset your password. You can create a new one by clicking the link below:" }
+            p { +"We got a request to reset your password. Create a new one with the link below:" }
             p {
                 a(href = "$hostName/reset-password/$resetCode") {
                     +"\uD83D\uDC49 Reset password"
                 }
             }
-            p { +"This link will expire in 30 minutes. If you didn't request a password reset, you can safely ignore this email." }
+            p { +"This link expires in 30 minutes. If you didn't request this, you can safely ignore this email." }
             signature(instanceName)
         }
 

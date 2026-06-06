@@ -44,7 +44,7 @@ object AdminTasksPage {
     }
 
     fun renderDetails(task: TaskRow, tz: TimeZone): Page = Page("Task ${task.id}") {
-        h1 { +"Task" }
+        h1 { +"Task ${task.id}" }
 
         table(classes = "compact striped") {
             tbody {

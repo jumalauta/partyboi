@@ -8,6 +8,7 @@ import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.settings.VoteSettings
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.voting.VoteKeyRow
 
 object AdminVotingPage {
@@ -26,7 +27,7 @@ object AdminVotingPage {
         )
 
         article {
-            header { +"Create new vote keys" }
+            cardHeader("Create new vote keys")
             a("/admin/voting/generate") {
                 role = "button"
                 +"Generate new vote key tickets"
@@ -34,7 +35,7 @@ object AdminVotingPage {
         }
 
         article {
-            header { +"Browse existing vote keys" }
+            cardHeader("Browse existing vote keys")
             voteKeys.groupBy { it.key.keyType.explain(null) }.forEach { (keyType, keys) ->
                 renderVoteKeyTable("$keyType (${keys.size})", keys, users)
             }

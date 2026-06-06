@@ -1,13 +1,13 @@
 package party.jml.partyboi.voting.admin
 
 import kotlinx.html.article
-import kotlinx.html.header
 import kotlinx.html.li
 import kotlinx.html.ul
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.Label
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.validation.Max
 import party.jml.partyboi.validation.Min
 import party.jml.partyboi.validation.Validateable
@@ -25,7 +25,7 @@ object GenerateVoteKeysPage {
 
     fun renderTickets(tickets: List<VoteKeyRow>) = Page("Print vote keys") {
         article(classes = "votekeys") {
-            header { +"Vote keys" }
+            cardHeader("Vote keys")
             ul {
                 tickets.mapNotNull { it.key.id }.forEach {
                     li { +it }

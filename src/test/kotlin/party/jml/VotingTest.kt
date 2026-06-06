@@ -94,7 +94,7 @@ class VotingTest : PartyboiTester {
 
         // Live voting is active but no entries can be voted yet
         it.get("/vote") {
-            findFirst("article") { text.toBe("Live voting for Demo compo begins soon!") }
+            findFirst("article") { text.toBe("Live voting for Demo compo begins soon.") }
         }
         it.buttonClickFails("/vote/${entry!!.id}/3")
 

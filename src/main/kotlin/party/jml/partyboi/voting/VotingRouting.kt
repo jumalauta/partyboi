@@ -40,7 +40,7 @@ fun Application.configureVotingRouting(app: AppServices) {
             call.processForm<VoteKeyForm>(
                 { data ->
                     val user = call.userSession(app).bind()
-                    if (user.votingEnabled) raise(Unauthorized("You cannot register a vote key because you have voting rights already enabled."))
+                    if (user.votingEnabled) raise(Unauthorized("You already have voting rights."))
 
                     app.voteKeys
                         .registerTicket(user.id, data.code)

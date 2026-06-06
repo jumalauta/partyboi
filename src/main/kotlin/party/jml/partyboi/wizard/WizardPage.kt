@@ -8,16 +8,16 @@ import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.settings.GeneralSettings
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 
 object WizardPage {
     fun renderSettingsStep(settings: Form<GeneralSettings>, autofillTimeZone: Boolean) = Page("Setup wizard") {
         h1 { +"Welcome to Partyboi" }
 
         article {
-            header { +"Setup wizard — step 1 of 2" }
+            cardHeader("Setup wizard — step 1 of 2")
             p {
-                +"Let's get the basics set up. First, pick the time zone the party runs in and the "
-                +"colour scheme you'd like to use. You can change all of these later under "
+                +"Pick the time zone the party runs in and a color scheme. You can change these later under "
                 em { +"Admin → Settings" }
                 +"."
             }

@@ -54,12 +54,12 @@ object AdminScreenPage {
                 a(href = "/admin/screen/new") {
                     attributes["role"] = "button"
                     icon("plus")
-                    +" New slideset"
+                    +" New slide set"
                 }
                 if (slideSet != SlideSetRow.ADHOC && slideSet != SlideSetRow.DEFAULT) {
                     deleteButton(
                         url = "/admin/screen/slideset/$slideSet",
-                        confirmation = "Delete the \"$slideSetName\" slideset and all its slides?",
+                        confirmation = confirmDelete("slide set", slideSetName, cascade = "all its slides"),
                         label = "Delete",
                         redirectUrl = "/admin/screen",
                         classes = "primary",
@@ -77,7 +77,7 @@ object AdminScreenPage {
                                 li {
                                     val isDisabled = slides.all { !it.visible }
                                     if (isDisabled) {
-                                        tooltip("Need at least one slide set visible to activate autorun")
+                                        tooltip("Need at least one slide set visible to activate auto run")
                                     }
                                     postButton("/admin/screen/${slideSet}/start") {
                                         disabled = isDisabled
@@ -111,19 +111,19 @@ object AdminScreenPage {
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
                                             icon(Icon("list-ul"))
-                                            +" Normal text slide"
+                                            +" Text slide"
                                         }
                                     }
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/qrcodeslide", classes = "flat-button") {
                                             icon(Icon("qrcode"))
-                                            +" Slide with a QR code"
+                                            +" QR code slide"
                                         }
                                     }
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/imageslide", classes = "flat-button") {
                                             icon(Icon("image"))
-                                            +" Full screen images"
+                                            +" Image slides"
                                         }
                                     }
                                 }
@@ -142,7 +142,7 @@ object AdminScreenPage {
                                 tr {
                                     attributes.put("data-dragid", slide.id.toString())
                                     if (!slide.readOnly) {
-                                        td(classes = "handle tight") { icon("arrows-up-down") }
+                                        td(classes = "handle tight") { icon("grip-vertical") }
                                     } else {
                                         td(classes = "tight") {}
                                     }
@@ -196,7 +196,7 @@ object AdminScreenPage {
                                             deleteButton(
                                                 url = "/admin/screen/${slide.id}",
                                                 tooltipText = "Delete ${slide.getName()}",
-                                                confirmation = "Do you really want to delete slide ${slide.getName()}?"
+                                                confirmation = confirmDelete("slide", slide.getName())
                                             )
                                         }
                                     }
@@ -293,14 +293,14 @@ object AdminScreenPage {
         form: Form<NewSlideSet>,
         slideSets: List<SlideSetRow>,
     ) = Page(
-        title = "New slideset",
+        title = "New slide set",
         subLinks = generateSubLinks(slideSets),
     ) {
-        h1 { +"New slideset" }
+        h1 { +"New slide set" }
         renderForm(
             url = "/admin/screen/new",
             form = form,
-            submitButtonLabel = "Create slideset",
+            submitButtonLabel = "Create slide set",
         )
     }
 
@@ -324,7 +324,7 @@ object AdminScreenPage {
             encType = FormEncType.multipartFormData,
         ) {
             article {
-                header { +"Upload images" }
+                cardHeader("Upload images")
                 fieldSet {
                     if (uploadError != null) {
                         section(classes = "error") { +uploadError }
@@ -345,7 +345,7 @@ object AdminScreenPage {
             method = FormMethod.post,
         ) {
             article {
-                header { +"Pick images to add as slides" }
+                cardHeader("Pick images to add as slides")
                 if (availableImages.isEmpty()) {
                     p { +"No unused images — upload some above." }
                 } else {
@@ -410,7 +410,7 @@ object AdminScreenPage {
 
         if (triggers.isNotEmpty()) {
             article {
-                header { +"When this slide is shown the following actions are executed automatically" }
+                cardHeader("When this slide is shown the following actions are executed automatically")
                 ul { triggers.forEach { li { +it.description } } }
             }
         }

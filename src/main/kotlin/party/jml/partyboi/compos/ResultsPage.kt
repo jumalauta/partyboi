@@ -11,7 +11,7 @@ object ResultsPage {
 
         if (results.isEmpty()) {
             article {
-                +"No results available yet!"
+                +"No results available yet."
             }
         }
 

@@ -41,7 +41,7 @@ object AdminSchedulePage {
                         .groupBy { it.startTime.toDate() }
                         .forEach { (date, events) ->
                             article {
-                                header { +date.displayDate() }
+                                cardHeader(date.displayDate())
                                 table(classes = "schedule") {
                                     thead {
                                         tr {
@@ -58,7 +58,7 @@ object AdminSchedulePage {
                         }
                 }
                 renderForm(
-                    title = "New Event",
+                    title = "New event",
                     url = "/admin/schedule/events",
                     form = newEventForm,
                     submitButtonLabel = "Add event",
@@ -131,7 +131,7 @@ object AdminSchedulePage {
                 deleteButton(
                     url = "/admin/schedule/events/$id",
                     tooltipText = "Delete event",
-                    confirmation = "Are you sure you want to delete event '${event.name}'?"
+                    confirmation = confirmDelete("event", event.name)
                 )
             }
         }
@@ -154,7 +154,7 @@ object AdminSchedulePage {
             }, {
                 if (triggers.isNotEmpty()) {
                     article {
-                        header { +"Triggers" }
+                        cardHeader("Triggers")
                         p { +"These actions will happen at the scheduled start time of the event" }
                         table {
                             thead {
@@ -190,7 +190,7 @@ object AdminSchedulePage {
                 }
 
                 renderForm(
-                    title = "Add new trigger",
+                    title = "New trigger",
                     url = "/admin/schedule/triggers",
                     form = newTriggerForm,
                     options = mapOf(

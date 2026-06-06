@@ -5,12 +5,8 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.form.renderReadonlyFields
-import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
-import party.jml.partyboi.templates.components.buttonGroup
-import party.jml.partyboi.templates.components.columns
-import party.jml.partyboi.templates.components.entryCard
-import party.jml.partyboi.templates.components.icon
+import party.jml.partyboi.templates.components.*
 
 object EntriesPage {
     fun render(
@@ -18,11 +14,11 @@ object EntriesPage {
         compos: List<Compo>,
         userEntries: List<EntryWithLatestFile>,
         previews: List<Preview>,
-    ) = Page("Submit entries") {
+    ) = Page("Entries") {
         h1 { +"Entries" }
 
         if (compos.isEmpty() && userEntries.isEmpty()) {
-            article { +"Submitting entries disabled. \uD83D\uDE25" }
+            article { +"Submitting entries is disabled." }
         }
 
         columns(
@@ -42,7 +38,7 @@ fun FlowContent.entryList(
     previews: List<Preview>,
 ) {
     if (userEntries.isNotEmpty()) {
-        h1 { +"My entries" }
+        h2 { +"My entries" }
 
         userEntries.forEach { entry ->
             entryCard(entry, previews.find { it.entryId == entry.id }, compos) {
@@ -63,18 +59,11 @@ fun FlowContent.entryList(
                     }
 
                     if (compo?.allowSubmit == true) {
-                        a {
-                            href = "#"
-                            role = "button"
-                            onClick = Javascript.build {
-                                confirm("Do you really want to delete entry \"${entry.title}\" by ${entry.author}?") {
-                                    httpDelete("/entries/${entry.id}")
-                                    refresh()
-                                }
-                            }
-                            icon("trash")
-                            +" Delete"
-                        }
+                        deleteButton(
+                            url = "/entries/${entry.id}",
+                            tooltipText = "Delete entry",
+                            confirmation = confirmDelete("entry", entry.title),
+                        )
                     }
                 }
             }
@@ -84,7 +73,7 @@ fun FlowContent.entryList(
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     if (openCompos.isEmpty()) {
-        article { +"Submitting is closed" }
+        article { +"Submitting is closed." }
     } else {
         renderForm(
             title = "Submit a new entry",

@@ -6,6 +6,7 @@ import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.randomShortId
 import party.jml.partyboi.templates.Javascript
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
 import party.jml.partyboi.validation.Validateable
 import kotlin.enums.enumEntries
@@ -253,7 +254,7 @@ fun <T : Validateable<T>> FlowContent.renderForm(
 ) {
     dataForm(url, ajax) {
         article {
-            if (title != null) header { +title }
+            if (title != null) cardHeader(title)
             fieldSet { renderFields(form, options) }
             submitButton(submitButtonLabel)
         }

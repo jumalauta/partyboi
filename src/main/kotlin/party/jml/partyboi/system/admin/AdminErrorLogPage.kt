@@ -1,14 +1,16 @@
 package party.jml.partyboi.system.admin
 
+import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import party.jml.partyboi.system.ErrorRow
+import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
 
 object AdminErrorLogPage {
-    fun renderList(errors: List<ErrorRow>): Page = Page("Error log") {
+    fun renderList(errors: List<ErrorRow>, tz: TimeZone): Page = Page("Error log") {
         h1 { +"Error log" }
         article {
             table(classes = "compact striped") {
@@ -24,7 +26,7 @@ object AdminErrorLogPage {
                     errors.forEach { error ->
                         tr {
                             td { +error.key }
-                            td { +error.time.toString() }
+                            td { +error.time.displayDateTime(tz) }
                             td { +error.message }
                             td {
                                 a(href = "/admin/errors/${error.id}") {
@@ -39,7 +41,7 @@ object AdminErrorLogPage {
     }
 
     fun renderStackTrace(error: ErrorRow): Page = Page("Error ${error.key}") {
-        h1 { +"Stack trace" }
+        h1 { +"Error ${error.key}" }
 
         table(classes = "compact striped") {
             tbody {

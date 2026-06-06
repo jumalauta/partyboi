@@ -3,6 +3,20 @@
     --pico-spacing: 0.8rem;
 }
 
+/* Content available to screen readers but not shown visually (e.g. a page's
+   top-level heading where the design has no visible title). */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 th {
     font-weight: 100;
 }

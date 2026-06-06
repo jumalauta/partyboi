@@ -72,7 +72,7 @@ fun Application.configureLoginRouting(app: AppServices) {
                     RegistrationPage.render(
                         form.mapError {
                             if (it.message.contains("duplicate key value")) {
-                                Notice("The user name or email has already been registered")
+                                Notice("That username or email is already registered")
                             } else {
                                 it
                             }

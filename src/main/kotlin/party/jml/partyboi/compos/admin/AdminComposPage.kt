@@ -109,10 +109,10 @@ object AdminComposPage {
             } else null) {
 
             renderForm(
-                title = "Add new compo",
+                title = "New compo",
                 url = "/admin/compos",
                 form = newCompoForm,
-                submitButtonLabel = "Add",
+                submitButtonLabel = "Add compo",
             )
 
             renderForm(

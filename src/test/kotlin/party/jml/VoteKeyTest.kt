@@ -33,7 +33,7 @@ class VoteKeyTest : PartyboiTester {
         // Show vote key registartion for logged-in user
         it.login("user")
         it.get("/vote/register") {
-            findFirst("form header") { text.toBe("Enable voting") }
+            findFirst("form header") { text.toBe("Register vote key") }
         }
 
         // Registration with too short key fails
@@ -58,7 +58,7 @@ class VoteKeyTest : PartyboiTester {
 
         // Registration again fails
         it.post("/vote/register", VoteKeyForm(voteKey.key.id!!)) {
-            findFirst(".error") { text.toBe("You cannot register a vote key because you have voting rights already enabled.") }
+            findFirst(".error") { text.toBe("You already have voting rights.") }
         }
 
         // Registration by another user with the same key again fails

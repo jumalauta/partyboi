@@ -101,12 +101,12 @@ object AdminEditCompoPage {
         columns({
             dataForm("/admin/compos/${compo.id}") {
                 article {
-                    header { +"General" }
+                    cardHeader("General")
                     fieldSet { renderFields(compoForm) }
                 }
 
                 article {
-                    header { +"Visibility & results" }
+                    cardHeader("Visibility & results")
                     p { small { +"How this compo behaves during the party." } }
                     fieldSet {
                         picoSwitch(
@@ -126,7 +126,7 @@ object AdminEditCompoPage {
 
                 if (!isManual) {
                     article {
-                        header { +"Submissions" }
+                        cardHeader("Submissions")
 
                         fieldSet {
                             legend { +"File uploads" }
@@ -160,7 +160,7 @@ object AdminEditCompoPage {
                     }
 
                     article {
-                        header { +"Timing" }
+                        cardHeader("Timing")
                         p { small { +"Feeds the runtime estimate on the Entries tab." } }
                         div(classes = "grid") {
                             label {
@@ -191,16 +191,14 @@ object AdminEditCompoPage {
                     }
                 }
 
-                buttonGroup {
-                    button(type = ButtonType.submit) { +"Save changes" }
-                }
+                submitButton("Save changes")
             }
         }, {
 
             // Live state controls live outside the settings form: toggling them PUTs and
             // reloads immediately, independent of the unsaved form fields above.
             article {
-                header { +"State" }
+                cardHeader("State")
                 table {
                     tbody {
                         tr {
@@ -325,7 +323,7 @@ object AdminEditCompoPage {
                     }
                 }
                 small {
-                    icon("arrows-up-down")
+                    icon("grip-vertical")
                     +" Drag to set run order · durations auto-detected from uploaded media"
                 }
             }
@@ -384,7 +382,7 @@ object AdminEditCompoPage {
                 deleteButton(
                     url = "/admin/compos/entries/${entry.id}",
                     tooltipText = "Delete entry",
-                    confirmation = "Delete entry \"${entry.title}\"? This cannot be undone.",
+                    confirmation = confirmDelete("entry", entry.title),
                 )
             }
         }
@@ -486,7 +484,7 @@ object AdminEditCompoPage {
         if (manualResults.isNotEmpty()) {
             val hasTitles = manualResults.any { it.title.isNotBlank() }
             article {
-                header { +"Results" }
+                cardHeader("Results")
                 table {
                     thead {
                         tr {
@@ -505,7 +503,7 @@ object AdminEditCompoPage {
                         manualResults.forEachIndexed { index, result ->
                             tr {
                                 attributes.put("data-dragid", result.id.toString())
-                                td(classes = "handle") { icon("arrows-up-down") }
+                                td(classes = "handle") { icon("grip-vertical") }
                                 td(classes = "place-number") { +"${index + 1}." }
                                 td {
                                     a(href = "/admin/compos/${compo.id}/manual-results/${result.id}") {
@@ -518,7 +516,7 @@ object AdminEditCompoPage {
                                     deleteButton(
                                         "/admin/compos/${compo.id}/manual-results/${result.id}",
                                         tooltipText = "Delete result",
-                                        confirmation = "Delete this result?"
+                                        confirmation = confirmDelete("result", result.author)
                                     )
                                 }
                             }
@@ -527,14 +525,14 @@ object AdminEditCompoPage {
                 }
                 small {
                     +"Set order by dragging results by "
-                    icon("arrows-up-down")
+                    icon("grip-vertical")
                 }
             }
         }
 
         article {
             if (editResultId != null) {
-                header { +"Edit result" }
+                cardHeader("Edit result")
                 dataForm("/admin/compos/${compo.id}/manual-results/$editResultId") {
                     fieldSet {
                         renderFields(form)
@@ -548,7 +546,7 @@ object AdminEditCompoPage {
                     }
                 }
             } else {
-                header { +"Add result" }
+                cardHeader("New result")
                 dataForm("/admin/compos/${compo.id}/manual-results") {
                     fieldSet {
                         renderFields(form)

@@ -17,8 +17,8 @@ class InfoPageTest : PartyboiTester {
         setupServices { Unit.right() }
         it.get("/") {
             article {
-                findFirst { text.toBe("Nothing to share yet...") }
-                findSecond { text.toBe("Schedule will be released soon!") }
+                findFirst { text.toBe("Nothing to share yet.") }
+                findSecond { text.toBe("Schedule will be released soon.") }
             }
         }
     }
@@ -36,7 +36,7 @@ class InfoPageTest : PartyboiTester {
         it.get("/") {
             article {
                 findFirst { text.toBe("Hello, world! Nice to be here!") }
-                findSecond { text.toBe("Schedule will be released soon!") }
+                findSecond { text.toBe("Schedule will be released soon.") }
             }
         }
     }
@@ -64,7 +64,7 @@ class InfoPageTest : PartyboiTester {
 
         it.get("/") {
             article {
-                findFirst { text.toBe("Nothing to share yet...") }
+                findFirst { text.toBe("Nothing to share yet.") }
                 findSecond { text.toBe("Tuesday 18.02.2025 20:08 Foodwave") }
             }
         }

@@ -12,13 +12,13 @@ object PasswordResetPage {
             url = "/reset-password",
             form = form,
             title = "Reset password",
-            submitButtonLabel = "Request password reset link to email",
+            submitButtonLabel = "Send reset link",
         )
     }
 
     fun emailSent() = Page("Password reset") {
         article {
-            +"Password reset email has been sent to the given email address. Check your mail now."
+            +"A password reset email is on its way. Check your inbox."
         }
     }
 

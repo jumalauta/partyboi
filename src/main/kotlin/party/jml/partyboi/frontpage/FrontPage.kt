@@ -2,8 +2,10 @@ package party.jml.partyboi.frontpage
 
 import kotlinx.html.a
 import kotlinx.html.article
+import kotlinx.html.h1
 import kotlinx.html.h2
 import kotlinx.html.p
+import party.jml.partyboi.Config
 import party.jml.partyboi.infoscreen.SlideRow
 import party.jml.partyboi.infoscreen.slides.QrCodeSlide
 import party.jml.partyboi.infoscreen.slides.TextSlide
@@ -18,6 +20,8 @@ import party.jml.partyboi.voting.LiveVoteState
 
 object FrontPage {
     fun render(events: List<Event>, infoScreen: List<SlideRow>, liveVote: LiveVoteState?) = Page("Home") {
+        h1(classes = "visually-hidden") { +Config.get().instanceName }
+
         if (liveVote?.open == true) {
             buttonGroup {
                 a(href = "/vote") {
@@ -58,7 +62,7 @@ object FrontPage {
                         }
                     }
                 } else {
-                    article { +"Nothing to share yet..." }
+                    article { +"Nothing to share yet." }
                 }
             },
             {
@@ -66,7 +70,7 @@ object FrontPage {
                 if (events.isNotEmpty()) {
                     schedule(events)
                 } else {
-                    article { +"Schedule will be released soon!" }
+                    article { +"Schedule will be released soon." }
                 }
             }
 

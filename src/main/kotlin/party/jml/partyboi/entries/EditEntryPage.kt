@@ -9,6 +9,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
 import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
+import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.icon
 
@@ -73,7 +74,7 @@ object EditEntryPage {
 
             if (files.isNotEmpty()) {
                 article(classes = "fileversions") {
-                    header { +"File versions" }
+                    cardHeader("File versions")
                     table {
                         thead {
                             tr {

@@ -13,7 +13,7 @@ object Config {
 
     fun get(app: Application? = null): ConfigReader {
         if (instance == null) {
-            if (app == null) throw RuntimeException("Application tried to use configuration before initialializing the config reader")
+            if (app == null) throw RuntimeException("Application tried to use configuration before initializing the config reader")
             instance = ConfigReader(app.environment.config)
         }
         return instance!!

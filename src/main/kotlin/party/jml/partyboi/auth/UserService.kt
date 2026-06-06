@@ -44,7 +44,7 @@ class UserService(private val app: AppServices) {
         userRepository.updateUser(userId, user)
             .mapLeft {
                 if (it.message.contains("duplicate key value")) {
-                    ValidationError("email", "This email has been registered already", user.email)
+                    ValidationError("email", "That email is already registered", user.email)
                 } else it
             }
             .bind()
@@ -55,7 +55,7 @@ class UserService(private val app: AppServices) {
             if (sendVerificationEmail(updatedUser)?.bind() == true) {
                 app.messages.sendMessage(
                     userId, MessageType.INFO,
-                    "To finish updating your email address, please verify it by following the instructions sent to ${updatedUser.email}"
+                    "To finish updating your email, verify it using the instructions sent to ${updatedUser.email}"
                 )
             }
         }
@@ -92,7 +92,7 @@ class UserService(private val app: AppServices) {
                 if (result.isRight()) {
                     app.messages.sendMessage(
                         assignedUser.id, MessageType.INFO,
-                        "To finish creating your account, please verify your email address by following the instructions sent to ${assignedUser.email}"
+                        "To finish creating your account, verify your email using the instructions sent to ${assignedUser.email}"
                     )
                 } else {
                     app.messages.sendMessage(
@@ -141,7 +141,7 @@ class UserService(private val app: AppServices) {
             app.messages.sendMessage(
                 userId,
                 MessageType.SUCCESS,
-                "Your email has been verified successfully."
+                "Your email has been verified."
             )
             processAutomaticVoteKeyByEmail(userId).bind()
         } else {
@@ -205,7 +205,7 @@ class UserService(private val app: AppServices) {
         val hashedPassword = hashPassword(newPassword)
         userRepository.changePassword(userId, hashedPassword).bind()
         passwordResetRepository.invalidateCode(code).bind()
-        app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed successfully.").bind()
+        app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed.").bind()
         userId
     }
 }
