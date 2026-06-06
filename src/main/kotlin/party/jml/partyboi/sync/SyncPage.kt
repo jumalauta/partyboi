@@ -219,7 +219,7 @@ object SyncPage {
                         }
                     }
                 }
-                a(href = "/sync") { +"Get back" }
+                a(href = "/sync") { +"Back to sync" }
             }
         }
 }
