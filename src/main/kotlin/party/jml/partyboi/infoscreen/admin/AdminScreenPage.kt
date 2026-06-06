@@ -111,19 +111,19 @@ object AdminScreenPage {
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/textslide", classes = "flat-button") {
                                             icon(Icon("list-ul"))
-                                            +" Normal text slide"
+                                            +" Text slide"
                                         }
                                     }
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/qrcodeslide", classes = "flat-button") {
                                             icon(Icon("qrcode"))
-                                            +" Slide with a QR code"
+                                            +" QR code slide"
                                         }
                                     }
                                     li {
                                         a(href = "/admin/screen/${slideSet}/new/imageslide", classes = "flat-button") {
                                             icon(Icon("image"))
-                                            +" Full screen images"
+                                            +" Image slides"
                                         }
                                     }
                                 }

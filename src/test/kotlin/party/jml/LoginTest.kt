@@ -81,7 +81,7 @@ class LoginTest : PartyboiTester {
                 append("isUpdate", "")
             }
         ) {
-            findFirst(".error") { text.toBe("The user name or email has already been registered") }
+            findFirst(".error") { text.toBe("That username or email is already registered") }
         }
     }
 
@@ -154,7 +154,7 @@ class LoginTest : PartyboiTester {
         val verificationLink = it.getJson<List<EmailMessage>, _>("/test/mock-emails") { emails ->
             emails.last().let {
                 it.recipient.toBe(emailAddr)
-                it.subject.toBe("Verify your email address to Partyboi (test)")
+                it.subject.toBe("Verify your Partyboi (test) email address")
                 // Scrape the verification link
                 htmlDocument(it.content) {
                     findFirst("a") {
@@ -167,7 +167,7 @@ class LoginTest : PartyboiTester {
         // Verificate email
         it.get(verificationLink) {
             findFirst(".snackbars li span") {
-                text.toBe("Your email has been verified successfully.")
+                text.toBe("Your email has been verified.")
             }
             findSecond(".snackbars li span") {
                 text.toBe("You have been granted rights to vote.")

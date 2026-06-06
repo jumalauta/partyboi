@@ -33,9 +33,9 @@ object UserEditPage {
                     article {
                         cardHeader("Vote keys")
                         if (voteKeys.isEmpty()) {
-                            p { +"User does not have any vote keys" }
+                            p { +"No vote keys." }
                         } else {
-                            p { +"Vote key(s) acquired by:" }
+                            p { +"Acquired by:" }
                             ul {
                                 voteKeys.forEach { key ->
                                     li { +key.explain() }
@@ -72,23 +72,18 @@ object UserEditPage {
                         cardHeader("Verification")
                         section {
                             if (user.email == null) {
-                                +"User does not have an email address"
+                                +"No email address."
                             } else {
-                                if (user.emailVerified) {
-                                    +"User has a verified email address "
+                                p {
+                                    +"Email: "
                                     a(href = "mailto:${user.email}") { +user.email }
-                                } else {
+                                    +(if (user.emailVerified) " (verified)" else " (not verified)")
+                                }
+                                if (!user.emailVerified && showAdminControls) {
                                     p {
-                                        +"User has an email address "
-                                        a(href = "mailto:${user.email}") { +user.email }
-                                        +" but it is not verified"
-                                    }
-                                    if (showAdminControls) {
-                                        p {
-                                            a(href = "/admin/users/${user.id}/send-verification") {
-                                                attributes.put("role", "button")
-                                                +"Send verification email"
-                                            }
+                                        a(href = "/admin/users/${user.id}/send-verification") {
+                                            attributes.put("role", "button")
+                                            +"Send verification email"
                                         }
                                     }
                                 }

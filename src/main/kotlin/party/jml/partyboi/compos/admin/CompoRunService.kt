@@ -208,7 +208,7 @@ class CompoRunService(app: AppServices) : Service(app) {
         app.files.getLatest(entry.id, originalsOnly = false)
             .mapLeft {
                 when (it) {
-                    is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' does not have file. Disqualify it first.")
+                    is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' has no file. Disqualify it first.")
                     else -> it
                 }
             }
