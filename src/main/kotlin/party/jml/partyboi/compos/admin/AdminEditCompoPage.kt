@@ -325,7 +325,7 @@ object AdminEditCompoPage {
                     }
                 }
                 small {
-                    icon("arrows-up-down")
+                    icon("grip-vertical")
                     +" Drag to set run order · durations auto-detected from uploaded media"
                 }
             }
@@ -505,7 +505,7 @@ object AdminEditCompoPage {
                         manualResults.forEachIndexed { index, result ->
                             tr {
                                 attributes.put("data-dragid", result.id.toString())
-                                td(classes = "handle") { icon("arrows-up-down") }
+                                td(classes = "handle") { icon("grip-vertical") }
                                 td(classes = "place-number") { +"${index + 1}." }
                                 td {
                                     a(href = "/admin/compos/${compo.id}/manual-results/${result.id}") {
@@ -527,7 +527,7 @@ object AdminEditCompoPage {
                 }
                 small {
                     +"Set order by dragging results by "
-                    icon("arrows-up-down")
+                    icon("grip-vertical")
                 }
             }
         }

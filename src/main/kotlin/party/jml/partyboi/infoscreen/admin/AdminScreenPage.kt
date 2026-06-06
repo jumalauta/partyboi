@@ -142,7 +142,7 @@ object AdminScreenPage {
                                 tr {
                                     attributes.put("data-dragid", slide.id.toString())
                                     if (!slide.readOnly) {
-                                        td(classes = "handle tight") { icon("arrows-up-down") }
+                                        td(classes = "handle tight") { icon("grip-vertical") }
                                     } else {
                                         td(classes = "tight") {}
                                     }
