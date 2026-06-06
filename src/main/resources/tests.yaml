@@ -30,3 +30,7 @@ files:
 
 email:
   mock: "true"
+
+# The work-queue worker would consume/process tasks that tests set up and assert on.
+workQueue:
+  enabled: "false"

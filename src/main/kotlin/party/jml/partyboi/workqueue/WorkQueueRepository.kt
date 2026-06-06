@@ -35,13 +35,14 @@ class WorkQueueRepository(val app: AppServices) {
             queryOf(
                 """
             UPDATE task
-            SET state = 'Working', started_at = now()
+            SET state = 'Working', started_at = now(), attempts = attempts + 1
             WHERE id IN (
             	SELECT id
             	FROM task
             	WHERE state = 'Pending'
             	ORDER BY created_at
             	LIMIT 1
+            	FOR UPDATE SKIP LOCKED
             )
             RETURNING *
         """.trimIndent()
@@ -49,8 +50,22 @@ class WorkQueueRepository(val app: AppServices) {
         ).flatten()
     }
 
-    suspend fun cancel(): AppResult<Unit> = db.use {
-        exec(queryOf("UPDATE task SET state = 'Discarded', finished_at = now() WHERE state = 'Working'"))
+    // Tasks left in 'Working' state were interrupted by a worker crash/restart (a running worker
+    // always moves a task to a terminal state itself). Requeue the ones that still have attempts left
+    // so they get retried, and give up on the rest — a task that keeps killing the worker must not be
+    // requeued forever. Order matters: fail the exhausted ones before requeuing the remaining Working.
+    suspend fun recoverStalledTasks(): AppResult<Unit> = db.use {
+        either {
+            exec(
+                queryOf(
+                    "UPDATE task SET state = 'Failed', finished_at = now() WHERE state = 'Working' AND attempts >= ?",
+                    MAX_ATTEMPTS,
+                )
+            ).bind()
+            exec(
+                queryOf("UPDATE task SET state = 'Pending', started_at = NULL WHERE state = 'Working'")
+            ).bind()
+        }
     }
 
     suspend fun setState(id: UUID, state: TaskState) = db.use {
@@ -74,6 +89,11 @@ class WorkQueueRepository(val app: AppServices) {
     suspend fun getById(id: UUID): AppResult<TaskRow> = db.use {
         one(queryOf("SELECT * FROM task WHERE id = ?", id).map(TaskRow.fromRow)).flatten()
     }
+
+    companion object {
+        // How many times a task may be claimed before a crash-interrupted run is given up on.
+        const val MAX_ATTEMPTS = 3
+    }
 }
 
 data class TaskRow(
@@ -82,7 +102,8 @@ data class TaskRow(
     val createdAt: Instant,
     val startedAt: Instant?,
     val finishedAt: Instant?,
-    val state: TaskState
+    val state: TaskState,
+    val attempts: Int,
 ) {
     companion object {
         val fromRow: (Row) -> AppResult<TaskRow> = { row ->
@@ -94,6 +115,7 @@ data class TaskRow(
                     startedAt = row.instantOrNull("started_at")?.toKotlinInstant(),
                     finishedAt = row.instantOrNull("finished_at")?.toKotlinInstant(),
                     state = TaskState.valueOf(row.string("state")),
+                    attempts = row.int("attempts"),
                 )
             }.mapLeft { InternalServerError(it) }
         }

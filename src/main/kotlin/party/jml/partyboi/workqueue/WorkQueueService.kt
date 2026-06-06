@@ -11,11 +11,10 @@ class WorkQueueService(val app: AppServices) : Logging() {
     suspend fun addTask(task: Task) = repository.add(task)
 
     suspend fun start() {
-        repository.cancel()
+        repository.recoverStalledTasks().onLeft { log.error("Failed to recover stalled tasks", it.throwable) }
         while (true) {
             try {
                 repository.takeNext().fold({
-                    repository.cancel()
                     delay(1000)
                 }, { taskRow ->
                     val success = try {
