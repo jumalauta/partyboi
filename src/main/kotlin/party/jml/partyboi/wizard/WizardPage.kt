@@ -17,8 +17,7 @@ object WizardPage {
         article {
             cardHeader("Setup wizard — step 1 of 2")
             p {
-                +"Let's get the basics set up. First, pick the time zone the party runs in and the "
-                +"color scheme you'd like to use. You can change all of these later under "
+                +"Pick the time zone the party runs in and a color scheme. You can change these later under "
                 em { +"Admin → Settings" }
                 +"."
             }

@@ -117,16 +117,16 @@ object UserVotingPage {
                 section {
                     ul {
                         li {
-                            +"Rate each entry from ${VoteService.MIN_POINTS} (worst) to ${VoteService.MAX_POINTS} (best). Click a number — your vote is saved immediately."
+                            +"Rate each entry from ${VoteService.MIN_POINTS} (worst) to ${VoteService.MAX_POINTS} (best). Click a number to save your vote instantly."
                         }
                         li {
-                            +"You can change your vote at any time while the compo is open for voting."
+                            +"Change your vote any time while voting is open."
                         }
                         li {
-                            +"Once you have voted at least one entry in a compo, every other entry in that compo automatically receives ${VoteService.MEAN_POINTS} points from you. Skipping an entry is not the same as voting against it."
+                            +"Once you vote on any entry in a compo, every other entry there gets ${VoteService.MEAN_POINTS} points from you. Skipping an entry isn't the same as voting against it."
                         }
                         li {
-                            +"If you do not vote any entry in a compo, you contribute no points there."
+                            +"Vote on nothing in a compo and you give it no points."
                         }
                     }
                 }
