@@ -158,7 +158,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 val fileId = call.parameterUUID("fileId").bind()
                 val user = call.optionalUserSession(app)
                 val entry = app.entries.getByFileId(fileId).bind()
-                if (user?.let { it.isAdmin || it.id === entry.userId } == true
+                if (user?.let { it.isAdmin || it.id == entry.userId } == true
                     || app.compos.getById(entry.compoId).bind().publicResults
                 ) {
                     app.files.getById(fileId).bind()

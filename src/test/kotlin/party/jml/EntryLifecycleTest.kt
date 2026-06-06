@@ -1,6 +1,7 @@
 package party.jml
 
 import arrow.core.raise.either
+import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -12,6 +13,7 @@ import party.jml.partyboi.form.FileUpload
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class EntryLifecycleTest : PartyboiTester {
@@ -89,5 +91,55 @@ class EntryLifecycleTest : PartyboiTester {
 
         assertTrue(appRef!!.entries.getById(entryId).isLeft(), "entry should be deleted")
         assertTrue(appRef!!.previews.get(entryId).isLeft(), "preview should be cascade-deleted with the entry")
+    }
+
+    // Regression for the broken owner check in /entries/download/{fileId}: it compared the session
+    // user id with the entry's user id using === (reference equality), which is always false for two
+    // distinct UUID instances, so authors could not download their own entry before results were
+    // public. A non-owner must still be denied while results are not public.
+    //
+    // We assert on the Content-Disposition header (the file is served as an attachment) rather than
+    // the status code, because the denial path renders an HTML page that this SSR app returns with a
+    // 200 status — so the status alone cannot tell "file served" apart from "access denied page".
+    @Test
+    fun testOwnerCanDownloadOwnFileBeforeResultsArePublic() = test {
+        var ownerFileId: UUID = UUIDv7.Empty
+
+        setupServices {
+            val app = this
+            either {
+                val owner = addTestUser(app, "owner").bind()
+                val compo = compos.add(NewCompo("Demo", "")).bind() // results not public (default)
+                val entry = entries.add(
+                    NewEntry(
+                        title = "Owned Entry",
+                        author = "Owner",
+                        file = FileUpload.createTestData("owned.dat", 256),
+                        compoId = compo.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = owner.id,
+                    )
+                ).bind()
+                ownerFileId = app.files.getLatest(entry.id, true).bind().id
+            }
+        }
+
+        // The author receives their own file as an attachment, even though results are not public.
+        it.login("owner")
+        assertEquals(
+            "attachment; filename=owned.dat",
+            it.client.get("/entries/download/$ownerFileId").headers[HttpHeaders.ContentDisposition],
+            "owner should receive their own file before results are public",
+        )
+
+        // A different (non-admin) user is still denied: the response is the access-denied page, not
+        // the file (no attachment Content-Disposition).
+        val other = TestHtmlClient(createClient { install(HttpCookies) })
+        other.login("otheruser")
+        assertNull(
+            other.client.get("/entries/download/$ownerFileId").headers[HttpHeaders.ContentDisposition],
+            "a non-owner must not receive the file while results are not public",
+        )
     }
 }
