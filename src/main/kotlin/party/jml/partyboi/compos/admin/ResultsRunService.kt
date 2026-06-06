@@ -21,6 +21,9 @@ class ResultsRunService(app: AppServices) : Service(app) {
         val currentState = resultsSteps.get().bind()
 
         if (currentState == null || currentState.hasEnded() || currentState.compoId != compo.id) {
+            // Close voting as the results presentation begins, so the standings are frozen before they
+            // are computed and shown (the End step closes it again as a safety net).
+            app.compos.allowVoting(compo.id, false).bind()
             val results = app.votes.getResults().bind().filter { it.compoId == compo.id }
             val grouped = CompoResult.groupResults(results).values.firstOrNull().orEmpty()
 
@@ -192,6 +195,9 @@ sealed interface ResultsStep {
         )
 
         override suspend fun activate(app: AppServices) {
+            // Close voting when the results go on the big screen, otherwise voters could keep changing
+            // votes on a compo whose standings have already been published.
+            app.compos.allowVoting(compoId, false)
             app.compos.publishResults(compoId, true)
             app.compos.setVisible(compoId, true)
         }
