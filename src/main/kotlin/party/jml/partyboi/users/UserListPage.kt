@@ -10,8 +10,8 @@ object UserListPage {
     fun render(users: List<User>, jmlCaptchaScores: Map<UUID, Double>) = Page(
         title = "Users"
     ) {
+        h1 { +"Users" }
         article {
-            header { +"Users" }
             table {
                 thead {
                     tr {

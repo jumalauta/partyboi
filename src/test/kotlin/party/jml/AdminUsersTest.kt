@@ -21,7 +21,7 @@ class AdminUsersTest : PartyboiTester {
         it.login("admin")
         it.get("/admin/users", HttpStatusCode.OK) {
             relaxed = true
-            findFirst("article header") { text.toBe("Users") }
+            findFirst("h1") { text.toBe("Users") }
         }
     }
 }

@@ -38,7 +38,7 @@ fun FlowContent.entryList(
     previews: List<Preview>,
 ) {
     if (userEntries.isNotEmpty()) {
-        h1 { +"My entries" }
+        h2 { +"My entries" }
 
         userEntries.forEach { entry ->
             entryCard(entry, previews.find { it.entryId == entry.id }, compos) {
