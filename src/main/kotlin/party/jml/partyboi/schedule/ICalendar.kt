@@ -35,7 +35,7 @@ object ICalendar {
         override fun toString(): String = ics.toString()
 
         fun append(line: String) {
-            ics.append("$line$CRLF")
+            ics.append(fold(line)).append(CRLF)
         }
 
         fun obj(name: String, block: ICalendarDsl.() -> Unit) {
@@ -47,8 +47,43 @@ object ICalendar {
         fun calendar(block: ICalendarDsl.() -> Unit) = obj("VCALENDAR", block)
         fun event(block: ICalendarDsl.() -> Unit) = obj("VEVENT", block)
 
-        fun prop(key: String, value: String) = append("$key:$value")
+        fun prop(key: String, value: String) = append("$key:${escapeText(value)}")
         fun prop(key: String, time: Instant) = append("$key:${formatTime(time)}")
+
+        // RFC 5545 §3.3.11: backslash, semicolon, comma and newlines are special in TEXT values and
+        // must be escaped. Escape the backslash first so the escapes added afterwards aren't doubled.
+        private fun escapeText(value: String): String =
+            value
+                .replace("\\", "\\\\")
+                .replace("\r\n", "\\n")
+                .replace("\n", "\\n")
+                .replace("\r", "\\n")
+                .replace(";", "\\;")
+                .replace(",", "\\,")
+
+        // RFC 5545 §3.1: a content line is limited to 75 octets; longer lines must be folded by
+        // inserting CRLF followed by a single space. Fold on character boundaries so multi-byte
+        // UTF-8 sequences are never split across a fold.
+        private fun fold(line: String): String {
+            val maxOctets = 75
+            val sb = StringBuilder()
+            var octets = 0
+            var i = 0
+            while (i < line.length) {
+                val codePoint = line.codePointAt(i)
+                val charCount = Character.charCount(codePoint)
+                val piece = line.substring(i, i + charCount)
+                val pieceOctets = piece.toByteArray(Charsets.UTF_8).size
+                if (octets + pieceOctets > maxOctets) {
+                    sb.append(CRLF).append(' ')
+                    octets = 1 // the continuation line begins with the inserted space
+                }
+                sb.append(piece)
+                octets += pieceOctets
+                i += charCount
+            }
+            return sb.toString()
+        }
 
         private fun formatTime(time: Instant): String =
             time
