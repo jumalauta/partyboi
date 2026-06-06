@@ -26,7 +26,7 @@ import kotlin.io.path.readText
 class InfoScreenService(app: AppServices) : Service(app) {
     private val repository = InfoScreenRepository(app)
     private val state = property("state", InfoScreenState.Empty).toState()
-    private var autoRunScheduler: TimerTask? = null
+    private var autoRunTimer: Timer? = null
     private val autoRunOn = property("autoRunOn", false)
 
     init {
@@ -63,7 +63,7 @@ class InfoScreenService(app: AppServices) : Service(app) {
             repository.deleteSlideSet(id)
         }
 
-    fun currentState(): Pair<InfoScreenState, Boolean> = Pair(state.value, autoRunScheduler != null)
+    fun currentState(): Pair<InfoScreenState, Boolean> = Pair(state.value, autoRunTimer != null)
     fun currentSlide(): Slide<*> = state.value.slide
 
     fun waitForNext(): Flow<InfoScreenState> = state.waitForNext()
@@ -124,8 +124,8 @@ class InfoScreenService(app: AppServices) : Service(app) {
     suspend fun setRunOrder(id: UUID, order: Int) = repository.setRunOrder(id, order)
 
     suspend fun stopSlideSet() {
-        autoRunScheduler?.cancel()
-        autoRunScheduler = null
+        autoRunTimer?.cancel()
+        autoRunTimer = null
         autoRunOn.set(false)
     }
 
@@ -136,9 +136,15 @@ class InfoScreenService(app: AppServices) : Service(app) {
         }
 
     suspend fun startAutoRunScheduler() {
-        autoRunScheduler = Timer().schedule(10000, 10000) {
-            runBlocking {
-                showNext()
+        // Cancel any running scheduler first, otherwise the old Timer's thread is leaked and both keep
+        // advancing the slides. Store the Timer (not just the task) so it can be fully cancelled, and
+        // run it on a daemon thread so a leftover scheduler can never keep the JVM alive.
+        autoRunTimer?.cancel()
+        autoRunTimer = Timer("infoscreen-autorun", true).apply {
+            schedule(10000, 10000) {
+                runBlocking {
+                    showNext()
+                }
             }
         }
         autoRunOn.set(true)
