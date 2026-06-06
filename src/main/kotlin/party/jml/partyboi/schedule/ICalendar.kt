@@ -12,8 +12,16 @@ object ICalendar {
         dsl.calendar {
             prop("VERSION", "2.0")
             prop("CALSCALE", "GREGORIAN")
+            // METHOD:PUBLISH marks this as a published, read-only feed. Strict consumers (notably
+            // Outlook) treat a feed without it differently; Google is lenient but expects it too.
+            prop("METHOD", "PUBLISH")
             prop("PRODID", "-//Jumalauta//Partyboi//EN")
             prop("X-WR-CALNAME", instanceName)
+            // Refresh hints so subscribers re-poll promptly instead of relying on their (often
+            // multi-hour) defaults. REFRESH-INTERVAL is the RFC 7986 property; X-PUBLISHED-TTL is
+            // the older Microsoft/Google extension that the same clients still honour.
+            prop("REFRESH-INTERVAL;VALUE=DURATION", "PT1H")
+            prop("X-PUBLISHED-TTL", "PT1H")
 
             events.forEach {
                 event {

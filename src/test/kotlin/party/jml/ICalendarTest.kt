@@ -86,4 +86,18 @@ class ICalendarTest {
         assertTrue(out.contains("BEGIN:VEVENT\r\n"), out)
         assertTrue(out.contains("SUMMARY:Opening ceremony\r\n"), out)
     }
+
+    // A published feed must advertise METHOD:PUBLISH and refresh hints so subscribing clients
+    // (Google Calendar's "From URL", Outlook, …) treat it as a live, periodically-polled feed
+    // rather than a one-off file.
+    @Test
+    fun testPublishMethodAndRefreshHints() {
+        val out = ics("Opening ceremony")
+        assertTrue(out.contains("METHOD:PUBLISH\r\n"), "feed must declare METHOD:PUBLISH:\n$out")
+        assertTrue(
+            out.contains("REFRESH-INTERVAL;VALUE=DURATION:PT1H\r\n"),
+            "feed must declare a REFRESH-INTERVAL:\n$out"
+        )
+        assertTrue(out.contains("X-PUBLISHED-TTL:PT1H\r\n"), "feed must declare X-PUBLISHED-TTL:\n$out")
+    }
 }
