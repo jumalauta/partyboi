@@ -59,7 +59,7 @@ object AdminScreenPage {
                 if (slideSet != SlideSetRow.ADHOC && slideSet != SlideSetRow.DEFAULT) {
                     deleteButton(
                         url = "/admin/screen/slideset/$slideSet",
-                        confirmation = "Delete the \"$slideSetName\" slideset and all its slides?",
+                        confirmation = confirmDelete("slide set", slideSetName, cascade = "all its slides"),
                         label = "Delete",
                         redirectUrl = "/admin/screen",
                         classes = "primary",
@@ -196,7 +196,7 @@ object AdminScreenPage {
                                             deleteButton(
                                                 url = "/admin/screen/${slide.id}",
                                                 tooltipText = "Delete ${slide.getName()}",
-                                                confirmation = "Do you really want to delete slide ${slide.getName()}?"
+                                                confirmation = confirmDelete("slide", slide.getName())
                                             )
                                         }
                                     }

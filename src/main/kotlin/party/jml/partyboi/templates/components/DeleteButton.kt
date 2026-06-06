@@ -24,3 +24,15 @@ fun FlowContent.deleteButton(
         if (label != null) +" $label"
     }
 }
+
+/**
+ * Standard confirmation prompt for destructive delete actions, e.g.
+ * `Delete event "Summer Compo"?`. Pass [cascade] for actions that also remove
+ * children, e.g. `confirmDelete("slideset", name, cascade = "all its slides")`
+ * → `Delete slideset "Foo" and all its slides?`.
+ */
+fun confirmDelete(thing: String, name: String? = null, cascade: String? = null): String {
+    val subject = if (name != null) "$thing \"$name\"" else thing
+    val tail = if (cascade != null) " and $cascade" else ""
+    return "Delete $subject$tail?"
+}

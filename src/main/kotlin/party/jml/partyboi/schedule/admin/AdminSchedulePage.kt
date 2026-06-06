@@ -131,7 +131,7 @@ object AdminSchedulePage {
                 deleteButton(
                     url = "/admin/schedule/events/$id",
                     tooltipText = "Delete event",
-                    confirmation = "Are you sure you want to delete event '${event.name}'?"
+                    confirmation = confirmDelete("event", event.name)
                 )
             }
         }

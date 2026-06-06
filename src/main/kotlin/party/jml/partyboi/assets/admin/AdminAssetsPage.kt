@@ -6,6 +6,7 @@ import party.jml.partyboi.form.submitButton
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.columns
 import party.jml.partyboi.templates.components.deleteButton
+import party.jml.partyboi.templates.components.confirmDelete
 
 object AdminAssetsPage {
     fun render(assets: List<Asset>, error: String? = null) =
@@ -35,7 +36,7 @@ object AdminAssetsPage {
                                                 deleteButton(
                                                     url = "/admin/assets-dir/$directory",
                                                     tooltipText = "Delete /$directory",
-                                                    confirmation = "Do you really want to delete /$directory and all ${files.size} files in it?"
+                                                    confirmation = confirmDelete("directory", "/$directory", cascade = "all ${files.size} files in it")
                                                 )
                                             }
                                         }
@@ -63,7 +64,7 @@ object AdminAssetsPage {
                                                             deleteButton(
                                                                 url = "/admin/assets/$asset",
                                                                 tooltipText = "Delete ${asset.truncatedName}",
-                                                                confirmation = "Do you really want to delete file $asset?"
+                                                                confirmation = confirmDelete("file", asset.toString())
                                                             )
                                                         }
                                                     }

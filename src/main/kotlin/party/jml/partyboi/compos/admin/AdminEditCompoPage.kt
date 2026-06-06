@@ -384,7 +384,7 @@ object AdminEditCompoPage {
                 deleteButton(
                     url = "/admin/compos/entries/${entry.id}",
                     tooltipText = "Delete entry",
-                    confirmation = "Delete entry \"${entry.title}\"? This cannot be undone.",
+                    confirmation = confirmDelete("entry", entry.title),
                 )
             }
         }
@@ -518,7 +518,7 @@ object AdminEditCompoPage {
                                     deleteButton(
                                         "/admin/compos/${compo.id}/manual-results/${result.id}",
                                         tooltipText = "Delete result",
-                                        confirmation = "Delete this result?"
+                                        confirmation = confirmDelete("result", result.author)
                                     )
                                 }
                             }
