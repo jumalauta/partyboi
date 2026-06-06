@@ -107,7 +107,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 {
                     renderEntriesPage(call.userSession(app), newEntryForm = it).bind()
                 },
-                app.config.maxFileUploadSize
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
 
@@ -214,7 +214,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         entryUpdateForm = it
                     ).bind()
                 },
-                app.config.maxFileUploadSize
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
 
@@ -239,7 +239,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         user = call.userSession(app),
                         previewForm = it
                     ).bind()
-                }
+                },
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
     }
