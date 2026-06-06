@@ -54,7 +54,7 @@ object AdminScreenPage {
                 a(href = "/admin/screen/new") {
                     attributes["role"] = "button"
                     icon("plus")
-                    +" New slideset"
+                    +" New slide set"
                 }
                 if (slideSet != SlideSetRow.ADHOC && slideSet != SlideSetRow.DEFAULT) {
                     deleteButton(
@@ -77,7 +77,7 @@ object AdminScreenPage {
                                 li {
                                     val isDisabled = slides.all { !it.visible }
                                     if (isDisabled) {
-                                        tooltip("Need at least one slide set visible to activate autorun")
+                                        tooltip("Need at least one slide set visible to activate auto run")
                                     }
                                     postButton("/admin/screen/${slideSet}/start") {
                                         disabled = isDisabled
@@ -293,14 +293,14 @@ object AdminScreenPage {
         form: Form<NewSlideSet>,
         slideSets: List<SlideSetRow>,
     ) = Page(
-        title = "New slideset",
+        title = "New slide set",
         subLinks = generateSubLinks(slideSets),
     ) {
-        h1 { +"New slideset" }
+        h1 { +"New slide set" }
         renderForm(
             url = "/admin/screen/new",
             form = form,
-            submitButtonLabel = "Create slideset",
+            submitButtonLabel = "Create slide set",
         )
     }
 
