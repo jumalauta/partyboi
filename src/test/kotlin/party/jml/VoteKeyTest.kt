@@ -33,7 +33,7 @@ class VoteKeyTest : PartyboiTester {
         // Show vote key registartion for logged-in user
         it.login("user")
         it.get("/vote/register") {
-            findFirst("form header") { text.toBe("Enable voting") }
+            findFirst("form header") { text.toBe("Register vote key") }
         }
 
         // Registration with too short key fails

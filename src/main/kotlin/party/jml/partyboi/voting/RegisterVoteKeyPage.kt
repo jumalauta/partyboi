@@ -9,9 +9,9 @@ import party.jml.partyboi.validation.MinLength
 import party.jml.partyboi.validation.Validateable
 
 object RegisterVoteKeyPage {
-    fun render(form: Form<VoteKeyForm>) = Page("Enable voting") {
+    fun render(form: Form<VoteKeyForm>) = Page("Register vote key") {
         renderForm(
-            title = "Enable voting",
+            title = "Register vote key",
             url = "/vote/register",
             form = form,
             submitButtonLabel = "Register your vote key"

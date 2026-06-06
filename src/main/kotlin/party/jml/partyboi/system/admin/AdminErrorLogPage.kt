@@ -39,7 +39,7 @@ object AdminErrorLogPage {
     }
 
     fun renderStackTrace(error: ErrorRow): Page = Page("Error ${error.key}") {
-        h1 { +"Stack trace" }
+        h1 { +"Error ${error.key}" }
 
         table(classes = "compact striped") {
             tbody {

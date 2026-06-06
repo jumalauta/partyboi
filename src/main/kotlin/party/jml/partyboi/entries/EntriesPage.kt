@@ -14,7 +14,7 @@ object EntriesPage {
         compos: List<Compo>,
         userEntries: List<EntryWithLatestFile>,
         previews: List<Preview>,
-    ) = Page("Submit entries") {
+    ) = Page("Entries") {
         h1 { +"Entries" }
 
         if (compos.isEmpty() && userEntries.isEmpty()) {
