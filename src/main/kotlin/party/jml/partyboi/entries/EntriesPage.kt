@@ -18,7 +18,7 @@ object EntriesPage {
         h1 { +"Entries" }
 
         if (compos.isEmpty() && userEntries.isEmpty()) {
-            article { +"Submitting entries disabled. \uD83D\uDE25" }
+            article { +"Submitting entries is disabled." }
         }
 
         columns(
@@ -73,7 +73,7 @@ fun FlowContent.entryList(
 
 fun FlowContent.submitNewEntryForm(url: String, openCompos: List<Compo>, values: Form<NewEntry>) {
     if (openCompos.isEmpty()) {
-        article { +"Submitting is closed" }
+        article { +"Submitting is closed." }
     } else {
         renderForm(
             title = "Submit a new entry",

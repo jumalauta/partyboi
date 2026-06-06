@@ -62,7 +62,7 @@ object FrontPage {
                         }
                     }
                 } else {
-                    article { +"Nothing to share yet..." }
+                    article { +"Nothing to share yet." }
                 }
             },
             {
@@ -70,7 +70,7 @@ object FrontPage {
                 if (events.isNotEmpty()) {
                     schedule(events)
                 } else {
-                    article { +"Schedule will be released soon!" }
+                    article { +"Schedule will be released soon." }
                 }
             }
 

@@ -29,7 +29,7 @@ object UserVotingPage {
 
             liveVote?.let { live ->
                 if (live.entries.isEmpty()) {
-                    article { +"Live voting for ${live.compo.displayName} begins soon!" }
+                    article { +"Live voting for ${live.compo.displayName} begins soon." }
                 }
             }
 
