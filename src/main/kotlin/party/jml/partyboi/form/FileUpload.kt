@@ -80,6 +80,19 @@ data class FileUpload(
     }
 }
 
+// A sensible default upload limit for forms that only carry text fields — Ktor's formFieldLimit
+// bounds both the whole multipart body and each individual part, so this caps non-file form fields.
+const val MAX_FORM_FIELD_SIZE = 1024L * 1024L // 1 MB
+
+// Fallback upload limit when files.maxSize is not configured, so uploads are never truly unbounded.
+const val DEFAULT_MAX_UPLOAD_SIZE = 2L * 1024 * 1024 * 1024 // 2 GB
+
+// The size limit handed to Ktor's receiveMultipart(formFieldLimit). Ktor uses it to bound the whole
+// multipart body and each individual part, so it must be at least the largest allowed file — and
+// must never be unlimited (-1), which is what an unconfigured files.maxSize used to produce.
+fun multipartSizeLimit(configuredMaxFileSize: Long): Long =
+    if (configuredMaxFileSize > 0) configuredMaxFileSize else DEFAULT_MAX_UPLOAD_SIZE
+
 suspend fun MultiPartData.collect(): Pair<Map<String, List<String>>, Map<String, List<FileUpload>>> {
     val stringParams = MapCollector<String, String>()
     val fileParams = MapCollector<String, FileUpload>()
@@ -97,7 +110,8 @@ suspend fun MultiPartData.collect(): Pair<Map<String, List<String>>, Map<String,
                     part.provider().copyAndClose(tempFile.writeChannel())
                     fileParams.add(
                         name, FileUpload(
-                            name = part.originalFileName ?: throw Error("File name missing for parameter '$name'"),
+                            name = part.originalFileName
+                                ?: throw IllegalArgumentException("File name missing for parameter '$name'"),
                             tempFile = tempFile,
                         )
                     )

@@ -113,8 +113,8 @@ class EntryRepository(app: AppServices) : Service(app) {
         )
     }
 
-    suspend fun add(newEntry: NewEntry): AppResult<Entry> =
-        db.transaction {
+    suspend fun add(newEntry: NewEntry): AppResult<Entry> = either {
+        val (entry, storedFile) = db.transaction {
             either {
                 val compo = app.compos.getById(newEntry.compoId, this@transaction).bind()
                 if (compo.requireFile == true && !newEntry.file.isDefined) {
@@ -133,19 +133,32 @@ class EntryRepository(app: AppServices) : Service(app) {
                     ).map(Entry.fromRow)
                 ).bind()
 
-                if (newEntry.file.isDefined) {
-                    val storedFile = storeFile(newEntry.file, entry.id, this@transaction).bind()
-
-                    app.previews.scanForScreenshotSource(storedFile)?.let { source ->
-                        app.previews.store(entry.id, source)
-                    }
+                val storedFile = if (newEntry.file.isDefined) {
+                    storeFile(newEntry.file, entry.id, this@transaction).bind()
+                } else {
+                    null
                 }
 
-                entry
+                entry to storedFile
             }
-        }.onRight {
-            app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time))
+        }.bind()
+
+        app.signals.emit(Signal.compoContentUpdated(newEntry.compoId, app.time))
+
+        // Generate the entry preview only after the transaction has committed: preview generation
+        // runs image/audio processing and persists the preview on its own connection, so it must see
+        // the committed entry/file rows — otherwise the preview INSERT hits a foreign-key violation.
+        // The preview is best-effort: a failure here is logged but must not fail entry submission.
+        storedFile?.let { file ->
+            app.previews.scanForScreenshotSource(file)?.let { source ->
+                app.previews.store(entry.id, source).onLeft {
+                    log.error("Failed to generate preview for entry {}: {}", entry.id, it.message)
+                }
+            }
         }
+
+        entry
+    }
 
     suspend fun update(entry: EntryUpdate, userId: UUID): AppResult<Entry> = either {
         val previousVersion = getById(entry.id).bind()
@@ -194,14 +207,14 @@ class EntryRepository(app: AppServices) : Service(app) {
     suspend fun delete(entryId: UUID): AppResult<Unit> = either {
         val entry = getById(entryId).bind()
         db.use {
-            updateOne(queryOf("DELETE FROM entry WHERE id = ? CASCADE", entryId))
+            updateOne(queryOf("DELETE FROM entry WHERE id = ?", entryId))
         }.onRight {
             app.signals.emit(Signal.compoContentUpdated(entry.compoId, app.time))
         }
     }
 
     suspend fun deleteAll(): AppResult<Unit> = db.use {
-        exec(queryOf("DELETE FROM entry CASCADE"))
+        exec(queryOf("DELETE FROM entry"))
     }
 
     suspend fun setQualified(entryId: UUID, state: Boolean): AppResult<Unit> =

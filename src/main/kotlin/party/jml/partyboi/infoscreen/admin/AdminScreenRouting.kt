@@ -14,6 +14,7 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.collect
+import party.jml.partyboi.form.multipartSizeLimit
 import party.jml.partyboi.infoscreen.NewSlideSet
 import party.jml.partyboi.infoscreen.SlideSetRow
 import party.jml.partyboi.infoscreen.slides.ImageSlide
@@ -206,7 +207,14 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
 
         post("/admin/screen/{slideSet}/new/imageslide/upload") {
             val slideSetName = call.parameterString("slideSet").getOrNull() ?: return@post
-            val (_, files) = call.receiveMultipart(app.config.maxFileUploadSize).collect()
+            val (_, files) = try {
+                call.receiveMultipart(formFieldLimit = multipartSizeLimit(app.config.maxFileUploadSize)).collect()
+            } catch (e: Exception) {
+                call.respondEither {
+                    renderImageSlidesPicker(slideSetName.right(), uploadError = e.message ?: "Upload failed").bind()
+                }
+                return@post
+            }
             val uploadedFiles = (files["files"] ?: emptyList()).filter { it.isDefined }
 
             if (uploadedFiles.isEmpty()) {

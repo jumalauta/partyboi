@@ -2,6 +2,7 @@ package party.jml.partyboi.voting
 
 import arrow.core.*
 import arrow.core.raise.either
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 import party.jml.partyboi.AppServices
@@ -24,13 +25,23 @@ class VoteService(app: AppServices) : Service(app) {
     private val live = MutableStateFlow(LiveVoteState.Empty)
 
     suspend fun start() {
-        app.signals.flow.collect {
-            if (it.type == SignalType.propertyUpdated && it.target == "SettingsService.voteKeyEmailList") {
-                app.settings.automaticVoteKeys.get().onRight { autoKeys ->
-                    if (autoKeys == AutomaticVoteKeys.PER_EMAIL) {
-                        app.voteKeys.grantVotingRightsByEmail()
+        app.signals.flow.collect { signal ->
+            try {
+                if (signal.type == SignalType.propertyUpdated && signal.target == "SettingsService.voteKeyEmailList") {
+                    app.settings.automaticVoteKeys.get().onRight { autoKeys ->
+                        if (autoKeys == AutomaticVoteKeys.PER_EMAIL) {
+                            app.voteKeys.grantVotingRightsByEmail().onLeft {
+                                log.error("Failed to grant voting rights by email: {}", it.message)
+                            }
+                        }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (error: Throwable) {
+                // A failure while handling one signal must never tear down the collector — that would
+                // silently stop automatic vote-key granting for the rest of the process lifetime.
+                log.error("Vote signal handling failed for signal {}", signal, error)
             }
         }
     }

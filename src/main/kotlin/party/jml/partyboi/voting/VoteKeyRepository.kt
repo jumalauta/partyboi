@@ -106,9 +106,9 @@ class VoteKeyRepository(app: AppServices) : Service(app) {
             .one(queryOf("SELECT true FROM votekey WHERE key = ?", voteKey.toString()).map(asBoolean))
             .isRight()
         if (exists) {
-            generateTicket(tx, keySet, remainingAttempts - 1)
+            generateTicket(tx, keySet, remainingAttempts - 1).bind()
         } else {
-            insertVoteKey(userId = null, voteKey, keySet, tx)
+            insertVoteKey(userId = null, voteKey, keySet, tx).bind()
         }
     }
 

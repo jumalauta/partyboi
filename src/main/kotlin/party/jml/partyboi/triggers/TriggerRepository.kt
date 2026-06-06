@@ -1,16 +1,19 @@
 package party.jml.partyboi.triggers
 
+import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.raise.either
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
+import party.jml.partyboi.data.InternalServerError
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.db.*
@@ -26,7 +29,18 @@ class TriggerRepository(app: AppServices) : Service(app) {
     private val db = app.db
 
     suspend fun start() {
-        app.signals.flow.collect { execute(it) }
+        app.signals.flow.collect { signal ->
+            try {
+                execute(signal)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (error: Throwable) {
+                // A failure while handling one signal must never tear down the collector — that would
+                // silently disable all future triggers (e.g. auto open/close of voting and submitting)
+                // for the rest of the process lifetime.
+                log.error("Trigger handling failed for signal {}", signal, error)
+            }
+        }
     }
 
     suspend fun add(signal: Signal, action: Action, tx: TransactionalSession? = null): AppResult<TriggerRow> =
@@ -106,7 +120,10 @@ class TriggerRepository(app: AppServices) : Service(app) {
     }
 
     private suspend fun executeTrigger(trigger: TriggerRow, logTime: Instant): AppResult<Unit> {
-        return trigger.getAction().apply(app).fold(
+        val result = either {
+            trigger.getAction().bind().apply(app).bind()
+        }
+        return result.fold(
             { error -> setFailed(trigger.triggerId, logTime, error.message) },
             { _ -> setSuccessful(trigger.triggerId, logTime) }
         )
@@ -139,11 +156,14 @@ sealed class TriggerRow {
     abstract val description: String
     abstract val enabled: Boolean
 
-    fun getAction(): Action = when (triggerType) {
-        OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
-        OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
-        else -> TODO("JSON decoding not implemented for $triggerType")
-    }
+    fun getAction(): AppResult<Action> =
+        Either.catch {
+            when (triggerType) {
+                OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
+                OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
+                else -> error("Unknown trigger action type: $triggerType")
+            }
+        }.mapLeft { InternalServerError(it) }
 
     companion object {
         val fromRow: (Row) -> TriggerRow = { row ->

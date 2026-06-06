@@ -17,6 +17,11 @@ interface AppError : Renderable {
     val statusCode: HttpStatusCode
     val throwable: Throwable?
 
+    // Renderable.statusCode() defaults to 200 OK. Without this override, respondPage() rendered every
+    // error page (NotFound, Unauthorized, …) with a 200 status, ignoring the real statusCode below —
+    // only the API path (apiRespond) used it. Surface the real status to the page path too.
+    override fun statusCode(): HttpStatusCode = statusCode
+
     override fun getContent(user: User?, path: String): String {
         val className = this::class.simpleName ?: "AppError"
         val page = Page("Error") {
