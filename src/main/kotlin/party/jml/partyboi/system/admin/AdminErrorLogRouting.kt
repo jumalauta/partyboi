@@ -12,7 +12,8 @@ fun Application.configureAdminErrorLogRouting(app: AppServices) {
         get("/admin/errors") {
             call.respondEither {
                 val errors = app.errors.getErrors(100, 0).bind()
-                AdminErrorLogPage.renderList(errors)
+                val tz = app.time.timeZone.get().bind()
+                AdminErrorLogPage.renderList(errors, tz)
             }
         }
 
