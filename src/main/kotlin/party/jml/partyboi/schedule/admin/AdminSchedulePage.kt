@@ -190,7 +190,7 @@ object AdminSchedulePage {
                 }
 
                 renderForm(
-                    title = "Add new trigger",
+                    title = "New trigger",
                     url = "/admin/schedule/triggers",
                     form = newTriggerForm,
                     options = mapOf(

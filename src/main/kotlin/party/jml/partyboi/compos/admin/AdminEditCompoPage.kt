@@ -548,7 +548,7 @@ object AdminEditCompoPage {
                     }
                 }
             } else {
-                header { +"Add result" }
+                cardHeader("New result")
                 dataForm("/admin/compos/${compo.id}/manual-results") {
                     fieldSet {
                         renderFields(form)
