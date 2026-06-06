@@ -87,6 +87,29 @@ class ICalendarTest {
         assertTrue(out.contains("SUMMARY:Opening ceremony\r\n"), out)
     }
 
+    // An event with no end time in the schedule must still emit a DTEND, defaulting to a 30-minute
+    // duration, so clients that hide zero-duration timed events still show it.
+    @Test
+    fun testMissingEndTimeDefaultsToThirtyMinutes() {
+        val out = ics("Opening ceremony")
+        assertTrue(out.contains("DTSTART:20250601T120000Z\r\n"), out)
+        assertTrue(
+            out.contains("DTEND:20250601T123000Z\r\n"),
+            "a missing end time must default to DTSTART + 30 min:\n$out"
+        )
+    }
+
+    // An explicit end time must be emitted verbatim, never overwritten by the 30-minute default.
+    @Test
+    fun testExplicitEndTimeIsPreserved() {
+        val out = ICalendar.eventsToIcs(
+            hostname = "party.example",
+            instanceName = "Test Party",
+            events = listOf(event("Long compo").copy(endTime = Instant.parse("2025-06-01T14:00:00Z"))),
+        )
+        assertTrue(out.contains("DTEND:20250601T140000Z\r\n"), "explicit end time must be used as-is:\n$out")
+    }
+
     // A published feed must advertise METHOD:PUBLISH and refresh hints so subscribing clients
     // (Google Calendar's "From URL", Outlook, …) treat it as a live, periodically-polled feed
     // rather than a one-off file.

@@ -3,9 +3,14 @@ package party.jml.partyboi.schedule
 import kotlinx.datetime.*
 import kotlinx.datetime.format.char
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 object ICalendar {
+    // Events with no end time in the schedule still get a DTEND: many clients (Google Calendar
+    // among them) hide or barely render a zero-duration timed event, so fall back to this duration.
+    private val DEFAULT_EVENT_DURATION = 30.minutes
+
     fun eventsToIcs(hostname: String, instanceName: String, events: List<Event>): String {
         val now = Clock.System.now()
         val dsl = ICalendarDsl()
@@ -28,7 +33,7 @@ object ICalendar {
                     prop("UID", "${it.id}@${hostname}")
                     prop("DTSTAMP", now)
                     prop("DTSTART", it.startTime)
-                    it.endTime?.let { prop("DTEND", it) }
+                    prop("DTEND", it.endTime ?: it.startTime + DEFAULT_EVENT_DURATION)
                     prop("SUMMARY", it.name)
                 }
             }
