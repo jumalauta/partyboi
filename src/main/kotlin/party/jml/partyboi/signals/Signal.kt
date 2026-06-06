@@ -1,7 +1,7 @@
 package party.jml.partyboi.signals
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlin.time.Clock
@@ -13,7 +13,17 @@ import party.jml.partyboi.system.TimeService
 import java.util.*
 
 class SignalService(app: AppServices) : Service(app) {
-    val flow = MutableStateFlow(Signal.initial())
+    // The event bus used to be a conflating MutableStateFlow: while a collector (e.g. the trigger
+    // runner) was busy handling one signal, any further distinct signals emitted in the same tick
+    // were dropped, so the collector only ever saw the latest. A buffered SharedFlow keeps each
+    // signal; a slow collector is backpressured (emit suspends once 64 are pending) rather than
+    // having intermediate signals silently discarded. replay = 0 because nobody should receive
+    // signals emitted before they started listening (which is also why getNext no longer drops one).
+    val flow = MutableSharedFlow<Signal>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+    )
 
     suspend fun emit(signal: Signal) {
         log.trace("Emit signal: {}", signal)
@@ -22,7 +32,6 @@ class SignalService(app: AppServices) : Service(app) {
 
     suspend fun getNext(signalType: SignalType, onSignal: suspend (Signal) -> Unit) {
         flow
-            .drop(1)
             .filter { it.type == signalType }
             .take(1)
             .collect { onSignal(it) }
