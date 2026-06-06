@@ -58,7 +58,7 @@ object AdminSchedulePage {
                         }
                 }
                 renderForm(
-                    title = "New Event",
+                    title = "New event",
                     url = "/admin/schedule/events",
                     form = newEventForm,
                     submitButtonLabel = "Add event",

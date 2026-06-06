@@ -188,8 +188,8 @@ object SyncPage {
         }
 
     fun renderNewToken(host: URI, token: String) =
-        Page("New API Token") {
-            h1 { +"New API Token created" }
+        Page("New API token") {
+            h1 { +"New API token created" }
 
             article {
                 p {
