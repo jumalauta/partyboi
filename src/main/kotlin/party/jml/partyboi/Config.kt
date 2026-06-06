@@ -70,6 +70,10 @@ class ConfigReader(private val config: ApplicationConfig) {
 
     // File uploads
     val maxFileUploadSize: Long by lazy { config.propertyOrNull("files.maxSize")?.getSize() ?: -1L }
+
+    // The background work-queue worker. Enabled by default; disabled in tests so its polling loop
+    // doesn't consume/process tasks that the tests set up and assert on.
+    val runWorkQueue: Boolean by lazy { config.propertyOrNull("workQueue.enabled")?.getString() != "false" }
 }
 
 data class RecaptchaConfig(

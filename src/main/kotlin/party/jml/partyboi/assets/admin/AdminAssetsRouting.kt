@@ -10,6 +10,7 @@ import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.parameterPathString
 import party.jml.partyboi.form.collect
+import party.jml.partyboi.form.multipartSizeLimit
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondPage
 
@@ -22,7 +23,12 @@ fun Application.configureAdminAssetsRouting(app: AppServices) {
         }
 
         post("/admin/assets") {
-            val (_, files) = call.receiveMultipart(app.config.maxFileUploadSize).collect()
+            val (_, files) = try {
+                call.receiveMultipart(formFieldLimit = multipartSizeLimit(app.config.maxFileUploadSize)).collect()
+            } catch (e: Exception) {
+                call.respondPage(AdminAssetsPage.render(assets = app.assets.getList(), error = e.message ?: "Upload failed"))
+                return@post
+            }
             val uploadedFiles = (files["files"] ?: emptyList()).filter { it.isDefined }
 
             if (uploadedFiles.isEmpty()) {

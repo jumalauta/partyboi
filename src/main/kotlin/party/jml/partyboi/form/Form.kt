@@ -100,7 +100,7 @@ class Form<T : Validateable<T>>(
                 } as T
 
                 of(data).right()
-            } catch (e: Error) {
+            } catch (e: Exception) {
                 FormError(e.message ?: e.toString()).left()
             }
     }

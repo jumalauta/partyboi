@@ -83,6 +83,7 @@ class VoteRepository(app: AppServices) : Service(app) {
             LEFT JOIN effective_vote ev ON ev.entry_id = entry.id
             JOIN compo ON compo.id = entry.compo_id
             WHERE qualified
+            AND NOT manual_results
             ${if (onlyPublic) "AND public_results" else ""}
             GROUP BY compo_id, compo.name, entry.id, title, author
             ORDER BY compo_id, points DESC, entry_id

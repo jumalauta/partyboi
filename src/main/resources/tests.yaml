@@ -27,6 +27,13 @@ files:
   entries: "$FILES_ENTRIES:./data/test/entries"
   assets: "$FILES_ASSETS:./data/test/assets"
   screenshots: "$FILES_SCREENSHOTS:./data/test/screenshots"
+  # Small cap so the upload-size limit can be exercised without multi-gigabyte test files. Kept above
+  # the 1 MB per-form-field cap so that limit can be tested independently.
+  maxSize: "5MB"
 
 email:
   mock: "true"
+
+# The work-queue worker would consume/process tasks that tests set up and assert on.
+workQueue:
+  enabled: "false"

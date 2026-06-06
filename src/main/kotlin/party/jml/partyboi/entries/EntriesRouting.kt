@@ -107,7 +107,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 {
                     renderEntriesPage(call.userSession(app), newEntryForm = it).bind()
                 },
-                app.config.maxFileUploadSize
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
 
@@ -158,7 +158,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                 val fileId = call.parameterUUID("fileId").bind()
                 val user = call.optionalUserSession(app)
                 val entry = app.entries.getByFileId(fileId).bind()
-                if (user?.let { it.isAdmin || it.id === entry.userId } == true
+                if (user?.let { it.isAdmin || it.id == entry.userId } == true
                     || app.compos.getById(entry.compoId).bind().publicResults
                 ) {
                     app.files.getById(fileId).bind()
@@ -214,7 +214,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         entryUpdateForm = it
                     ).bind()
                 },
-                app.config.maxFileUploadSize
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
 
@@ -239,7 +239,8 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         user = call.userSession(app),
                         previewForm = it
                     ).bind()
-                }
+                },
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
     }

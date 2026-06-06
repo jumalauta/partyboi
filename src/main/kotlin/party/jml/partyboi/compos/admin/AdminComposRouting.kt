@@ -423,9 +423,13 @@ fun Application.configureAdminComposRouting(app: AppServices) {
 }
 
 suspend fun ApplicationCall.hostFile(hostedEntry: ExtractedEntry, filename: Path? = null) {
-    val target = let {
-        val path = hostedEntry.dir.toPath()
-        if (filename == null) path else path.resolve(filename)
+    val baseDir = hostedEntry.dir.toPath().normalize()
+    val target = if (filename == null) baseDir else baseDir.resolve(filename).normalize()
+    // Reject paths that escape the extracted-entry directory (e.g. ../../etc/passwd or an absolute
+    // path) before touching the filesystem.
+    if (!target.startsWith(baseDir)) {
+        respondPage(NotFound("File not found"))
+        return
     }
     if (target.toFile().isDirectory()) {
         val entries = target.listDirectoryEntries()

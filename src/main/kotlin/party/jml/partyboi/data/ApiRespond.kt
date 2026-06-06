@@ -12,6 +12,8 @@ import io.ktor.server.response.*
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.auth.userSession
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.form.MAX_FORM_FIELD_SIZE
+import party.jml.partyboi.form.multipartSizeLimit
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondAndCatchEither
@@ -50,15 +52,22 @@ suspend inline fun <reified T> ApplicationCall.jsonRespond(noinline block: suspe
     }
 }
 
-suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm(formFieldLimit: Long): AppResult<Form<T>> =
-    Form.fromParameters<T>(receiveMultipart(formFieldLimit = formFieldLimit))
+suspend inline fun <reified T : Validateable<T>> ApplicationCall.receiveForm(maxUploadSize: Long): AppResult<Form<T>> =
+    try {
+        Form.fromParameters<T>(receiveMultipart(formFieldLimit = multipartSizeLimit(maxUploadSize)))
+    } catch (e: Exception) {
+        // An oversized body is rejected by Ktor's multipart parser; surface it as a form error.
+        FormError(e.message ?: "Upload failed").left()
+    }
 
 suspend inline fun <reified T : Validateable<T>> ApplicationCall.processForm(
     handleForm: suspend Raise<AppError>.(data: T) -> Renderable,
     crossinline handleError: suspend Raise<AppError>.(formWithErrors: Form<T>) -> Renderable,
-    formFieldLimit: Long = -1L,
+    // Text-only forms cap each field (and the whole body) at a small size; routes that accept file
+    // uploads pass app.config.maxFileUploadSize explicitly.
+    maxUploadSize: Long = MAX_FORM_FIELD_SIZE,
 ) {
-    receiveForm<T>(formFieldLimit).fold(
+    receiveForm<T>(maxUploadSize).fold(
         { respondPage(it) },
         { form ->
             val result = form.validated().fold(
