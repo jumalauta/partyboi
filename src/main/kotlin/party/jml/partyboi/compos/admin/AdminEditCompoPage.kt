@@ -191,9 +191,7 @@ object AdminEditCompoPage {
                     }
                 }
 
-                buttonGroup {
-                    button(type = ButtonType.submit) { +"Save changes" }
-                }
+                submitButton("Save changes")
             }
         }, {
 
