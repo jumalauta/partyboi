@@ -142,4 +142,19 @@ class EntryLifecycleTest : PartyboiTester {
             "a non-owner must not receive the file while results are not public",
         )
     }
+
+    // Regression for the respondPage status-code bug: AppError overrode only the statusCode property,
+    // not Renderable.statusCode(), so respondPage rendered every error page with a 200 status. A page
+    // route that raises NotFound must respond 404.
+    @Test
+    fun testMissingFileDownloadReturns404() = test {
+        setupServices { either { addTestUser(this@setupServices, "u").bind() } }
+
+        it.login("u")
+        assertEquals(
+            HttpStatusCode.NotFound,
+            it.client.get("/entries/download/${UUID.randomUUID()}").status,
+            "downloading a non-existent file should return 404, not 200",
+        )
+    }
 }
