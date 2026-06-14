@@ -40,7 +40,7 @@ dependencies {
     implementation("org.postgresql:postgresql:$postgres_version")
     implementation("com.h2database:h2:$h2_version")
     implementation("com.github.seratch:kotliquery:1.9.1")
-    implementation("com.zaxxer:HikariCP:7.0.2")
+    implementation("com.zaxxer:HikariCP:7.1.0")
     implementation("org.flywaydb:flyway-core:$flyway_version")
     implementation("org.flywaydb:flyway-database-postgresql:$flyway_version")
     implementation("io.ktor:ktor-server-html-builder-jvm")
