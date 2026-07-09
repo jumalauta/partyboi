@@ -5,7 +5,7 @@ val logback_version: String = "1.5.38"
 val postgres_version: String = "42.7.13"
 val h2_version: String = "2.4.240"
 val kotlinx_html_version: String = "0.12.0"
-val flyway_version: String = "12.10.0"
+val flyway_version: String = "12.11.0"
 val arrow_version: String = "2.2.3"
 
 plugins {
