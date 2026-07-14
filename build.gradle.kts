@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlin_version = "2.4.0"
+val kotlin_version = "2.4.10"
 val logback_version: String = "1.5.38"
 val postgres_version: String = "42.7.13"
 val h2_version: String = "2.4.240"
@@ -9,9 +9,9 @@ val flyway_version: String = "12.11.0"
 val arrow_version: String = "2.2.3"
 
 plugins {
-    kotlin("jvm") version "2.4.0"
+    kotlin("jvm") version "2.4.10"
     id("io.ktor.plugin") version "3.5.1"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.0"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.10"
 }
 
 group = "com.example"
