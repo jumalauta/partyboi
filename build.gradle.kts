@@ -65,7 +65,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("com.sksamuel.scrimage:scrimage-core:4.6.7")
     implementation("org.jetbrains:markdown:0.7.8")
-    implementation("org.jsoup:jsoup:1.22.2")
+    implementation("org.jsoup:jsoup:1.23.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
     implementation("com.github.docker-java:docker-java:3.7.1")
@@ -121,7 +121,7 @@ dependencies {
     syncHarnessImplementation("io.ktor:ktor-client-encoding")
     syncHarnessImplementation("io.ktor:ktor-serialization-kotlinx-json")
     syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    syncHarnessImplementation("org.jsoup:jsoup:1.22.2")
+    syncHarnessImplementation("org.jsoup:jsoup:1.23.1")
     syncHarnessImplementation("io.arrow-kt:arrow-core:$arrow_version")
     syncHarnessImplementation(kotlin("stdlib-jdk8"))
 }
