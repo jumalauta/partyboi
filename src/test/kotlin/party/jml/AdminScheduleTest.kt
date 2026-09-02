@@ -9,8 +9,10 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import io.ktor.client.statement.*
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.schedule.NewEvent
+import party.jml.partyboi.system.toLocalTimeString
 import party.jml.partyboi.infoscreen.SlideSetRow
 import party.jml.partyboi.infoscreen.slides.ScheduleSlide
 import java.util.UUID
@@ -166,7 +168,13 @@ class AdminScheduleTest : PartyboiTester {
 
         it.login("admin")
 
-        it.buttonClick("/admin/schedule/events/$e2/nudge/15")
+        // Nudge responds with the new times so the client can update the row in place.
+        val nudgeResponse = it.client.put("/admin/schedule/events/$e2/nudge/15")
+        assertEquals(HttpStatusCode.OK, nudgeResponse.status)
+        assertEquals(
+            """{"startTime":"${at(14, 15).toLocalTimeString()}","endTime":"${at(15, 15).toLocalTimeString()}"}""",
+            nudgeResponse.bodyAsText()
+        )
         var events = app!!.events.getAll().getOrNull()!!.associateBy { it.id }
         assertEquals(at(14, 15), events[e2]!!.startTime)
         assertEquals(at(15, 15), events[e2]!!.endTime)

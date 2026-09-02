@@ -304,6 +304,35 @@ async function createEmptyEventRow() {
     }
 }
 
+// Nudge one event by N minutes and update its row's time cells in place. Like the
+// inline time edits, this deliberately avoids a reload: re-sorting the list would
+// move rows under the cursor mid-interaction, so repeated clicks could land on a
+// different event's button. The list re-sorts on the next full reload.
+async function nudgeEvent(eventId, minutes) {
+    try {
+        const res = await fetch(`/admin/schedule/events/${eventId}/nudge/${minutes}`, {method: "PUT"});
+        if (!res.ok) return;
+        const {startTime, endTime} = await res.json();
+        setTimeCell(`/admin/schedule/events/${eventId}/startTime`, startTime);
+        setTimeCell(`/admin/schedule/events/${eventId}/endTime`, endTime);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Update a time cell's displayed value (and its flatpickr state) without firing
+// onChange, which would redundantly save the value we just got from the server.
+function setTimeCell(saveUrl, value) {
+    const el = document.querySelector(`[data-save-url="${saveUrl}"]`);
+    if (!el) return;
+    if (el._flatpickr) {
+        if (value) el._flatpickr.setDate(value, false);
+        else el._flatpickr.clear(false);
+    } else {
+        el.value = value || "";
+    }
+}
+
 // "Running late": shift the given event and every later one by the shared step.
 function shiftRest(eventId) {
     const minutes = parseInt(document.querySelector("#shift-step")?.value, 10) || 15;

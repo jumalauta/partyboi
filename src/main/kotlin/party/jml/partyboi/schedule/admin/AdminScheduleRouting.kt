@@ -25,6 +25,7 @@ import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toLocalTimeString
 import party.jml.partyboi.system.withTimeOfDay
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondEither
@@ -37,6 +38,11 @@ data class ValueUpdate(val value: String)
 
 @Serializable
 data class CreatedEvent(val id: String)
+
+// New times of a nudged event, as local time-of-day strings matching the inline
+// time cells, so the client can update the row in place without a reload.
+@Serializable
+data class NudgedTimes(val startTime: String, val endTime: String?)
 
 // Validate only the start/end ordering of an event (not other field constraints like a
 // required name), so inline time edits work on a not-yet-named scaffold row.
@@ -193,14 +199,20 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             }
         }
 
-        // Bump a single event by N minutes, preserving its duration.
+        // Bump a single event by N minutes, preserving its duration. Returns the new
+        // times so the client updates the row in place; the list re-sorts only on the
+        // next full reload, keeping rows from jumping under the cursor mid-interaction.
         put("/admin/schedule/events/{id}/nudge/{minutes}") {
-            call.apiRespond {
+            call.jsonRespond {
                 call.userSession(app).bind()
                 val id = call.parameterUUID("id").bind()
                 val minutes = call.parameterInt("minutes").bind()
-                app.events.nudge(id, minutes.minutes).bind()
+                val updated = app.events.nudge(id, minutes.minutes).bind()
                 app.screen.syncScheduleSlides().bind()
+                NudgedTimes(
+                    startTime = updated.startTime.toLocalTimeString(),
+                    endTime = updated.endTime?.toLocalTimeString(),
+                )
             }
         }
 

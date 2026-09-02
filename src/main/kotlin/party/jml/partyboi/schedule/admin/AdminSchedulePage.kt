@@ -99,18 +99,12 @@ object AdminSchedulePage {
             td(classes = "settings") {
                 button(classes = "flat-button") {
                     tooltip("15 minutes earlier")
-                    onClick = Javascript.build {
-                        httpPut("/admin/schedule/events/$id/nudge/-15")
-                        refresh()
-                    }
+                    onClick = "nudgeEvent('$id', -15)"
                     icon("minus")
                 }
                 button(classes = "flat-button") {
                     tooltip("15 minutes later")
-                    onClick = Javascript.build {
-                        httpPut("/admin/schedule/events/$id/nudge/15")
-                        refresh()
-                    }
+                    onClick = "nudgeEvent('$id', 15)"
                     icon("plus")
                 }
                 toggleButton(

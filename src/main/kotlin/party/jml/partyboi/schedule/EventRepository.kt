@@ -44,7 +44,7 @@ interface EventRepository {
     suspend fun setVisible(eventId: UUID, visible: Boolean): AppResult<Unit>
     suspend fun setStartTime(eventId: UUID, startTime: Instant): AppResult<Unit>
     suspend fun setEndTime(eventId: UUID, endTime: Instant?): AppResult<Unit>
-    suspend fun nudge(eventId: UUID, delta: Duration): AppResult<Unit>
+    suspend fun nudge(eventId: UUID, delta: Duration): AppResult<Event>
     suspend fun shiftFrom(threshold: Instant, delta: Duration): AppResult<Unit>
     suspend fun delete(eventId: UUID): AppResult<Unit>
     suspend fun deleteAll(): AppResult<Unit>
@@ -57,10 +57,12 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
         one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow))
     }
 
+    // All listings order by time with id as tiebreaker: without it, equal-time rows may
+    // swap positions between renders, which is disorienting on the inline-edited admin list.
     override suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>> = db.use {
         many(
             queryOf(
-                "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time",
+                "SELECT * FROM event WHERE time > ? AND time <= ? ORDER BY time, id",
                 since,
                 until
             ).map(Event.fromRow)
@@ -68,11 +70,11 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     }
 
     override suspend fun getAll(): AppResult<List<Event>> = db.use {
-        many(queryOf("SELECT * FROM event ORDER BY time").map(Event.fromRow))
+        many(queryOf("SELECT * FROM event ORDER BY time, id").map(Event.fromRow))
     }
 
     override suspend fun getPublic(): AppResult<List<Event>> = db.use {
-        many(queryOf("SELECT * FROM event WHERE visible ORDER BY time").map(Event.fromRow))
+        many(queryOf("SELECT * FROM event WHERE visible ORDER BY time, id").map(Event.fromRow))
     }
 
     override suspend fun add(event: NewEvent, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
@@ -144,18 +146,19 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
         updateOne(queryOf("UPDATE event SET end_time = ? WHERE id = ?", endTime, eventId))
     }
 
-    // Shift a single event by delta, preserving its duration.
-    override suspend fun nudge(eventId: UUID, delta: Duration): AppResult<Unit> = db.transaction {
+    // Shift a single event by delta, preserving its duration. Returns the updated event
+    // so the client can refresh the row's time cells in place without a full reload.
+    override suspend fun nudge(eventId: UUID, delta: Duration): AppResult<Event> = db.transaction {
         either {
             val event = one(queryOf("SELECT * FROM event WHERE id = ?", eventId).map(Event.fromRow)).bind()
             app.triggers.reset(event.signal(), this@transaction).bind()
-            updateOne(
+            one(
                 queryOf(
-                    "UPDATE event SET time = ?, end_time = ? WHERE id = ?",
+                    "UPDATE event SET time = ?, end_time = ? WHERE id = ? RETURNING *",
                     event.startTime + delta,
                     event.endTime?.plus(delta),
                     event.id,
-                )
+                ).map(Event.fromRow)
             ).bind()
         }
     }
@@ -167,7 +170,7 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
     override suspend fun shiftFrom(threshold: Instant, delta: Duration): AppResult<Unit> = db.transaction {
         either {
             val affected = many(
-                queryOf("SELECT * FROM event WHERE time >= ? ORDER BY time", threshold).map(Event.fromRow)
+                queryOf("SELECT * FROM event WHERE time >= ? ORDER BY time, id", threshold).map(Event.fromRow)
             ).bind()
             var previous: Event? = null
             for (event in affected) {
