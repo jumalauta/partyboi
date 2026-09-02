@@ -193,4 +193,54 @@ class AdminComposTest : PartyboiTester {
         assertTrue("upload.sh" in topLevelFiles, "upload.sh missing at top of package dir")
         assertTrue("upload.bat" in topLevelFiles, "upload.bat missing at top of package dir")
     }
+
+    @Test
+    fun testDistributionZipHandlesCollidingEntryNames() = test {
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val user = addTestUser(app, "submitter").bind()
+                val compo = compos.add(NewCompo("Wild", "")).bind()
+                // These titles sanitize to the same scene.org token
+                listOf("Same Name!", "Same. Name?").forEach { title ->
+                    val entry = entries.add(
+                        NewEntry(
+                            title = title,
+                            author = "Author",
+                            file = FileUpload.createTestData("demo.dat", 256),
+                            compoId = compo.id,
+                            screenComment = "",
+                            orgComment = "",
+                            userId = user.id,
+                        )
+                    ).bind()
+                    entries.setQualified(entry.id, true).bind()
+                }
+            }
+        }
+
+        it.login("admin")
+
+        val bytes = it.client.get("/admin/compos/entries.zip").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            response.readRawBytes()
+        }
+
+        val entryFiles = mutableListOf<String>()
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            generateSequence { zip.nextEntry }.forEach { entry ->
+                val parts = entry.name.trimEnd('/').split('/')
+                if (!entry.isDirectory && parts.size == 3 && parts[1] == "wild") {
+                    entryFiles.add(parts[2])
+                }
+            }
+        }
+
+        assertEquals(
+            listOf("author_same_name.dat", "author_same_name_2.dat"),
+            entryFiles.sorted(),
+            "both colliding entries should be in the package with unique names"
+        )
+    }
 }

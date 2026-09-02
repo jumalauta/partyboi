@@ -16,7 +16,8 @@ docker compose -f docker-compose-dev.yml up
 # Build fat JAR
 ./gradlew buildFatJar
 
-# Run all tests (uses H2 in-memory DB, no external services needed)
+# Run all tests (needs the dev PostgreSQL on localhost:5432; start it with
+# `docker compose -f docker-compose-dev.yml up -d db` if not already running)
 ./gradlew test
 
 # Run a single test class
@@ -54,7 +55,7 @@ Uses Arrow's `Either<AppError, T>` throughout (type-aliased as `AppResult<T>`). 
 
 ### Database
 
-- PostgreSQL in production, H2 for tests
+- PostgreSQL in production and for tests (tests use the `partyboi_test` database on localhost:5432)
 - Flyway migrations in `src/main/resources/db/migrations/`
 - KotliQuery for queries (no ORM)
 - Connection pool via HikariCP (`db/Database.kt`)
@@ -66,7 +67,7 @@ Uses Arrow's `Either<AppError, T>` throughout (type-aliased as `AppResult<T>`). 
 
 Tests implement `PartyboiTester` interface which provides:
 
-- `test {}` — sets up Ktor test server with H2 database using `tests.yaml` config
+- `test {}` — sets up Ktor test server using `tests.yaml` config (PostgreSQL on localhost:5432)
 - `setupServices {}` — resets database state before each test
 - `TestHtmlClient` — HTTP client with cookie support, HTML assertions via skrape{it}
 - Tests are end-to-end: they hit HTTP endpoints and assert on rendered HTML
@@ -86,3 +87,7 @@ FFmpeg runs inside Docker containers for media processing. Files are shared via 
 ## Naming conventions
 
 Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry preview assets. Future previews will include audio snippets and video clips, so use neutral, capability-oriented names like `thumbnail` (small inline representation) and `previewFile` / `preview_file` (the full asset the user opens). The 400px JPEG in the `preview` table's `file_id` column is conceptually the thumbnail; the new full version goes in `preview_file_id`.
+
+## Open issues to discuss
+
+- **Sync dedup problem**: `DbSyncService.putTable` merges rows by UUID only and never propagates deletions. When two instances both accept submissions (e.g. the Färjan 2026 fallback instance on party day), the same prod submitted on both becomes duplicate entries after a sync merge, and only one copy carries the votes. Needs a dedup/reconciliation strategy before the next party.

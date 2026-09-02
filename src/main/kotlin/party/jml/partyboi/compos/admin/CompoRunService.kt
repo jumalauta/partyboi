@@ -38,22 +38,21 @@ class CompoRunService(app: AppServices) : Service(app) {
             .mapIndexed { index, entry -> entry.copy(runOrder = index + 1) }
 
         entries.forEach { entry ->
-            getLatestFileDesc(entry).map { fileDesc ->
-                val targetFilename =
-                    app.files.makeCompoRunFileOrDirName(
-                        fileDesc,
-                        entry,
-                        compo,
-                        tempDir.path,
-                        useFoldersForSingleFiles,
-                        includeOrderNumber = true,
-                    )
-                if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
-                    ZipUtils.extract(fileDesc.getStorageFile(), targetFilename)
-                } else {
-                    copyFile(fileDesc, targetFilename)
-                }
-            }
+            val fileDesc = getLatestFileDesc(entry).bind()
+            val targetFilename =
+                app.files.makeCompoRunFileOrDirName(
+                    fileDesc,
+                    entry,
+                    compo,
+                    tempDir.path,
+                    useFoldersForSingleFiles,
+                    includeOrderNumber = true,
+                )
+            if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
+                ZipUtils.extract(fileDesc.getStorageFile(), targetFilename)
+            } else {
+                copyFile(fileDesc, targetFilename)
+            }.bind()
         }
         tempDir
     }

@@ -176,8 +176,12 @@ class FileRepository(app: AppServices) : Service(app) {
         val authorClean = entry.author.toSceneOrgToken(128) ?: "author"
         val titleClean = entry.title.toSceneOrgToken(128) ?: "untitled"
         val extension = fileDesc.extension.toSceneOrgToken() ?: "bin"
+        val compoDir = Paths.get(targetDir.absolutePathString(), compoName)
 
-        return Paths.get(targetDir.absolutePathString(), compoName, "${authorClean}_${titleClean}.$extension")
+        // Different entries can sanitize to the same name, so number the duplicates
+        val candidates = sequenceOf(compoDir.resolve("${authorClean}_${titleClean}.$extension")) +
+                generateSequence(2) { it + 1 }.map { compoDir.resolve("${authorClean}_${titleClean}_$it.$extension") }
+        return candidates.first { !it.exists() }
     }
 
     private suspend fun add(file: FileDesc, tx: TransactionalSession? = null): AppResult<FileDesc> = either {
