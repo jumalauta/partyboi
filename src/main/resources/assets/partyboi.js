@@ -73,29 +73,39 @@ function initInteractions(target) {
             const ids = Array.from(
                 container.querySelectorAll(container.dataset.draggable)
             ).map((i) => i.dataset.dragid);
+            let orderChanged = false;
 
+            // sortable:sorted fires for every position the dragged row passes
+            // through, so only accumulate the order here. Saving (and any
+            // re-render) must wait for sortable:stop — a mid-drag re-render
+            // aborts the drag after a single step.
             sortable.on("sortable:sorted", (event) => {
                 ids.splice(event.newIndex, 0, ...ids.splice(event.oldIndex, 1));
-                fetch(container.dataset.callback, {
-                    method: "POST",
-                    body: JSON.stringify(ids),
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                })
-                    // Some lists (the compo Entries table) need a re-render after a drop
-                    // so derived values like the qualified order numbers update. Defer to a
-                    // later tick so Draggable can finish swapping its clone/mirror back out.
-                    .then(() => {
-                        if (container.dataset.reloadOnSort) setTimeout(smoothReload, 0);
-                    })
-                    .catch((err) => console.error(err));
+                orderChanged = true;
             });
 
             // Renumber .place-number cells once the drag fully ends. Defer to
             // a later tick so Draggable can finish swapping the original source
             // element back in for its clone and removing the mirror.
             sortable.on("sortable:stop", () => {
+                if (orderChanged) {
+                    orderChanged = false;
+                    fetch(container.dataset.callback, {
+                        method: "POST",
+                        body: JSON.stringify(ids),
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    })
+                        // Some lists (the compo Entries table) need a re-render after a
+                        // drop so derived values like the qualified order numbers update.
+                        // Defer to a later tick so Draggable can finish swapping its
+                        // clone/mirror back out.
+                        .then(() => {
+                            if (container.dataset.reloadOnSort) setTimeout(smoothReload, 0);
+                        })
+                        .catch((err) => console.error(err));
+                }
                 setTimeout(() => {
                     const rows = container.querySelectorAll(
                         `${container.dataset.draggable}[data-dragid]`
