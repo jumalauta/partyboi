@@ -1034,6 +1034,36 @@ img.entry-edit-preview {
     color: var(--pico-muted-color);
 }
 
+/* Mobile: 2x2 summary grid and a compact entries table that fits the screen */
+@media screen and (max-width: 767.99px) {
+    .compo-edit .pb-summary {
+        grid-template-columns: 1fr 1fr;
+        row-gap: var(--pico-spacing);
+    }
+
+    .compo-edit .pb-col-preview,
+    .compo-edit .pb-col-duration {
+        display: none;
+    }
+
+    .compo-edit table {
+        font-size: 0.875rem;
+    }
+
+    .compo-edit th,
+    .compo-edit td {
+        padding: 0.25rem 0.375rem;
+    }
+
+    .compo-edit td code {
+        padding: 0.125rem 0.5rem;
+    }
+
+    .compo-edit .settings .flat-button {
+        padding: 0.25rem;
+    }
+}
+
 code {
     background: var(--pico-background-color);
     border: 1px solid var(--pico-muted-border-color);

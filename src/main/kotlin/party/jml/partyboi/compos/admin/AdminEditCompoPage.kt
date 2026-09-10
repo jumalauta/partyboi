@@ -1,5 +1,7 @@
 package party.jml.partyboi.compos.admin
 
+import java.util.*
+import kotlin.math.roundToInt
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ManualResult
@@ -11,8 +13,6 @@ import party.jml.partyboi.entries.Preview
 import party.jml.partyboi.form.*
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
-import java.util.*
-import kotlin.math.roundToInt
 
 /** The two tabs of the compo edit page; each is its own route. */
 enum class CompoTab { SETTINGS, ENTRIES }
@@ -299,9 +299,9 @@ object AdminEditCompoPage {
                         tr {
                             th(classes = "narrow") {}
                             th(classes = "narrow") { +"#" }
-                            th(classes = "narrow") { +"Prev" }
+                            th(classes = "narrow pb-col-preview") { +"Prev" }
                             th { +"Title" }
-                            th { +"Duration" }
+                            th(classes = "pb-col-duration") { +"Duration" }
                             th { +"File" }
                             th(classes = "narrow center") { +"Q" }
                             th(classes = "settings") {}
@@ -342,13 +342,13 @@ object AdminEditCompoPage {
 
             td(classes = "handle") { icon("grip-vertical") }
             td(classes = "narrow") { small { +(order?.toString()?.padStart(2, '0') ?: "–") } }
-            td(classes = "narrow") { renderThumbnail(entry, preview) }
+            td(classes = "narrow pb-col-preview") { renderThumbnail(entry, preview) }
             td {
                 a(href = "/entries/${entry.id}") { +entry.title }
                 br {}
                 small { +entry.author }
             }
-            td {
+            td(classes = "pb-col-duration") {
                 numberInputDuration(entry)
             }
             td {
