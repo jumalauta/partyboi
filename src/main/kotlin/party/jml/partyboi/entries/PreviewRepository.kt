@@ -1,5 +1,6 @@
 package party.jml.partyboi.entries
 
+import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
 import com.sksamuel.scrimage.ImmutableImage
@@ -9,6 +10,7 @@ import kotliquery.queryOf
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.one
 import party.jml.partyboi.form.FileUpload
@@ -18,6 +20,7 @@ import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.system.useTempFile
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import java.awt.image.BufferedImage
 import java.nio.file.Path
 import java.util.*
 
@@ -53,7 +56,14 @@ class PreviewRepository(val app: AppServices) {
     }
 
     suspend fun store(entryId: UUID, source: Path): AppResult<Unit> = either {
-        val inputImage = ImmutableImage.loader().fromPath(source)
+        // Normalize to plain RGB: JpegWriter cannot encode every color model an uploaded
+        // image may decode to (e.g. 16-bit channels), and a decode failure must surface as a
+        // form error instead of an exception.
+        val inputImage = Either.catch {
+            ImmutableImage.loader().fromPath(source).copy(BufferedImage.TYPE_INT_RGB)
+        }.mapLeft {
+            ValidationError("file", "Unsupported or broken image file", source.fileName.toString())
+        }.bind()
         val writer = JpegWriter()
         useTempFile { thumbnailImage ->
             inputImage.scaleToHeight(400).output(writer, thumbnailImage)
@@ -73,7 +83,7 @@ class PreviewRepository(val app: AppServices) {
     suspend fun store(entryId: UUID, upload: FileUpload): AppResult<Unit> = either {
         useTempFile { tempFile ->
             upload.write(tempFile).bind()
-            store(entryId, tempFile)
+            store(entryId, tempFile).bind()
         }
     }
 

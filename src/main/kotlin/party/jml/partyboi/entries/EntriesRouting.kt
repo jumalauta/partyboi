@@ -229,7 +229,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
                         app.compos.assertCanSubmit(entry.compoId, user.isAdmin),
                         app.entries.assertCanSubmit(entry.id, user.isAdmin),
                     ).bind()
-                    app.previews.store(entry.id, preview.file)
+                    app.previews.store(entry.id, preview.file).bind()
 
                     Redirection("/entries/$entryId")
                 },
