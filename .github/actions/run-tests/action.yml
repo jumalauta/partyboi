@@ -2,15 +2,17 @@ name: "Run tests"
 runs:
   using: "composite"
   steps:
-    # Only chmod the test file dirs, and do it before the database starts:
-    # a recursive chmod over data/ also hits the postgres volume (data/db18),
-    # and postgres exits on a world-writable data directory — a startup race
-    # that made whole CI runs fail with "connection refused".
+    # Chmod before the database starts: data/db18 (the postgres volume) does not
+    # exist yet, so the recursive chmod cannot hit it. Postgres exits on a
+    # world-writable data directory, and chmodding it after `up` raced initdb's
+    # permission fix, making whole CI runs fail with "connection refused".
+    # The whole data/ tree must stay writable — tests write to data/files and
+    # data/test/* (see tests.yaml and the Config defaults).
     - name: Create a directory for asset files
       shell: bash
       run: |
         sudo mkdir -p data/test
-        sudo chmod -R 777 data/test
+        sudo chmod -R 777 data
     - name: Start database for tests
       shell: bash
       run: docker compose --file docker-compose-dev.yml up db -d --wait
