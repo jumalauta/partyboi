@@ -1,6 +1,7 @@
 package party.jml.partyboi.system
 
 import arrow.core.toOption
+import io.ktor.server.plugins.*
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 import kotlinx.serialization.json.Json
@@ -68,7 +69,12 @@ class ErrorRepository(app: AppServices) {
             "Job was cancelled",
             "Cannot write to channel",
         )
-        return ignoredMessages.contains(error.message)
+        if (ignoredMessages.contains(error.message)) return true
+        // Vulnerability scanners constantly probe static content with ../ paths. Ktor
+        // rejects them with a 400 before touching the filesystem, so they are attack
+        // noise, not application errors.
+        return error is BadRequestException &&
+                error.message?.startsWith("Relative path should not contain path traversing characters") == true
     }
 }
 
