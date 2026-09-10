@@ -2,14 +2,22 @@ name: "Run tests"
 runs:
   using: "composite"
   steps:
-    - name: Start database for tests
-      shell: bash
-      run: docker compose --file docker-compose-dev.yml up db -d
+    # Only chmod the test file dirs, and do it before the database starts:
+    # a recursive chmod over data/ also hits the postgres volume (data/db18),
+    # and postgres exits on a world-writable data directory — a startup race
+    # that made whole CI runs fail with "connection refused".
     - name: Create a directory for asset files
       shell: bash
       run: |
         sudo mkdir -p data/test
-        sudo chmod -R 777 data
+        sudo chmod -R 777 data/test
+    - name: Start database for tests
+      shell: bash
+      run: docker compose --file docker-compose-dev.yml up db -d --wait
     - name: Run tests
       shell: bash
       run: gradle test -i
+    - name: Dump database logs on failure
+      if: failure()
+      shell: bash
+      run: docker compose --file docker-compose-dev.yml logs --no-color db
