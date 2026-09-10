@@ -19,4 +19,15 @@ object BuildInfo {
         timestamp.substringBefore("-").toIntOrNull()
             ?: kotlin.time.Clock.System.now().toDate().year
     }
+
+    private val assetVersion: String by lazy {
+        timestamp.filter { it.isLetterOrDigit() }
+    }
+
+    /**
+     * Cache-busting URL for a bundled static asset: the query changes on every build,
+     * so browsers re-fetch CSS/JS after a deploy instead of serving a stale cache.
+     * Not for user-uploaded assets — those change independently of builds.
+     */
+    fun asset(path: String): String = "$path?v=$assetVersion"
 }

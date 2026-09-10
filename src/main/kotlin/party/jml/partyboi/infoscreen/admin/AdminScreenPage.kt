@@ -1,6 +1,8 @@
 package party.jml.partyboi.infoscreen.admin
 
+import java.util.*
 import kotlinx.html.*
+import party.jml.partyboi.BuildInfo
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.AppError
@@ -13,7 +15,6 @@ import party.jml.partyboi.templates.NavItem
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.*
 import party.jml.partyboi.triggers.TriggerRow
-import java.util.*
 
 object AdminScreenPage {
     fun renderAdHocForm(
@@ -208,7 +209,7 @@ object AdminScreenPage {
             }
         }
 
-        script(src = "/assets/draggable.min.js") {}
+        script(src = BuildInfo.asset("/assets/draggable.min.js")) {}
     }
 
     fun renderCompoRunnerPage(
@@ -267,7 +268,7 @@ object AdminScreenPage {
             }
         })
         if (refreshOnSlideChange) {
-            script(src = "/assets/refreshOnSlideChange.js") {}
+            script(src = BuildInfo.asset("/assets/refreshOnSlideChange.js")) {}
         }
     }
 

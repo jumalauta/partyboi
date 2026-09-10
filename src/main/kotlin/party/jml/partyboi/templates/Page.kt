@@ -36,10 +36,10 @@ data class Page(
                     content = "width=device-width, height=device-height, initial-scale=1"
                 }
                 title { +"$titleText - ${Config.get().instanceName}" }
-                link(rel = "stylesheet", href = "/assets/picocss/${theme.colorScheme.filename}", type = "text/css")
-                link(rel = "stylesheet", href = "/assets/fontawesome.min.css", type = "text/css")
-                link(rel = "stylesheet", href = "/assets/solid.min.css", type = "text/css")
-                link(rel = "stylesheet", href = "/assets/partyboi.css", type = "text/css")
+                link(rel = "stylesheet", href = BuildInfo.asset("/assets/picocss/${theme.colorScheme.filename}"), type = "text/css")
+                link(rel = "stylesheet", href = BuildInfo.asset("/assets/fontawesome.min.css"), type = "text/css")
+                link(rel = "stylesheet", href = BuildInfo.asset("/assets/solid.min.css"), type = "text/css")
+                link(rel = "stylesheet", href = BuildInfo.asset("/assets/partyboi.css"), type = "text/css")
             }
             body {
                 main(classes = "container") {
@@ -106,7 +106,7 @@ data class Page(
                     }
                     div { id = "preview-modal-media" }
                 }
-                script(src = "/assets/partyboi.js") {}
+                script(src = BuildInfo.asset("/assets/partyboi.js")) {}
             }
         }
     }

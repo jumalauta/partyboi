@@ -3,6 +3,7 @@ package party.jml.partyboi.compos.admin
 import java.util.*
 import kotlin.math.roundToInt
 import kotlinx.html.*
+import party.jml.partyboi.BuildInfo
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.compos.ManualResult
 import party.jml.partyboi.compos.NewManualResult
@@ -91,7 +92,7 @@ object AdminEditCompoPage {
                 }
             }
         }
-        script(src = "/assets/draggable.min.js") {}
+        script(src = BuildInfo.asset("/assets/draggable.min.js")) {}
     }
 
     // ---------------------------------------------------------------- Settings tab
