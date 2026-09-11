@@ -106,7 +106,6 @@ data class CompoResult(
     val title: String,
     val author: String,
     val info: String?,
-    val downloadLink: String?,
     val scoreText: String? = null,
     val isManual: Boolean = false,
     val position: Int = 0,
@@ -121,7 +120,6 @@ data class CompoResult(
                 title = row.string("title"),
                 author = row.string("author"),
                 info = row.stringOrNull("screen_comment")?.nonEmptyString(),
-                downloadLink = null,
             )
         }
 

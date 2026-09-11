@@ -298,6 +298,27 @@ class FileRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun getLatestEntryFiles(includeProcessedFiles: Boolean): AppResult<List<EntryFileDesc>> = db.use {
+        many(
+            queryOf(
+                """
+                    WITH entry_file_with_rn AS (
+                        SELECT
+                            entry_id,
+                            file.*,
+                            row_number() OVER (PARTITION BY entry_id ORDER BY uploaded_at DESC) rn
+                        FROM entry_file
+                        JOIN file ON file.id = entry_file.file_id
+                        ${if (includeProcessedFiles) "" else "WHERE NOT processed"}
+                    )
+                    SELECT *
+                    FROM entry_file_with_rn
+                    WHERE rn = 1
+        """.trimIndent()
+            ).map(EntryFileDesc.fromRow)
+        )
+    }
+
     suspend fun getAll() = db.use {
         many(queryOf("SELECT * FROM file").map(FileDesc.fromRow))
     }
@@ -316,6 +337,20 @@ data class EntryFileAssociation(
             EntryFileAssociation(
                 entryId = row.uuid("entry_id"),
                 fileId = row.uuid("file_id"),
+            )
+        }
+    }
+}
+
+data class EntryFileDesc(
+    val entryId: UUID,
+    val file: FileDesc,
+) {
+    companion object {
+        val fromRow: (Row) -> EntryFileDesc = { row ->
+            EntryFileDesc(
+                entryId = row.uuid("entry_id"),
+                file = FileDesc.fromRow(row),
             )
         }
     }

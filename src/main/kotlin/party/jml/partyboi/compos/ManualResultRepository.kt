@@ -103,7 +103,6 @@ class ManualResultRepository(app: AppServices) : Service(app) {
                     title = row.string("title"),
                     author = row.string("author"),
                     info = row.stringOrNull("screen_comment")?.nonEmptyString(),
-                    downloadLink = null,
                     scoreText = row.stringOrNull("score_text")?.nonEmptyString(),
                     isManual = true,
                     position = row.int("position"),

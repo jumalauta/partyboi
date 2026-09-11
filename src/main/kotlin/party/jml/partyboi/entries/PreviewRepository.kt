@@ -100,8 +100,11 @@ class PreviewRepository(val app: AppServices) {
     }
 
     suspend fun getEntryPreviews(entries: List<EntryBase>): List<Preview> =
-        entries
-            .map { app.previews.get(it.id) }
+        getEntryPreviewsById(entries.map { it.id })
+
+    suspend fun getEntryPreviewsById(entryIds: List<UUID>): List<Preview> =
+        entryIds
+            .map { app.previews.get(it) }
             .flatMap { it.fold({ emptyList() }, { listOf(it) }) }
 
     suspend fun getFile(entryId: UUID): AppResult<Path> = either {
