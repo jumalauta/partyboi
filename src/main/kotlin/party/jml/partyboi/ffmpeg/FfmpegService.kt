@@ -47,12 +47,22 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
 
         return app.dockerFileShare.use(input) { sharedInput ->
             val duration = probeDurationSeconds(sharedInput)
+            val rawClip = app.dockerFileShare.createTempFile("audioClipRaw", ".wav")
+            val normalizedClip = app.dockerFileShare.createTempFile("audioClipNormalized", ".wav")
             val waveformThumb = app.dockerFileShare.createTempFile("audioWaveformThumb", ".png")
             val waveformFull = app.dockerFileShare.createTempFile("audioWaveformFull", ".png")
             val clip = app.dockerFileShare.createTempFile("audioPreview", ".webm")
-            generateWaveform(sharedInput, waveformThumb, width = 400, height = 120)
-            generateWaveform(sharedInput, waveformFull, width = 1200, height = 360)
-            generateAudioClip(sharedInput, clip, duration)
+            try {
+                extractAudioClipSegment(sharedInput, rawClip, duration)
+                val measurement = measureLoudness(rawClip)
+                normalizeByMeasurement(rawClip, normalizedClip, measurement, sampleRate = 48000)
+                generateWaveform(normalizedClip, waveformThumb, width = 400, height = 120)
+                generateWaveform(normalizedClip, waveformFull, width = 1200, height = 360)
+                encodeAudioClip(normalizedClip, clip)
+            } finally {
+                rawClip.delete()
+                normalizedClip.delete()
+            }
             Triple(waveformThumb.localFile, waveformFull.localFile, clip.localFile)
         }
     }
@@ -109,7 +119,7 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
         }
     }
 
-    private fun generateAudioClip(input: SharedFile, output: SharedFile, duration: Double) {
+    private fun extractAudioClipSegment(input: SharedFile, output: SharedFile, duration: Double) {
         val clipSec = minOf(30.0, duration).coerceAtLeast(0.1)
         // Start a quarter of the way into the leftover tail so we skip pure-intro silence
         // but stay before the song's ending.
@@ -126,6 +136,16 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
                 "-af",
                 "afade=t=in:st=0:d=$fadeSec,afade=t=out:st=$fadeOutStart:d=$fadeSec",
             )
+            audioCodec("pcm_s16le")
+            output(output)
+        }
+    }
+
+    private fun encodeAudioClip(input: SharedFile, output: SharedFile) {
+        runFfmpeg {
+            hideBanner()
+            input(input)
+            noVideo()
             audioCodec("libopus")
             arg("-b:a", "96k")
             arg("-f", "webm")
@@ -204,7 +224,9 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
     private fun normalizeByMeasurement(
         input: SharedFile,
         output: SharedFile,
-        measurement: LoudnessMeasurement
+        measurement: LoudnessMeasurement,
+        // loudnorm resamples to 192 kHz internally and emits that rate unless told otherwise
+        sampleRate: Int? = null,
     ): String =
         runFfmpeg {
             hideBanner()
@@ -221,6 +243,7 @@ class FfmpegService(app: AppServices) : party.jml.partyboi.Service(app) {
                 "offset" to measurement.target_offset,
                 "linear" to "true"
             )
+            sampleRate?.let { arg("-ar", it.toString()) }
             output(output)
         }
 
