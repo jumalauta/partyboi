@@ -69,6 +69,14 @@ object EditEntryPage {
                         title = "Preview",
                         submitButtonLabel = "Set preview"
                     )
+                    if (user.isAdmin) {
+                        form(
+                            action = "/admin/entries/${entryUpdateForm.data.id}/regenerate-preview",
+                            method = FormMethod.post,
+                        ) {
+                            button(classes = "secondary") { +"Regenerate preview from entry file" }
+                        }
+                    }
                 }
             )
 

@@ -1,6 +1,7 @@
 package party.jml
 
 import arrow.core.raise.either
+import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import party.jml.partyboi.AppServices
@@ -10,24 +11,28 @@ import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import java.util.*
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class PreviewUploadTest : PartyboiTester {
     private fun setupEntry(
         builder: io.ktor.server.testing.ApplicationTestBuilder,
+        file: FileUpload = FileUpload.createTestData("demo.dat", 256),
         onReady: (AppServices, UUID) -> Unit,
     ) {
         builder.setupServices {
             val app = this
             either {
                 val user = addTestUser(app, "pnguser").bind()
+                addTestAdmin(app).bind()
                 val compo = compos.add(NewCompo("Demo", "")).bind()
                 compos.setVisible(compo.id, true).bind()
                 val entry = entries.add(
                     NewEntry(
                         title = "Png Entry",
                         author = "Author",
-                        file = FileUpload.createTestData("demo.dat", 256),
+                        file = file,
                         compoId = compo.id,
                         screenComment = "",
                         orgComment = "",
@@ -94,5 +99,57 @@ class PreviewUploadTest : PartyboiTester {
             appRef!!.previews.get(entryId).isLeft(),
             "no preview should be stored for a broken image",
         )
+    }
+
+    @Test
+    fun testAdminRegeneratesPreviewFromImageEntryFile() = test {
+        var appRef: AppServices? = null
+        var entryId: UUID = UUIDv7.Empty
+        val pngBytes = javaClass.getResource("/images/final.png")!!.readBytes()
+        setupEntry(this, file = FileUpload.fromByteArray("final.png", pngBytes)) { app, id ->
+            appRef = app
+            entryId = id
+        }
+
+        it.login("admin", "password")
+
+        // The image entry file auto-generated a preview at submit time.
+        val originalThumbnail = appRef!!.previews.get(entryId)
+            .fold({ error("preview should exist after submitting an image entry: $it") }, { it.systemPath })
+
+        val response = it.client.post("/admin/entries/$entryId/regenerate-preview")
+        assertEquals(HttpStatusCode.Found, response.status)
+        assertEquals("/entries/$entryId", response.headers[HttpHeaders.Location])
+
+        val regeneratedThumbnail = appRef!!.previews.get(entryId)
+            .fold({ error("preview should exist after regeneration: $it") }, { it.systemPath })
+        assertNotEquals(
+            originalThumbnail,
+            regeneratedThumbnail,
+            "regeneration must store a fresh thumbnail file",
+        )
+    }
+
+    @Test
+    fun testRegeneratePreviewRequiresAdmin() = test {
+        var entryId: UUID = UUIDv7.Empty
+        setupEntry(this) { _, id -> entryId = id }
+
+        it.login("pnguser")
+
+        val response = it.client.post("/admin/entries/$entryId/regenerate-preview")
+        assertNotEquals("/entries/$entryId", response.headers[HttpHeaders.Location])
+    }
+
+    @Test
+    fun testRegeneratePreviewFromUnsupportedFileType() = test {
+        var entryId: UUID = UUIDv7.Empty
+        setupEntry(this) { _, id -> entryId = id }
+
+        it.login("admin", "password")
+
+        // The default .dat entry file has no preview source.
+        val response = it.client.post("/admin/entries/$entryId/regenerate-preview")
+        assertEquals(HttpStatusCode.BadRequest, response.status)
     }
 }

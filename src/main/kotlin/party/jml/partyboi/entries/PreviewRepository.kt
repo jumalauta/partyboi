@@ -9,6 +9,7 @@ import kotliquery.Row
 import kotliquery.queryOf
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.exec
@@ -20,6 +21,8 @@ import party.jml.partyboi.system.createTemporaryFile
 import party.jml.partyboi.system.useTempFile
 import party.jml.partyboi.validation.NotEmpty
 import party.jml.partyboi.validation.Validateable
+import party.jml.partyboi.workqueue.GeneratePreviewForAudio
+import party.jml.partyboi.workqueue.GeneratePreviewForVideo
 import java.awt.image.BufferedImage
 import java.nio.file.Path
 import java.util.*
@@ -97,6 +100,34 @@ class PreviewRepository(val app: AppServices) {
             previewFileIsVideo = previewFileDesc?.extension in videoExtensions,
             previewAudioFilePath = entry.previewAudioFileId?.let { app.files.getStorageFile(it).toPath() },
         )
+    }
+
+    // Re-run preview generation from the entry's latest uploaded file. Backfill for
+    // entries whose automatic preview generation failed or was never triggered
+    // (e.g. video formats that were unsupported at upload time).
+    suspend fun regenerate(entryId: UUID): AppResult<String> = either {
+        val file = app.files.getLatest(entryId, originalsOnly = true).bind()
+        val screenshotSource = scanForScreenshotSource(file)
+        if (screenshotSource != null) {
+            store(entryId, screenshotSource).bind()
+            "Preview regenerated from ${file.originalFilename}"
+        } else {
+            val video = FileFormatCategory.video.formats().flatMap { it.extensions }
+            val streamingAudio = FileFormatCategory.streamingAudio.formats().flatMap { it.extensions }
+            when (file.extension) {
+                in video -> {
+                    app.workQueue.addTask(GeneratePreviewForVideo(file))
+                    "Video preview generation queued for ${file.originalFilename}"
+                }
+
+                in streamingAudio -> {
+                    app.workQueue.addTask(GeneratePreviewForAudio(file))
+                    "Audio preview generation queued for ${file.originalFilename}"
+                }
+
+                else -> raise(InvalidInput("A preview cannot be generated from ${file.originalFilename} — upload one manually"))
+            }
+        }
     }
 
     suspend fun getEntryPreviews(entries: List<EntryBase>): List<Preview> =

@@ -265,6 +265,18 @@ fun Application.configureEntriesRouting(app: AppServices) {
         }
     }
 
+    adminRouting {
+        post("/admin/entries/{id}/regenerate-preview") {
+            call.respondEither {
+                val user = call.userSession(app).bind()
+                val entryId = call.parameterUUID("id").bind()
+                val message = app.previews.regenerate(entryId).bind()
+                app.messages.sendMessage(user.id, MessageType.SUCCESS, message)
+                Redirection("/entries/$entryId")
+            }
+        }
+    }
+
     userApiRouting {
         delete("/entries/{id}") {
             call.apiRespond {
