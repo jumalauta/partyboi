@@ -15,6 +15,7 @@ import it.skrape.matchers.generalAssertion
 import it.skrape.matchers.toBe
 import it.skrape.selects.Doc
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.User
@@ -164,6 +165,8 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
                 app.settings.wizardCompleted.set(true).bind()
                 app.settings.partyStartDate.set(null).bind()
                 app.settings.partyDays.set(3).bind()
+                app.time.timeZone.set(TimeZone.currentSystemDefault()).bind()
+                app.time.timeZoneOverrides.set(emptyMap()).bind()
                 app.files.deleteAll().bind()
                 app.assets.deleteAll().bind()
                 app.triggers.deleteAll().bind()
