@@ -75,7 +75,7 @@ object EditEntryPage {
                             {
                                 // Submits the surrounding form to the regenerate endpoint;
                                 // formnovalidate skips the required preview file input.
-                                button(classes = "secondary") {
+                                button(classes = "secondary regenerate-preview") {
                                     attributes["formaction"] =
                                         "/admin/entries/${entryUpdateForm.data.id}/regenerate-preview"
                                     attributes["formnovalidate"] = ""

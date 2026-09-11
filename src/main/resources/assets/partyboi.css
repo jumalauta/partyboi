@@ -934,6 +934,12 @@ dialog.preview-modal .close {
     cursor: pointer;
 }
 
+/* Match the full-width "Set preview" submit input above it (Pico only makes
+   input[type=submit] full width, not <button>). */
+button.regenerate-preview {
+    width: 100%;
+}
+
 img.entry-edit-preview {
     width: 100%;
     /* Black backing so waveform PNGs (white-on-transparent) for audio entries
