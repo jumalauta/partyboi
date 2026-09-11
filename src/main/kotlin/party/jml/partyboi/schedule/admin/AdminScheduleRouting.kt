@@ -8,7 +8,10 @@ import arrow.core.toNonEmptyListOrNull
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminApiRouting
@@ -24,7 +27,9 @@ import party.jml.partyboi.data.switchApiUuid
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.schedule.NewEvent
+import party.jml.partyboi.schedule.ValidateableEvent
 import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.system.toLocalTimeString
 import party.jml.partyboi.system.withTimeOfDay
 import party.jml.partyboi.templates.Redirection
@@ -53,12 +58,31 @@ private fun Event.assertTimeOrder(): AppResult<Unit> =
 
 fun Application.configureAdminScheduleRouting(app: AppServices) {
 
+    // Days offered by the event forms' day dropdowns: the configured party days,
+    // plus any dates already used by events and by the form's own value (so events
+    // outside the configured range still render and round-trip). End times may
+    // cross midnight, so the end-day list also includes the day after the last one.
+    suspend fun eventFormDayOptions(
+        events: List<Event>,
+        current: ValidateableEvent<*>,
+    ): Map<String, List<LocalDate>> {
+        val startDays = (
+                app.settings.partyDates().getOrNull().orEmpty() +
+                        events.flatMap { listOfNotNull(it.startTime.toDate(), it.endTime?.toDate()) } +
+                        listOfNotNull(current.startTime.toDate(), current.endTime?.toDate())
+                ).distinct().sorted()
+        val endDays = startDays + startDays.last().plus(1, DateTimeUnit.DAY)
+        return mapOf("startTime" to startDays, "endTime" to endDays)
+    }
+
     suspend fun renderSchedulesPage(newEventForm: Form<NewEvent>? = null, timeZone: TimeZone) = either {
         val events = app.events.getAll().bind()
+        val form = newEventForm ?: Form(NewEvent::class, NewEvent.make(events, app), true)
         AdminSchedulePage.render(
-            newEventForm = newEventForm ?: Form(NewEvent::class, NewEvent.make(events, app.time), true),
+            newEventForm = form,
             events = events,
-            timeZone = timeZone
+            timeZone = timeZone,
+            dayOptions = eventFormDayOptions(events, form.data),
         )
     }
 
@@ -68,8 +92,10 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
         newTriggerForm: Form<NewScheduledTrigger>? = null,
     ) = either {
         val event = app.events.get(eventId.bind()).bind()
+        val events = app.events.getAll().bind()
+        val form = eventForm ?: Form(Event::class, event, true)
         AdminSchedulePage.renderEdit(
-            eventForm = eventForm ?: Form(Event::class, event, true),
+            eventForm = form,
             newTriggerForm = newTriggerForm ?: Form(
                 NewScheduledTrigger::class,
                 NewScheduledTrigger.empty(eventId.bind()),
@@ -77,6 +103,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             ),
             triggers = app.triggers.getTriggersForSignal(event.signal()).bind(),
             compos = app.compos.getAllCompos().bind(),
+            dayOptions = eventFormDayOptions(events, form.data),
         )
     }
 
@@ -144,7 +171,7 @@ fun Application.configureAdminScheduleRouting(app: AppServices) {
             call.jsonRespond {
                 call.userSession(app).bind()
                 val events = app.events.getAll().bind()
-                val created = app.events.add(NewEvent.make(events, app.time)).bind()
+                val created = app.events.add(NewEvent.make(events, app)).bind()
                 app.screen.syncScheduleSlides().bind()
                 CreatedEvent(created.id.toString())
             }

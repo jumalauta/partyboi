@@ -22,6 +22,9 @@ class WizardTest : PartyboiTester {
         it.get("/admin/settings", HttpStatusCode.OK) {
             relaxed = true
             findFirst("h1") { text.toBe("Welcome to Partyboi") }
+            // The wizard asks for the party dates.
+            findFirst("input[name=partyStartDate]") { attribute("type").toBe("date") }
+            findFirst("input[name=partyDays]") { attribute("value").toBe("3") }
         }
 
         // Front page also redirects an incomplete-wizard admin.
@@ -65,6 +68,8 @@ class WizardTest : PartyboiTester {
             append("resultsFileHeader", "")
             append("colorScheme", "Blue")
             append("timeZone", "Europe/Helsinki")
+            append("partyStartDate", "2026-07-15")
+            append("partyDays", "3")
         }) {
             it.redirectsTo("/admin/voting")
         }

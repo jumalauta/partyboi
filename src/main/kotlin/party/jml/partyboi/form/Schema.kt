@@ -2,7 +2,9 @@ package party.jml.partyboi.form
 
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kotlinx.html.InputType
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.system.TimeService
@@ -106,6 +108,7 @@ sealed interface Property {
                 UUID::class -> UUIDProp(name, optional, meta)
                 Boolean::class -> BooleanProp(name, optional, meta)
                 Instant::class -> InstantProp(name, optional, meta)
+                LocalDate::class -> LocalDateProp(name, optional, meta)
                 FileUpload::class -> FileUploadProp(name, optional, meta)
                 TimeZone::class -> TimeZoneProp(name, optional, meta)
                 List::class -> type.arguments.first().type?.let {
@@ -224,15 +227,42 @@ data class InstantProp(
             else -> TODO("Only Instant supported for datetime values. Unsupported type: $name $value")
         }
 
+    // Accepts either a single combined "yyyy-MM-ddTHH:mm:ss" value (a datetime input
+    // or the JSON APIs), or a day + time-of-day pair submitted as two inputs sharing
+    // this field's name (the day dropdown and time picker on the event forms).
+    override fun parseFormValue(
+        values: List<String>,
+        files: List<FileUpload>,
+    ): Any? {
+        val nonBlank = values.filter { it.isNotBlank() }
+        nonBlank.firstOrNull { it.contains('T') }?.let { return parseLocalDateTime(it) }
+        val date = nonBlank.firstOrNull { it.matches(DATE_PATTERN) }
+        val time = nonBlank.firstOrNull { it.matches(TIME_PATTERN) }
+        return if (date != null && time != null) {
+            val withSeconds = if (time.count { it == ':' } == 1) "$time:00" else time
+            parseLocalDateTime("${date}T$withSeconds")
+        } else null
+    }
+
+    companion object {
+        private val DATE_PATTERN = Regex("""\d{4}-\d{2}-\d{2}""")
+        private val TIME_PATTERN = Regex("""\d{2}:\d{2}(:\d{2})?""")
+    }
+}
+
+data class LocalDateProp(
+    override val name: String,
+    override val optional: Boolean,
+    override val meta: PropertyMeta,
+) : Property {
+    override val defaultValue: Any get() = Clock.System.todayIn(TimeService.timeZone())
+    override val defaultInputType: InputType = InputType.date
+    override fun serialize(value: Any?): String = (value as? LocalDate)?.toString() ?: ""
     override fun parseFormValue(
         values: List<String>,
         files: List<FileUpload>,
     ): Any? =
-        values.firstOrNull()?.let {
-            if (it.isEmpty()) null
-            else parseLocalDateTime(it)
-        }
-
+        values.firstOrNull()?.takeIf { it.isNotBlank() }?.let(LocalDate::parse)
 }
 
 data class FileUploadProp(

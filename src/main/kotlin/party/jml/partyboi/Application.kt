@@ -20,6 +20,8 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val app = runBlocking { services() }
 
+    runBlocking { app.settings.initPartyDatesFromSchedule() }
+
     launch { app.triggers.start() }
     launch { app.votes.start() }
     if (app.config.runWorkQueue) {

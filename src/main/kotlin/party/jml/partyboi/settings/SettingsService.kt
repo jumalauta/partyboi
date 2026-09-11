@@ -1,15 +1,22 @@
 package party.jml.partyboi.settings
 
 import arrow.core.raise.either
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.plus
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FieldPresentation
 import party.jml.partyboi.form.Label
+import party.jml.partyboi.system.AppResult
+import party.jml.partyboi.system.toDate
 import party.jml.partyboi.templates.ColorScheme
 import party.jml.partyboi.templates.Theme
+import party.jml.partyboi.validation.Min
 import party.jml.partyboi.validation.Validateable
 
 class SettingsService(app: AppServices) : Service(app) {
@@ -19,13 +26,38 @@ class SettingsService(app: AppServices) : Service(app) {
     val resultsFileHeader = property("resultsFileHeader", "")
     val colorScheme = property("colorScheme", ColorScheme.Blue)
     val wizardCompleted = property("wizardCompleted", false)
+    val partyStartDate = property<LocalDate?>("partyStartDate", null)
+    val partyDays = property("partyDays", 3)
 
     suspend fun getGeneralSettings() = either {
         GeneralSettings(
             resultsFileHeader = resultsFileHeader.get().bind(),
             colorScheme = colorScheme.get().bind(),
-            timeZone = app.time.timeZone.get().bind()
+            timeZone = app.time.timeZone.get().bind(),
+            partyStartDate = partyStartDate.get().bind(),
+            partyDays = partyDays.get().bind(),
         )
+    }
+
+    // The days the party runs on, from the configured start date and length.
+    // Empty when the start date has not been set.
+    suspend fun partyDates(): AppResult<List<LocalDate>> = either {
+        val start = partyStartDate.get().bind() ?: return@either emptyList()
+        val days = partyDays.get().bind().coerceAtLeast(1)
+        (0 until days).map { start.plus(it, DateTimeUnit.DAY) }
+    }
+
+    // Installations that completed the wizard before these settings existed have no
+    // party dates; derive them once from the schedule so the day dropdowns work
+    // without re-running the wizard. A database with no events is left untouched.
+    suspend fun initPartyDatesFromSchedule(): AppResult<Unit> = either {
+        if (partyStartDate.get().bind() != null) return@either
+        val events = app.events.getAll().bind()
+        if (events.isEmpty()) return@either
+        val dates = events.flatMap { listOfNotNull(it.startTime.toDate(), it.endTime?.toDate()) }
+        val first = dates.min()
+        partyStartDate.set(first).bind()
+        partyDays.set((first.daysUntil(dates.max()) + 1).coerceAtLeast(1)).bind()
     }
 
     suspend fun getVoteSettings() = either {
@@ -47,6 +79,8 @@ class SettingsService(app: AppServices) : Service(app) {
             resultsFileHeader.set(settings.resultsFileHeader.trimEnd()),
             colorScheme.set(settings.colorScheme),
             app.time.timeZone.set(settings.timeZone),
+            partyStartDate.set(settings.partyStartDate),
+            partyDays.set(settings.partyDays),
         ).bindAll()
     }
 
@@ -81,6 +115,11 @@ data class GeneralSettings(
     val colorScheme: ColorScheme,
     @Label("Time zone")
     val timeZone: TimeZone,
+    @Label("Party start date")
+    val partyStartDate: LocalDate?,
+    @Label("Party length (days)")
+    @Min(1)
+    val partyDays: Int,
 ) : Validateable<GeneralSettings>
 
 data class VoteSettings(

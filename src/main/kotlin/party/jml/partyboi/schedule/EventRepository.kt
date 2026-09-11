@@ -37,6 +37,7 @@ interface EventRepository {
     suspend fun getBetween(since: Instant, until: Instant): AppResult<List<Event>>
     suspend fun getAll(): AppResult<List<Event>>
     suspend fun getPublic(): AppResult<List<Event>>
+    suspend fun getLastAdded(): AppResult<Event?>
     suspend fun add(event: NewEvent, tx: TransactionalSession? = null): AppResult<Event>
     suspend fun add(event: NewEvent, actions: List<Action>): AppResult<Pair<Event, List<TriggerRow>>>
     suspend fun update(event: Event, tx: TransactionalSession? = null): AppResult<Event>
@@ -75,6 +76,13 @@ class EventRepositoryImpl(app: AppServices) : EventRepository, Service(app) {
 
     override suspend fun getPublic(): AppResult<List<Event>> = db.use {
         many(queryOf("SELECT * FROM event WHERE visible ORDER BY time, id").map(Event.fromRow))
+    }
+
+    // Most recently inserted event. The id is a UUIDv7 (timestamp-prefixed), so the
+    // ordering must happen in SQL: Postgres compares uuids bytewise, which follows
+    // insertion time, whereas Java's UUID.compareTo does not.
+    override suspend fun getLastAdded(): AppResult<Event?> = db.use {
+        option(queryOf("SELECT * FROM event ORDER BY id DESC LIMIT 1").map(Event.fromRow))
     }
 
     override suspend fun add(event: NewEvent, tx: TransactionalSession?): AppResult<Event> = db.use(tx) {
@@ -236,10 +244,9 @@ data class NewEvent(
     val visible: Boolean,
 ) : ValidateableEvent<NewEvent> {
     companion object {
-        fun make(today: LocalDate, otherEventTimes: List<Instant>): NewEvent {
-            val time = otherEventTimes.filter { it.toDate() == today }.maxOrNull()
-                ?: otherEventTimes.maxOrNull()
-                ?: today.atTime(12, 0).toInstant(TimeService.timeZone())
+        fun make(day: LocalDate, otherEventTimes: List<Instant>): NewEvent {
+            val time = otherEventTimes.filter { it.toDate() == day }.maxOrNull()
+                ?: day.atTime(12, 0).toInstant(TimeService.timeZoneAt(day))
             return NewEvent(
                 name = "",
                 startTime = time,
@@ -248,8 +255,13 @@ data class NewEvent(
             )
         }
 
-        suspend fun make(otherEvents: List<Event>, timeService: TimeService): NewEvent {
-            return make(timeService.today(), otherEvents.map { it.endTime ?: it.startTime })
+        // Prefill day: the day of the most recently added event, falling back to the
+        // first configured party day, falling back to today.
+        suspend fun make(otherEvents: List<Event>, app: AppServices): NewEvent {
+            val day = app.events.getLastAdded().getOrNull()?.startTime?.toDate()
+                ?: app.settings.partyDates().getOrNull()?.firstOrNull()
+                ?: app.time.today()
+            return make(day, otherEvents.map { it.endTime ?: it.startTime })
         }
     }
 }

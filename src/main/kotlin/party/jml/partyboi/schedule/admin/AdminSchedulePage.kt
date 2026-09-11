@@ -1,5 +1,6 @@
 package party.jml.partyboi.schedule.admin
 
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
@@ -22,7 +23,8 @@ object AdminSchedulePage {
     fun render(
         newEventForm: Form<NewEvent>,
         events: List<Event>,
-        timeZone: TimeZone
+        timeZone: TimeZone,
+        dayOptions: Map<String, List<LocalDate>>,
     ) =
         Page("Schedule") {
             h1 { +"Schedule" }
@@ -62,6 +64,7 @@ object AdminSchedulePage {
                     url = "/admin/schedule/events",
                     form = newEventForm,
                     submitButtonLabel = "Add event",
+                    dayOptions = dayOptions,
                     ajax = true,
                 )
             }
@@ -136,6 +139,7 @@ object AdminSchedulePage {
         newTriggerForm: Form<NewScheduledTrigger>,
         triggers: List<TriggerRow>,
         compos: List<Compo>,
+        dayOptions: Map<String, List<LocalDate>>,
     ) =
         Page("Edit event") {
             h1 { +"Edit event" }
@@ -144,6 +148,7 @@ object AdminSchedulePage {
                 renderForm(
                     url = "/admin/schedule/events/${eventForm.data.id}",
                     form = eventForm,
+                    dayOptions = dayOptions,
                 )
             }, {
                 if (triggers.isNotEmpty()) {

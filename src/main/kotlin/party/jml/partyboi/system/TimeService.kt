@@ -40,8 +40,10 @@ class TimeService(app: AppServices) : Service(app) {
     suspend fun isoLocalTime(): String =
         localTime().format(LocalDateTime.Formats.ISO)
 
-    fun today(): LocalDate =
-        Clock.System.todayIn(TimeZone.currentSystemDefault())
+    // Resolved against the base configured timezone (not timeZoneAt, which would
+    // need today's date and recurse through timeZone()).
+    suspend fun today(): LocalDate =
+        Clock.System.todayIn(timeZone.getOrNull() ?: TimeZone.currentSystemDefault())
 
     suspend fun timeZone(): TimeZone =
         timeZoneAt(today())

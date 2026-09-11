@@ -340,6 +340,71 @@ class AdminScheduleTest : PartyboiTester {
         assertEquals(emptySet(), visibleScheduleSlideDates(app!!))
     }
 
+    // The event forms submit start/end as a day + time-of-day pair sharing the field
+    // name (day dropdown and time picker); the server combines them. An end time with
+    // a day selected but no time entered stays unset.
+    @Test
+    fun testSplitDayTimeFormPost() = test {
+        var app: AppServices? = null
+        val tz = TimeZone.currentSystemDefault()
+        setupServices {
+            app = this
+            either { addTestAdmin(this@setupServices).bind() }
+        }
+        it.login("admin")
+
+        it.post("/admin/schedule/events", formData {
+            append("name", "No end")
+            append("startTime", "2026-06-01")
+            append("startTime", "21:30")
+            append("endTime", "2026-06-02")
+            append("endTime", "")
+            append("visible", "true")
+        }) { _ -> }
+
+        it.post("/admin/schedule/events", formData {
+            append("name", "Past midnight")
+            append("startTime", "2026-06-01")
+            append("startTime", "23:00")
+            append("endTime", "2026-06-02")
+            append("endTime", "01:15")
+            append("visible", "true")
+        }) { _ -> }
+
+        val events = app!!.events.getAll().getOrNull()!!.associateBy { it.name }
+        assertEquals(
+            LocalDateTime(2026, 6, 1, 21, 30).toInstant(tz),
+            events["No end"]!!.startTime,
+        )
+        assertEquals(null, events["No end"]!!.endTime)
+        assertEquals(
+            LocalDateTime(2026, 6, 2, 1, 15).toInstant(tz),
+            events["Past midnight"]!!.endTime,
+        )
+    }
+
+    // The New event form offers a dropdown of days instead of a free date picker;
+    // the preselected day follows the most recently added event, not schedule order.
+    @Test
+    fun testNewEventDayDropdownDefaultsToLastAdded() = test {
+        setupServices { either { addTestAdmin(this@setupServices).bind() } }
+        it.login("admin")
+
+        it.post("/admin/schedule/events", eventForm("Later day", 2)) { _ -> }
+        it.post("/admin/schedule/events", eventForm("Earlier day", 1)) { _ -> }
+
+        it.get("/admin/schedule", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("select[name=startTime] option[selected]") {
+                attribute("value").toBe("2026-06-01")
+            }
+            // End times may cross midnight: the end-day list extends one day past the last.
+            findFirst("select[name=endTime] option:last-child") {
+                attribute("value").toBe("2026-06-03")
+            }
+        }
+    }
+
     private fun eventForm(name: String, day: Int) = formData {
         append("name", name)
         append("startTime", "2026-06-0${day}T12:00:00")

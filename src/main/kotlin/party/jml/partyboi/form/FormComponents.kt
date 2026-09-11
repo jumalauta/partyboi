@@ -1,10 +1,12 @@
 package party.jml.partyboi.form
 
 import io.ktor.util.logging.*
+import kotlinx.datetime.LocalDate
 import kotlinx.html.*
 import party.jml.partyboi.assets.Asset
 import party.jml.partyboi.data.UserError
 import party.jml.partyboi.data.randomShortId
+import party.jml.partyboi.system.displayDate
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.tooltip
@@ -70,7 +72,8 @@ fun <T : Validateable<T>> FlowContent.renderReadonlyFields(
 
 fun <T : Validateable<T>> FIELDSET.renderFields(
     form: Form<T>,
-    options: Map<String, List<DropdownOptionSupport>>? = null
+    options: Map<String, List<DropdownOptionSupport>>? = null,
+    dayOptions: Map<String, List<LocalDate>>? = null,
 ) {
     if (form.error != null) {
         section(classes = "error") {
@@ -97,8 +100,11 @@ fun <T : Validateable<T>> FIELDSET.renderFields(
             InputType.hidden -> formHiddenValue(data)
             InputType.checkBox -> formCheckBox(data)
             else -> {
+                val days = dayOptions?.get(data.key)
                 val opts = options?.get(data.key)
-                if (opts == null) {
+                if (days != null) {
+                    formDayTimeInput(data, days)
+                } else if (opts == null) {
                     when (data.presentation) {
                         FieldPresentation.large -> formTextArea(data, monospace = false)
                         FieldPresentation.monospace -> formTextArea(data, monospace = true)
@@ -148,6 +154,44 @@ fun FlowOrInteractiveOrPhrasingContent.formTextArea(data: Form.FieldData, monosp
                 name = data.key
                 onInput = "this.parentNode.dataset.replicatedValue = this.value"
                 +data.value
+            }
+        }
+        formDescription(data.description)
+        formError(data.error)
+    }
+}
+
+// A datetime field split into a day dropdown and a time-of-day picker. Both inputs
+// share the field's name; InstantProp.parseFormValue combines the submitted pair.
+// The time input reuses the time-only flatpickr (data-time-only), so the page must
+// include the flatpickr assets.
+fun FlowOrInteractiveOrPhrasingContent.formDayTimeInput(data: Form.FieldData, days: List<LocalDate>) {
+    // An empty value (e.g. an unset end time) preselects the suggested day instead.
+    val selectedDay = data.value.substringBefore('T')
+        .ifEmpty { data.suggestedValue?.substringBefore('T') ?: "" }
+    label {
+        span { +data.label }
+        div(classes = "day-time") {
+            select {
+                name = data.key
+                attributes["aria-label"] = "${data.label}: day"
+                days.forEach { day ->
+                    option {
+                        value = day.toString()
+                        selected = day.toString() == selectedDay
+                        +day.displayDate()
+                    }
+                }
+            }
+            textInput(name = data.key) {
+                type = InputType.dateTime
+                value = if (data.value.contains('T')) data.value.substringAfter('T').take(5) else ""
+                attributes["data-time-only"] = "true"
+                attributes["aria-label"] = "${data.label}: time"
+                data.suggestedValue?.let {
+                    attributes["data-suggested-value"] =
+                        if (it.contains('T')) it.substringAfter('T').take(5) else it
+                }
             }
         }
         formDescription(data.description)
@@ -250,13 +294,14 @@ fun <T : Validateable<T>> FlowContent.renderForm(
     title: String? = null,
     submitButtonLabel: String = "Save changes",
     options: Map<String, List<DropdownOptionSupport>>? = null,
+    dayOptions: Map<String, List<LocalDate>>? = null,
     ajax: Boolean = false,
     footer: (FlowContent.() -> Unit)? = null,
 ) {
     dataForm(url, ajax) {
         article {
             if (title != null) cardHeader(title)
-            fieldSet { renderFields(form, options) }
+            fieldSet { renderFields(form, options, dayOptions) }
             submitButton(submitButtonLabel)
             footer?.invoke(this)
         }

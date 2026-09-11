@@ -162,6 +162,8 @@ fun <T> ApplicationTestBuilder.setupServices(setupForTest: suspend AppServices.(
             either {
                 app.settings.automaticVoteKeys.set(AutomaticVoteKeys.DISABLED)
                 app.settings.wizardCompleted.set(true).bind()
+                app.settings.partyStartDate.set(null).bind()
+                app.settings.partyDays.set(3).bind()
                 app.files.deleteAll().bind()
                 app.assets.deleteAll().bind()
                 app.triggers.deleteAll().bind()
