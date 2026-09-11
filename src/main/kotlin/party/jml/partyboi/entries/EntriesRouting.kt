@@ -41,6 +41,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
         user: AppResult<User>,
         entryUpdateForm: Form<EntryUpdate>? = null,
         previewForm: Form<NewPreview>? = null,
+        regenerateError: AppError? = null,
     ) = either {
         val files = app.files.getAllVersions(entryId.bind()).bind()
         val previewUrl = app.previews.get(entryId.bind()).map { it.externalUrl() }.getOrNull()
@@ -74,6 +75,7 @@ fun Application.configureEntriesRouting(app: AppServices) {
             allowEdit = allowEdit,
             uploader = uploader,
             tz = tz,
+            regenerateError = regenerateError,
         )
     }
 
@@ -270,9 +272,20 @@ fun Application.configureEntriesRouting(app: AppServices) {
             call.respondEither {
                 val user = call.userSession(app).bind()
                 val entryId = call.parameterUUID("id").bind()
-                val message = app.previews.regenerate(entryId).bind()
-                app.messages.sendMessage(user.id, MessageType.SUCCESS, message)
-                Redirection("/entries/$entryId")
+                app.previews.regenerate(entryId).fold(
+                    { error ->
+                        // Show the failure on the entry page, under the regenerate button.
+                        renderEditEntryPage(
+                            entryId = call.parameterUUID("id"),
+                            user = call.userSession(app),
+                            regenerateError = error,
+                        ).bind()
+                    },
+                    { message ->
+                        app.messages.sendMessage(user.id, MessageType.SUCCESS, message)
+                        Redirection("/entries/$entryId")
+                    }
+                )
             }
         }
     }

@@ -251,12 +251,14 @@ fun <T : Validateable<T>> FlowContent.renderForm(
     submitButtonLabel: String = "Save changes",
     options: Map<String, List<DropdownOptionSupport>>? = null,
     ajax: Boolean = false,
+    footer: (FlowContent.() -> Unit)? = null,
 ) {
     dataForm(url, ajax) {
         article {
             if (title != null) cardHeader(title)
             fieldSet { renderFields(form, options) }
             submitButton(submitButtonLabel)
+            footer?.invoke(this)
         }
     }
 }

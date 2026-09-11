@@ -4,6 +4,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.html.*
 import party.jml.partyboi.auth.User
 import party.jml.partyboi.compos.Compo
+import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.Filesize
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.form.renderForm
@@ -11,6 +12,7 @@ import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
 import party.jml.partyboi.templates.components.columns
+import party.jml.partyboi.templates.components.errorMessage
 import party.jml.partyboi.templates.components.icon
 
 object EditEntryPage {
@@ -24,6 +26,7 @@ object EditEntryPage {
         allowEdit: Boolean,
         uploader: User?,
         tz: TimeZone,
+        regenerateError: AppError? = null,
     ): Page {
         val title = if (!allowEdit) "Entry" else "Edit entry"
 
@@ -67,16 +70,21 @@ object EditEntryPage {
                         url = "/entries/${entryUpdateForm.data.id}/preview",
                         form = previewForm,
                         title = "Preview",
-                        submitButtonLabel = "Set preview"
+                        submitButtonLabel = "Set preview",
+                        footer = if (user.isAdmin) {
+                            {
+                                // Submits the surrounding form to the regenerate endpoint;
+                                // formnovalidate skips the required preview file input.
+                                button(classes = "secondary") {
+                                    attributes["formaction"] =
+                                        "/admin/entries/${entryUpdateForm.data.id}/regenerate-preview"
+                                    attributes["formnovalidate"] = ""
+                                    +"Regenerate preview from entry file"
+                                }
+                                regenerateError?.let { errorMessage(it) }
+                            }
+                        } else null,
                     )
-                    if (user.isAdmin) {
-                        form(
-                            action = "/admin/entries/${entryUpdateForm.data.id}/regenerate-preview",
-                            method = FormMethod.post,
-                        ) {
-                            button(classes = "secondary") { +"Regenerate preview from entry file" }
-                        }
-                    }
                 }
             )
 

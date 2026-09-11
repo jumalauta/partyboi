@@ -9,8 +9,8 @@ import kotliquery.Row
 import kotliquery.queryOf
 import org.apache.commons.compress.archivers.zip.ZipFile
 import party.jml.partyboi.AppServices
-import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.NotFound
+import party.jml.partyboi.data.Notice
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.db.exec
 import party.jml.partyboi.db.one
@@ -125,7 +125,7 @@ class PreviewRepository(val app: AppServices) {
                     "Audio preview generation queued for ${file.originalFilename}"
                 }
 
-                else -> raise(InvalidInput("A preview cannot be generated from ${file.originalFilename} — upload one manually"))
+                else -> raise(Notice("A preview cannot be generated from ${file.originalFilename} — upload one manually"))
             }
         }
     }

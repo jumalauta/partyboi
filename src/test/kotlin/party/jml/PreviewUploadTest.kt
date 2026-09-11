@@ -10,7 +10,9 @@ import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.entries.NewEntry
 import party.jml.partyboi.form.FileUpload
 import java.util.*
+import io.ktor.client.statement.*
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -148,8 +150,11 @@ class PreviewUploadTest : PartyboiTester {
 
         it.login("admin", "password")
 
-        // The default .dat entry file has no preview source.
+        // The default .dat entry file has no preview source: the entry page renders
+        // again with the error shown instead of redirecting.
         val response = it.client.post("/admin/entries/$entryId/regenerate-preview")
-        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.headers[HttpHeaders.Location] == null, "a failed regeneration must not redirect")
+        assertContains(response.bodyAsText(), "A preview cannot be generated from demo.dat")
     }
 }
