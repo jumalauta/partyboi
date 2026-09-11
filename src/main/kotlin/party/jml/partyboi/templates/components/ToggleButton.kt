@@ -65,8 +65,8 @@ data class IconSet(
         val submitting = IconSet(Icon("file-arrow-up", "Submitting open"), Icon("file-arrow-up", "Submitting closed"))
         val voting = IconSet(Icon("check-to-slot", "Voting open"), Icon("check-to-slot", "Voting closed"))
         val resultsPublic = IconSet(
-            Icon("square-poll-horizontal", "Results published"),
-            Icon("square-poll-horizontal", "Results hidden")
+            Icon("square-poll-horizontal", "Hide results"),
+            Icon("square-poll-horizontal", "Make results public")
         )
         val qualified = IconSet(Icon("star", "Non-/disqualify"), Icon("star", "Qualify"))
         val scheduled = IconSet(Icon("clock", "Pending"), Icon("ban", "Disabled"))

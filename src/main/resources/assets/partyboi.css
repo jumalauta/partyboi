@@ -1091,8 +1091,6 @@ code {
 .results .compo-nav a {
     display: inline-block;
     padding: 0.25rem 0.75rem;
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: 99999px;
     text-decoration: none;
     font-size: 0.875rem;
 }
@@ -1199,6 +1197,10 @@ code {
     margin-top: 0.25em;
     font-size: 0.875rem;
     text-decoration: none;
+}
+
+.results .download-link code {
+    border: 0;
 }
 
 @media (max-width: 767.99px) {
