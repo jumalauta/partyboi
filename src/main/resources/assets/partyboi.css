@@ -1,6 +1,18 @@
 :root {
     --pico-font-size: 100%;
     --pico-spacing: 0.8rem;
+    /* Slimmer form controls everywhere; Pico's defaults (0.75rem/1rem) are
+       chunky. These match the compact schedule-editor style, and control
+       padding and computed input/button height throughout Pico. */
+    --pico-form-element-spacing-vertical: 0.3rem;
+    --pico-form-element-spacing-horizontal: 0.5rem;
+}
+
+/* Pico has no variable for control font size (buttons hardcode 1rem, with
+   attribute-selector specificity — hence the attribute selectors here). */
+input, select, textarea,
+button, [type=submit], [type=reset], [type=button], [role=button] {
+    font-size: 0.9rem;
 }
 
 /* Content available to screen readers but not shown visually (e.g. a page's
@@ -19,6 +31,11 @@
 
 th {
     font-weight: 100;
+}
+
+label {
+    /*font-weight: 100;*/
+    font-size: 80%;
 }
 
 h1,
@@ -414,7 +431,9 @@ iframe.screen-preview {
     width: 100%;
     margin: 0;
     margin-bottom: var(--pico-spacing);
-    font-size: 1rem;
+    /* Must match the global control font size or the auto-grow replica
+       (::after) measures a different height than the textarea. */
+    font-size: 0.9rem;
     line-height: var(--pico-line-height);
 
     grid-area: 1 / 1 / 2 / 2;
@@ -811,12 +830,11 @@ table.schedule th {
     vertical-align: middle;
 }
 
-/* Compact, borderless-feeling inline inputs that fit inside table cells */
+/* Inline inputs that fit inside table cells (padding and font size come from
+   the global compact form style at the top of this file) */
 table.schedule input:not([type=checkbox]) {
     margin-bottom: 0;
-    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35) calc(var(--pico-form-element-spacing-horizontal) * 0.5);
     height: auto;
-    font-size: 90%;
 }
 
 table.schedule td.event-time {
@@ -845,8 +863,8 @@ table.schedule td.settings .flat-button {
 }
 
 /* Day dropdown + time-of-day picker of a split datetime form field. Sized to
-   content instead of stretching across the card, and styled like the compact
-   inline inputs of the schedule editor above the form. */
+   content instead of stretching across the card; sizing and font come from
+   the global compact form style at the top of this file. */
 .day-time {
     display: flex;
     gap: 0.4em;
@@ -858,28 +876,11 @@ table.schedule td.settings .flat-button {
 .day-time input {
     flex: none;
     width: auto;
-    height: auto;
     margin-bottom: 0;
-    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35) calc(var(--pico-form-element-spacing-horizontal) * 0.5);
-    font-size: 90%;
-}
-
-.day-time select {
-    /* room for the dropdown chevron */
-    padding-right: calc(var(--pico-form-element-spacing-horizontal) * 2);
 }
 
 .day-time input {
     width: 5em;
-}
-
-/* The event forms' name field follows the same compact style (it keeps its full
-   width, like the name cells of the schedule editor). Covers both the new-event
-   form and the edit form (same action prefix). */
-form[action^="/admin/schedule/events"] input[name=name] {
-    height: auto;
-    padding: calc(var(--pico-form-element-spacing-vertical) * 0.35) calc(var(--pico-form-element-spacing-horizontal) * 0.5);
-    font-size: 90%;
 }
 
 /* Preview modal: click a thumbnail to view the full preview asset. The <dialog>
