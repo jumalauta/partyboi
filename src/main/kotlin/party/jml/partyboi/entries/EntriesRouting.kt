@@ -117,69 +117,6 @@ fun Application.configureEntriesRouting(app: AppServices) {
             }
         }
 
-        get("/entries/{id}/preview-thumbnail") {
-            either {
-                val id = call.parameterUUID("id").bind()
-                app.previews.getThumbnailFileDesc(id)
-                    .mapLeft { NotFound("Preview image is missing") }
-                    .bind()
-            }.fold(
-                { call.respondPage(it) },
-                { call.respondPreviewAsset(it) }
-            )
-        }
-
-        get("/entries/{id}/preview-file") {
-            either {
-                val id = call.parameterUUID("id").bind()
-                app.previews.getPreviewFileDesc(id)
-                    .mapLeft { NotFound("Preview file is missing") }
-                    .bind()
-            }.fold(
-                { call.respondPage(it) },
-                { call.respondPreviewAsset(it) }
-            )
-        }
-
-        get("/entries/{id}/preview-audio") {
-            either {
-                val id = call.parameterUUID("id").bind()
-                app.previews.getPreviewAudioFileDesc(id)
-                    .mapLeft { NotFound("Audio preview is missing") }
-                    .bind()
-            }.fold(
-                { call.respondPage(it) },
-                { call.respondPreviewAsset(it) }
-            )
-        }
-
-        get("/entries/download/{fileId}") {
-            either {
-                val fileId = call.parameterUUID("fileId").bind()
-                val user = call.optionalUserSession(app)
-                val entry = app.entries.getByFileId(fileId).bind()
-                if (user?.let { it.isAdmin || it.id == entry.userId } == true
-                    || app.compos.getById(entry.compoId).bind().publicResults
-                ) {
-                    app.files.getById(fileId).bind()
-                } else {
-                    raise(NotFound("Downloading this file is disabled until results are public"))
-                }
-            }.fold(
-                { call.respondPage(it) },
-                {
-                    call.response.header(
-                        HttpHeaders.ContentDisposition,
-                        ContentDisposition.Attachment.withParameter(
-                            ContentDisposition.Parameters.FileName,
-                            it.originalFilename
-                        ).toString()
-                    )
-                    call.respondFile(it.getStorageFile())
-                }
-            )
-        }
-
         post("/entries/{id}") {
             call.processForm<EntryUpdate>(
                 { entry ->
@@ -241,6 +178,85 @@ fun Application.configureEntriesRouting(app: AppServices) {
                     ).bind()
                 },
                 maxUploadSize = app.config.maxFileUploadSize,
+            )
+        }
+    }
+
+    // Anonymous visitors may load preview assets only for entries whose compo has published
+    // results; logged-in users keep unrestricted access (the voting page relies on it).
+    suspend fun assertPreviewVisible(call: ApplicationCall, entryId: UUID): AppResult<Unit> = either {
+        val user = call.optionalUserSession(app)
+        if (user == null) {
+            val entry = app.entries.getById(entryId).bind()
+            val compo = app.compos.getById(entry.compoId).bind()
+            if (!compo.publicResults) raise(NotFound("Preview is not available"))
+        }
+    }
+
+    publicRouting {
+        get("/entries/{id}/preview-thumbnail") {
+            either {
+                val id = call.parameterUUID("id").bind()
+                assertPreviewVisible(call, id).bind()
+                app.previews.getThumbnailFileDesc(id)
+                    .mapLeft { NotFound("Preview image is missing") }
+                    .bind()
+            }.fold(
+                { call.respondPage(it) },
+                { call.respondPreviewAsset(it) }
+            )
+        }
+
+        get("/entries/{id}/preview-file") {
+            either {
+                val id = call.parameterUUID("id").bind()
+                assertPreviewVisible(call, id).bind()
+                app.previews.getPreviewFileDesc(id)
+                    .mapLeft { NotFound("Preview file is missing") }
+                    .bind()
+            }.fold(
+                { call.respondPage(it) },
+                { call.respondPreviewAsset(it) }
+            )
+        }
+
+        get("/entries/{id}/preview-audio") {
+            either {
+                val id = call.parameterUUID("id").bind()
+                assertPreviewVisible(call, id).bind()
+                app.previews.getPreviewAudioFileDesc(id)
+                    .mapLeft { NotFound("Audio preview is missing") }
+                    .bind()
+            }.fold(
+                { call.respondPage(it) },
+                { call.respondPreviewAsset(it) }
+            )
+        }
+
+        get("/entries/download/{fileId}") {
+            either {
+                val fileId = call.parameterUUID("fileId").bind()
+                val user = call.optionalUserSession(app)
+                val entry = app.entries.getByFileId(fileId).bind()
+                if (user?.let { it.isAdmin || it.id == entry.userId } == true
+                    || app.compos.getById(entry.compoId).bind().publicResults
+                ) {
+                    app.files.getById(fileId).bind()
+                } else {
+                    raise(NotFound("Downloading this file is disabled until results are public"))
+                }
+            }.fold(
+                { call.respondPage(it) },
+                {
+                    call.response.header(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.Attachment.withParameter(
+                            ContentDisposition.Parameters.FileName,
+                            it.originalFilename
+                        ).toString()
+                    )
+                    call.respondFile(it.getStorageFile())
+                }
             )
         }
     }

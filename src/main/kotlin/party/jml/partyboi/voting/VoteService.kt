@@ -118,25 +118,18 @@ class VoteService(app: AppServices) : Service(app) {
     suspend fun getResultsForUser(user: User?): AppResult<List<CompoResult>> =
         either {
             val onlyPublic = user?.let { !it.isAdmin } ?: true
-            val downloads = app.files.getEntryIdsWithFiles(includeProcessedFiles = false).bind()
-            val voteResults = repository
-                .getResults(onlyPublic = onlyPublic)
-                .bind()
-                .map { entry ->
-                    val download = downloads.find { it.entryId == entry.entryId }
-                    if (download != null) {
-                        entry.copy(downloadLink = "/entries/download/${download.fileId}")
-                    } else {
-                        entry
-                    }
-                }
+            val voteResults = repository.getResults(onlyPublic = onlyPublic).bind()
             val manualResults = app.manualResults.getResults(onlyPublic = onlyPublic).bind()
             voteResults + manualResults
         }
 
-    suspend fun getResultsFileContent(includeInfo: Boolean): AppResult<String> = either {
+    suspend fun getResultsFileContent(includeInfo: Boolean, onlyPublic: Boolean = false): AppResult<String> = either {
         val header = app.settings.resultsFileHeader.get().bind()
-        val results = getResults().bind()
+        val results = if (onlyPublic) {
+            repository.getResults(onlyPublic = true).bind() + app.manualResults.getResults(onlyPublic = true).bind()
+        } else {
+            getResults().bind()
+        }
         ResultsFileGenerator.generate(header, results, includeInfo)
     }
 

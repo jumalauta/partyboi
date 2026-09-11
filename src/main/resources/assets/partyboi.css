@@ -1071,3 +1071,142 @@ code {
     font-size: 80%;
     padding: var(--pico-spacing);
 }
+
+/* Results page: per-entry cards with preview thumbnail, screen comment and a
+   download chip. Scoped under .results (see ResultsPage.kt). */
+.results .compo-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--pico-spacing) * 0.5);
+    padding: 0;
+    margin-bottom: var(--pico-spacing);
+}
+
+.results .compo-nav li {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.results .compo-nav a {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 99999px;
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.results .compo-nav a.results-txt {
+    font-family: monospace;
+}
+
+.results article {
+    scroll-margin-top: var(--pico-spacing);
+}
+
+/* Compo header carries the admin publish/unpublish toggle on the right. */
+.results article > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.results article > header h3 {
+    margin-bottom: 0;
+}
+
+/* Admins also see compos whose results are not public yet; dim those so it is
+   obvious the audience cannot see them. */
+.results article.unpublished {
+    opacity: 0.55;
+}
+
+.results .result-card {
+    display: flex;
+    gap: var(--pico-spacing);
+    align-items: flex-start;
+    padding: calc(var(--pico-spacing) * 0.75) 0;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.results .result-card:first-of-type {
+    border-top: 0;
+}
+
+.results .place {
+    flex-shrink: 0;
+    min-width: 2.2em;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* Podium accents: color only the place number so it stays subtle in both themes. */
+.results .result-card.place-1 .place {
+    color: #d4af37;
+}
+
+.results .result-card.place-2 .place {
+    color: #9fa8b0;
+}
+
+.results .result-card.place-3 .place {
+    color: #b08d57;
+}
+
+.results .result-card figure {
+    flex-shrink: 0;
+    width: 160px;
+    aspect-ratio: 16 / 10;
+    margin: 0;
+    border-radius: var(--pico-border-radius);
+    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
+       stay visible against the white card. */
+    background-color: #000;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.results .result-body {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.results .result-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--pico-spacing);
+}
+
+.results .result-title {
+    font-weight: bold;
+}
+
+.results .points {
+    flex-shrink: 0;
+    font-weight: bold;
+}
+
+.results .entry-info {
+    margin: 0.25em 0 0.5em;
+    color: var(--pico-muted-color);
+}
+
+.results .download-link {
+    display: inline-block;
+    margin-top: 0.25em;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+@media (max-width: 767.99px) {
+    .results .result-card {
+        gap: calc(var(--pico-spacing) * 0.5);
+    }
+
+    .results .result-card figure {
+        width: 96px;
+    }
+}

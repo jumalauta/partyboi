@@ -7,6 +7,7 @@ import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
+import party.jml.partyboi.templates.components.previewThumbnail
 import party.jml.partyboi.templates.components.reloadSection
 import party.jml.partyboi.templates.refreshOnSignal
 import java.util.*
@@ -60,35 +61,7 @@ object UserVotingPage {
                                         }
                                         if (!isLiveVote) {
                                             td(classes = "screenshot") {
-                                                if (preview != null) {
-                                                    val isVideo = preview.previewFileIsVideo
-                                                    val hasAudio = preview.previewAudioFilePath != null
-                                                    val classes = buildString {
-                                                        append("clickable-preview")
-                                                        if (hasAudio) append(" has-audio")
-                                                    }
-                                                    figure(classes = classes) {
-                                                        attributes["style"] =
-                                                            "background-image: url(${preview.externalUrl()})"
-                                                        attributes["data-preview-url"] =
-                                                            preview.externalPreviewFileUrl()
-                                                        attributes["data-preview-type"] =
-                                                            if (isVideo) "video" else "image"
-                                                        if (hasAudio) {
-                                                            attributes["data-preview-audio-url"] =
-                                                                preview.externalPreviewAudioFileUrl()
-                                                        }
-                                                        attributes["role"] = "button"
-                                                        attributes["tabindex"] = "0"
-                                                        attributes["aria-label"] =
-                                                            if (hasAudio) "Play audio preview" else "Open full-size preview"
-                                                        if (hasAudio) {
-                                                            i(classes = "fa-solid fa-circle-play play-overlay") {}
-                                                        }
-                                                    }
-                                                } else {
-                                                    figure {}
-                                                }
+                                                previewThumbnail(preview)
                                             }
                                         }
                                         th(classes = "wide title") {
