@@ -58,8 +58,17 @@ fun main(args: Array<String>) {
                     val party = seeder.partyDay(remote, pre)
                     println("[main] Party-day added ${party.partyUsers.size} users, ${party.partyEntries.size} entries, ${party.votesCast} votes")
 
+                    println("\n========== Phase C': the same prod is also submitted on master ==========")
+                    seeder.duplicateOnMaster(master, pre)
+
                     println("\n========== Phase D: syncUp remote → master ==========")
                     verifier.syncUp()
+
+                    println("\n========== Phase E: reconciliation on master ==========")
+                    Reconciler(master, pre.syncToken).run(
+                        duplicateTitle = "Last Minute Demo",
+                        duplicateUserName = "frank",
+                    )
                 }
             }
         }

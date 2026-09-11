@@ -29,12 +29,15 @@ fun Application.configureSyncRouting(app: AppServices) {
         val apiKey = app.sync.getApiKey().bind()
         val remoteInstance = app.sync.remoteInstance.get().bind()
         val syncLog = app.sync.getLog().bind()
+        val duplicateCandidates = app.reconciliation.duplicateEntryCandidates().bind().size +
+                app.reconciliation.duplicateUserCandidates().bind().size
 
         SyncPage.render(
             apiKey,
             remoteInstance != null,
             remoteForm ?: Form.of(remoteInstance?.copy(apiToken = "") ?: RemoteInstance.EMPTY),
-            syncLog
+            syncLog,
+            duplicateCandidates,
         )
     }
 
@@ -97,6 +100,62 @@ fun Application.configureSyncRouting(app: AppServices) {
                     }
                 }
                 Redirection("/sync")
+            }
+        }
+
+        get("/sync/reconcile") {
+            call.respondEither {
+                ReconcilePage.render(
+                    entryCandidates = app.reconciliation.duplicateEntryCandidates().bind(),
+                    userCandidates = app.reconciliation.duplicateUserCandidates().bind(),
+                    tz = app.time.timeZone(),
+                )
+            }
+        }
+
+        post("/sync/reconcile/entry/{survivorId}/merge/{loserId}") {
+            call.respondEither {
+                val survivorId = call.parameterUUID("survivorId").bind()
+                val loserId = call.parameterUUID("loserId").bind()
+                app.reconciliation.mergeEntries(survivorId, loserId).bind()
+                app.messages.sendMessage(
+                    call.userSession(app).bind().id,
+                    MessageType.SUCCESS,
+                    "Entries merged"
+                )
+                Redirection("/sync/reconcile")
+            }
+        }
+
+        post("/sync/reconcile/entry/{idA}/dismiss/{idB}") {
+            call.respondEither {
+                val idA = call.parameterUUID("idA").bind()
+                val idB = call.parameterUUID("idB").bind()
+                app.reconciliation.dismiss(DuplicateKind.Entry, idA, idB).bind()
+                Redirection("/sync/reconcile")
+            }
+        }
+
+        post("/sync/reconcile/user/{survivorId}/merge/{loserId}") {
+            call.respondEither {
+                val survivorId = call.parameterUUID("survivorId").bind()
+                val loserId = call.parameterUUID("loserId").bind()
+                app.reconciliation.mergeUsers(survivorId, loserId).bind()
+                app.messages.sendMessage(
+                    call.userSession(app).bind().id,
+                    MessageType.SUCCESS,
+                    "Users merged"
+                )
+                Redirection("/sync/reconcile")
+            }
+        }
+
+        post("/sync/reconcile/user/{idA}/dismiss/{idB}") {
+            call.respondEither {
+                val idA = call.parameterUUID("idA").bind()
+                val idB = call.parameterUUID("idB").bind()
+                app.reconciliation.dismiss(DuplicateKind.User, idA, idB).bind()
+                Redirection("/sync/reconcile")
             }
         }
     }

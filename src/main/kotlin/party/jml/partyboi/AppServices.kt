@@ -31,6 +31,7 @@ import party.jml.partyboi.schedule.EventRepositoryImpl
 import party.jml.partyboi.schedule.EventSignalEmitter
 import party.jml.partyboi.settings.SettingsService
 import party.jml.partyboi.signals.SignalService
+import party.jml.partyboi.sync.ReconciliationService
 import party.jml.partyboi.sync.SyncService
 import party.jml.partyboi.system.ErrorRepository
 import party.jml.partyboi.system.TimeService
@@ -70,6 +71,7 @@ interface AppServices {
     val trackerTools: TrackerToolsService
     val eventSignalEmitter: EventSignalEmitter
     val sync: SyncService
+    val reconciliation: ReconciliationService
     val recaptcha: RecaptchaService
     val jmlCaptcha: JmlCaptchaService
 }
@@ -106,6 +108,7 @@ class AppServicesImpl(
     override val trackerTools = TrackerToolsService(this)
     override val eventSignalEmitter = EventSignalEmitter(this)
     override val sync = SyncService(this)
+    override val reconciliation = ReconciliationService(this)
     override val recaptcha = RecaptchaService(this)
     override val jmlCaptcha = JmlCaptchaService(this)
 

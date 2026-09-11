@@ -123,13 +123,14 @@ class EntryRepository(app: AppServices) : Service(app) {
 
                 val entry = one(
                     queryOf(
-                        "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment) values(?, ?, ?, ?, ?, ?) returning *",
+                        "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment, origin) values(?, ?, ?, ?, ?, ?, ?) returning *",
                         newEntry.title,
                         newEntry.author,
                         newEntry.compoId,
                         newEntry.userId,
                         newEntry.screenComment.nonEmptyString(),
                         newEntry.orgComment.nonEmptyString(),
+                        app.config.instanceId,
                     ).map(Entry.fromRow)
                 ).bind()
 

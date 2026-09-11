@@ -13,7 +13,13 @@ import party.jml.partyboi.templates.components.timestamp
 import java.net.URI
 
 object SyncPage {
-    fun render(apiKey: String?, canSync: Boolean, remote: Form<RemoteInstance>, syncLog: List<SyncLogEntry>) =
+    fun render(
+        apiKey: String?,
+        canSync: Boolean,
+        remote: Form<RemoteInstance>,
+        syncLog: List<SyncLogEntry>,
+        duplicateCandidates: Int,
+    ) =
         Page("Remote sync") {
             h1 { +"Remote sync" }
 
@@ -58,6 +64,22 @@ object SyncPage {
                         buttonLink(href = "/sync/download") { +"Download" }
                         buttonLink(href = "/sync/upload") { +"Upload" }
                     }
+                }
+            }
+
+            article {
+                cardHeader("Reconciliation")
+                p {
+                    +"When both instances accepted submissions before a sync, the same prod or "
+                    +"person can exist as two copies after the merge. Review and merge them here."
+                }
+                if (duplicateCandidates > 0) {
+                    p {
+                        strong { +"$duplicateCandidates duplicate candidate${if (duplicateCandidates == 1) "" else "s"} found." }
+                    }
+                }
+                buttonGroup {
+                    buttonLink(href = "/sync/reconcile") { +"Review duplicates" }
                 }
             }
 

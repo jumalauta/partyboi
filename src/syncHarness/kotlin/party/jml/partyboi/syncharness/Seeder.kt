@@ -173,6 +173,25 @@ class Seeder(
         )
     }
 
+    /**
+     * The split-brain duplicate scenario: frank is unsure whether his party-day submission
+     * on the remote went through, so he also registers on the master and submits the same
+     * prod there. Same name, same title, same file bytes — but both instances mint their
+     * own UUIDs, so after syncUp the master holds two unrelated copies of the same person
+     * and prod. Phase E reconciles them.
+     */
+    suspend fun duplicateOnMaster(master: InstanceClient, pre: PrePartyResult): UserInfo {
+        println("[seed/duplicate] frank also registers on master and submits the same prod")
+        master.put("/admin/compos/${pre.demoCompoId}/setSubmit/true").expectOk()
+        val user = registerAndSubmit(
+            master,
+            pre.syncToken,
+            UploadPlan("frank", "frankpass1", listOf("Last Minute Demo" to pre.demoCompoId)),
+        )
+        master.put("/admin/compos/${pre.demoCompoId}/setSubmit/false").expectOk()
+        return user
+    }
+
     private data class UploadPlan(
         val name: String,
         val password: String,

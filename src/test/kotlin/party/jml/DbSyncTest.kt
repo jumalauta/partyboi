@@ -52,6 +52,10 @@ class DbSyncTest : PartyboiTester {
                     FileUpload.fromResource(app, "/images/final.png")!!
                 ).bind()
 
+                // Non-null double column: regression test for duration failing to sync
+                // when exported as a JSON string.
+                app.entries.setDuration(demoEntry.id, 42.5).bind()
+
                 app.events.add(
                     event = NewEvent(
                         name = "Deadline for demo compo",

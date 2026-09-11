@@ -32,6 +32,7 @@ class DbSyncService(app: AppServices) : Service(app) {
                         colName to when (colType) {
                             "boolean" -> JsonPrimitive(row.boolean(colName))
                             "integer", "numeric" -> JsonPrimitive(row.longOrNull(colName))
+                            "double precision", "real" -> JsonPrimitive(row.doubleOrNull(colName))
                             else -> JsonPrimitive(row.stringOrNull(colName))
                         }
                     }.toMap()
@@ -85,6 +86,8 @@ class DbSyncService(app: AppServices) : Service(app) {
                         "timestamp with time zone" -> "?::timestamp with time zone"
                         "jsonb" -> "?::jsonb"
                         "ARRAY" -> "?::text[]"
+                        // The cast tolerates payloads from older instances that export doubles as strings
+                        "double precision", "real" -> "?::double precision"
                         else -> "?"
                     }
                 }

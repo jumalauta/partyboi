@@ -111,14 +111,15 @@ class UserRepository(app: AppServices) : Service(app) {
         one(
             queryOf(
                 """
-                        INSERT INTO appuser (name, password, email)
-                        	VALUES (?, ?, ?)
+                        INSERT INTO appuser (name, password, email, origin)
+                        	VALUES (?, ?, ?, ?)
                         RETURNING
                         	*, FALSE AS voting_enabled
                     """.trimIndent(),
                 user.name,
                 user.hashedPassword(),
-                user.email.nonEmptyString()
+                user.email.nonEmptyString(),
+                app.config.instanceId
             ).map(User.fromRow)
         )
     }
@@ -210,9 +211,10 @@ class UserRepository(app: AppServices) : Service(app) {
         val admin = UserCredentials(app.config.adminUsername, password, password, "")
         exec(
             queryOf(
-                "INSERT INTO appuser(name, password, is_admin) VALUES (?, ?, true) ON CONFLICT DO NOTHING",
+                "INSERT INTO appuser(name, password, is_admin, origin) VALUES (?, ?, true, ?) ON CONFLICT DO NOTHING",
                 admin.name,
-                admin.hashedPassword()
+                admin.hashedPassword(),
+                app.config.instanceId
             )
         )
     }

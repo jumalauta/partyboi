@@ -8,6 +8,7 @@ ktor:
     secretSignKey: "$SESSION_SIGN_KEY:0123456789abcdef"
 
 instance:
+  id: "$INSTANCE_ID:partyboi-test"
   name: "$INSTANCE_NAME:Partyboi (test)"
   host: "$HOST_ADDRESS:localhost"
 

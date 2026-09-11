@@ -88,6 +88,17 @@ FFmpeg runs inside Docker containers for media processing. Files are shared via 
 
 Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry preview assets. Future previews will include audio snippets and video clips, so use neutral, capability-oriented names like `thumbnail` (small inline representation) and `previewFile` / `preview_file` (the full asset the user opens). The 400px JPEG in the `preview` table's `file_id` column is conceptually the thumbnail; the new full version goes in `preview_file_id`.
 
-## Open issues to discuss
+## Sync reconciliation
 
-- **Sync dedup problem**: `DbSyncService.putTable` merges rows by UUID only and never propagates deletions. When two instances both accept submissions (e.g. the Färjan 2026 fallback instance on party day), the same prod submitted on both becomes duplicate entries after a sync merge, and only one copy carries the votes. Needs a dedup/reconciliation strategy before the next party.
+Sync (`sync/`) merges whole tables by primary key with last-writer-wins and never propagates deletions. When two
+instances both accept submissions (e.g. a fallback instance on party day), the same prod or person becomes two
+unrelated UUID rows after a merge. `ReconciliationService` (`sync/Reconciliation.kt`) addresses this: it detects
+duplicate candidates (entries by file checksum or normalized title+author within a compo; users by the rename
+suffix the sync collision resolver appends, or equal email) and offers transactional admin merges at
+`/sync/reconcile` — files and votes are repointed to the surviving row, ballot collisions resolve to the higher
+points, and the loser row is deleted. New `entry`/`appuser` rows carry an `origin` column stamped from
+`INSTANCE_ID` so admins can see which instance each copy came from. The two-instance scenario incl. reconciliation
+is exercised end-to-end by `./gradlew syncHarness` (Phase C'/E) and unit-tested in `ReconciliationTest`.
+
+Still unaddressed by design: deletions do not propagate over sync (avoid deleting rows during a split-brain
+window), and a stale sync direction still overwrites newer edits silently (no timestamps compared).
