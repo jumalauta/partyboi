@@ -131,8 +131,12 @@ fun Application.configureEntriesRouting(app: AppServices) {
 
                     if (entry.file.isDefined) {
                         val file = app.entries.storeFile(entry.file, entry.id).bind()
+                        // Preview generation is best-effort and must not fail the upload,
+                        // but a failure has to leave a trace in the log.
                         app.previews.scanForScreenshotSource(file)?.let { source ->
-                            app.previews.store(entry.id, source)
+                            app.previews.store(entry.id, source).onLeft {
+                                log.error("Failed to generate preview for entry {}: {}", entry.id, it.message)
+                            }
                         }
                         app.messages.sendMessage(
                             user.id,

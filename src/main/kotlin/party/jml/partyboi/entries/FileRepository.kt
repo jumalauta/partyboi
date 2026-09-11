@@ -565,6 +565,12 @@ enum class FileFormat(
     ),
 
     // Video formats
+    mov(
+        description = "QuickTime video",
+        extensions = listOf("mov"),
+        mimeTypes = listOf("video/quicktime"),
+        category = FileFormatCategory.video
+    ),
     mp4(
         description = "MP4 video",
         extensions = listOf("mp4"),
