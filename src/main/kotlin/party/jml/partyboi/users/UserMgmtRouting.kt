@@ -1,5 +1,6 @@
 package party.jml.partyboi.users
 
+import arrow.core.getOrElse
 import arrow.core.raise.either
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
@@ -11,6 +12,7 @@ import party.jml.partyboi.data.processForm
 import party.jml.partyboi.data.switchApiUuid
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.messages.MessageType
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondAndCatchEither
@@ -52,12 +54,17 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
             UserCredentials.fromUser(user),
             initial = false
         )
+        val emailHint = UserCredentials.emailFieldDescription(
+            emailServiceConfigured = app.email.isConfigured(),
+            automaticVoteKeys = app.settings.automaticVoteKeys.get().getOrElse { AutomaticVoteKeys.DISABLED },
+            verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().getOrElse { true },
+        )
         val voteKeys = app.voteKeys.getUserVoteKeys(user.id).bind()
 
         UserEditPage.render(
             session = user,
             user = user,
-            credentials = form,
+            credentials = form.withFieldDescription(UserCredentials::email.name, emailHint),
             voteKeys = voteKeys,
             showAdminControls = user.isAdmin,
         )

@@ -16,6 +16,7 @@ class Form<T : Validateable<T>>(
     val initial: Boolean = true,
     val accumulatedValidationErrors: List<ValidationError.Message> = emptyList(),
     val error: AppError? = null,
+    val descriptionOverrides: Map<String, String> = emptyMap(),
 ) {
     val schema = Schema(kclass)
 
@@ -51,7 +52,7 @@ class Form<T : Validateable<T>>(
                         error = error,
                         type = prop.getInputType(),
                         presentation = meta.presentation ?: FieldPresentation.normal,
-                        description = meta.description.nonEmptyStringOrNull(),
+                        description = descriptionOverrides[prop.name] ?: meta.description.nonEmptyStringOrNull(),
                         suggestedValue = suggestedValues[prop.name],
                     )
                 )
@@ -65,13 +66,16 @@ class Form<T : Validateable<T>>(
             else -> emptyList()
         }
         val uniqueErrors = errors.distinct()
-        return Form(kclass, data, initial, uniqueErrors, if (error is ValidationError) null else error)
+        return Form(kclass, data, initial, uniqueErrors, if (error is ValidationError) null else error, descriptionOverrides)
     }
 
     fun mapError(f: (AppError) -> AppError) = when (error) {
         null -> this
-        else -> Form(kclass, data, initial, accumulatedValidationErrors, f(error))
+        else -> Form(kclass, data, initial, accumulatedValidationErrors, f(error), descriptionOverrides)
     }
+
+    fun withFieldDescription(name: String, description: String): Form<T> =
+        Form(kclass, data, initial, accumulatedValidationErrors, error, descriptionOverrides + (name to description))
 
     data class FieldData(
         val label: String,

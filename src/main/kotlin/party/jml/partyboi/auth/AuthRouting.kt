@@ -1,5 +1,6 @@
 package party.jml.partyboi.auth
 
+import arrow.core.getOrElse
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.ratelimit.*
@@ -12,12 +13,19 @@ import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.plugins.LoginRateLimit
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.templates.Redirection
 import party.jml.partyboi.templates.respondAndCatchEither
 import party.jml.partyboi.templates.respondEither
 import party.jml.partyboi.templates.respondPage
 
 fun Application.configureLoginRouting(app: AppServices) {
+    suspend fun emailHint(): String = UserCredentials.emailFieldDescription(
+        emailServiceConfigured = app.email.isConfigured(),
+        automaticVoteKeys = app.settings.automaticVoteKeys.get().getOrElse { AutomaticVoteKeys.DISABLED },
+        verifiedEmailsOnly = app.settings.verifiedEmailsOnly.get().getOrElse { true },
+    )
+
     routing {
         get("/login") {
             call.respondPage(
@@ -56,10 +64,17 @@ fun Application.configureLoginRouting(app: AppServices) {
         }
 
         get("/register") {
-            call.respondPage(RegistrationPage.render(recaptcha = app.config.recaptcha))
+            call.respondPage(
+                RegistrationPage.render(
+                    formData = Form(UserCredentials::class, UserCredentials.Empty, initial = true)
+                        .withFieldDescription(UserCredentials::email.name, emailHint()),
+                    recaptcha = app.config.recaptcha,
+                )
+            )
         }
 
         post("/register") {
+            val emailHint = emailHint()
             call.processForm<UserCredentials>(
                 { newUser ->
                     app.jmlCaptcha.verify(newUser).bind()
@@ -76,7 +91,7 @@ fun Application.configureLoginRouting(app: AppServices) {
                             } else {
                                 it
                             }
-                        },
+                        }.withFieldDescription(UserCredentials::email.name, emailHint),
                         recaptcha = app.config.recaptcha
                     )
                 }

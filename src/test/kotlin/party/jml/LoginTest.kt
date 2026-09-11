@@ -35,8 +35,17 @@ class LoginTest : PartyboiTester {
             findFirst("article header") { text.toBe("Login") }
         }
 
-        // Check that registration page loads
-        it.get("/register") {}
+        // Check that registration page loads and the email hint reflects the current settings
+        // (mock email service is configured, automatic vote keys are disabled)
+        it.get("/register") {
+            findFirst("small.description") {
+                text.toBe(
+                    "Optional but recommended: with an email address you can reset a forgotten password, " +
+                            "and the organizers can contact you about your entries. " +
+                            "Emails given to Partyboi are never used for any other purpose."
+                )
+            }
+        }
 
         // Register with invalid data -> shows errors
         it.post(
@@ -127,6 +136,19 @@ class LoginTest : PartyboiTester {
                     verifiedEmailsOnly = true
                 )
             )
+        }
+
+        // The email hint mentions email-based voting rights
+        it.get("/register") {
+            findFirst("small.description") {
+                text.toBe(
+                    "Optional but recommended: with an email address you can reset a forgotten password, " +
+                            "and the organizers can contact you about your entries. " +
+                            "It also grants you voting rights automatically — use the same email address you used " +
+                            "when registering to the party, and confirm it via the verification link we send you. " +
+                            "Emails given to Partyboi are never used for any other purpose."
+                )
+            }
         }
 
         // Register with email

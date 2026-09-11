@@ -17,6 +17,7 @@ import party.jml.partyboi.db.*
 import party.jml.partyboi.db.DbBasicMappers.asOptionalString
 import party.jml.partyboi.db.DbBasicMappers.asString
 import party.jml.partyboi.form.*
+import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.*
 import java.util.*
@@ -270,7 +271,7 @@ data class UserCredentials(
 
     @Label("Email")
     @Presentation(FieldPresentation.email)
-    @Description("Optional but recommended")
+    @Description("Optional: the organizers can use your email address to contact you about your entries. Emails given to Partyboi are never used for any other purpose.")
     @EmailAddress
     val email: String,
 
@@ -298,6 +299,26 @@ data class UserCredentials(
         )
 
         fun hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt())
+
+        fun emailFieldDescription(
+            emailServiceConfigured: Boolean,
+            automaticVoteKeys: AutomaticVoteKeys,
+            verifiedEmailsOnly: Boolean,
+        ): String {
+            if (!emailServiceConfigured) {
+                return "Optional: the organizers can use your email address to contact you about your entries. " +
+                        "Emails given to Partyboi are never used for any other purpose."
+            }
+            val votingRights = if (automaticVoteKeys == AutomaticVoteKeys.PER_EMAIL) {
+                "It also grants you voting rights automatically — use the same email address you used when " +
+                        "registering to the party" +
+                        (if (verifiedEmailsOnly) ", and confirm it via the verification link we send you. " else ". ")
+            } else ""
+            return "Optional but recommended: with an email address you can reset a forgotten password, " +
+                    "and the organizers can contact you about your entries. " +
+                    votingRights +
+                    "Emails given to Partyboi are never used for any other purpose."
+        }
     }
 }
 
