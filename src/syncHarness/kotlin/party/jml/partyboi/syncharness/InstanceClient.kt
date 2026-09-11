@@ -74,6 +74,8 @@ class InstanceClient(
                 "resultsFileHeader" to "",
                 "colorScheme" to "Blue",
                 "timeZone" to "UTC",
+                "partyStartDate" to "2026-07-15",
+                "partyDays" to "3",
             ),
         ).expectOk()
     }
