@@ -1,9 +1,16 @@
+/* Partyboi styles. Loaded after the Pico CSS color variant (see Page.kt), so
+   top-level rules here override Pico's. */
+
+/* ---------------------------------------------------------------- *
+ * Pico overrides
+ * ---------------------------------------------------------------- */
+
 :root {
     --pico-font-size: 100%;
     --pico-spacing: 0.8rem;
     /* Slimmer form controls everywhere; Pico's defaults (0.75rem/1rem) are
-       chunky. These match the compact schedule-editor style, and control
-       padding and computed input/button height throughout Pico. */
+       chunky. These control padding and computed input/button height
+       throughout Pico. */
     --pico-form-element-spacing-vertical: 0.3rem;
     --pico-form-element-spacing-horizontal: 0.5rem;
 }
@@ -15,28 +22,9 @@ button, [type=submit], [type=reset], [type=button], [role=button] {
     font-size: 0.9rem;
 }
 
-/* Content available to screen readers but not shown visually (e.g. a page's
-   top-level heading where the design has no visible title). */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-th {
-    font-weight: 100;
-}
-
-label {
-    /*font-weight: 100;*/
-    font-size: 80%;
-}
+/* ---------------------------------------------------------------- *
+ * Typography
+ * ---------------------------------------------------------------- */
 
 h1,
 h2,
@@ -50,31 +38,35 @@ h2, h3 {
     font-size: 110%;
 }
 
-tbody tr:last-child td, tbody tr:last-child th {
-    border-bottom: none !important;
-}
-
-tbody tr [role=group] {
-    margin-bottom: 0;
-}
-
-tr.processed td, tr.processed th {
-    font-style: italic;
-    opacity: 33%;
+th {
     font-weight: 100;
 }
 
-article > *:last-child {
-    margin-bottom: 0;
+label {
+    font-size: 80%;
 }
 
-article header h3 {
-    margin-bottom: 0;
+code {
+    background: var(--pico-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 99999px;
+    font-size: 80%;
+    padding: var(--pico-spacing);
 }
+
+/* ---------------------------------------------------------------- *
+ * Page layout
+ * ---------------------------------------------------------------- */
 
 .container > header {
     border-bottom: var(--pico-border-width) solid var(--pico-primary-border);
     margin-bottom: var(--pico-spacing);
+}
+
+body > footer {
+    margin-top: calc(var(--pico-spacing) * 2);
+    text-align: center;
+    opacity: 0.4;
 }
 
 .nav-and-content {
@@ -82,6 +74,16 @@ article header h3 {
     gap: calc(var(--pico-spacing) * 4);
 }
 
+.nav-and-content > .content {
+    flex-grow: 1;
+}
+
+.nav-and-content > aside nav {
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Mobile: the main nav is an off-canvas drawer with a backdrop */
 @media (max-width: 1023.99px) {
     .nav-and-content > aside.main-nav {
         --pico-font-size: 16px;
@@ -148,11 +150,6 @@ article header h3 {
     }
 }
 
-.nav-and-content > aside nav {
-    width: 100%;
-    margin: 0 auto;
-}
-
 @media (prefers-reduced-motion: reduce) {
     .nav-and-content > aside.main-nav,
     .main-nav-backdrop {
@@ -189,10 +186,8 @@ article header h3 {
     margin-bottom: calc(var(--pico-spacing) * -0.5);
 }
 
-.nav-and-content > .content {
-    flex-grow: 1;
-}
-
+/* Desktop: the nav is a static sidebar. Comes after the base .page-nav rules
+   so its padding shorthand overrides their padding-left at equal specificity. */
 @media (min-width: 1024px) {
     button.mobile-nav-button.flat-button,
     button.mobile-nav-close.flat-button,
@@ -202,7 +197,6 @@ article header h3 {
     }
 
     .nav-and-content {
-        display: flex;
         gap: 4rem;
     }
 
@@ -236,13 +230,84 @@ article header h3 {
     }
 }
 
+@media (min-width: 1280px) {
+    .two-columns {
+        display: flex;
+        gap: var(--pico-grid-column-gap);
+        width: 100%;
+    }
+
+    .two-columns-left,
+    .two-columns-right {
+        flex-grow: 1;
+        max-width: 50%;
+    }
+}
+
+/* ---------------------------------------------------------------- *
+ * Utilities
+ * ---------------------------------------------------------------- */
+
+/* Content available to screen readers but not shown visually */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .error {
     color: #d93526;
 }
 
-.space-between {
-    display: flex;
+.center {
+    text-align: center;
+}
+
+/* ---------------------------------------------------------------- *
+ * Cards
+ * ---------------------------------------------------------------- */
+
+article > *:last-child {
+    margin-bottom: 0;
+}
+
+article header h3 {
+    margin-bottom: 0;
+}
+
+summary > header {
+    display: inline-flex;
     justify-content: space-between;
+    width: calc(100% - 4ex);
+}
+
+/* ---------------------------------------------------------------- *
+ * Buttons and toolbars
+ * ---------------------------------------------------------------- */
+
+button.flat-button,
+a.flat-button {
+    display: inline-block;
+    color: inherit;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: inherit;
+    font-size: inherit;
+    margin-right: 1ex;
+    min-width: 2.5ex;
+}
+
+button.flat-button.off > *,
+a.flat-button.off > * {
+    opacity: 0.25;
 }
 
 .title-row {
@@ -274,29 +339,22 @@ article header h3 {
     margin: 0;
 }
 
-summary > header {
-    display: inline-flex;
-    justify-content: space-between;
-    width: calc(100% - 4ex);
+/* ---------------------------------------------------------------- *
+ * Tables
+ * ---------------------------------------------------------------- */
+
+tbody tr:last-child td, tbody tr:last-child th {
+    border-bottom: none !important;
 }
 
-button.flat-button,
-a.flat-button {
-    display: inline-block;
-    color: inherit;
-    text-decoration: none;
-    background: none;
-    border: none;
-    padding: 0;
-    line-height: inherit;
-    font-size: inherit;
-    margin-right: 1ex;
-    min-width: 2.5ex;
+tbody tr [role=group] {
+    margin-bottom: 0;
 }
 
-button.flat-button.off > *,
-a.flat-button.off > * {
-    opacity: 0.25;
+tr.processed td, tr.processed th {
+    font-style: italic;
+    opacity: 33%;
+    font-weight: 100;
 }
 
 td.settings {
@@ -326,85 +384,26 @@ th.tight > * {
     margin: 0;
 }
 
-.center {
-    text-align: center;
+table.compact {
+    font-size: 80%;
 }
 
-.no-margin {
-    margin: 0;
+table.compact th, table.compact td {
+    vertical-align: top;
 }
 
-.info-qr-code {
-    max-height: 30vh;
+table .entry-info {
+    display: block;
+    opacity: 80%;
 }
 
-article.entry {
-    display: flex;
-    gap: var(--pico-spacing);
-    padding-bottom: 0;
-}
+/* ---------------------------------------------------------------- *
+ * Forms
+ * ---------------------------------------------------------------- */
 
-article.entry figure {
-    width: 25%;
-    margin: calc(var(--pico-spacing) * -1);
-    margin-right: 0;
-    margin-bottom: 0;
-    border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
-    background-color: var(--pico-primary-background);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-td.screenshot figure {
-    width: 120px;
-    height: 80px;
-    margin-top: calc(var(--pico-spacing) * -0.5);
-    margin-bottom: calc(var(--pico-spacing) * -0.5);
-    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
-       stay visible against the white card. */
-    background-color: #000;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-article.entry section {
-    flex-grow: 1;
-}
-
-article.entry table td {
-    width: 90%;
-}
-
-@media (min-width: 1280px) {
-    .two-columns {
-        display: flex;
-        gap: var(--pico-grid-column-gap);
-        width: 100%;
-    }
-
-    .two-columns-left {
-        flex-grow: 1;
-        max-width: 50%;
-    }
-
-    .two-columns-right {
-        flex-grow: 1;
-        max-width: 50%;
-    }
-}
-
-.screen-preview-container {
-    position: relative;
-}
-
-iframe.screen-preview {
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
+/* Auto-growing textarea: an invisible ::after replica of the content sizes the
+   grid cell, and the textarea stretches to it. Replica and textarea must share
+   the exact same font and box metrics or the measurement is off. */
 .grow-wrap {
     display: grid;
 }
@@ -431,8 +430,7 @@ iframe.screen-preview {
     width: 100%;
     margin: 0;
     margin-bottom: var(--pico-spacing);
-    /* Must match the global control font size or the auto-grow replica
-       (::after) measures a different height than the textarea. */
+    /* Must match the global control font size set at the top of this file */
     font-size: 0.9rem;
     line-height: var(--pico-line-height);
 
@@ -443,122 +441,92 @@ textarea.monospace {
     font-family: monospace;
 }
 
-@media print {
-    * {
-        background: none !important;
-        box-shadow: none !important;
-    }
-
-    .container > header {
-        display: none;
-    }
-
-    .container {
-        max-width: 100%;
-    }
-
-    article.votekeys header {
-        display: none;
-    }
-
-    article.votekeys ul {
-        list-style: none;
-        padding: 0;
-        margin: 0 !important;
-        font-size: 0;
-    }
-
-    article.votekeys li {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24%;
-        height: 4ex;
-        border: 1px solid #888;
-        margin: 0 !important;
-        font-size: 16pt;
-        color: black;
-        text-transform: uppercase;
-        line-height: normal;
-    }
+/* Day dropdown + time-of-day picker of a split datetime form field, sized to
+   content instead of stretching across the card */
+.day-time {
+    display: flex;
+    gap: 0.4em;
+    align-items: center;
+    margin-bottom: var(--pico-spacing);
 }
+
+.day-time select,
+.day-time input {
+    flex: none;
+    width: auto;
+    margin-bottom: 0;
+}
+
+.day-time input {
+    width: 5em;
+}
+
+/* ---------------------------------------------------------------- *
+ * Tabs (templates/components/Tabs.kt + setupTabs in partyboi.js)
+ * ---------------------------------------------------------------- */
+
+.tab-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: var(--pico-spacing);
+    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+}
+
+.tab-bar .tab {
+    width: auto;
+    margin: 0;
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--pico-secondary);
+    font-weight: 100;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.tab-bar .tab:hover {
+    color: var(--pico-color);
+}
+
+.tab-bar .tab.active {
+    color: var(--pico-primary);
+    border-bottom-color: var(--pico-primary);
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* ---------------------------------------------------------------- *
+ * Tooltips and dropdown menus
+ * ---------------------------------------------------------------- */
 
 [data-tooltip] {
     border-bottom: none !important;
 }
 
-@media screen and (max-width: 767.99px) {
-    table.voting thead {
-        display: none;
-    }
-
-    table.voting tbody tr {
-        display: flex;
-        flex-wrap: wrap;
-    }
-
-    table.voting tbody tr td,
-    table.voting tbody tr th {
-        border: none;
-    }
-
-    table.voting tbody .order {
-        order: 1;
-        width: 10%;
-    }
-
-    table.voting tbody .title {
-        order: 2;
-        width: 90%;
-    }
-
-    table.voting tbody .screenshot {
-        order: 3;
-        width: 100%;
-        padding: 0;
-    }
-
-    table.voting tbody .screenshot figure {
-        width: 100%;
-        height: 160px;
-        margin: var(--pico-spacing) 0;
-    }
-
-    table.voting tbody .points {
-        order: 4;
-        width: 20%;
-        padding-bottom: calc(var(--pico-spacing) * 2);
-        margin-bottom: calc(var(--pico-spacing) * 2);
-        border-bottom: var(--pico-border-width) solid var(--pico-table-border-color);;
-    }
-
-    table.voting tbody input {
-        margin-right: 1ex;
-    }
+/* Pico sets nav dropdowns to `display: inline`, which doesn't reliably
+   establish a containing block for the absolutely positioned menu — the menu
+   ends up anchored to the viewport instead of the summary. inline-block fixes
+   the containing block, and width: auto sizes the menu to its own contents. */
+nav details.dropdown {
+    display: inline-block;
 }
 
-table.voting tbody .points label {
-    font-size: 80%;
+nav details.dropdown > summary + ul {
+    width: auto;
+    min-width: max-content;
 }
 
-table.compact {
-    font-size: 80%;
-}
-
-table.compact th, table.compact td {
-    vertical-align: top;
-}
-
-table .entry-info {
-    display: block;
-    opacity: 80%;
-}
-
-body > footer {
-    margin-top: calc(var(--pico-spacing) * 2);
-    text-align: center;
-    opacity: 0.4;
-}
+/* ---------------------------------------------------------------- *
+ * Snackbars
+ * ---------------------------------------------------------------- */
 
 .snackbars {
     position: fixed;
@@ -643,248 +611,68 @@ body > footer {
     }
 }
 
-.sync-status-error td {
-    background-color: #800;
-    color: white;
-}
+/* ---------------------------------------------------------------- *
+ * Entries
+ * ---------------------------------------------------------------- */
 
-.sync-status-running td {
-    opacity: 50%;
-}
-
-/* Asset management */
-
-#asset-list summary {
+article.entry {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    gap: var(--pico-spacing);
+    padding-bottom: 0;
 }
 
-#asset-list summary > span {
+article.entry figure {
+    width: 25%;
+    margin: calc(var(--pico-spacing) * -1);
+    margin-right: 0;
+    margin-bottom: 0;
+    border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
+    background-color: var(--pico-primary-background);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+article.entry section {
     flex-grow: 1;
 }
 
-#asset-list td.file-size {
-    white-space: nowrap;
+article.entry table td {
+    width: 90%;
 }
 
-#asset-list table {
+td.screenshot figure {
+    width: 120px;
+    height: 80px;
+    margin-top: calc(var(--pico-spacing) * -0.5);
+    margin-bottom: calc(var(--pico-spacing) * -0.5);
+    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
+       stay visible against the white card. */
+    background-color: #000;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+img.entry-edit-preview {
+    width: 100%;
+    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
+       stay visible against the white card. */
+    background-color: #000;
+}
+
+/* Match the full-width "Set preview" submit input above it (Pico only makes
+   input[type=submit] full width, not <button>). */
+button.regenerate-preview {
     width: 100%;
 }
 
-#asset-list td:first-child {
-    max-width: 0;
-    width: 100%;
-}
+/* ---------------------------------------------------------------- *
+ * Preview modal
+ * ---------------------------------------------------------------- */
 
-#asset-list td:first-child a {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-article.hidden-asset, tr.hidden-asset {
-    display: none;
-}
-
-.show-hidden article.hidden-asset, .show-hidden tr.hidden-asset {
-    display: revert;
-}
-
-.slide-set-toolbar {
-    align-items: center;
-}
-
-.slide-set-toolbar > ul {
-    margin: 0;
-}
-
-.slide-set-toolbar > ul li {
-    padding-top: 0;
-}
-
-.slide-set-toolbar details.dropdown {
-    margin: 0;
-}
-
-.slide-set-toolbar details.dropdown summary {
-    margin: 0;
-}
-
-/* Pico sets nav dropdowns to `display: inline`, which doesn't reliably
-   establish a containing block for the absolutely positioned menu — the menu
-   ends up anchored to the viewport instead of the summary. inline-block fixes
-   the containing block, and width: auto sizes the menu to its own contents. */
-nav details.dropdown {
-    display: inline-block;
-}
-
-nav details.dropdown > summary + ul {
-    width: auto;
-    min-width: max-content;
-}
-
-#slide-list table {
-    width: 100%;
-}
-
-#slide-list td.wide {
-    max-width: 0;
-}
-
-#slide-list td.wide .slide-name {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Image-slides picker: thumbnail grid with checkable items */
-.image-picker-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--pico-spacing);
-    margin-bottom: var(--pico-spacing);
-}
-
-@media (min-width: 576px) {
-    .image-picker-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 1024px) {
-    .image-picker-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-.image-picker-item {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    column-gap: calc(var(--pico-spacing) * 0.5);
-    row-gap: calc(var(--pico-spacing) * 0.5);
-    padding: calc(var(--pico-spacing) * 0.5);
-    border: var(--pico-border-width) solid var(--pico-muted-border-color);
-    border-radius: var(--pico-border-radius);
-    cursor: pointer;
-    transition: border-color 150ms ease, background-color 150ms ease;
-    min-width: 0;
-}
-
-.image-picker-item:hover {
-    border-color: var(--pico-primary);
-}
-
-.image-picker-item:has(input:checked) {
-    border-color: var(--pico-primary);
-    background-color: var(--pico-primary-background);
-    color: var(--pico-background-color);
-}
-
-.image-picker-item img {
-    grid-row: 1;
-    grid-column: 1 / -1;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: contain;
-    background-color: var(--pico-background-color);
-    border-radius: calc(var(--pico-border-radius) * 0.5);
-}
-
-.image-picker-item input[type="checkbox"] {
-    grid-row: 2;
-    grid-column: 1;
-    margin: 0;
-}
-
-.image-picker-item span {
-    grid-row: 2;
-    grid-column: 2;
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 90%;
-    min-width: 0;
-}
-
-/* Editable schedule */
-
-.shift-step {
-    display: inline-flex;
-    align-items: center;
-    gap: 1ex;
-    margin-bottom: var(--pico-spacing);
-}
-
-.shift-step input {
-    width: 7em;
-    margin-bottom: 0;
-}
-
-table.schedule td,
-table.schedule th {
-    vertical-align: middle;
-}
-
-/* Inline inputs that fit inside table cells (padding and font size come from
-   the global compact form style at the top of this file) */
-table.schedule input:not([type=checkbox]) {
-    margin-bottom: 0;
-    height: auto;
-}
-
-table.schedule td.event-time {
-    white-space: nowrap;
-    width: 1px;
-}
-
-/* Start and end times sit side by side, both compact. Cells show time only
-   (events are grouped by day), so the fields are narrow. flatpickr turns each
-   original input into a hidden one (no box) and shows a text alt input, so the
-   inline-block + right margin only spaces the two visible fields. */
-table.schedule td.event-time input {
-    display: inline-block;
-    vertical-align: middle;
-    width: 5em;
-    margin: 0 0.4em 0 0;
-}
-
-table.schedule td.event-name input {
-    width: 100%;
-}
-
-/* All row controls live in one compact column; keep the icon buttons tight. */
-table.schedule td.settings .flat-button {
-    margin-right: 0.5ex;
-}
-
-/* Day dropdown + time-of-day picker of a split datetime form field. Sized to
-   content instead of stretching across the card; sizing and font come from
-   the global compact form style at the top of this file. */
-.day-time {
-    display: flex;
-    gap: 0.4em;
-    align-items: center;
-    margin-bottom: var(--pico-spacing);
-}
-
-.day-time select,
-.day-time input {
-    flex: none;
-    width: auto;
-    margin-bottom: 0;
-}
-
-.day-time input {
-    width: 5em;
-}
-
-/* Preview modal: click a thumbnail to view the full preview asset. The <dialog>
-   lives at the body level (in Page.kt) so it survives reload-section swaps. */
+/* Click a thumbnail to view the full preview asset. The <dialog> lives at the
+   body level (in Page.kt) so it survives reload-section swaps. */
 .clickable-preview {
     cursor: zoom-in;
     position: relative;
@@ -973,60 +761,273 @@ dialog.preview-modal .close {
     cursor: pointer;
 }
 
-/* Match the full-width "Set preview" submit input above it (Pico only makes
-   input[type=submit] full width, not <button>). */
-button.regenerate-preview {
-    width: 100%;
+/* ---------------------------------------------------------------- *
+ * Voting
+ * ---------------------------------------------------------------- */
+
+/* Mobile: the voting table reflows into stacked cards */
+@media screen and (max-width: 767.99px) {
+    table.voting thead {
+        display: none;
+    }
+
+    table.voting tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    table.voting tbody tr td,
+    table.voting tbody tr th {
+        border: none;
+    }
+
+    table.voting tbody .order {
+        order: 1;
+        width: 10%;
+    }
+
+    table.voting tbody .title {
+        order: 2;
+        width: 90%;
+    }
+
+    table.voting tbody .screenshot {
+        order: 3;
+        width: 100%;
+        padding: 0;
+    }
+
+    table.voting tbody .screenshot figure {
+        width: 100%;
+        height: 160px;
+        margin: var(--pico-spacing) 0;
+    }
+
+    table.voting tbody .points {
+        order: 4;
+        width: 20%;
+        padding-bottom: calc(var(--pico-spacing) * 2);
+        margin-bottom: calc(var(--pico-spacing) * 2);
+        border-bottom: var(--pico-border-width) solid var(--pico-table-border-color);
+    }
+
+    table.voting tbody input {
+        margin-right: 1ex;
+    }
 }
 
-img.entry-edit-preview {
-    width: 100%;
-    /* Black backing so waveform PNGs (white-on-transparent) for audio entries
-       stay visible against the white card. */
-    background-color: #000;
-}
+/* ---------------------------------------------------------------- *
+ * Schedule editor
+ * ---------------------------------------------------------------- */
 
-/* Reusable tabs component (templates/components/Tabs.kt + setupTabs in partyboi.js).
-   No Pico equivalent exists, so it's a small standalone component. */
-.tab-bar {
-    display: flex;
-    gap: 1.5rem;
+.shift-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 1ex;
     margin-bottom: var(--pico-spacing);
-    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
 }
 
-.tab-bar .tab {
-    width: auto;
-    margin: 0;
-    padding: 0.5rem 0;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: none;
-    color: var(--pico-secondary);
-    font-weight: 100;
-    cursor: pointer;
-    text-decoration: none;
+.shift-step input {
+    width: 7em;
+    margin-bottom: 0;
 }
 
-.tab-bar .tab:hover {
-    color: var(--pico-color);
+table.schedule td,
+table.schedule th {
+    vertical-align: middle;
 }
 
-.tab-bar .tab.active {
-    color: var(--pico-primary);
-    border-bottom-color: var(--pico-primary);
+table.schedule input:not([type=checkbox]) {
+    margin-bottom: 0;
+    height: auto;
 }
 
-.tab-panel {
+table.schedule td.event-time {
+    white-space: nowrap;
+    width: 1px;
+}
+
+/* Start and end times sit side by side. Cells show time only (events are
+   grouped by day). flatpickr turns each original input into a hidden one and
+   shows a text alt input, so the inline-block + right margin only spaces the
+   two visible fields. */
+table.schedule td.event-time input {
+    display: inline-block;
+    vertical-align: middle;
+    width: 5em;
+    margin: 0 0.4em 0 0;
+}
+
+table.schedule td.event-name input {
+    width: 100%;
+}
+
+table.schedule td.settings .flat-button {
+    margin-right: 0.5ex;
+}
+
+/* ---------------------------------------------------------------- *
+ * Asset management
+ * ---------------------------------------------------------------- */
+
+#asset-list summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#asset-list summary > span {
+    flex-grow: 1;
+}
+
+#asset-list td.file-size {
+    white-space: nowrap;
+}
+
+#asset-list table,
+#slide-list table {
+    width: 100%;
+}
+
+/* max-width: 0 + width: 100% lets the cell shrink below its content width so
+   the ellipsis inside can actually apply */
+#asset-list td:first-child {
+    max-width: 0;
+    width: 100%;
+}
+
+#asset-list td:first-child a {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+article.hidden-asset, tr.hidden-asset {
     display: none;
 }
 
-.tab-panel.active {
-    display: block;
+.show-hidden article.hidden-asset, .show-hidden tr.hidden-asset {
+    display: revert;
 }
 
-/* Runtime summary: stat blocks laid out with Pico's .grid */
+/* ---------------------------------------------------------------- *
+ * Info screen admin
+ * ---------------------------------------------------------------- */
+
+.screen-preview-container {
+    position: relative;
+}
+
+iframe.screen-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.slide-set-toolbar {
+    align-items: center;
+}
+
+.slide-set-toolbar > ul {
+    margin: 0;
+}
+
+.slide-set-toolbar > ul li {
+    padding-top: 0;
+}
+
+.slide-set-toolbar details.dropdown,
+.slide-set-toolbar details.dropdown summary {
+    margin: 0;
+}
+
+#slide-list td.wide {
+    max-width: 0;
+}
+
+#slide-list td.wide .slide-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Image-slides picker: thumbnail grid with checkable items */
+.image-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--pico-spacing);
+    margin-bottom: var(--pico-spacing);
+}
+
+@media (min-width: 576px) {
+    .image-picker-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .image-picker-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.image-picker-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: calc(var(--pico-spacing) * 0.5);
+    row-gap: calc(var(--pico-spacing) * 0.5);
+    padding: calc(var(--pico-spacing) * 0.5);
+    border: var(--pico-border-width) solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+    min-width: 0;
+}
+
+.image-picker-item:hover {
+    border-color: var(--pico-primary);
+}
+
+.image-picker-item:has(input:checked) {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+    color: var(--pico-background-color);
+}
+
+.image-picker-item img {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background-color: var(--pico-background-color);
+    border-radius: calc(var(--pico-border-radius) * 0.5);
+}
+
+.image-picker-item input[type="checkbox"] {
+    grid-row: 2;
+    grid-column: 1;
+    margin: 0;
+}
+
+.image-picker-item span {
+    grid-row: 2;
+    grid-column: 2;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 90%;
+    min-width: 0;
+}
+
+/* ---------------------------------------------------------------- *
+ * Compo admin
+ * ---------------------------------------------------------------- */
+
 .compo-edit .pb-summary {
     text-align: center;
 }
@@ -1037,7 +1038,6 @@ img.entry-edit-preview {
     line-height: 1.1;
 }
 
-/* Entries table tweaks */
 .compo-edit td {
     vertical-align: middle;
 }
@@ -1054,10 +1054,8 @@ img.entry-edit-preview {
 .compo-edit .pb-dur-input {
     width: 6rem;
     margin: 0;
-    padding-block: 0.25rem;
 }
 
-/* Preview thumbnail (no Pico component) */
 .compo-edit .pb-thumb {
     position: relative;
     display: inline-grid;
@@ -1109,16 +1107,10 @@ img.entry-edit-preview {
     }
 }
 
-code {
-    background: var(--pico-background-color);
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: 99999px;
-    font-size: 80%;
-    padding: var(--pico-spacing);
-}
+/* ---------------------------------------------------------------- *
+ * Results
+ * ---------------------------------------------------------------- */
 
-/* Results page: per-entry cards with preview thumbnail, screen comment and a
-   download chip. Scoped under .results (see ResultsPage.kt). */
 .results .compo-nav ul {
     display: flex;
     flex-wrap: wrap;
@@ -1148,7 +1140,6 @@ code {
     scroll-margin-top: var(--pico-spacing);
 }
 
-/* Compo header carries the admin publish/unpublish toggle on the right. */
 .results article > header {
     display: flex;
     justify-content: space-between;
@@ -1159,8 +1150,7 @@ code {
     margin-bottom: 0;
 }
 
-/* Admins also see compos whose results are not public yet; dim those so it is
-   obvious the audience cannot see them. */
+/* Admins also see compos whose results are not public yet; dim those */
 .results article.unpublished {
     opacity: 0.55;
 }
@@ -1184,7 +1174,7 @@ code {
     text-align: right;
 }
 
-/* Podium accents: color only the place number so it stays subtle in both themes. */
+/* Podium accents: gold, silver, bronze on the place number */
 .results .result-card.place-1 .place {
     color: #d4af37;
 }
@@ -1255,5 +1245,62 @@ code {
 
     .results .result-card figure {
         width: 96px;
+    }
+}
+
+/* ---------------------------------------------------------------- *
+ * Synchronization
+ * ---------------------------------------------------------------- */
+
+.sync-status-error td {
+    background-color: #800;
+    color: white;
+}
+
+.sync-status-running td {
+    opacity: 50%;
+}
+
+/* ---------------------------------------------------------------- *
+ * Print (vote key sheets)
+ * ---------------------------------------------------------------- */
+
+@media print {
+    * {
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+    .container > header {
+        display: none;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    article.votekeys header {
+        display: none;
+    }
+
+    article.votekeys ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 !important;
+        font-size: 0;
+    }
+
+    article.votekeys li {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24%;
+        height: 4ex;
+        border: 1px solid #888;
+        margin: 0 !important;
+        font-size: 16pt;
+        color: black;
+        text-transform: uppercase;
+        line-height: normal;
     }
 }
