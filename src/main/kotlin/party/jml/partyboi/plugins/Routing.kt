@@ -27,6 +27,7 @@ import party.jml.partyboi.system.admin.configureAdminErrorLogRouting
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.errorMessage
 import party.jml.partyboi.templates.respondPage
+import party.jml.partyboi.timer.configureAdminTimerRouting
 import party.jml.partyboi.users.configureUserMgmtRouting
 import party.jml.partyboi.voting.admin.configureAdminVotingRouting
 import party.jml.partyboi.voting.configureVotingRouting
@@ -78,6 +79,7 @@ fun Application.configureDefaultRouting(app: AppServices) {
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)
+    configureAdminTimerRouting(app)
     configureAdminScheduleRouting(app)
     configureUserMgmtRouting(app)
     configureAdminVotingRouting(app)

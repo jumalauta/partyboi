@@ -43,3 +43,15 @@ data class OpenCloseSubmitting(
     override suspend fun apply(app: AppServices): AppResult<Unit> = app.compos.allowSubmit(compoId, open)
     override fun toJson(): String = Json.encodeToString(this)
 }
+
+@Serializable
+data object CloseVotingForAllCompos : Action {
+    override suspend fun description(app: AppServices): AppResult<String> =
+        either { "Close voting for all compos" }
+
+    override suspend fun apply(app: AppServices): AppResult<Unit> = either {
+        app.compos.getAllCompos().bind().forEach { app.compos.allowVoting(it.id, false).bind() }
+    }
+
+    override fun toJson(): String = Json.encodeToString(this)
+}

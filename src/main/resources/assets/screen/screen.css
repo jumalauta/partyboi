@@ -139,3 +139,43 @@ ul:first-child {
 .ScheduleSlide th {
     padding-right: 2ex;
 }
+
+/* TIMER SLIDES */
+
+.TimerSlide {
+    padding: var(--padding);
+    text-align: center;
+    width: 100%;
+}
+
+.TimerSlide .countdown-time {
+    font-size: 320px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.TimerSlide .countdown.paused .countdown-time {
+    opacity: 0.5;
+}
+
+.TimerSlide .countdown-paused-label {
+    font-size: 60px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+@keyframes countdown-flash {
+    50% {
+        opacity: 0.15;
+    }
+}
+
+.TimerSlide .countdown.flash .countdown-time {
+    animation: countdown-flash 1s step-start infinite;
+}
+
+/* "Time's up!" is text, not digits — smaller so it fits the screen width */
+.TimerSlide .countdown.ended .countdown-time {
+    font-size: 200px;
+}

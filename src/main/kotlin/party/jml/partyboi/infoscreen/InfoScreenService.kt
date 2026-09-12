@@ -208,7 +208,7 @@ class InfoScreenService(app: AppServices) : Service(app) {
 
 // Slide set ids that look like URLs handled by other routes under /admin/screen/.
 // Generated slugs must avoid these to keep redirects working.
-private val reservedSlideSetIds = setOf("new", "adhoc", "default", "slideset")
+private val reservedSlideSetIds = setOf("new", "adhoc", "default", "slideset", "timer")
 
 private fun String.slugify(): String =
     lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')

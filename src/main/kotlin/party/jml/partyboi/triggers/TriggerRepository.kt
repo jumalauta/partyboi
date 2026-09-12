@@ -161,6 +161,7 @@ sealed class TriggerRow {
             when (triggerType) {
                 OpenCloseVoting::class.qualifiedName -> Json.decodeFromString<OpenCloseVoting>(actionJson)
                 OpenCloseSubmitting::class.qualifiedName -> Json.decodeFromString<OpenCloseSubmitting>(actionJson)
+                CloseVotingForAllCompos::class.qualifiedName -> Json.decodeFromString<CloseVotingForAllCompos>(actionJson)
                 else -> error("Unknown trigger action type: $triggerType")
             }
         }.mapLeft { InternalServerError(it) }

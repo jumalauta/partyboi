@@ -1,9 +1,11 @@
 package party.jml
 
 import party.jml.partyboi.data.UUIDv7
+import party.jml.partyboi.triggers.CloseVotingForAllCompos
 import party.jml.partyboi.triggers.OpenCloseVoting
 import party.jml.partyboi.triggers.PendingTriggerRow
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TriggerActionTest {
@@ -43,5 +45,21 @@ class TriggerActionTest {
         val result = row.getAction()
 
         assertTrue(result.isRight(), "A known trigger type should still decode: $result")
+    }
+
+    @Test
+    fun testCloseVotingForAllComposDecodes() {
+        val row = PendingTriggerRow(
+            triggerId = UUIDv7.Empty,
+            signal = "timer.ended.${UUIDv7.Empty}",
+            triggerType = CloseVotingForAllCompos::class.qualifiedName!!,
+            actionJson = CloseVotingForAllCompos.toJson(),
+            description = "close voting for all compos",
+            enabled = true,
+        )
+
+        val result = row.getAction()
+
+        assertEquals(CloseVotingForAllCompos, result.getOrNull(), "CloseVotingForAllCompos should decode: $result")
     }
 }

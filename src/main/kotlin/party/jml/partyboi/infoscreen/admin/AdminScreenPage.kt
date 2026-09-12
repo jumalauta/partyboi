@@ -417,12 +417,16 @@ object AdminScreenPage {
         }
     }
 
-    private fun generateSubLinks(slideSets: List<SlideSetRow>): List<NavItem> =
+    fun generateSubLinks(slideSets: List<SlideSetRow>): List<NavItem> =
         slideSets.map { it.toNavItem() } + listOf(
             NavItem(
                 url = "/admin/screen/compos",
                 label = "Compos",
-            )
+            ),
+            NavItem(
+                url = "/admin/screen/timer",
+                label = "Timer",
+            ),
         )
 }
 

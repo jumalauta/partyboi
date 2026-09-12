@@ -255,6 +255,46 @@ function initInteractions(target) {
             }
         })
     })
+
+    // Admin countdown display (AdminTimerPage). Bound here rather than in an inline
+    // script because applyReloadSection swaps content via innerHTML, where inline
+    // scripts never execute — the ticker must re-bind after every smooth reload.
+    initAdminCountdown();
+
+    // Timer start form: the compo dropdown only applies to the close-submitting action.
+    const endActionSelect = target.querySelector('select[name="endAction"]');
+    const endActionCompo = target.querySelector('select[name="compoId"]');
+    if (endActionSelect && endActionCompo) {
+        const compoField = endActionCompo.closest("label") || endActionCompo;
+        const toggleCompo = () => {
+            compoField.style.display =
+                endActionSelect.value === "CLOSE_SUBMITTING" ? "" : "none";
+        };
+        endActionSelect.addEventListener("change", toggleCompo);
+        toggleCompo();
+    }
+}
+
+let adminCountdownInterval = null;
+
+function initAdminCountdown() {
+    clearInterval(adminCountdownInterval);
+    adminCountdownInterval = null;
+    const el = document.getElementById("admin-countdown");
+    if (!el || !el.dataset.endsAt) return;
+    const endsAt = Number(el.dataset.endsAt);
+    const offset = Number(el.dataset.serverNow) - Date.now();
+    const tick = () => {
+        const secs = Math.ceil(Math.max(0, endsAt - (Date.now() + offset)) / 1000);
+        const m = Math.floor(secs / 60);
+        const s = String(secs % 60).padStart(2, "0");
+        el.textContent =
+            m >= 60
+                ? Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0") + ":" + s
+                : m + ":" + s;
+    };
+    tick();
+    adminCountdownInterval = setInterval(tick, 250);
 }
 
 // Patch the page from a fetched HTML string: replace #reload-section if both the

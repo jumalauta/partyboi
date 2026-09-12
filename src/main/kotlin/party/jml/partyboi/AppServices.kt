@@ -35,6 +35,7 @@ import party.jml.partyboi.sync.ReconciliationService
 import party.jml.partyboi.sync.SyncService
 import party.jml.partyboi.system.ErrorRepository
 import party.jml.partyboi.system.TimeService
+import party.jml.partyboi.timer.CountdownService
 import party.jml.partyboi.triggers.TriggerRepository
 import party.jml.partyboi.voting.VoteKeyRepository
 import party.jml.partyboi.voting.VoteService
@@ -57,6 +58,7 @@ interface AppServices {
     val compoRun: CompoRunService
     val resultsRun: ResultsRunService
     val screen: InfoScreenService
+    val countdown: CountdownService
     val previews: PreviewRepository
     val events: EventRepository
     val triggers: TriggerRepository
@@ -98,6 +100,7 @@ class AppServicesImpl(
     override val triggers = TriggerRepository(this)
     override val signals = SignalService(this)
     override val screen = InfoScreenService(this)
+    override val countdown = CountdownService(this)
     override val assets = AssetsRepository(this)
     override val errors = ErrorRepository(this)
     override val email = EmailServiceFacade(this)

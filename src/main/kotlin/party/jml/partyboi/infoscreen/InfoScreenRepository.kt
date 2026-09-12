@@ -238,6 +238,7 @@ data class SlideRow(
             QrCodeSlide::class.qualifiedName -> Json.decodeFromString<QrCodeSlide>(content)
             ImageSlide::class.qualifiedName -> Json.decodeFromString<ImageSlide>(content)
             ScheduleSlide::class.qualifiedName -> Json.decodeFromString<ScheduleSlide>(content)
+            TimerSlide::class.qualifiedName -> Json.decodeFromString<TimerSlide>(content)
             else -> TODO("JSON decoding not implemented for $type")
         }
 

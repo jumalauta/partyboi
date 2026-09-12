@@ -937,6 +937,13 @@ iframe.screen-preview {
     padding-top: 0;
 }
 
+.admin-countdown {
+    font-size: 3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
 .slide-set-toolbar details.dropdown,
 .slide-set-toolbar details.dropdown summary {
     margin: 0;
