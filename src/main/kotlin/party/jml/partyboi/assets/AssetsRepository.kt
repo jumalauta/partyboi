@@ -1,9 +1,12 @@
 package party.jml.partyboi.assets
 
 import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.FileChecksums
+import party.jml.partyboi.data.InvalidInput
 import party.jml.partyboi.data.catchError
 import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.form.FileUpload
@@ -20,14 +23,26 @@ class AssetsRepository(app: AppServices) {
         assetsDir.toFile().mkdirs()
     }
 
+    // Upload filenames and delete targets come from the client (multipart filename, URL path
+    // segments) and can contain ".." — every path must resolve to somewhere inside assetsDir.
+    private fun resolveInside(name: String): AppResult<Path> {
+        val base = assetsDir.toAbsolutePath().normalize()
+        val target = runCatching { base.resolve(name).normalize() }.getOrNull()
+        return if (target != null && target != base && target.startsWith(base)) target.right()
+        else InvalidInput("asset path").left()
+    }
+
     fun write(file: FileUpload): AppResult<Unit> =
-        catchError {
-            val target = assetsDir.resolve(file.name)
-            target.parent.toFile().mkdirs()
-            target
-        }.flatMap {
-            file.writeAndAutoExtract(it)
-        }
+        resolveInside(file.name)
+            .flatMap { target ->
+                catchError {
+                    target.parent.toFile().mkdirs()
+                    target
+                }
+            }
+            .flatMap {
+                file.writeAndAutoExtract(it)
+            }
 
     fun getList(): List<Asset> =
         try {
@@ -54,16 +69,19 @@ class AssetsRepository(app: AppServices) {
     fun exists(name: String): Boolean =
         getFile(name).toFile().exists()
 
-    fun delete(name: String): AppResult<Unit> = catchError {
-        Files.delete(assetsDir.resolve(name))
-    }
+    fun delete(name: String): AppResult<Unit> =
+        resolveInside(name).flatMap { target ->
+            catchError { Files.delete(target) }
+        }
 
-    fun deleteDirectory(name: String): AppResult<Unit> = catchError {
-        val dir = assetsDir.resolve(name)
-        Files.walk(dir)
-            .sorted(Comparator.reverseOrder())
-            .forEach { Files.delete(it) }
-    }
+    fun deleteDirectory(name: String): AppResult<Unit> =
+        resolveInside(name).flatMap { dir ->
+            catchError {
+                Files.walk(dir)
+                    .sorted(Comparator.reverseOrder())
+                    .forEach { Files.delete(it) }
+            }
+        }
 
     fun deleteAll(): AppResult<Unit> = catchError {
         if (Files.exists(assetsDir)) {

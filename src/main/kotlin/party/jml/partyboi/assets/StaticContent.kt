@@ -8,21 +8,28 @@ import io.ktor.server.routing.*
 import party.jml.partyboi.config
 import party.jml.partyboi.data.NotFound
 import party.jml.partyboi.templates.respondPage
-import java.io.File
 
 fun Application.configureStaticContent() {
-    val uploadedAssetsDir = config().assetsDir.toFile()
+    val uploadedAssetsDir = config().assetsDir.toAbsolutePath().normalize()
     routing {
         get("/assets/{path...}") {
             val path = call.parameters.getAll("path")?.joinToString("/")
                 ?: return@get call.respondPage(NotFound("File not found"))
 
-            val assetFile = File("$uploadedAssetsDir/$path")
+            // Routing URL-decodes each segment without stripping dot-segments, so the request can
+            // contain ".." — resolve and verify containment before touching the filesystem.
+            val target = runCatching { uploadedAssetsDir.resolve(path).normalize() }.getOrNull()
+            if (target == null || target == uploadedAssetsDir || !target.startsWith(uploadedAssetsDir)) {
+                return@get call.respondPage(NotFound("File not found"))
+            }
+
+            val assetFile = target.toFile()
             if (assetFile.exists() && assetFile.isFile) {
                 call.applyAggressiveCaching()
                 call.respondFile(assetFile)
             } else {
-                this::class.java.classLoader.getResourceAsStream("assets/$path")
+                val safePath = uploadedAssetsDir.relativize(target).joinToString("/")
+                this::class.java.classLoader.getResourceAsStream("assets/$safePath")
                     ?.let {
                         call.applyAggressiveCaching()
                         call.respondBytes(it.readBytes(), ContentType.defaultForFile(assetFile))

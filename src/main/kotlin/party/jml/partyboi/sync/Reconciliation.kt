@@ -202,6 +202,9 @@ class ReconciliationService(app: AppServices) : Service(app) {
                         survivorId, loserId
                     )
                 ).bind()
+                // The session table has no FK to appuser, so deleting the loser would otherwise leave
+                // its sessions valid under a now-nonexistent identity — drop them explicitly.
+                exec(queryOf("DELETE FROM session WHERE user_id = ?", loserId)).bind()
                 updateOne(queryOf("DELETE FROM appuser WHERE id = ?", loserId)).bind()
                 exec(queryOf("DELETE FROM dismissed_duplicate WHERE id_a = ? OR id_b = ?", loserId, loserId)).bind()
             }

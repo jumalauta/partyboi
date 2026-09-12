@@ -6,6 +6,9 @@ services:
       - "8124:8123"
     environment:
       INSTANCE_NAME: "Partyboi (dev)"
+      # Development mode: relaxes the secure-cookie requirement and allows the default
+      # admin/password account, which production refuses to create.
+      JAVA_TOOL_OPTIONS: "-Dio.ktor.development=true"
       ADMIN_USERNAME: "admin"
       ADMIN_PASSWORD: "password"
       DB_USER: "postgres"

@@ -163,9 +163,8 @@ fun Application.configureUserMgmtRouting(app: AppServices) {
 
         put("/admin/users/{id}/admin/{state}") {
             call.switchApiUuid { id, state ->
-                app.users.makeAdmin(id, state).onRight {
-                    app.users.requestUserSessionReload(id)
-                }
+                // makeAdmin itself reloads on grant and invalidates the user's sessions on revoke.
+                app.users.makeAdmin(id, state)
             }
         }
     }

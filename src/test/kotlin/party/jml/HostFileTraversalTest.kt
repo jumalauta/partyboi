@@ -45,12 +45,15 @@ class HostFileTraversalTest : PartyboiTester {
 
         it.login("admin")
 
-        // Hosting the entry's own extracted directory works.
+        // Hosting the entry's own extracted directory works, but sandboxed: entries are untrusted
+        // uploads, so their scripts must not get same-origin access to the admin's session.
+        val hostResponse = it.client.get("/admin/host/$fileId")
         assertEquals(
             HttpStatusCode.OK,
-            it.client.get("/admin/host/$fileId").status,
+            hostResponse.status,
             "an admin should be able to host the entry's own files",
         )
+        assertEquals("sandbox allow-scripts", hostResponse.headers["Content-Security-Policy"])
 
         // "../../../../../../../etc/passwd" (url-encoded) must not escape the directory.
         val traversal = "%2e%2e%2f".repeat(8) + "etc%2fpasswd"

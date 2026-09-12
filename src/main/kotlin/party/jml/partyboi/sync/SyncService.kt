@@ -126,11 +126,13 @@ class SyncService(app: AppServices) : Service(app) {
     }
 
     suspend fun getTable(table: SyncedTable) = db.getTable(table.tableName)
-    suspend fun putTable(table: Table) =
-        db.putTable(
-            table = table,
-            exceptionResolver = SyncedTable.entries.find { it.tableName == table.table }?.exceptionResolver
-        )
+    suspend fun putTable(table: Table) = either {
+        // The identifier-charset check in DbSyncService alone would let a sync peer write to any
+        // table (sessions, password resets, ...), so only allowlisted tables are accepted.
+        val synced = SyncedTable.entries.find { it.tableName == table.table }
+            ?: raise(InvalidInput("Unknown sync table '${table.table}'"))
+        db.putTable(table = table, exceptionResolver = synced.exceptionResolver).bind()
+    }
 
     suspend fun syncDown() = either {
         val instance = remoteInstance.get().bind()

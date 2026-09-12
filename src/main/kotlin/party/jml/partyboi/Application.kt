@@ -2,8 +2,10 @@ package party.jml.partyboi
 
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.hours
 import party.jml.partyboi.auth.configureAuthentication
 import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.db.DbBasicMappers.asBoolean
@@ -24,6 +26,13 @@ fun Application.module() {
 
     launch { app.triggers.start() }
     launch { app.votes.start() }
+    launch {
+        // read() already ignores expired sessions; this just clears them out of storage over time.
+        while (true) {
+            app.sessions.purgeExpired()
+            delay(6.hours)
+        }
+    }
     if (app.config.runWorkQueue) {
         launch { app.workQueue.start() }
     }
