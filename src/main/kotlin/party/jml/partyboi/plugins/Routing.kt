@@ -9,6 +9,7 @@ import kotlinx.html.h1
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.assets.admin.configureAdminAssetsRouting
+import party.jml.partyboi.assets.configureLogoRouting
 import party.jml.partyboi.assets.configureStaticContent
 import party.jml.partyboi.auth.configureLoginRouting
 import party.jml.partyboi.compos.admin.configureAdminComposRouting
@@ -76,6 +77,7 @@ fun Application.configureDefaultRouting(app: AppServices) {
     configureSettingsRouting(app)
 
     configureStaticContent()
+    configureLogoRouting(app)
 
     configureAdminComposRouting(app)
     configureAdminScreenRouting(app)

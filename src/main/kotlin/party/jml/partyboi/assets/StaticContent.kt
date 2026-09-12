@@ -2,7 +2,6 @@ package party.jml.partyboi.assets
 
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.http.content.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import party.jml.partyboi.config
@@ -37,16 +36,6 @@ fun Application.configureStaticContent() {
                     ?: call.respondPage(NotFound("File not found"))
             }
         }
-
-        staticResources("/", "favicon") {
-            aggressiveCaching()
-        }
-    }
-}
-
-fun StaticContentConfig<*>.aggressiveCaching() {
-    cacheControl {
-        listOf(AGGRESSIVE_CACHE)
     }
 }
 

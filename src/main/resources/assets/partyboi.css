@@ -84,6 +84,33 @@ code {
     margin-bottom: var(--pico-spacing);
 }
 
+/* Brand: logo + instance name in the top nav. The li is a flex row so the
+ * hamburger button and the brand link center on each other instead of sitting
+ * on the text baseline (the inline-flex brand's baseline is the logo's bottom
+ * edge, which misaligns it against inline siblings). The strong wrapper must
+ * not create a box of its own: as an inline box it would put the tall brand
+ * link back on a text baseline inside it, so it only contributes font-weight. */
+.container > header nav li.brand-row {
+    display: flex;
+    align-items: center;
+}
+
+.container > header nav li.brand-row > strong {
+    display: contents;
+}
+
+.container > header nav a.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.container > header nav .brand-logo {
+    height: 1.5em;
+    width: 1.5em; /* logo viewBox is square; fixed width avoids layout shift while loading */
+    display: block;
+}
+
 body > footer {
     margin-top: calc(var(--pico-spacing) * 2);
     text-align: center;

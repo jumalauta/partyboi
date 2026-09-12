@@ -36,6 +36,7 @@ data class Page(
                     content = "width=device-width, height=device-height, initial-scale=1"
                 }
                 title { +"$titleText - ${Config.get().instanceName}" }
+                faviconLinks()
                 link(rel = "stylesheet", href = BuildInfo.asset("/assets/picocss/${theme.colorScheme.filename}"), type = "text/css")
                 link(rel = "stylesheet", href = BuildInfo.asset("/assets/fontawesome.min.css"), type = "text/css")
                 link(rel = "stylesheet", href = BuildInfo.asset("/assets/solid.min.css"), type = "text/css")
@@ -46,7 +47,7 @@ data class Page(
                     header {
                         nav {
                             ul {
-                                li {
+                                li(classes = "brand-row") {
                                     button(classes = "mobile-nav-button flat-button") {
                                         attributes["aria-label"] = "Open navigation"
                                         attributes["aria-expanded"] = "false"
@@ -55,7 +56,12 @@ data class Page(
                                             icon("bars")
                                         }
                                     }
-                                    strong { a(href = "/") { +Config.get().instanceName } }
+                                    strong {
+                                        a(href = "/", classes = "brand") {
+                                            img(src = "/logo.svg", alt = "", classes = "brand-logo")
+                                            +Config.get().instanceName
+                                        }
+                                    }
                                 }
                             }
                             ul {
@@ -110,6 +116,15 @@ data class Page(
             }
         }
     }
+}
+
+// Icon URLs are plain paths (not BuildInfo.asset) — the logo changes with the theme or an
+// asset upload, independent of builds; the routes revalidate with ETags.
+fun HEAD.faviconLinks() {
+    link(rel = "icon", href = "/logo.svg", type = "image/svg+xml")
+    link(rel = "icon", href = "/favicon-32x32.png", type = "image/png") { attributes["sizes"] = "32x32" }
+    link(rel = "apple-touch-icon", href = "/apple-touch-icon.png")
+    link(rel = "manifest", href = "/site.webmanifest")
 }
 
 class Redirection(val location: String) : Renderable {

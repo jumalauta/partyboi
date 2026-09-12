@@ -6,6 +6,7 @@ import kotlinx.html.stream.createHTML
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.BuildInfo
 import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.templates.faviconLinks
 
 object InfoScreenPage {
     fun renderContent(slide: Slide<*>, app: AppServices) =
@@ -20,6 +21,7 @@ object InfoScreenPage {
         createHTML().html {
             head {
                 title { +"Screen" }
+                faviconLinks()
                 link(rel = "stylesheet", href = BuildInfo.asset("/assets/screen/screen.css"), type = "text/css")
             }
             body {
