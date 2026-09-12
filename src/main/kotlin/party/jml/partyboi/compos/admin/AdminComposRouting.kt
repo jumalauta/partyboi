@@ -431,6 +431,10 @@ suspend fun ApplicationCall.hostFile(hostedEntry: ExtractedEntry, filename: Path
         respondPage(NotFound("File not found"))
         return
     }
+    // Hosted entries are untrusted uploads served as-is (e.g. HTML browser demos). The sandbox
+    // keeps scripts runnable for previewing but denies same-origin access, so an entry's script
+    // cannot act with the admin's session.
+    response.header("Content-Security-Policy", "sandbox allow-scripts")
     if (target.toFile().isDirectory()) {
         val entries = target.listDirectoryEntries()
         respondHtml {

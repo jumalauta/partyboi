@@ -44,6 +44,7 @@ import party.jml.partyboi.workqueue.WorkQueueService
 interface AppServices {
     val db: DatabasePool
     val config: ConfigReader
+    val devMode: Boolean
     val properties: PropertyRepository
     val settings: SettingsService
     val time: TimeService
@@ -81,6 +82,7 @@ interface AppServices {
 class AppServicesImpl(
     override val db: DatabasePool,
     override val config: ConfigReader,
+    override val devMode: Boolean = false,
 ) : AppServices {
     override val properties = PropertyRepository(this)
     override val settings = SettingsService(this)
@@ -124,7 +126,7 @@ suspend fun Application.services(): AppServices {
     return AppServicesImpl.globalInstance ?: run {
         val db = getDatabasePool()
         Migrations.migrate(db).getOrElse { it.throwError() }
-        val app = AppServicesImpl(db, config())
+        val app = AppServicesImpl(db, config(), developmentMode)
         AppServicesImpl.globalInstance = app
         app
     }

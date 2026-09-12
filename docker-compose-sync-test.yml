@@ -25,6 +25,10 @@ services:
     build: .
     pull_policy: never
     environment:
+      # This is a test harness talking plain HTTP, not a production deployment: run in development
+      # mode so the default admin/password account is created (production refuses that) and the
+      # session cookie is not marked Secure.
+      JAVA_TOOL_OPTIONS: "-Dio.ktor.development=true"
       INSTANCE_ID: "master"
       INSTANCE_NAME: "Master"
       ADMIN_USERNAME: "admin"
@@ -55,6 +59,8 @@ services:
     build: .
     pull_policy: never
     environment:
+      # See appserver-master: development mode for the test harness (default admin, non-Secure cookie).
+      JAVA_TOOL_OPTIONS: "-Dio.ktor.development=true"
       INSTANCE_ID: "remote"
       INSTANCE_NAME: "Remote"
       ADMIN_USERNAME: "admin"

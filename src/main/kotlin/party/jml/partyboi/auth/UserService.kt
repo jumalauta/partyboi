@@ -5,6 +5,7 @@ import arrow.core.Option
 import arrow.core.raise.either
 import kotlinx.coroutines.runBlocking
 import party.jml.partyboi.AppServices
+import party.jml.partyboi.Logging
 import party.jml.partyboi.auth.UserCredentials.Companion.hashPassword
 import party.jml.partyboi.data.AppError
 import party.jml.partyboi.data.InvalidInput
@@ -24,14 +25,21 @@ import party.jml.partyboi.validation.Validateable
 import party.jml.partyboi.voting.VoteKey
 import java.util.*
 
-class UserService(private val app: AppServices) {
+class UserService(private val app: AppServices) : Logging() {
     private val userRepository = UserRepository(app)
     private val passwordResetRepository = PasswordResetRepository(app)
     private val userSessionReloadRequests = mutableSetOf<UUID>()
 
     init {
         runBlocking {
-            userRepository.createAdminUser().throwOnError()
+            if (!app.devMode && app.config.adminPassword == DEFAULT_ADMIN_PASSWORD) {
+                log.error(
+                    "Refusing to create the admin account: ADMIN_PASSWORD is unset or still the " +
+                            "default. Set the ADMIN_PASSWORD environment variable and restart."
+                )
+            } else {
+                userRepository.createAdminUser().throwOnError()
+            }
         }
     }
 
@@ -59,9 +67,26 @@ class UserService(private val app: AppServices) {
                 )
             }
         }
+
+        // A password change must not leave older sessions (e.g. on a lost or compromised device)
+        // usable, so evict all of this user's sessions; they re-authenticate with the new password.
+        if (user.password.isNotEmpty()) {
+            app.sessions.invalidateUserSessions(userId).bind()
+        }
     }
 
-    suspend fun makeAdmin(userId: UUID, isAdmin: Boolean) = userRepository.makeAdmin(userId, isAdmin)
+    suspend fun makeAdmin(userId: UUID, isAdmin: Boolean): AppResult<Unit> = either {
+        userRepository.makeAdmin(userId, isAdmin).bind()
+        // Revoking admin must take effect immediately and irreversibly. Trusting the stored session's
+        // isAdmin flag would let a just-demoted admin keep using — and re-grant themselves — admin
+        // rights until their session happened to be reloaded, so drop their sessions and force a fresh
+        // login that reads the current privileges from the database.
+        if (!isAdmin) {
+            app.sessions.invalidateUserSessions(userId).bind()
+        } else {
+            requestUserSessionReload(userId)
+        }
+    }
     suspend fun deleteAll() = userRepository.deleteAll()
 
     suspend fun addUser(user: UserCredentials, ip: String): AppResult<User> =
@@ -205,8 +230,14 @@ class UserService(private val app: AppServices) {
         val hashedPassword = hashPassword(newPassword)
         userRepository.changePassword(userId, hashedPassword).bind()
         passwordResetRepository.invalidateCode(code).bind()
+        // A reset is often triggered by suspected compromise, so evict any existing sessions.
+        app.sessions.invalidateUserSessions(userId).bind()
         app.messages.sendMessage(userId, MessageType.SUCCESS, "Your password has been changed.").bind()
         userId
+    }
+
+    companion object {
+        private const val DEFAULT_ADMIN_PASSWORD = "password"
     }
 }
 

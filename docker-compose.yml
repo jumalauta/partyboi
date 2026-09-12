@@ -20,8 +20,8 @@ services:
   appserver:
     image: ilkkahanninen/partyboi:latest
     restart: unless-stopped
-    ports:
-      - "${PORT:-8123}:8123"
+    # No published port: the Caddy proxy reaches the app over the internal `frontend` network and is
+    # the only ingress. Publishing 8123 would expose the app over plain HTTP, bypassing TLS.
     environment:
       INSTANCE_ID: "${INSTANCE_ID}"
       INSTANCE_NAME: "${INSTANCE_NAME}"
@@ -59,8 +59,11 @@ services:
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
       POSTGRES_USER: "${DB_USER}"
       POSTGRES_DB: "${DB_DATABASE}"
+    # Bind to loopback only. The app reaches the database over the internal `backend` network; a
+    # published 0.0.0.0 port is often internet-reachable because Docker's iptables rules bypass ufw.
+    # Loopback keeps host-side psql/backups working without exposing Postgres off-box.
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     networks:
       - backend
     healthcheck:
