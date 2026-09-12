@@ -7,6 +7,7 @@ import party.jml.partyboi.entries.FileDesc
 import party.jml.partyboi.entries.Preview
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.IconSet
+import party.jml.partyboi.templates.components.entryChips
 import party.jml.partyboi.templates.components.previewThumbnail
 import party.jml.partyboi.templates.components.toggleButton
 import party.jml.partyboi.voting.CompoResult
@@ -88,6 +89,7 @@ object ResultsPage {
                         } else {
                             +result.author
                         }
+                        entryChips(result.remote, result.aiGenerated)
                     }
                     // Whitespace-only text nodes are ignored by the flex layout but keep
                     // extracted/copied text readable ("Demo #5 29 pts", not "Demo #529 pts").

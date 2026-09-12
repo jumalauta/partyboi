@@ -2,6 +2,8 @@ package party.jml.partyboi.infoscreen.slides
 
 import kotlinx.html.FlowContent
 import kotlinx.html.h1
+import kotlinx.html.h2
+import kotlinx.html.span
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import party.jml.partyboi.AppServices
@@ -26,10 +28,19 @@ data class TextSlide(
     @Label("Variant")
     @Hidden
     val variant: String? = null,
+    val chips: List<String>? = null,
+    val author: String? = null,
 ) : Slide<TextSlide>, Validateable<TextSlide>, AutoRunHalting {
     override suspend fun render(ctx: FlowContent, app: AppServices) {
         with(ctx) {
-            h1 { +title }
+            h1 {
+                +title
+                chips?.forEach {
+                    +" "
+                    span(classes = "chip") { +it }
+                }
+            }
+            author?.let { h2 { +it } }
             markdown(content)
         }
     }
@@ -52,11 +63,13 @@ data class TextSlide(
         fun compoSlide(index: Int, entry: Entry, hideAuthor: Boolean): TextSlide =
             TextSlide(
                 "#${index + 1} ${entry.title}",
-                listOfNotNull(
-                    if (hideAuthor) null else "## ${entry.author}",
-                    entry.screenComment,
-                ).joinToString(separator = "\n\n"),
-                CompoEntryVariant
+                entry.screenComment ?: "",
+                CompoEntryVariant,
+                chips = listOfNotNull(
+                    "AI".takeIf { entry.aiGenerated },
+                    "Remote".takeIf { entry.remote },
+                ).ifEmpty { null },
+                author = if (hideAuthor) null else entry.author,
             )
 
         fun compoStartsSoon(compoName: String): TextSlide =

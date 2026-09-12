@@ -24,6 +24,7 @@ fun FlowContent.entryCard(
                 readonlyField("Author", entry.author)
                 readonlyField("Compo", compos.find { it.id == entry.compoId }?.name ?: entry.compoId.toString())
             }
+            entryChips(entry)
             block()
         }
     }

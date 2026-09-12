@@ -35,12 +35,13 @@ class SubmitEntryPageTest : PartyboiTester {
 
         it.login()
 
-        // Check that compo selector has correct options
+        // Check that compo selector has correct options and the flag checkboxes exist
         it.get("/entries") {
             findFirst("article select") {
                 findAll("option").text.toBe("Demo Music")
             }
-
+            findFirst("input[name='remote']") {}
+            findFirst("input[name='aiGenerated']") {}
         }
 
         // Submit bad form
@@ -63,12 +64,14 @@ class SubmitEntryPageTest : PartyboiTester {
             screenComment = "Hello to audience",
             orgComment = "Hello to orgs",
             userId = UUIDv7.Empty,
+            remote = true,
+            aiGenerated = true,
         )
         it.post("/entries", goodEntry) {
             it.redirectsTo(Regex("/entries/.*"))
         }
 
-        // Check that the uploaded entry is shown on the entries page
+        // Check that the uploaded entry is shown on the entries page with its flag chips
         it.get("/entries") {
             findFirst("article.entry") {
                 findFirst("th") { text.toBe("Title") }
@@ -77,6 +80,7 @@ class SubmitEntryPageTest : PartyboiTester {
                 findSecond("td") { text.toBe("Matt Current") }
                 findThird("th") { text.toBe("Compo") }
                 findThird("td") { text.toBe("Demo") }
+                findAll(".chip").text.toBe("AI Remote")
             }
         }
     }

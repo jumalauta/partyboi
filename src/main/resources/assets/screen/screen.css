@@ -3,7 +3,7 @@
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: url("LibertinusSerif-Regular.ttf") format("ttf");
+    src: url("LibertinusSerif-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -11,7 +11,7 @@
     font-style: normal;
     font-weight: 600;
     font-display: swap;
-    src: url("LibertinusSerif-Regular.ttf") format("ttf");
+    src: url("LibertinusSerif-Regular.ttf") format("truetype");
 }
 
 :root {
@@ -90,6 +90,34 @@ ul:first-child {
 
 .TextSlide {
     padding: var(--padding);
+}
+
+/* Entry flag chips ("AI", "Remote"): pills with inverted text/background colors,
+ * shown inline with the slide title */
+.chip {
+    display: inline-block;
+    font-family: sans-serif;
+    background: var(--color-text);
+    color: var(--color-background);
+    border-radius: 99999px;
+    /* Fallback: the box includes the font's descender zone below the uppercase
+     * text, so pad the bottom less than the top to center the text optically. */
+    padding: 0.35em 0.6em 0.25em;
+    font-size: 45%;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1;
+    text-shadow: none;
+    vertical-align: 0.4em;
+}
+
+@supports (text-box: trim-both cap alphabetic) {
+    .chip {
+        /* Trim the text box to cap height so symmetric padding centers exactly */
+        text-box: trim-both cap alphabetic;
+        padding: 0.3em 0.6em;
+    }
 }
 
 /* QR CODE SLIDES */

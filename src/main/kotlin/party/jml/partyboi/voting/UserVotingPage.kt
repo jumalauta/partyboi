@@ -7,6 +7,7 @@ import party.jml.partyboi.signals.SignalType
 import party.jml.partyboi.templates.Javascript
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.components.cardHeader
+import party.jml.partyboi.templates.components.entryChips
 import party.jml.partyboi.templates.components.previewThumbnail
 import party.jml.partyboi.templates.components.reloadSection
 import party.jml.partyboi.templates.refreshOnSignal
@@ -70,6 +71,7 @@ object UserVotingPage {
                                             } else {
                                                 +"${entry.author} – ${entry.title}"
                                             }
+                                            entryChips(entry)
                                             entry.info?.let { small(classes = "entry-info") { +it } }
                                         }
                                         for (points in VoteService.POINT_RANGE) {

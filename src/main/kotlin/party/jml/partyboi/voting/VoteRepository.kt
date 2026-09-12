@@ -78,7 +78,9 @@ class VoteRepository(app: AppServices) : Service(app) {
                 entry.id AS entry_id,
                 title,
                 author,
-                screen_comment
+                screen_comment,
+                remote,
+                ai_generated
             FROM entry
             LEFT JOIN effective_vote ev ON ev.entry_id = entry.id
             JOIN compo ON compo.id = entry.compo_id
@@ -109,6 +111,8 @@ data class CompoResult(
     val scoreText: String? = null,
     val isManual: Boolean = false,
     val position: Int = 0,
+    val remote: Boolean = false,
+    val aiGenerated: Boolean = false,
 ) {
     companion object {
         val fromRow: (Row) -> CompoResult = { row ->
@@ -120,6 +124,8 @@ data class CompoResult(
                 title = row.string("title"),
                 author = row.string("author"),
                 info = row.stringOrNull("screen_comment")?.nonEmptyString(),
+                remote = row.boolean("remote"),
+                aiGenerated = row.boolean("ai_generated"),
             )
         }
 

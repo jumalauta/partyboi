@@ -123,7 +123,7 @@ class EntryRepository(app: AppServices) : Service(app) {
 
                 val entry = one(
                     queryOf(
-                        "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment, origin) values(?, ?, ?, ?, ?, ?, ?) returning *",
+                        "insert into entry(title, author, compo_id, user_id, screen_comment, org_comment, origin, remote, ai_generated) values(?, ?, ?, ?, ?, ?, ?, ?, ?) returning *",
                         newEntry.title,
                         newEntry.author,
                         newEntry.compoId,
@@ -131,6 +131,8 @@ class EntryRepository(app: AppServices) : Service(app) {
                         newEntry.screenComment.nonEmptyString(),
                         newEntry.orgComment.nonEmptyString(),
                         app.config.instanceId,
+                        newEntry.remote,
+                        newEntry.aiGenerated,
                     ).map(Entry.fromRow)
                 ).bind()
 
@@ -172,7 +174,9 @@ class EntryRepository(app: AppServices) : Service(app) {
                 author = ?,
                 compo_id = ?,
                 screen_comment = ?,
-                org_comment = ?
+                org_comment = ?,
+                remote = ?,
+                ai_generated = ?
             where id = ? and (
             	user_id = ? OR
             	(SELECT is_admin FROM appuser WHERE id = ?)
@@ -184,6 +188,8 @@ class EntryRepository(app: AppServices) : Service(app) {
                     entry.compoId,
                     entry.screenComment.nonEmptyString(),
                     entry.orgComment.nonEmptyString(),
+                    entry.remote,
+                    entry.aiGenerated,
                     entry.id,
                     userId, userId
                 ).map(Entry.fromRow)
@@ -307,7 +313,9 @@ class EntryRepository(app: AppServices) : Service(app) {
                     title,
                     author,
                     points,
-                    screen_comment
+                    screen_comment,
+                    remote,
+                    ai_generated
                 FROM entry
                 JOIN compo ON compo.id = entry.compo_id
                 LEFT JOIN vote ON vote.entry_id = entry.id AND vote.user_id = ?
@@ -326,6 +334,8 @@ interface EntryBase {
     val title: String
     val author: String
     val compoId: UUID
+    val remote: Boolean
+    val aiGenerated: Boolean
 }
 
 @Serializable
@@ -345,6 +355,8 @@ data class Entry(
     val timestamp: Instant,
     val allowEdit: Boolean,
     val duration: Double?,
+    override val remote: Boolean = false,
+    override val aiGenerated: Boolean = false,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> Entry = { row ->
@@ -361,6 +373,8 @@ data class Entry(
                 row.instant("timestamp").toKotlinInstant(),
                 row.boolean("allow_edit"),
                 row.doubleOrNull("duration"),
+                row.boolean("remote"),
+                row.boolean("ai_generated"),
             )
         }
     }
@@ -380,6 +394,8 @@ data class EntryWithLatestFile(
     val originalFilename: String?,
     val uploadedAt: Instant?,
     val fileSize: Long?,
+    override val remote: Boolean,
+    override val aiGenerated: Boolean,
 ) : EntryBase {
     companion object {
         val fromRow: (Row) -> EntryWithLatestFile = { row ->
@@ -397,6 +413,8 @@ data class EntryWithLatestFile(
                 row.stringOrNull("orig_filename"),
                 row.instantOrNull("uploaded_at")?.toKotlinInstant(),
                 row.longOrNull("size"),
+                row.boolean("remote"),
+                row.boolean("ai_generated"),
             )
         }
     }
@@ -422,6 +440,10 @@ data class NewEntry(
     @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
     val userId: UUID,
+    @Field("Remote entry")
+    val remote: Boolean = false,
+    @Field("AI generated content")
+    val aiGenerated: Boolean = false,
 ) : Validateable<NewEntry> {
     companion object {
         val Empty = NewEntry(
@@ -432,6 +454,8 @@ data class NewEntry(
             screenComment = "",
             orgComment = "",
             userId = UUIDv7.Empty,
+            remote = false,
+            aiGenerated = false,
         )
 
         const val MAX_TITLE_LENGTH = 128
@@ -469,6 +493,12 @@ data class EntryUpdate(
 
     @Field("Information for organizers", presentation = FieldPresentation.large)
     val orgComment: String,
+
+    @Field("Remote entry")
+    val remote: Boolean = false,
+
+    @Field("AI generated content")
+    val aiGenerated: Boolean = false,
 ) : Validateable<EntryUpdate> {
     companion object {
         fun fromEntry(e: Entry) = EntryUpdate(
@@ -480,6 +510,8 @@ data class EntryUpdate(
             userId = e.userId,
             screenComment = e.screenComment ?: "",
             orgComment = e.orgComment ?: "",
+            remote = e.remote,
+            aiGenerated = e.aiGenerated,
         )
     }
 }
@@ -494,6 +526,8 @@ data class VotableEntry(
     override val author: String,
     val points: Int?,
     val info: String?,
+    override val remote: Boolean,
+    override val aiGenerated: Boolean,
 ) : EntryBase {
     override val id = entryId
 
@@ -509,6 +543,8 @@ data class VotableEntry(
                 author = row.string("author"),
                 points = row.intOrNull("points"),
                 info = row.stringOrNull("screen_comment")?.nonEmptyString(),
+                remote = row.boolean("remote"),
+                aiGenerated = row.boolean("ai_generated"),
             )
         }
 
@@ -522,6 +558,8 @@ data class VotableEntry(
             author = entry.author,
             points = points,
             info = entry.screenComment,
+            remote = entry.remote,
+            aiGenerated = entry.aiGenerated,
         )
     }
 }

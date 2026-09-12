@@ -55,6 +55,27 @@ code {
 }
 
 /* ---------------------------------------------------------------- *
+ * Chips
+ * ---------------------------------------------------------------- */
+
+/* Entry flag labels ("AI", "Remote"): pills with inverted text/background colors. */
+.chip {
+    display: inline-block;
+    background: var(--pico-color);
+    color: var(--pico-background-color);
+    border-radius: 99999px;
+    padding: 0 0.6em;
+    font-size: 70%;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    /* Optical centering: on the shared baseline the pill hangs below the
+     * surrounding text, so raise it to center it against the cap height. */
+    vertical-align: 0.12em;
+    line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- *
  * Page layout
  * ---------------------------------------------------------------- */
 

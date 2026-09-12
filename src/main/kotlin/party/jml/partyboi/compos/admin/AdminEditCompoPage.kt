@@ -346,6 +346,7 @@ object AdminEditCompoPage {
             td(classes = "narrow pb-col-preview") { renderThumbnail(entry, preview) }
             td {
                 a(href = "/entries/${entry.id}") { +entry.title }
+                entryChips(entry)
                 br {}
                 small { +entry.author }
             }
