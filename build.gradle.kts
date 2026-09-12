@@ -65,7 +65,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("com.sksamuel.scrimage:scrimage-core:4.6.8")
     implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
-    implementation("org.apache.xmlgraphics:batik-codec:1.18")
+    implementation("org.apache.xmlgraphics:batik-codec:1.19")
     implementation("org.jetbrains:markdown:0.7.12")
     implementation("org.jsoup:jsoup:1.23.2")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
