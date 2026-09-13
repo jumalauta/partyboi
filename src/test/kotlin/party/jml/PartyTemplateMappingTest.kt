@@ -113,4 +113,23 @@ class PartyTemplateMappingTest {
         assertTrue(parsePartyTemplate("not json").isLeft())
         assertTrue(parsePartyTemplate("""{"foo": "bar"}""").isLeft())
     }
+
+    // The example template shipped in the repository root must stay importable.
+    @Test
+    fun testExampleTemplateInRepositoryRootIsValid() {
+        val json = java.io.File("example-party-template.json").readText()
+        val result = parsePartyTemplate(json)
+        assertTrue(result.isRight(), "example-party-template.json must parse: $result")
+
+        val template = result.getOrNull()!!
+        assertTrue(template.compos.isNotEmpty())
+        assertTrue(template.events.isNotEmpty())
+        template.events.flatMap { it.triggers }.forEach { trigger ->
+            when (trigger) {
+                is TemplateOpenCloseVoting -> assertTrue(trigger.compoIndex in template.compos.indices)
+                is TemplateOpenCloseSubmitting -> assertTrue(trigger.compoIndex in template.compos.indices)
+                is TemplateCloseVotingForAllCompos -> {}
+            }
+        }
+    }
 }
