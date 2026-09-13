@@ -94,6 +94,9 @@ class PartyTemplateTest : PartyboiTester {
             relaxed = true
             findFirst("input[name=compoIds]") { attribute("value").toBe(compoId.toString()) }
             findFirst("input[name=eventIds]") { attribute("value").toBe(eventId.toString()) }
+            // The response is a download, so the form opts out of the submit progress
+            // bar (it would never clear without a page navigation).
+            findFirst("form") { attribute("data-no-progress").toBe("true") }
         }
 
         val response = it.client.submitFormWithBinaryData("/admin/settings/export", formData {

@@ -23,6 +23,9 @@ object PartyTemplatePages {
         h1 { +"Export party template" }
 
         dataForm("/admin/settings/export") {
+            // The response is a file download, not a navigation, so the submit
+            // progress bar would never clear.
+            attributes["data-no-progress"] = "true"
             article {
                 cardHeader("What to export")
                 p {
