@@ -58,13 +58,16 @@ class PartyTemplateService(app: AppServices) : Service(app) {
     suspend fun analyze(template: PartyTemplate): AppResult<ImportPreview> = either {
         val partyStart = requirePartyStartDate().bind()
         // Preview event times with the template's timezone (checked by default on
-        // the selection page), falling back to the instance's own.
+        // the selection page), falling back to the instance's own. The same zone is
+        // carried in the preview so the page displays times as they were computed.
         val templateTz = templateTimeZone(template).bind()
+        val previewTz = templateTz ?: app.time.timeZone.get().bind()
         val tzAt = templateTz?.let { tz -> { _: LocalDate -> tz } } ?: timeZoneResolver().bind()
         val existingCompoNames = app.compos.getAllCompos().bind().map { it.name.normalized() }.toSet()
         val existingEventNames = app.events.getAll().bind().map { it.name.normalized() }.toSet()
 
         ImportPreview(
+            previewTimeZone = previewTz,
             hasGeneralRules = template.generalRules != null,
             generalRulesOverwrite = app.compos.generalRules.get().bind().rules.isNotBlank(),
             partyDays = template.partyDays,
@@ -103,19 +106,28 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                 val createdCompos = mutableListOf<String>()
                 val skippedCompos = mutableListOf<String>()
                 val compoIdByIndex = mutableMapOf<Int, UUID>()
+                // Includes rows created during this import, so two same-named compos
+                // inside one template cannot both be created. First match wins.
+                val compoIdByName = mutableMapOf<String, UUID>()
+                existingCompos.forEach { compoIdByName.putIfAbsent(it.name.normalized(), it.id) }
 
                 template.compos.forEachIndexed { index, templateCompo ->
-                    val existing = existingCompos.find { it.name.normalized() == templateCompo.name.normalized() }
+                    val name = templateCompo.name.normalized()
+                    val resolved = compoIdByName[name]
                     when {
-                        existing != null -> {
-                            // Also resolved for unselected compos, so triggers can rewire to them.
-                            compoIdByIndex[index] = existing.id
-                            if (selection.compos.contains(index)) skippedCompos.add(templateCompo.name)
+                        resolved != null -> {
+                            // Also resolved for unselected compos, so triggers can rewire
+                            // to them. Duplicates are reported regardless of selection:
+                            // already-existing items render as disabled checkboxes, which
+                            // browsers never submit.
+                            compoIdByIndex[index] = resolved
+                            skippedCompos.add(templateCompo.name)
                         }
 
                         selection.compos.contains(index) -> {
                             val created = app.compos.create(templateCompo.toCompo(), this@transaction).bind()
                             compoIdByIndex[index] = created.id
+                            compoIdByName[name] = created.id
                             createdCompos.add(created.name)
                         }
                     }
@@ -125,13 +137,15 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                 val skippedEvents = mutableListOf<String>()
                 val droppedTriggers = mutableListOf<String>()
                 var createdTriggers = 0
+                val eventNames = existingEvents.map { it.name.normalized() }.toMutableSet()
 
                 template.events.forEachIndexed { index, templateEvent ->
-                    if (!selection.events.contains(index)) return@forEachIndexed
-                    if (existingEvents.any { it.name.normalized() == templateEvent.name.normalized() }) {
+                    if (eventNames.contains(templateEvent.name.normalized())) {
                         skippedEvents.add(templateEvent.name)
                         return@forEachIndexed
                     }
+                    if (!selection.events.contains(index)) return@forEachIndexed
+                    eventNames.add(templateEvent.name.normalized())
                     val event = app.events.add(
                         NewEvent(
                             name = templateEvent.name,
@@ -259,6 +273,9 @@ data class ImportSelection(
 ) : Validateable<ImportSelection>
 
 data class ImportPreview(
+    // The zone event preview times were computed in — the page must display them
+    // in this zone, or the admin approves times that don't match the result.
+    val previewTimeZone: TimeZone,
     val hasGeneralRules: Boolean,
     val generalRulesOverwrite: Boolean,
     val partyDays: Int?,

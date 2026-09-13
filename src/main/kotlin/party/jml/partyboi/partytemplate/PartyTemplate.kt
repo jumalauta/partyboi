@@ -167,17 +167,36 @@ fun Action.toTemplateTrigger(compoIndexById: Map<UUID, Int>): TemplateTrigger? =
     is CloseVotingForAllCompos -> TemplateCloseVotingForAllCompos
 }
 
+// RelativeTime carries user-supplied strings, so bad values must be caught here at
+// parse time — toInstant would otherwise throw outside the AppResult pipeline.
+private val RELATIVE_TIME_PATTERN = Regex("""([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?""")
+private const val MAX_DAY_OFFSET = 1000
+
+private fun RelativeTime.validationProblem(): String? = when {
+    !time.matches(RELATIVE_TIME_PATTERN) -> "invalid time \"$time\""
+    dayOffset < -MAX_DAY_OFFSET || dayOffset > MAX_DAY_OFFSET -> "day offset $dayOffset is out of range"
+    else -> null
+}
+
 fun parsePartyTemplate(json: String): AppResult<PartyTemplate> =
     try {
         val template = TemplateJson.decodeFromString<PartyTemplate>(json)
-        if (template.partyboiTemplate != PARTY_TEMPLATE_VERSION) {
-            ValidationError(
-                "file",
-                "Unsupported template version ${template.partyboiTemplate} (this Partyboi supports version $PARTY_TEMPLATE_VERSION)",
-                template.partyboiTemplate.toString()
-            ).left()
-        } else {
-            template.right()
+        val timeProblem = template.events.firstNotNullOfOrNull { event ->
+            listOfNotNull(event.start, event.end)
+                .firstNotNullOfOrNull { it.validationProblem() }
+                ?.let { problem -> "Invalid schedule time in event \"${event.name}\": $problem" }
+        }
+        when {
+            template.partyboiTemplate != PARTY_TEMPLATE_VERSION ->
+                ValidationError(
+                    "file",
+                    "Unsupported template version ${template.partyboiTemplate} (this Partyboi supports version $PARTY_TEMPLATE_VERSION)",
+                    template.partyboiTemplate.toString()
+                ).left()
+
+            timeProblem != null -> ValidationError("file", timeProblem, "").left()
+
+            else -> template.right()
         }
     } catch (e: Exception) {
         ValidationError("file", "Not a valid party template file: ${e.message}", "").left()

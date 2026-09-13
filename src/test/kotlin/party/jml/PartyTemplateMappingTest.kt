@@ -112,6 +112,19 @@ class PartyTemplateMappingTest {
     }
 
     @Test
+    fun testParseRejectsMalformedScheduleTimes() {
+        fun template(time: String = "12:00", dayOffset: Int = 0) =
+            """{"partyboiTemplate": 1, "events": [{"name": "e", "start": {"dayOffset": $dayOffset, "time": "$time"}}]}"""
+
+        assertTrue(parsePartyTemplate(template()).isRight())
+        assertTrue(parsePartyTemplate(template(time = "25:00")).isLeft(), "hour out of range")
+        assertTrue(parsePartyTemplate(template(time = "9:00")).isLeft(), "hour must have two digits")
+        assertTrue(parsePartyTemplate(template(time = "not a time")).isLeft())
+        assertTrue(parsePartyTemplate(template(dayOffset = 100000)).isLeft(), "day offset out of range")
+        assertTrue(parsePartyTemplate(template(dayOffset = -2)).isRight(), "pre-party offsets are fine")
+    }
+
+    @Test
     fun testParseRejectsGarbage() {
         assertTrue(parsePartyTemplate("not json").isLeft())
         assertTrue(parsePartyTemplate("""{"foo": "bar"}""").isLeft())

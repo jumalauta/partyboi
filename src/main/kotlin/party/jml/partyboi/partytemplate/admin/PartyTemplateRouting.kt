@@ -15,8 +15,8 @@ import party.jml.partyboi.data.processForm
 import party.jml.partyboi.data.toFilenameToken
 import party.jml.partyboi.form.Form
 import party.jml.partyboi.partytemplate.ExportSelection
+import party.jml.partyboi.partytemplate.ImportReport
 import party.jml.partyboi.partytemplate.ImportSelection
-import party.jml.partyboi.partytemplate.PartyTemplate
 import party.jml.partyboi.partytemplate.TemplateJson
 import party.jml.partyboi.partytemplate.TemplateUpload
 import party.jml.partyboi.partytemplate.parsePartyTemplate
@@ -27,6 +27,7 @@ import party.jml.partyboi.system.encodeToStringSafe
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Renderable
 import party.jml.partyboi.templates.respondEither
+import party.jml.partyboi.validation.Validateable
 import java.util.*
 
 // A JSON file download. respondPage appends headers() to any Renderable, so the
@@ -40,6 +41,50 @@ class TemplateDownload(private val json: String, private val filename: String) :
             .toString()
     )
 }
+
+// Shared import pipeline, used by both the admin settings routes here and the
+// wizard's import step — only the confirm/continue URLs and error pages differ.
+
+suspend fun Raise<AppError>.renderTemplateSelection(app: AppServices, json: String, confirmUrl: String): Page {
+    val template = parsePartyTemplate(json).bind()
+    return PartyTemplatePages.renderImportSelectionPage(
+        preview = app.partyTemplates.analyze(template).bind(),
+        payload = Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8)),
+        confirmUrl = confirmUrl,
+    )
+}
+
+suspend fun Raise<AppError>.runTemplateImport(app: AppServices, selection: ImportSelection): ImportReport {
+    val template = parsePartyTemplate(decodePayload(selection.payload).bind()).bind()
+    return app.partyTemplates.import(template, selection).bind()
+}
+
+// A ValidationError whose target is not a field of this form (e.g. "partyStartDate"
+// raised against a TemplateUpload) would render nowhere; surface it as a form-level
+// error instead of silently re-rendering the page.
+fun <T : Validateable<T>> Form<T>.withNonFieldErrorsVisible(): Form<T> {
+    val fieldNames = schema.properties.map { it.name }.toSet()
+    val orphans = accumulatedValidationErrors.filter { it.target !in fieldNames }
+    return if (error == null && orphans.isNotEmpty()) {
+        with(FormError(orphans.joinToString { it.message }))
+    } else this
+}
+
+// The fallback error for the confirm step, whose form was rendered by us: any
+// failure there means a stale or tampered payload.
+fun <T : Validateable<T>> Form<T>.importError(): AppError {
+    val messages = accumulatedValidationErrors.joinToString { it.message }
+    return error ?: FormError(messages.ifEmpty { "Import failed" })
+}
+
+fun decodePayload(payload: String): AppResult<String> =
+    either {
+        try {
+            String(Base64.getDecoder().decode(payload), Charsets.UTF_8)
+        } catch (e: IllegalArgumentException) {
+            raise(ValidationError("payload", "The import selection has expired or is invalid", ""))
+        }
+    }
 
 fun Application.configurePartyTemplateRouting(app: AppServices) {
     suspend fun renderExportPage(): AppResult<Page> = either {
@@ -59,14 +104,6 @@ fun Application.configurePartyTemplateRouting(app: AppServices) {
             templateUpload = uploadForm,
         )
     }
-
-    suspend fun Raise<AppError>.renderSelection(template: PartyTemplate, json: String, confirmUrl: String): Page =
-        PartyTemplatePages.renderImportSelectionPage(
-            preview = app.partyTemplates.analyze(template).bind(),
-            payload = Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8)),
-            confirmUrl = confirmUrl,
-            timeZone = app.time.timeZone(),
-        )
 
     adminRouting {
         get("/admin/settings/export") {
@@ -88,38 +125,24 @@ fun Application.configurePartyTemplateRouting(app: AppServices) {
         post("/admin/settings/import") {
             call.processForm<TemplateUpload>(
                 { upload ->
-                    val json = upload.file.tempFile.readText()
-                    val template = parsePartyTemplate(json).bind()
-                    renderSelection(template, json, "/admin/settings/import/confirm")
+                    renderTemplateSelection(app, upload.file.tempFile.readText(), "/admin/settings/import/confirm")
                 },
-                { renderSettingsPage(it).bind() }
+                { renderSettingsPage(it.withNonFieldErrorsVisible()).bind() },
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
 
         post("/admin/settings/import/confirm") {
             call.processForm<ImportSelection>(
                 { selection ->
-                    val template = parsePartyTemplate(decodePayload(selection.payload).bind()).bind()
-                    val report = app.partyTemplates.import(template, selection).bind()
+                    val report = runTemplateImport(app, selection)
                     PartyTemplatePages.renderImportReportPage(report, "/admin/settings")
                 },
-                { formWithErrors ->
-                    // The selection form was rendered by us, so errors here mean a stale or
-                    // tampered payload; surface them on the settings page's upload form.
-                    val messages = formWithErrors.accumulatedValidationErrors.joinToString { it.message }
-                    val error = formWithErrors.error ?: FormError(messages.ifEmpty { "Import failed" })
-                    renderSettingsPage(Form.of(TemplateUpload.Empty).with(error)).bind()
-                }
+                { renderSettingsPage(Form.of(TemplateUpload.Empty).with(it.importError())).bind() },
+                // The base64 payload is 4/3 the template's size, so the confirm step
+                // needs the same headroom as the upload.
+                maxUploadSize = app.config.maxFileUploadSize,
             )
         }
     }
 }
-
-fun decodePayload(payload: String): AppResult<String> =
-    either {
-        try {
-            String(Base64.getDecoder().decode(payload), Charsets.UTF_8)
-        } catch (e: IllegalArgumentException) {
-            raise(ValidationError("payload", "The import selection has expired or is invalid", ""))
-        }
-    }

@@ -163,7 +163,12 @@ class PartyTemplateTest : PartyboiTester {
         val json = TemplateJson.encodeToString(testTemplate())
 
         // Upload shows the selection page with the template stashed in a hidden field.
+        // Event times must be previewed in the template's timezone (Helsinki 12:00),
+        // not the instance's current UTC.
         val payload = it.post("/admin/settings/import", templateFilePart(json)) {
+            findAll("label") {
+                assertTrue(any { it.text.contains("12:00") }, "Preview must show the template-timezone time")
+            }
             findFirst("input[name=payload]") { attribute("value") }
         }
         assertTrue(payload.isNotBlank(), "Selection page must carry the template payload")
@@ -223,16 +228,103 @@ class PartyTemplateTest : PartyboiTester {
             findFirst("input[name=payload]") { attribute("value") }
         }
 
+        // Disabled checkboxes are not submitted by real browsers, so the confirm POST
+        // carries no compo/event indexes — the report must still list the skips.
         it.post("/admin/settings/import/confirm", formData {
             append("payload", payload2)
-            append("compos", "0")
-            append("events", "0")
         }) {
             findFirst("h1") { text.toBe("Party template imported") }
+            findAll("li") {
+                assertTrue(any { it.text.contains("Compos skipped") }, "Report must list skipped compos")
+                assertTrue(any { it.text.contains("Events skipped") }, "Report must list skipped events")
+            }
         }
 
         assertEquals(1, services.compos.getAllCompos().getOrNull()!!.size)
         assertEquals(1, services.events.getAll().getOrNull()!!.size)
+    }
+
+    @Test
+    fun testImportDoesNotDuplicateSameNamedItemsWithinTemplate() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either {
+                addTestAdmin(this@setupServices).bind()
+                time.timeZone.set(tz).bind()
+                settings.partyStartDate.set(LocalDate(2026, 7, 15)).bind()
+            }
+        }
+        it.login("admin")
+
+        val template = PartyTemplate(
+            partyboiTemplate = PARTY_TEMPLATE_VERSION,
+            compos = listOf(TemplateCompo(name = "Demo"), TemplateCompo(name = "demo ")),
+            events = listOf(
+                TemplateEvent(name = "Deadline", start = RelativeTime(1, "12:00")),
+                TemplateEvent(name = "deadline", start = RelativeTime(1, "18:00")),
+            ),
+        )
+        val payload = it.post("/admin/settings/import", templateFilePart(TemplateJson.encodeToString(template))) {
+            findFirst("input[name=payload]") { attribute("value") }
+        }
+
+        it.post("/admin/settings/import/confirm", formData {
+            append("payload", payload)
+            append("compos", "0")
+            append("compos", "1")
+            append("events", "0")
+            append("events", "1")
+        }) {
+            findFirst("h1") { text.toBe("Party template imported") }
+        }
+
+        assertEquals(1, app!!.compos.getAllCompos().getOrNull()!!.size)
+        assertEquals(1, app!!.events.getAll().getOrNull()!!.size)
+    }
+
+    @Test
+    fun testImportWithoutPartyStartDateShowsError() = test {
+        // setupServices leaves partyStartDate unset.
+        setupServices { either { addTestAdmin(this@setupServices).bind() } }
+        it.login("admin")
+
+        it.post("/admin/settings/import", templateFilePart(TemplateJson.encodeToString(testTemplate()))) {
+            findFirst("h1") { text.toBe("Settings") }
+            findAll("section.error") {
+                assertTrue(
+                    any { it.text.contains("party start date") },
+                    "The missing start date must be surfaced on the upload form"
+                )
+            }
+        }
+    }
+
+    @Test
+    fun testFailedWizardUploadDoesNotPersistStartDate() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either {
+                addTestAdmin(this@setupServices).bind()
+                settings.wizardCompleted.set(false).bind()
+            }
+        }
+        it.login("admin")
+
+        it.post("/wizard/import", formData {
+            append("partyStartDate", "2062-07-15")
+            append("file", "this is not json".toByteArray(), headers {
+                append("Content-Type", "application/json")
+                append("Content-Disposition", "form-data; name=\"file\"; filename=\"template.json\"")
+            })
+        }) {
+            findAll("small.error") {
+                assertTrue(any { it.text.contains("Not a valid party template") }, "Expected a parse error")
+            }
+        }
+
+        assertEquals(null, app!!.settings.partyStartDate.get().getOrNull())
     }
 
     @Test

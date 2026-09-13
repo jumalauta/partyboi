@@ -136,8 +136,9 @@ object PartyTemplatePages {
         preview: ImportPreview,
         payload: String,
         confirmUrl: String,
-        timeZone: TimeZone,
     ): Page = Page("Import party template") {
+        // Times must be shown in the same zone they were computed in.
+        val timeZone = preview.previewTimeZone
         h1 { +"Import party template" }
 
         if (preview.hasNothing) {
@@ -250,6 +251,7 @@ object PartyTemplatePages {
                 if (preview.events.isNotEmpty()) {
                     fieldSet {
                         legend { +"Schedule" }
+                        p { small { +"Event times are shown in the ${timeZone.id} time zone." } }
                         preview.events.forEach { event ->
                             label {
                                 input(name = "events") {
