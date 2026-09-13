@@ -13,6 +13,9 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.compos.GeneralRules
 import party.jml.partyboi.compos.NewCompo
 import party.jml.partyboi.entries.FileFormat
+import party.jml.partyboi.infoscreen.slides.QrCodeSlide
+import party.jml.partyboi.infoscreen.slides.ScheduleSlide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.partytemplate.*
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.triggers.CloseVotingForAllCompos
@@ -53,6 +56,16 @@ class PartyTemplateTest : PartyboiTester {
                 ),
             )
         ),
+        slideSets = listOf(
+            TemplateSlideSet(
+                id = "info",
+                name = "Info",
+                slides = listOf(
+                    TemplateTextSlide("Welcome", "Hello"),
+                    TemplateQrCodeSlide("Website", "https://example.org", "Visit us"),
+                ),
+            )
+        ),
     )
 
     private fun templateFilePart(json: String) = formData {
@@ -90,6 +103,10 @@ class PartyTemplateTest : PartyboiTester {
                     listOf(OpenCloseSubmitting(compo.id, false), CloseVotingForAllCompos),
                 ).bind()
                 eventId = event.id
+                screen.addSlide("default", TextSlide("Welcome", "Hello"), makeVisible = true).bind()
+                screen.addSlide("default", QrCodeSlide("Website", "https://example.org", "Visit us")).bind()
+                // Schedule slides are never exported.
+                screen.addSlide("default", ScheduleSlide(LocalDate(2025, 8, 1)), makeVisible = true).bind()
             }
         }
         it.login("admin")
@@ -111,6 +128,7 @@ class PartyTemplateTest : PartyboiTester {
             append("resultsFileHeader", "on")
             append("compoIds", compoId.toString())
             append("eventIds", eventId.toString())
+            append("slideSetIds", "default")
         })
         assertEquals(HttpStatusCode.OK, response.status)
         assertTrue(
@@ -142,6 +160,18 @@ class PartyTemplateTest : PartyboiTester {
         assertEquals(null, event.end)
         assertTrue(event.triggers.contains(TemplateOpenCloseSubmitting(0, false)), "triggers: ${event.triggers}")
         assertTrue(event.triggers.contains(TemplateCloseVotingForAllCompos), "triggers: ${event.triggers}")
+
+        // Text and QR code slides are exported; the schedule slide is left out.
+        assertEquals(1, template.slideSets.size)
+        val slideSet = template.slideSets.first()
+        assertEquals("default", slideSet.id)
+        assertEquals(
+            listOf(
+                TemplateTextSlide("Welcome", "Hello", visible = true),
+                TemplateQrCodeSlide("Website", "https://example.org", "Visit us", visible = false),
+            ),
+            slideSet.slides,
+        )
     }
 
     @Test
@@ -181,6 +211,7 @@ class PartyTemplateTest : PartyboiTester {
             append("resultsFileHeader", "on")
             append("compos", "0")
             append("events", "0")
+            append("slideSets", "0")
         }) {
             findFirst("h1") { text.toBe("Party template imported") }
         }
@@ -219,6 +250,13 @@ class PartyTemplateTest : PartyboiTester {
         )
         assertTrue(actions.any { it is CloseVotingForAllCompos }, "actions: $actions")
 
+        // The slide set was created with its text and QR code slides.
+        assertTrue(services.screen.getSlideSets().getOrNull()!!.any { it.id == "info" })
+        val slides = services.screen.getSlideSet("info").getOrNull()!!.map { it.getSlide() }
+        assertEquals(2, slides.size)
+        assertTrue(slides.any { it is TextSlide && it.title == "Welcome" && it.content == "Hello" })
+        assertTrue(slides.any { it is QrCodeSlide && it.title == "Website" && it.qrcode == "https://example.org" })
+
         // Importing the same template again flags everything as existing and creates nothing.
         val payload2 = it.post("/admin/settings/import", templateFilePart(json)) {
             findFirst("input[name=compos]") { attribute("disabled").toBe("disabled") }
@@ -237,11 +275,13 @@ class PartyTemplateTest : PartyboiTester {
             findAll("li") {
                 assertTrue(any { it.text.contains("Compos skipped") }, "Report must list skipped compos")
                 assertTrue(any { it.text.contains("Events skipped") }, "Report must list skipped events")
+                assertTrue(any { it.text.contains("slides skipped") }, "Report must list skipped slides")
             }
         }
 
         assertEquals(1, services.compos.getAllCompos().getOrNull()!!.size)
         assertEquals(1, services.events.getAll().getOrNull()!!.size)
+        assertEquals(2, services.screen.getSlideSet("info").getOrNull()!!.size)
     }
 
     @Test

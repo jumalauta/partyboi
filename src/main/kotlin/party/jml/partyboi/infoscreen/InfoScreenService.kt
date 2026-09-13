@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
 import party.jml.partyboi.data.Forbidden
@@ -39,8 +40,13 @@ class InfoScreenService(app: AppServices) : Service(app) {
     }
 
     suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = repository.getSlideSets()
-    suspend fun upsertSlideSet(id: String, name: String, icon: String): AppResult<Unit> =
-        repository.upsertSlideSet(id, name, icon)
+    suspend fun upsertSlideSet(
+        id: String,
+        name: String,
+        icon: String,
+        tx: TransactionalSession? = null
+    ): AppResult<Unit> =
+        repository.upsertSlideSet(id, name, icon, tx)
 
     // Create a new slide set with a unique URL-friendly id derived from the name.
     // Returns the id of the created slide set so the caller can redirect to it.
@@ -81,8 +87,13 @@ class InfoScreenService(app: AppServices) : Service(app) {
 
     suspend fun getSlideSet(slideSet: String): AppResult<List<SlideRow>> = repository.getSlideSetSlides(slideSet)
 
-    suspend fun addSlide(slideSet: String, slide: Slide<*>, makeVisible: Boolean = false) =
-        repository.add(slideSet, slide, makeVisible = makeVisible, readOnly = false)
+    suspend fun addSlide(
+        slideSet: String,
+        slide: Slide<*>,
+        makeVisible: Boolean = false,
+        tx: TransactionalSession? = null
+    ) =
+        repository.add(slideSet, slide, makeVisible = makeVisible, readOnly = false, tx = tx)
 
     // Keep the slide set's schedule slides in sync with the dates that have a public
     // event: add a (visible) slide for any such date that lacks one, and remove slides

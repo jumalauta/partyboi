@@ -90,6 +90,17 @@ class PartyTemplateMappingTest {
                     ),
                 )
             ),
+            slideSets = listOf(
+                TemplateSlideSet(
+                    id = "info",
+                    name = "Info",
+                    icon = "tv",
+                    slides = listOf(
+                        TemplateTextSlide("Welcome", "Hello", visible = true),
+                        TemplateQrCodeSlide("Website", "https://example.org", "Visit us", visible = false),
+                    ),
+                )
+            ),
         )
 
         val json = TemplateJson.encodeToString(template)

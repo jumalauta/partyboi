@@ -11,6 +11,9 @@ import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.data.UUIDv7
 import party.jml.partyboi.data.ValidationError
 import party.jml.partyboi.entries.FileFormat
+import party.jml.partyboi.infoscreen.slides.QrCodeSlide
+import party.jml.partyboi.infoscreen.slides.Slide
+import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.LOCAL_TIME_FORMAT
 import party.jml.partyboi.triggers.Action
@@ -45,6 +48,7 @@ data class PartyTemplate(
     val resultsFileHeader: String? = null,
     val compos: List<TemplateCompo> = emptyList(),
     val events: List<TemplateEvent> = emptyList(),
+    val slideSets: List<TemplateSlideSet> = emptyList(),
 )
 
 @Serializable
@@ -120,6 +124,55 @@ data class RelativeTime(
             )
         }
     }
+}
+
+@Serializable
+data class TemplateSlideSet(
+    val id: String,
+    val name: String,
+    val icon: String = "tv",
+    val slides: List<TemplateSlide> = emptyList(),
+)
+
+// Only text and QR code slides are carried in templates: image slides reference
+// asset files that are not part of the template, schedule slides are generated
+// from the events, and timer slides are runtime state.
+@Serializable
+sealed interface TemplateSlide {
+    val visible: Boolean
+    fun toSlide(): Slide<*>
+    fun slideName(): String
+
+    companion object {
+        fun fromSlide(slide: Slide<*>, visible: Boolean): TemplateSlide? = when (slide) {
+            is TextSlide -> TemplateTextSlide(slide.title, slide.content, visible)
+            is QrCodeSlide -> TemplateQrCodeSlide(slide.title, slide.qrcode, slide.description, visible)
+            else -> null
+        }
+    }
+}
+
+@Serializable
+@SerialName("text")
+data class TemplateTextSlide(
+    val title: String,
+    val content: String = "",
+    override val visible: Boolean = true,
+) : TemplateSlide {
+    override fun toSlide() = TextSlide(title, content)
+    override fun slideName() = title
+}
+
+@Serializable
+@SerialName("qrCode")
+data class TemplateQrCodeSlide(
+    val title: String,
+    val qrcode: String = "",
+    val description: String = "",
+    override val visible: Boolean = true,
+) : TemplateSlide {
+    override fun toSlide() = QrCodeSlide(title, qrcode, description)
+    override fun slideName() = title
 }
 
 @Serializable

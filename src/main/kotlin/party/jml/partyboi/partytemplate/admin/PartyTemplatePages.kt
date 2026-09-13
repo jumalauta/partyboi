@@ -5,8 +5,10 @@ import kotlinx.html.*
 import party.jml.partyboi.compos.Compo
 import party.jml.partyboi.form.dataForm
 import party.jml.partyboi.form.submitButton
+import party.jml.partyboi.infoscreen.SlideSetRow
 import party.jml.partyboi.partytemplate.ImportPreview
 import party.jml.partyboi.partytemplate.ImportReport
+import party.jml.partyboi.partytemplate.TemplateSlide
 import party.jml.partyboi.schedule.Event
 import party.jml.partyboi.system.displayDateTime
 import party.jml.partyboi.templates.Page
@@ -20,6 +22,7 @@ object PartyTemplatePages {
         resultsFileHeader: String,
         compos: List<Compo>,
         events: List<Event>,
+        slideSets: List<Pair<SlideSetRow, List<TemplateSlide>>>,
         timeZone: TimeZone,
     ): Page = Page("Export party template") {
         h1 { +"Export party template" }
@@ -125,6 +128,28 @@ object PartyTemplatePages {
                             }
                         }
                     }
+                }
+
+                fieldSet {
+                    legend { +"Info screen" }
+                    if (slideSets.isEmpty()) p { small { +"No slide sets" } }
+                    slideSets.forEach { (set, slides) ->
+                        label {
+                            input(name = "slideSetIds") {
+                                type = InputType.checkBox
+                                value = set.id
+                                checked = slides.isNotEmpty()
+                            }
+                            span {
+                                +" ${set.name}"
+                                small {
+                                    +if (slides.isEmpty()) " (no exportable slides)"
+                                    else " — ${slides.size} slides"
+                                }
+                            }
+                        }
+                    }
+                    p { small { +"Only text and QR code slides are exported; image and schedule slides are left out." } }
                 }
 
                 submitButton("Export template")
@@ -280,6 +305,31 @@ object PartyTemplatePages {
                     }
                 }
 
+                if (preview.slideSets.isNotEmpty()) {
+                    fieldSet {
+                        legend { +"Info screen" }
+                        preview.slideSets.forEach { set ->
+                            label {
+                                input(name = "slideSets") {
+                                    type = InputType.checkBox
+                                    value = set.index.toString()
+                                    checked = !set.alreadyExists
+                                    disabled = set.alreadyExists
+                                }
+                                span {
+                                    +" ${set.name} "
+                                    small { +"— ${set.slideCount} slides" }
+                                    if (set.alreadyExists) {
+                                        small { +" — all slides already exist, skipped" }
+                                    } else if (set.existingCount > 0) {
+                                        small { +" — ${set.existingCount} already exist, skipped" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 submitButton("Import selected")
             }
         }
@@ -300,9 +350,12 @@ object PartyTemplatePages {
                     if (report.skippedEvents.isNotEmpty()) li { +"Events skipped (already exist): ${report.skippedEvents.joinToString()}" }
                     if (report.createdTriggers > 0) li { +"Schedule triggers created: ${report.createdTriggers}" }
                     if (report.droppedTriggers.isNotEmpty()) li { +"Triggers left out: ${report.droppedTriggers.joinToString()}" }
+                    if (report.createdSlides.isNotEmpty()) li { +"Info screen slides created: ${report.createdSlides.joinToString()}" }
+                    if (report.skippedSlides.isNotEmpty()) li { +"Info screen slides skipped (already exist): ${report.skippedSlides.joinToString()}" }
                     if (!report.generalRulesImported && report.importedSettings.isEmpty() &&
                         report.createdCompos.isEmpty() && report.skippedCompos.isEmpty() &&
-                        report.createdEvents.isEmpty() && report.skippedEvents.isEmpty()
+                        report.createdEvents.isEmpty() && report.skippedEvents.isEmpty() &&
+                        report.createdSlides.isEmpty() && report.skippedSlides.isEmpty()
                     ) {
                         li { +"Nothing was selected for import" }
                     }

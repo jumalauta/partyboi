@@ -37,7 +37,7 @@ class InfoScreenRepository(app: AppServices) : Service(app) {
         }
     }
 
-    suspend fun upsertSlideSet(id: String, name: String, icon: String) = db.use {
+    suspend fun upsertSlideSet(id: String, name: String, icon: String, tx: TransactionalSession? = null) = db.use(tx) {
         exec(
             queryOf(
                 """

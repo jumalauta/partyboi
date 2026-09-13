@@ -78,6 +78,34 @@
             "defaultSlotSec": 60
         }
     ],
+    "slideSets": [
+        {
+            "id": "default",
+            "name": "Default",
+            "icon": "circle-info",
+            "slides": [
+                {
+                    "type": "text",
+                    "title": "Welcome to Example Party",
+                    "content": "Enjoy the party! Remember to submit your entries and vote for your favorites.\n\nFollow the schedule on this screen and on the party website.",
+                    "visible": true
+                },
+                {
+                    "type": "qrCode",
+                    "title": "Party website",
+                    "qrcode": "https://party.example.org",
+                    "description": "Entry submission, voting and the live schedule.",
+                    "visible": true
+                },
+                {
+                    "type": "text",
+                    "title": "Wifi",
+                    "content": "Network: `exampleparty`\n\nPassword: ask the info desk.",
+                    "visible": true
+                }
+            ]
+        }
+    ],
     "events": [
         {
             "name": "Doors open",

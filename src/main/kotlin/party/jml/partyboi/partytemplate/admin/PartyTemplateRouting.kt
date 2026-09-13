@@ -94,6 +94,7 @@ fun Application.configurePartyTemplateRouting(app: AppServices) {
             resultsFileHeader = app.settings.resultsFileHeader.get().bind(),
             compos = app.compos.getAllCompos().bind(),
             events = app.events.getAll().bind(),
+            slideSets = app.partyTemplates.exportableSlideSets().bind(),
             timeZone = app.time.timeZone(),
         )
     }

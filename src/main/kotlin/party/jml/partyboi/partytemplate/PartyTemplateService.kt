@@ -11,6 +11,7 @@ import party.jml.partyboi.form.Custom
 import party.jml.partyboi.form.Field
 import party.jml.partyboi.form.FileUpload
 import party.jml.partyboi.form.Hidden
+import party.jml.partyboi.infoscreen.SlideSetRow
 import party.jml.partyboi.schedule.NewEvent
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.validation.Validateable
@@ -52,7 +53,30 @@ class PartyTemplateService(app: AppServices) : Service(app) {
             resultsFileHeader = if (selection.resultsFileHeader) app.settings.resultsFileHeader.get().bind() else null,
             compos = compos.map { TemplateCompo.fromCompo(it) },
             events = templateEvents,
+            slideSets = exportableSlideSets().bind()
+                .filter { (set, _) -> selection.slideSetIds.contains(set.id) }
+                .map { (set, slides) ->
+                    TemplateSlideSet(
+                        id = set.id,
+                        name = set.name,
+                        icon = set.icon,
+                        slides = slides,
+                    )
+                },
         )
+    }
+
+    // Slide sets with the slides a template can carry (text and QR code, not
+    // generated). The ad hoc set is runtime state and never exported.
+    suspend fun exportableSlideSets(): AppResult<List<Pair<SlideSetRow, List<TemplateSlide>>>> = either {
+        app.screen.getSlideSets().bind()
+            .filter { it.id != SlideSetRow.ADHOC }
+            .map { set ->
+                val slides = app.screen.getSlideSet(set.id).bind()
+                    .filter { !it.readOnly }
+                    .mapNotNull { row -> TemplateSlide.fromSlide(row.getSlide(), row.visible) }
+                set to slides
+            }
     }
 
     suspend fun analyze(template: PartyTemplate): AppResult<ImportPreview> = either {
@@ -89,8 +113,23 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                     triggerLabels = event.triggers.map { it.label(template.compos) },
                 )
             },
+            slideSets = template.slideSets.mapIndexed { index, set ->
+                val existingNames = existingSlideNames(set.id).bind()
+                PreviewSlideSet(
+                    index = index,
+                    name = set.name,
+                    slideCount = set.slides.size,
+                    existingCount = set.slides.count { existingNames.contains(it.slideName().normalized()) },
+                )
+            },
         )
     }
+
+    // Names of the slides already in a slide set; empty when the set does not exist.
+    private suspend fun existingSlideNames(slideSetId: String): AppResult<Set<String>> =
+        app.screen.getSlideSet(slideSetId).map { rows ->
+            rows.map { it.getSlide().getName().normalized() }.toSet()
+        }
 
     suspend fun import(template: PartyTemplate, selection: ImportSelection): AppResult<ImportReport> = either {
         val partyStart = requirePartyStartDate().bind()
@@ -100,6 +139,10 @@ class PartyTemplateService(app: AppServices) : Service(app) {
         val tzAt = importedTz?.let { tz -> { _: LocalDate -> tz } } ?: timeZoneResolver().bind()
         val existingCompos = app.compos.getAllCompos().bind()
         val existingEvents = app.events.getAll().bind()
+        val existingSlideSets = app.screen.getSlideSets().bind().map { it.id }.toSet()
+        val existingSlideNamesBySet = template.slideSets.associate { set ->
+            set.id to existingSlideNames(set.id).bind()
+        }
 
         val report = app.db.transaction {
             either {
@@ -167,6 +210,38 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                     }
                 }
 
+                val createdSlides = mutableListOf<String>()
+                val skippedSlides = mutableListOf<String>()
+
+                template.slideSets.forEachIndexed { index, templateSet ->
+                    if (templateSet.id == SlideSetRow.ADHOC) return@forEachIndexed
+                    val selected = selection.slideSets.contains(index)
+                    if (selected && !existingSlideSets.contains(templateSet.id)) {
+                        app.screen.upsertSlideSet(
+                            templateSet.id, templateSet.name, templateSet.icon, this@transaction
+                        ).bind()
+                    }
+                    // Same-named slides are reported as skipped even when the set is
+                    // unselected (its checkbox may be disabled, and disabled controls
+                    // are never submitted); names seen during this import count too.
+                    val seenNames = (existingSlideNamesBySet[templateSet.id] ?: emptySet()).toMutableSet()
+                    templateSet.slides.forEach { slide ->
+                        val name = slide.slideName().normalized()
+                        when {
+                            seenNames.contains(name) ->
+                                skippedSlides.add("${templateSet.name}: ${slide.slideName()}")
+
+                            selected -> {
+                                seenNames.add(name)
+                                app.screen.addSlide(
+                                    templateSet.id, slide.toSlide(), slide.visible, this@transaction
+                                ).bind()
+                                createdSlides.add("${templateSet.name}: ${slide.slideName()}")
+                            }
+                        }
+                    }
+                }
+
                 ImportReport(
                     createdCompos = createdCompos,
                     skippedCompos = skippedCompos,
@@ -174,6 +249,8 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                     skippedEvents = skippedEvents,
                     createdTriggers = createdTriggers,
                     droppedTriggers = droppedTriggers,
+                    createdSlides = createdSlides,
+                    skippedSlides = skippedSlides,
                     generalRulesImported = false,
                     importedSettings = emptyList(),
                 )
@@ -240,6 +317,8 @@ data class ExportSelection(
     val compoIds: List<UUID>,
     @Custom
     val eventIds: List<UUID>,
+    @Custom
+    val slideSetIds: List<String>,
 ) : Validateable<ExportSelection>
 
 data class TemplateUpload(
@@ -270,6 +349,8 @@ data class ImportSelection(
     val compos: List<Int>,
     @Custom
     val events: List<Int>,
+    @Custom
+    val slideSets: List<Int>,
 ) : Validateable<ImportSelection>
 
 data class ImportPreview(
@@ -286,9 +367,11 @@ data class ImportPreview(
     val resultsFileHeaderOverwrite: Boolean,
     val compos: List<PreviewItem>,
     val events: List<PreviewEvent>,
+    val slideSets: List<PreviewSlideSet>,
 ) {
     val hasSettings = partyDays != null || timeZone != null || resultsFileHeader != null
-    val hasNothing = !hasGeneralRules && !hasSettings && compos.isEmpty() && events.isEmpty()
+    val hasNothing =
+        !hasGeneralRules && !hasSettings && compos.isEmpty() && events.isEmpty() && slideSets.isEmpty()
 }
 
 data class PreviewItem(
@@ -306,6 +389,15 @@ data class PreviewEvent(
     val triggerLabels: List<String>,
 )
 
+data class PreviewSlideSet(
+    val index: Int,
+    val name: String,
+    val slideCount: Int,
+    val existingCount: Int,
+) {
+    val alreadyExists = slideCount > 0 && existingCount == slideCount
+}
+
 data class ImportReport(
     val createdCompos: List<String>,
     val skippedCompos: List<String>,
@@ -313,6 +405,8 @@ data class ImportReport(
     val skippedEvents: List<String>,
     val createdTriggers: Int,
     val droppedTriggers: List<String>,
+    val createdSlides: List<String>,
+    val skippedSlides: List<String>,
     val generalRulesImported: Boolean,
     val importedSettings: List<String>,
 )
