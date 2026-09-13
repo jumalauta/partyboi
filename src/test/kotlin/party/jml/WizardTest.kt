@@ -55,7 +55,7 @@ class WizardTest : PartyboiTester {
     }
 
     @Test
-    fun testWizardSaveRedirectsToVoteKeys() = test {
+    fun testWizardSaveGoesToImportStepAndSkipCompletes() = test {
         setupServices {
             either {
                 addTestAdmin(this@setupServices).bind()
@@ -64,6 +64,7 @@ class WizardTest : PartyboiTester {
         }
         it.login("admin")
 
+        // Step 1 saves the settings and continues to the template import step.
         it.post("/wizard", formData {
             append("resultsFileHeader", "")
             append("colorScheme", "Blue")
@@ -71,8 +72,16 @@ class WizardTest : PartyboiTester {
             append("partyStartDate", "2026-07-15")
             append("partyDays", "3")
         }) {
-            it.redirectsTo("/admin/voting")
+            it.redirectsTo("/wizard/import")
         }
+
+        it.get("/wizard/import", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("input[name=file]") { attribute("type").toBe("file") }
+        }
+
+        // Skipping the import step completes the wizard (client follows the redirect).
+        it.get("/wizard/skip", HttpStatusCode.OK) { relaxed = true }
 
         // After completing the wizard, normal admin pages are reachable again.
         it.get("/admin/settings", HttpStatusCode.OK) {

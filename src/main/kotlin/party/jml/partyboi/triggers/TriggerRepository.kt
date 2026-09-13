@@ -56,7 +56,7 @@ class TriggerRepository(app: AppServices) : Service(app) {
                         signal.toString(),
                         action.javaClass.name,
                         action.toJson(),
-                        action.description(app).bind(),
+                        action.description(app, tx).bind(),
                     ).map(TriggerRow.fromRow)
                 )
             }.flatten()

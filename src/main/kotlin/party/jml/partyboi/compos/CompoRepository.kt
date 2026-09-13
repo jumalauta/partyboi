@@ -45,6 +45,26 @@ class CompoRepository(app: AppServices) : Service(app) {
         )
     }
 
+    suspend fun create(compo: Compo, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
+        one(
+            queryOf(
+                """
+                INSERT INTO compo (name, rules, formats, require_file, manual_results, hide_author, changeover_sec, default_slot_sec, visible)
+                VALUES (?, ?, ?, ?::boolean, ?, ?, ?, ?, false)
+                RETURNING *
+                """,
+                compo.name,
+                compo.rules,
+                compo.fileFormats.map { it.name }.toTypedArray(),
+                compo.requireFile.toDatabaseEnum(),
+                compo.manualResults,
+                compo.hideAuthor,
+                compo.changeoverSec,
+                compo.defaultSlotSec,
+            ).map(Compo.fromRow)
+        )
+    }
+
     suspend fun update(compo: Compo): AppResult<Unit> =
         db.use {
             updateOne(

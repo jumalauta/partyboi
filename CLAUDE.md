@@ -88,6 +88,18 @@ FFmpeg runs inside Docker containers for media processing. Files are shared via 
 
 Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry preview assets. Future previews will include audio snippets and video clips, so use neutral, capability-oriented names like `thumbnail` (small inline representation) and `previewFile` / `preview_file` (the full asset the user opens). The 400px JPEG in the `preview` table's `file_id` column is conceptually the thumbnail; the new full version goes in `preview_file_id`.
 
+## Party templates
+
+`partytemplate/` exports the reusable party setup (general compo rules, compos, schedule events incl. their
+triggers) as a versioned JSON file and imports it into a fresh instance — from the admin settings page or as
+step 2 of the setup wizard (`/wizard/import`). Event times are stored wall-clock relative to the party start
+date (`RelativeTime(dayOffset, "HH:mm")`) and remapped to the importing instance's start date; triggers
+reference compos by index in the template's compos list and are rewired to the created (or same-named
+existing) compo UUIDs. Export and import both show per-item checkbox selection; same-named compos/events are
+never duplicated on import. The parsed template travels between the selection and confirm steps in a hidden
+base64 form field. Import runs in one `db.transaction` except general rules, which are a property-store write
+after commit (the property store is not tx-capable).
+
 ## Sync reconciliation
 
 Sync (`sync/`) merges whole tables by primary key with last-writer-wins and never propagates deletions. When two

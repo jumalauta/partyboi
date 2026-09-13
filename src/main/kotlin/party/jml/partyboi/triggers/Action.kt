@@ -3,13 +3,14 @@ package party.jml.partyboi.triggers
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.system.AppResult
 import java.util.*
 
 sealed interface Action {
-    suspend fun description(app: AppServices): AppResult<String>
+    suspend fun description(app: AppServices, tx: TransactionalSession? = null): AppResult<String>
     suspend fun apply(app: AppServices): AppResult<Unit>
     fun toJson(): String
 }
@@ -20,8 +21,8 @@ data class OpenCloseVoting(
     val compoId: UUID,
     val open: Boolean,
 ) : Action {
-    override suspend fun description(app: AppServices): AppResult<String> = either {
-        val compo = app.compos.getById(compoId).bind()
+    override suspend fun description(app: AppServices, tx: TransactionalSession?): AppResult<String> = either {
+        val compo = app.compos.getById(compoId, tx).bind()
         "${if (open) "Open" else "Close"} voting in ${compo.displayName}"
     }
 
@@ -35,8 +36,8 @@ data class OpenCloseSubmitting(
     val compoId: UUID,
     val open: Boolean,
 ) : Action {
-    override suspend fun description(app: AppServices): AppResult<String> = either {
-        val compo = app.compos.getById(compoId).bind()
+    override suspend fun description(app: AppServices, tx: TransactionalSession?): AppResult<String> = either {
+        val compo = app.compos.getById(compoId, tx).bind()
         "${if (open) "Open" else "Close"} submitting entries to ${compo.displayName}"
     }
 
@@ -46,7 +47,7 @@ data class OpenCloseSubmitting(
 
 @Serializable
 data object CloseVotingForAllCompos : Action {
-    override suspend fun description(app: AppServices): AppResult<String> =
+    override suspend fun description(app: AppServices, tx: TransactionalSession?): AppResult<String> =
         either { "Close voting for all compos" }
 
     override suspend fun apply(app: AppServices): AppResult<Unit> = either {
