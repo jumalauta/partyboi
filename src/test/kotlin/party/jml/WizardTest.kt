@@ -18,13 +18,14 @@ class WizardTest : PartyboiTester {
         }
         it.login("admin")
 
-        // Admin navigating to any admin page is redirected to the wizard.
+        // Admin navigating to any admin page is redirected to the wizard, which
+        // starts with the template import step.
         it.get("/admin/settings", HttpStatusCode.OK) {
             relaxed = true
             findFirst("h1") { text.toBe("Welcome to Partyboi") }
-            // The wizard asks for the party dates.
+            // The import step asks for the party start date and the template file.
             findFirst("input[name=partyStartDate]") { attribute("type").toBe("date") }
-            findFirst("input[name=partyDays]") { attribute("value").toBe("3") }
+            findFirst("input[name=file]") { attribute("type").toBe("file") }
         }
 
         // Front page also redirects an incomplete-wizard admin.
@@ -55,7 +56,7 @@ class WizardTest : PartyboiTester {
     }
 
     @Test
-    fun testWizardSaveGoesToImportStepAndSkipCompletes() = test {
+    fun testWizardSkipGoesToSettingsAndSaveCompletes() = test {
         setupServices {
             either {
                 addTestAdmin(this@setupServices).bind()
@@ -64,24 +65,24 @@ class WizardTest : PartyboiTester {
         }
         it.login("admin")
 
-        // Step 1 saves the settings and continues to the template import step.
-        it.post("/wizard", formData {
+        // Step 1 is the template import; skipping it leads to the settings step
+        // (the client follows the redirect).
+        it.get("/wizard/skip", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("h1") { text.toBe("Welcome to Partyboi") }
+            findFirst("input[name=partyDays]") { attribute("value").toBe("3") }
+        }
+
+        // Saving the settings step completes the wizard.
+        it.post("/wizard/settings", formData {
             append("resultsFileHeader", "")
             append("colorScheme", "Blue")
             append("timeZone", "Europe/Helsinki")
             append("partyStartDate", "2026-07-15")
             append("partyDays", "3")
         }) {
-            it.redirectsTo("/wizard/import")
+            it.redirectsTo("/admin/voting")
         }
-
-        it.get("/wizard/import", HttpStatusCode.OK) {
-            relaxed = true
-            findFirst("input[name=file]") { attribute("type").toBe("file") }
-        }
-
-        // Skipping the import step completes the wizard (client follows the redirect).
-        it.get("/wizard/skip", HttpStatusCode.OK) { relaxed = true }
 
         // After completing the wizard, normal admin pages are reachable again.
         it.get("/admin/settings", HttpStatusCode.OK) {

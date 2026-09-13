@@ -92,8 +92,8 @@ Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry prev
 
 `partytemplate/` exports the reusable party setup (general compo rules, party length, time zone, results.txt
 header, compos, schedule events incl. their triggers) as a versioned JSON file and imports it into a fresh
-instance — from the admin settings page or as
-step 2 of the setup wizard (`/wizard/import`). Event times are stored wall-clock relative to the party start
+instance — from the admin settings page or as step 1 of the setup wizard (import first, with the party start
+date asked on the import form; the settings step follows and completes the wizard). Event times are stored wall-clock relative to the party start
 date (`RelativeTime(dayOffset, "HH:mm")`) and remapped to the importing instance's start date; triggers
 reference compos by index in the template's compos list and are rewired to the created (or same-named
 existing) compo UUIDs. Export and import both show per-item checkbox selection; same-named compos/events are

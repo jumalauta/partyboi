@@ -236,7 +236,7 @@ class PartyTemplateTest : PartyboiTester {
     }
 
     @Test
-    fun testWizardImportCompletesWizard() = test {
+    fun testWizardImportThenSettingsCompletesWizard() = test {
         var app: AppServices? = null
         setupServices {
             app = this
@@ -247,32 +247,55 @@ class PartyTemplateTest : PartyboiTester {
         }
         it.login("admin")
 
-        it.post("/wizard", formData {
-            append("resultsFileHeader", "")
-            append("colorScheme", "Blue")
-            append("timeZone", "Europe/Helsinki")
-            append("partyStartDate", "2026-07-15")
-            append("partyDays", "3")
-        }) {
-            it.redirectsTo("/wizard/import")
-        }
-
+        // The import step (step 1) takes the party start date together with the file,
+        // so the imported schedule can be placed on the party days.
         val json = TemplateJson.encodeToString(testTemplate())
-        val payload = it.post("/wizard/import", templateFilePart(json)) {
+        val payload = it.post("/wizard/import", formData {
+            append("partyStartDate", "2026-07-15")
+            append("file", json.toByteArray(), headers {
+                append("Content-Type", "application/json")
+                append("Content-Disposition", "form-data; name=\"file\"; filename=\"template.json\"")
+            })
+        }) {
             findFirst("input[name=payload]") { attribute("value") }
         }
 
         it.post("/wizard/import/confirm", formData {
             append("payload", payload)
             append("generalRules", "on")
+            append("partyDays", "on")
+            append("timeZone", "on")
             append("compos", "0")
             append("events", "0")
         }) {
             findFirst("h1") { text.toBe("Party template imported") }
         }
 
-        assertEquals(true, app!!.settings.wizardCompleted.get().getOrNull())
+        // The import is done but the wizard continues to the settings step.
+        assertEquals(false, app!!.settings.wizardCompleted.get().getOrNull())
+        assertEquals(LocalDate(2026, 7, 15), app!!.settings.partyStartDate.get().getOrNull())
         assertEquals(1, app!!.compos.getAllCompos().getOrNull()!!.size)
+        val event = app!!.events.getAll().getOrNull()!!.single()
+        assertEquals(LocalDateTime(2026, 7, 16, 12, 0).toInstant(tz), event.startTime)
+
+        // The settings step (step 2) is prefilled from the import and completes the wizard.
+        it.get("/wizard/settings", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("input[name=partyStartDate]") { attribute("value").toBe("2026-07-15") }
+            findFirst("input[name=partyDays]") { attribute("value").toBe("4") }
+        }
+
+        it.post("/wizard/settings", formData {
+            append("resultsFileHeader", "")
+            append("colorScheme", "Blue")
+            append("timeZone", "Europe/Helsinki")
+            append("partyStartDate", "2026-07-15")
+            append("partyDays", "4")
+        }) {
+            it.redirectsTo("/admin/voting")
+        }
+
+        assertEquals(true, app!!.settings.wizardCompleted.get().getOrNull())
 
         // The wizard is done; normal admin pages are reachable.
         it.get("/admin/settings", HttpStatusCode.OK) {
