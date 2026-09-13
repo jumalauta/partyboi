@@ -44,9 +44,14 @@ object PartyTemplatePages {
                             type = InputType.checkBox
                             checked = generalRules.isNotBlank()
                         }
-                        +" General compo rules"
-                        if (generalRules.isBlank()) {
-                            small { +" (empty)" }
+                        // Pico turns a small adjacent to an input into a full-width
+                        // helper-text block; wrapping the label text in a span keeps
+                        // the smalls inline.
+                        span {
+                            +" General compo rules"
+                            if (generalRules.isBlank()) {
+                                small { +" (empty)" }
+                            }
                         }
                     }
                 }
@@ -76,8 +81,10 @@ object PartyTemplatePages {
                                 value = event.id.toString()
                                 checked = true
                             }
-                            +" ${event.name}"
-                            small { +" — ${event.startTime.displayDateTime(timeZone)}" }
+                            span {
+                                +" ${event.name} "
+                                small { +"— ${event.startTime.displayDateTime(timeZone)}" }
+                            }
                         }
                     }
                 }
@@ -118,9 +125,13 @@ object PartyTemplatePages {
                                 type = InputType.checkBox
                                 checked = !preview.generalRulesOverwrite
                             }
-                            +" General compo rules"
-                            if (preview.generalRulesOverwrite) {
-                                small { +" — overwrites the current general rules" }
+                            // Spans keep the smalls inline; a small adjacent to an
+                            // input is styled as a full-width helper-text block by Pico.
+                            span {
+                                +" General compo rules"
+                                if (preview.generalRulesOverwrite) {
+                                    small { +" — overwrites the current general rules" }
+                                }
                             }
                         }
                     }
@@ -137,9 +148,11 @@ object PartyTemplatePages {
                                     checked = !compo.alreadyExists
                                     disabled = compo.alreadyExists
                                 }
-                                +" ${compo.name}"
-                                if (compo.alreadyExists) {
-                                    small { +" — already exists, skipped" }
+                                span {
+                                    +" ${compo.name}"
+                                    if (compo.alreadyExists) {
+                                        small { +" — already exists, skipped" }
+                                    }
                                 }
                             }
                         }
@@ -157,10 +170,12 @@ object PartyTemplatePages {
                                     checked = !event.alreadyExists
                                     disabled = event.alreadyExists
                                 }
-                                +" ${event.name}"
-                                small { +" — ${event.startTime.displayDateTime(timeZone)}" }
-                                if (event.alreadyExists) {
-                                    small { +" — already exists, skipped" }
+                                span {
+                                    +" ${event.name} "
+                                    small { +"— ${event.startTime.displayDateTime(timeZone)}" }
+                                    if (event.alreadyExists) {
+                                        small { +" — already exists, skipped" }
+                                    }
                                 }
                             }
                             event.triggerLabels.forEach { trigger ->
