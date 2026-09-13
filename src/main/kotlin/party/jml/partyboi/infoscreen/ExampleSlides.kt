@@ -14,6 +14,8 @@ import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.system.TimeService
 import java.util.*
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 data class ExampleSlide(
@@ -46,14 +48,14 @@ fun getRenderedExampleSlides(app: AppServices): List<RenderedExampleSlide> {
 
 fun getExampleSlides() = listOf(
     ExampleSlide(
-        "Short info text",
+        "Short info",
         TextSlide(
             "Welcome to the party!",
             "Lovely to see you."
         )
     ),
     ExampleSlide(
-        "Text slide with a list",
+        "Text & list",
         TextSlide(
             "Party wi-fi",
             """
@@ -65,7 +67,7 @@ fun getExampleSlides() = listOf(
         )
     ),
     ExampleSlide(
-        "Text slide with too much text",
+        "Wall of text",
         TextSlide(
             "Lorem ipsum dolor sit amet",
             """
@@ -84,7 +86,7 @@ fun getExampleSlides() = listOf(
         )
     ),
     ExampleSlide(
-        "Image slide",
+        "Image",
         ImageSlide("example.jpg")
     ),
     ExampleSlide(
@@ -96,7 +98,7 @@ fun getExampleSlides() = listOf(
         )
     ),
     ExampleSlide(
-        "QR Code with too much text",
+        "QR Code & text",
         QrCodeSlide(
             "Lorem ipsum dolor sit amet",
             "a",
@@ -120,7 +122,7 @@ fun getExampleSlides() = listOf(
         ScheduleSlide(LocalDate.fromEpochDays(0))
     ),
     ExampleSlide(
-        "Compo starts soon",
+        "Starts soon",
         TextSlide.compoStartsSoon("Combined Demo")
     ),
     ExampleSlide(
@@ -155,8 +157,46 @@ fun getExampleSlides() = listOf(
         )
     ),
     ExampleSlide(
+        "Compo entry + chips",
+        TextSlide.compoSlide(
+            1,
+            Entry(
+                id = UUID.randomUUID(),
+                title = "Neural Nightdrive",
+                author = "Jumalauta",
+                screenComment = "Made in a hurry on the bus. All greetings to everyone!",
+                orgComment = null,
+                compoId = UUID.randomUUID(),
+                userId = UUID.randomUUID(),
+                qualified = true,
+                runOrder = 1,
+                timestamp = Instant.DISTANT_PAST,
+                allowEdit = false,
+                duration = null,
+                remote = true,
+                aiGenerated = true,
+            ),
+            hideAuthor = false,
+        )
+    ),
+    ExampleSlide(
         "Compo has ended",
         TextSlide.compoHasEnded("Combined Demo")
+    ),
+    ExampleSlide(
+        "Timer",
+        TimerSlide(
+            message = "Voting for **Combined Demo** closes soon!",
+            endsAtEpochMs = Clock.System.now().plus(5.minutes).toEpochMilliseconds(),
+        )
+    ),
+    ExampleSlide(
+        "Timer at zero",
+        TimerSlide(
+            message = "Voting for **Combined Demo** has closed.",
+            endsAtEpochMs = Clock.System.now().toEpochMilliseconds(),
+            finished = true,
+        )
     ),
 )
 
