@@ -65,11 +65,13 @@ class InstanceClient(
     /**
      * Complete the first-run setup wizard. A fresh instance redirects every admin request to
      * /wizard until the wizard has been submitted, so the harness must run it once right after
-     * logging in as admin. Sends the GeneralSettings step with harmless defaults.
+     * logging in as admin. The wizard's first step (template import) is skippable; submitting
+     * the settings step is what marks the wizard completed, so post it directly with harmless
+     * defaults.
      */
     suspend fun completeWizard() {
         postMultipart(
-            "/wizard",
+            "/wizard/settings",
             listOf(
                 "resultsFileHeader" to "",
                 "colorScheme" to "Blue",
