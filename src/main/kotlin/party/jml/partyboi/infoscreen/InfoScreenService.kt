@@ -30,6 +30,10 @@ class InfoScreenService(app: AppServices) : Service(app) {
     private var autoRunTimer: Timer? = null
     private val autoRunOn = property("autoRunOn", false)
 
+    // Per-slide-set round-robin offsets into the visible image slides, so the throttled
+    // image window keeps advancing across restarts and slide set switches.
+    private val imageCursors = property("imageCursors", emptyMap<String, Int>())
+
     init {
         runBlocking {
             repository.getAdHoc().map { row -> row?.let { state.emit(InfoScreenState.fromRow(it)) } }
@@ -134,6 +138,9 @@ class InfoScreenService(app: AppServices) : Service(app) {
 
     suspend fun setRunOrder(id: UUID, order: Int) = repository.setRunOrder(id, order)
 
+    suspend fun setMaxImageSlides(id: String, value: Int?, tx: TransactionalSession? = null) =
+        repository.setMaxImageSlides(id, value, tx)
+
     suspend fun stopSlideSet() {
         autoRunTimer?.cancel()
         autoRunTimer = null
@@ -141,7 +148,7 @@ class InfoScreenService(app: AppServices) : Service(app) {
     }
 
     suspend fun startSlideSet(slideSetName: String): AppResult<Unit> =
-        repository.getFirstSlide(slideSetName).map { firstScreen ->
+        nextSlide(slideSetName, currentId = null).map { firstScreen ->
             showSlide(firstScreen)
             startAutoRunScheduler()
         }
@@ -176,7 +183,7 @@ class InfoScreenService(app: AppServices) : Service(app) {
 
     suspend fun showNext() {
         state.value.slideSet?.let { slideSet ->
-            repository.getNext(slideSet, state.value.id).fold(
+            nextSlide(slideSet, state.value.id).fold(
                 { stopSlideSet() },
                 {
                     showSlide(it)
@@ -189,8 +196,23 @@ class InfoScreenService(app: AppServices) : Service(app) {
         if (state.value.slideSet == slideSetName) {
             showNext().right()
         } else {
-            repository.getFirstSlide(slideSetName).map { showSlide(it) }
+            nextSlide(slideSetName, currentId = null).map { showSlide(it) }
         }
+
+    // Picks the next slide of a set, throttling image slides to the set's maxImageSlides
+    // per rotation pass. Manual paths (showStoredSlide, the presentation stepping routes)
+    // bypass this on purpose: an admin's explicit choice always wins.
+    private suspend fun nextSlide(slideSet: String, currentId: UUID?): AppResult<SlideRow> = either {
+        val slides = repository.getSlideSetSlides(slideSet).bind()
+        val maxImageSlides = repository.getSlideSet(slideSet).bind().maxImageSlides
+        val cursors = imageCursors.get().bind()
+        val cursor = cursors[slideSet] ?: 0
+        val result = SlideRotation.next(slides, currentId, maxImageSlides, cursor).bind()
+        if (result.cursor != cursor) {
+            imageCursors.set(cursors + (slideSet to result.cursor)).bind()
+        }
+        result.slide
+    }
 
     fun getThemeInfo(): ThemeInfo {
         return try {

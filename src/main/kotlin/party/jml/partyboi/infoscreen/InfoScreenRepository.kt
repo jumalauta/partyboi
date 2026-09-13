@@ -1,8 +1,6 @@
 package party.jml.partyboi.infoscreen
 
 import arrow.core.raise.either
-import arrow.core.raise.ensureNotNull
-import arrow.core.toNonEmptyListOrNone
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -10,8 +8,6 @@ import kotliquery.Row
 import kotliquery.TransactionalSession
 import party.jml.partyboi.AppServices
 import party.jml.partyboi.Service
-import party.jml.partyboi.data.InvalidInput
-import party.jml.partyboi.data.Numbers.positiveIntOrNull
 import party.jml.partyboi.data.UUIDSerializer
 import party.jml.partyboi.data.throwOnError
 import party.jml.partyboi.db.*
@@ -57,6 +53,15 @@ class InfoScreenRepository(app: AppServices) : Service(app) {
     suspend fun getSlideSets(): AppResult<List<SlideSetRow>> = db.use {
         many(queryOf("SELECT * FROM slideset ORDER BY name").map(SlideSetRow.fromRow))
     }
+
+    suspend fun getSlideSet(id: String): AppResult<SlideSetRow> = db.use {
+        one(queryOf("SELECT * FROM slideset WHERE id = ?", id).map(SlideSetRow.fromRow))
+    }
+
+    suspend fun setMaxImageSlides(id: String, value: Int?, tx: TransactionalSession? = null): AppResult<Unit> =
+        db.use(tx) {
+            updateOne(queryOf("UPDATE slideset SET max_image_slides = ? WHERE id = ?", value, id))
+        }
 
     suspend fun adHocExists(tx: TransactionalSession?) = db.use(tx) {
         one(queryOf("SELECT count(*) FROM slide WHERE slideset_id = ?", SlideSetRow.ADHOC).map(asBoolean))
@@ -137,8 +142,20 @@ class InfoScreenRepository(app: AppServices) : Service(app) {
         updateOne(queryOf("DELETE FROM slideset WHERE id = ?", id))
     }
 
-    suspend fun deleteAll(): AppResult<Unit> = db.use {
-        exec(queryOf("DELETE FROM slide"))
+    // Full reset for tests: also removes non-builtin slide sets and clears the builtin
+    // sets' per-set settings, so state cannot leak from one test to the next.
+    suspend fun deleteAll(): AppResult<Unit> = db.transaction {
+        either {
+            exec(queryOf("DELETE FROM slide")).bind()
+            exec(
+                queryOf(
+                    "DELETE FROM slideset WHERE id NOT IN (?, ?)",
+                    SlideSetRow.ADHOC,
+                    SlideSetRow.DEFAULT
+                )
+            ).bind()
+            exec(queryOf("UPDATE slideset SET max_image_slides = NULL")).bind()
+        }
     }
 
     suspend fun replaceGeneratedSlideSet(slideSet: String, slides: List<Slide<*>>): AppResult<List<SlideRow>> =
@@ -149,28 +166,6 @@ class InfoScreenRepository(app: AppServices) : Service(app) {
                     .bindAll()
             }
         }
-
-    suspend fun getFirstSlide(slideSet: String): AppResult<SlideRow> = db.use {
-        one(
-            queryOf(
-                "SELECT * FROM slide WHERE slideset_id = ? AND visible ORDER BY run_order, id LIMIT 1",
-                slideSet
-            ).map(SlideRow.fromRow)
-        )
-    }
-
-    suspend fun getNext(slideSet: String, currentId: UUID): AppResult<SlideRow> = either {
-        val slides = getSlideSetSlides(slideSet).bind()
-        val index = ensureNotNull(positiveIntOrNull(slides.indexOfFirst { it.id == currentId })) {
-            InvalidInput("$currentId not in slide set '$slideSet'")
-        }
-        (slides.slice((index + 1)..<(slides.size)) + slides.slice(0..index))
-            .filter { it.visible }
-            .toNonEmptyListOrNone()
-            .toEither { InvalidInput("No visible slides in slide set '$slideSet'") }
-            .map { it.first() }
-            .bind()
-    }
 
     suspend fun setVisible(id: UUID, visible: Boolean): AppResult<Unit> = db.use {
         updateOne(queryOf("UPDATE slide SET visible = ? WHERE id = ?", visible, id))
@@ -192,6 +187,8 @@ data class SlideSetRow(
     val id: String,
     val name: String,
     val icon: String,
+    // Max number of image slides shown per rotation pass; null = no limit.
+    val maxImageSlides: Int? = null,
 ) {
     fun toNavItem() = NavItem("/admin/screen/$id", name)
 
@@ -204,6 +201,7 @@ data class SlideSetRow(
                 id = row.string("id"),
                 name = row.string("name"),
                 icon = row.string("icon"),
+                maxImageSlides = row.intOrNull("max_image_slides"),
             )
         }
     }

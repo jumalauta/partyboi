@@ -131,6 +131,8 @@ data class TemplateSlideSet(
     val id: String,
     val name: String,
     val icon: String = "tv",
+    // Max image slides shown per rotation pass; null = no limit.
+    val maxImageSlides: Int? = null,
     val slides: List<TemplateSlide> = emptyList(),
 )
 

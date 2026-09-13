@@ -52,6 +52,20 @@ object AdminScreenPage {
             val slideSetName = slideSets.find { it.id == slideSet }?.name ?: "Slide set $slideSet"
             h1 { +slideSetName }
             div(classes = "title-row-actions") {
+                // Lives outside the reload section on purpose: the section is replaced on
+                // every slide change, which would wipe an in-progress edit of this field.
+                label {
+                    tooltip("How many image slides are shown per rotation round. Empty = all.")
+                    +"Images / round "
+                    input(type = InputType.number) {
+                        min = "0"
+                        style = "width: 5rem; display: inline-block"
+                        value = slideSets.find { it.id == slideSet }?.maxImageSlides?.toString() ?: ""
+                        placeholder = "all"
+                        attributes["data-save-url"] = "/admin/screen/slideset/$slideSet/maxImageSlides"
+                        attributes["aria-label"] = "Image slides per rotation round"
+                    }
+                }
                 a(href = "/admin/screen/new") {
                     attributes["role"] = "button"
                     icon("plus")

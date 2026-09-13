@@ -60,6 +60,7 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                         id = set.id,
                         name = set.name,
                         icon = set.icon,
+                        maxImageSlides = set.maxImageSlides,
                         slides = slides,
                     )
                 },
@@ -220,6 +221,9 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                         app.screen.upsertSlideSet(
                             templateSet.id, templateSet.name, templateSet.icon, this@transaction
                         ).bind()
+                        templateSet.maxImageSlides?.let {
+                            app.screen.setMaxImageSlides(templateSet.id, it, this@transaction).bind()
+                        }
                     }
                     // Same-named slides are reported as skipped even when the set is
                     // unselected (its checkbox may be disabled, and disabled controls

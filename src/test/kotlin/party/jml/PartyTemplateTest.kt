@@ -60,6 +60,7 @@ class PartyTemplateTest : PartyboiTester {
             TemplateSlideSet(
                 id = "info",
                 name = "Info",
+                maxImageSlides = 4,
                 slides = listOf(
                     TemplateTextSlide("Welcome", "Hello"),
                     TemplateQrCodeSlide("Website", "https://example.org", "Visit us"),
@@ -103,6 +104,7 @@ class PartyTemplateTest : PartyboiTester {
                     listOf(OpenCloseSubmitting(compo.id, false), CloseVotingForAllCompos),
                 ).bind()
                 eventId = event.id
+                screen.setMaxImageSlides("default", 5).bind()
                 screen.addSlide("default", TextSlide("Welcome", "Hello"), makeVisible = true).bind()
                 screen.addSlide("default", QrCodeSlide("Website", "https://example.org", "Visit us")).bind()
                 // Schedule slides are never exported.
@@ -165,6 +167,7 @@ class PartyTemplateTest : PartyboiTester {
         assertEquals(1, template.slideSets.size)
         val slideSet = template.slideSets.first()
         assertEquals("default", slideSet.id)
+        assertEquals(5, slideSet.maxImageSlides)
         assertEquals(
             listOf(
                 TemplateTextSlide("Welcome", "Hello", visible = true),
@@ -250,8 +253,10 @@ class PartyTemplateTest : PartyboiTester {
         )
         assertTrue(actions.any { it is CloseVotingForAllCompos }, "actions: $actions")
 
-        // The slide set was created with its text and QR code slides.
-        assertTrue(services.screen.getSlideSets().getOrNull()!!.any { it.id == "info" })
+        // The slide set was created with its text and QR code slides and its image
+        // slide throttle setting.
+        val infoSet = services.screen.getSlideSets().getOrNull()!!.find { it.id == "info" }
+        assertEquals(4, infoSet?.maxImageSlides)
         val slides = services.screen.getSlideSet("info").getOrNull()!!.map { it.getSlide() }
         assertEquals(2, slides.size)
         assertTrue(slides.any { it is TextSlide && it.title == "Welcome" && it.content == "Hello" })

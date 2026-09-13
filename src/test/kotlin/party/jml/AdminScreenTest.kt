@@ -138,4 +138,51 @@ class AdminScreenTest : PartyboiTester {
         assertEquals("Scan me", slide.description)
         assertEquals(true, rows[0].visible)
     }
+
+    // The image slide throttle is edited inline: the number input PUTs its value; an
+    // empty value clears the limit and invalid values are rejected without changes.
+    @Test
+    fun testMaxImageSlidesInlineEdit() = test {
+        var app: AppServices? = null
+        setupServices {
+            app = this
+            either { addTestAdmin(this@setupServices).bind() }
+        }
+        it.login("admin")
+
+        suspend fun maxImageSlides() = app!!.screen.getSlideSets().getOrNull()!!
+            .first { set -> set.id == SlideSetRow.DEFAULT }.maxImageSlides
+
+        it.putJson("/admin/screen/slideset/default/maxImageSlides", """{"value":"3"}""")
+        assertEquals(3, maxImageSlides())
+
+        it.get("/admin/screen/default", HttpStatusCode.OK) {
+            relaxed = true
+            findFirst("input[type=number]") { attribute("value").toBe("3") }
+        }
+
+        it.putJson(
+            "/admin/screen/slideset/default/maxImageSlides", """{"value":"-1"}""",
+            HttpStatusCode.BadRequest
+        )
+        it.putJson(
+            "/admin/screen/slideset/default/maxImageSlides", """{"value":"abc"}""",
+            HttpStatusCode.BadRequest
+        )
+        assertEquals(3, maxImageSlides())
+
+        it.putJson("/admin/screen/slideset/default/maxImageSlides", """{"value":""}""")
+        assertEquals(null, maxImageSlides())
+    }
+
+    private suspend fun TestHtmlClient.putJson(
+        url: String,
+        body: String,
+        expectedStatus: HttpStatusCode = HttpStatusCode.OK,
+    ) {
+        client.put(url) {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.apply { assertEquals(expectedStatus, status) }
+    }
 }

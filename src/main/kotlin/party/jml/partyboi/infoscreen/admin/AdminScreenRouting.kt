@@ -1,5 +1,6 @@
 package party.jml.partyboi.infoscreen.admin
 
+import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
 import io.ktor.server.application.*
@@ -21,6 +22,7 @@ import party.jml.partyboi.infoscreen.slides.ImageSlide
 import party.jml.partyboi.infoscreen.slides.QrCodeSlide
 import party.jml.partyboi.infoscreen.slides.Slide
 import party.jml.partyboi.infoscreen.slides.TextSlide
+import party.jml.partyboi.schedule.admin.ValueUpdate
 import party.jml.partyboi.system.AppResult
 import party.jml.partyboi.templates.Page
 import party.jml.partyboi.templates.Redirection
@@ -331,6 +333,21 @@ fun Application.configureAdminScreenRouting(app: AppServices) {
                     app.screen.stopSlideSet()
                     app.screen.showNext()
                 }
+            }
+        }
+
+        // Inline editing of the image slide throttle: the number input on the slide set
+        // page PUTs its single value; an empty value means "no limit".
+        put("/admin/screen/slideset/{id}/maxImageSlides") {
+            call.apiRespond {
+                call.userSession(app).bind()
+                val id = call.parameterString("id").bind()
+                val raw = call.receive<ValueUpdate>().value.trim()
+                val value = if (raw.isEmpty()) null else {
+                    raw.toIntOrNull()?.takeIf { it >= 0 }
+                        ?: InvalidInput("Image slide count must be a non-negative number").left().bind<Int>()
+                }
+                app.screen.setMaxImageSlides(id, value).bind()
             }
         }
 

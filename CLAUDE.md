@@ -102,6 +102,17 @@ never duplicated on import. The parsed template travels between the selection an
 base64 form field. Import runs in one `db.transaction` except general rules, which are a property-store write
 after commit (the property store is not tx-capable).
 
+## Info screen image slide throttling
+
+Image slides are low priority: `slideset.max_image_slides` (NULL = unlimited) caps how many image slides show
+per rotation pass, round-robining through the set's visible image slides so every one eventually airs. The
+selection logic is a pure function in `infoscreen/SlideRotation.kt` (unit-tested in `SlideRotationTest`); the
+per-set round-robin cursor is an `InfoScreenService` persisted property (`imageCursors`, a `Map<String, Int>`).
+The setting is edited inline on `/admin/screen/{slideSet}` (a `data-save-url` number input outside the reload
+section, PUT `/admin/screen/slideset/{id}/maxImageSlides`, empty = unlimited) and travels with party templates.
+Manual paths (show-this-slide, presentation stepping) bypass the throttle on purpose. Note: `upsertSlideSet`
+deliberately does not touch `max_image_slides` (it re-runs on every boot for the builtin sets).
+
 ## Sync reconciliation
 
 Sync (`sync/`) merges whole tables by primary key with last-writer-wins and never propagates deletions. When two
