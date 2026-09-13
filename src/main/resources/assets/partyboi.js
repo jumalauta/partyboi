@@ -7,6 +7,10 @@ function initInteractions(target) {
     submitBtns.forEach((submitBtn) => {
         submitBtn.addEventListener("click", (event) => {
             const form = submitBtn.form;
+            // Forms marked data-no-progress submit natively with no disable+progress
+            // treatment: a file download response never navigates the page, so the
+            // spinner and disabled button would otherwise stick around forever.
+            if (form && form.dataset.noProgress) return;
             submitBtn.setAttribute("disabled", "disabled");
             const progress = document.createElement("progress");
             submitBtn.after(progress);

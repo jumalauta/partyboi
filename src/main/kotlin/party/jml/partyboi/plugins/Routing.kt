@@ -18,6 +18,7 @@ import party.jml.partyboi.entries.configureEntriesRouting
 import party.jml.partyboi.frontpage.configureFrontPageRouting
 import party.jml.partyboi.infoscreen.admin.configureAdminScreenRouting
 import party.jml.partyboi.infoscreen.configureScreenRouting
+import party.jml.partyboi.partytemplate.admin.configurePartyTemplateRouting
 import party.jml.partyboi.qrcode.configureQrCodeRouting
 import party.jml.partyboi.schedule.admin.configureAdminScheduleRouting
 import party.jml.partyboi.schedule.configureScheduleRouting
@@ -89,4 +90,5 @@ fun Application.configureDefaultRouting(app: AppServices) {
     configureAdminTasksRouting(app)
     configureSyncRouting(app)
     configureWizardRouting(app)
+    configurePartyTemplateRouting(app)
 }

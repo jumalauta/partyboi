@@ -35,12 +35,28 @@ class CompoRepository(app: AppServices) : Service(app) {
         many(queryOf("select * from compo order by name").map(Compo.fromRow))
     }
 
-    suspend fun add(compo: NewCompo): AppResult<Compo> = db.use {
+    suspend fun add(compo: NewCompo): AppResult<Compo> =
+        create(Compo.Empty.copy(name = compo.name, rules = compo.rules))
+
+    // Inserts a new hidden compo from the given configuration. The id is generated
+    // by the database and the runtime-state fields (visible, allowSubmit, allowVote,
+    // publicResults) always start false regardless of what the passed Compo carries.
+    suspend fun create(compo: Compo, tx: TransactionalSession? = null): AppResult<Compo> = db.use(tx) {
         one(
             queryOf(
-                "insert into compo(name, rules, visible) values(?, ?, false) returning *",
+                """
+                INSERT INTO compo (name, rules, formats, require_file, manual_results, hide_author, changeover_sec, default_slot_sec, visible)
+                VALUES (?, ?, ?, ?::boolean, ?, ?, ?, ?, false)
+                RETURNING *
+                """,
                 compo.name,
-                compo.rules
+                compo.rules,
+                compo.fileFormats.map { it.name }.toTypedArray(),
+                compo.requireFile.toDatabaseEnum(),
+                compo.manualResults,
+                compo.hideAuthor,
+                compo.changeoverSec,
+                compo.defaultSlotSec,
             ).map(Compo.fromRow)
         )
     }

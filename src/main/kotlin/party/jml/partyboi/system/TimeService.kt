@@ -53,6 +53,12 @@ class TimeService(app: AppServices) : Service(app) {
             ?: timeZone.getOrNull()
             ?: TimeZone.currentSystemDefault()
 
+    // Whether the timezone has ever been explicitly stored (settings save, template
+    // import) as opposed to falling back to the system default. Used to decide if
+    // the wizard may autofill the browser's timezone.
+    suspend fun isTimeZoneStored(): AppResult<Boolean> =
+        app.properties.get("${this::class.simpleName}.timeZone", false).map { it != null }
+
 
     companion object {
         fun timeZoneAt(date: LocalDate): TimeZone =

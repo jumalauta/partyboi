@@ -26,6 +26,7 @@ import party.jml.partyboi.ffmpeg.FfmpegService
 import party.jml.partyboi.ffmpeg.TrackerToolsService
 import party.jml.partyboi.infoscreen.InfoScreenService
 import party.jml.partyboi.messages.MessageRepository
+import party.jml.partyboi.partytemplate.PartyTemplateService
 import party.jml.partyboi.schedule.EventRepository
 import party.jml.partyboi.schedule.EventRepositoryImpl
 import party.jml.partyboi.schedule.EventSignalEmitter
@@ -77,6 +78,7 @@ interface AppServices {
     val reconciliation: ReconciliationService
     val recaptcha: RecaptchaService
     val jmlCaptcha: JmlCaptchaService
+    val partyTemplates: PartyTemplateService
 }
 
 class AppServicesImpl(
@@ -116,6 +118,7 @@ class AppServicesImpl(
     override val reconciliation = ReconciliationService(this)
     override val recaptcha = RecaptchaService(this)
     override val jmlCaptcha = JmlCaptchaService(this)
+    override val partyTemplates = PartyTemplateService(this)
 
     companion object {
         var globalInstance: AppServicesImpl? = null

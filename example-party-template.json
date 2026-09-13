@@ -1,0 +1,242 @@
+{
+    "partyboiTemplate": 1,
+    "exportedAt": "2026-09-13T12:00:00Z",
+    "instanceName": "Example Party",
+    "generalRules": "All entries must be made by the submitting group or artist. Only one entry per artist per compo. Entries must not have been publicly released before the party. The organizers reserve the right to move entries to a more suitable compo, combine compos with too few entries, or disqualify entries that break the rules or the law. Remote entries are accepted. By submitting an entry you allow the party to publish it on the big screen, on the party website and in scene archives.",
+    "partyDays": 3,
+    "timeZone": "Europe/Helsinki",
+    "resultsFileHeader": "                      EXAMPLE PARTY\n                   official results\n\n  Results collected with public voting at the party.\n",
+    "compos": [
+        {
+            "name": "Demo",
+            "rules": "Combined demo compo for all platforms. Maximum running time 8 minutes. Submit a ZIP archive containing the executable and any required data files, plus a video capture if the platform is exotic. Mention the target platform and any special requirements in the entry information.",
+            "requireFile": true,
+            "fileFormats": ["zip"],
+            "manualResults": false,
+            "hideAuthor": false,
+            "changeoverSec": 30,
+            "defaultSlotSec": 60
+        },
+        {
+            "name": "4k Intro",
+            "rules": "Combined 4k intro compo. Maximum file size 4096 bytes for the executable. Maximum running time 5 minutes. Submit a ZIP archive containing the executable; include a video capture if possible.",
+            "requireFile": true,
+            "fileFormats": ["zip"],
+            "manualResults": false,
+            "hideAuthor": false,
+            "changeoverSec": 30,
+            "defaultSlotSec": 60
+        },
+        {
+            "name": "Graphics",
+            "rules": "Freestyle graphics: any tool, any technique, except AI generation and photographs. Maximum resolution 1920x1080. Submit PNG, JPEG or GIF. Work stages are required and may be shown on request.",
+            "requireFile": true,
+            "fileFormats": ["png", "jpeg", "gif"],
+            "manualResults": false,
+            "hideAuthor": true,
+            "changeoverSec": 20,
+            "defaultSlotSec": 30
+        },
+        {
+            "name": "Photo",
+            "rules": "Photographs taken by the entrant. Minor adjustments (color correction, cropping) are allowed, heavy manipulation is not. Maximum resolution 1920x1080. Submit JPEG or PNG.",
+            "requireFile": true,
+            "fileFormats": ["jpeg", "png"],
+            "manualResults": false,
+            "hideAuthor": true,
+            "changeoverSec": 20,
+            "defaultSlotSec": 30
+        },
+        {
+            "name": "Streaming Music",
+            "rules": "Any music that does not fit the tracker compo. Maximum playing time 4 minutes. Submit MP3, OGG, FLAC or WAV. AI-generated music is not allowed.",
+            "requireFile": true,
+            "fileFormats": ["mp3", "ogg", "flac", "wav"],
+            "manualResults": false,
+            "hideAuthor": true,
+            "changeoverSec": 15,
+            "defaultSlotSec": 90
+        },
+        {
+            "name": "Tracker Music",
+            "rules": "Music in tracker module formats (MOD, S3M, XM, IT). Maximum playing time 4 minutes. Maximum file size 4 MB. All samples must be freely usable.",
+            "requireFile": true,
+            "fileFormats": ["mod", "s3m", "xm", "it"],
+            "manualResults": false,
+            "hideAuthor": true,
+            "changeoverSec": 15,
+            "defaultSlotSec": 90
+        },
+        {
+            "name": "Wild",
+            "rules": "Anything goes: videos, hardware projects, live performances, things that do not fit any other compo. Maximum running time 8 minutes. Submit a video capture as a ZIP or video file, or describe the live performance in the entry information.",
+            "requireFile": null,
+            "fileFormats": ["zip", "mp4"],
+            "manualResults": false,
+            "hideAuthor": false,
+            "changeoverSec": 30,
+            "defaultSlotSec": 60
+        }
+    ],
+    "slideSets": [
+        {
+            "id": "default",
+            "name": "Default",
+            "icon": "circle-info",
+            "slides": [
+                {
+                    "type": "text",
+                    "title": "Welcome to Example Party",
+                    "content": "Enjoy the party! Remember to submit your entries and vote for your favorites.\n\nFollow the schedule on this screen and on the party website.",
+                    "visible": true
+                },
+                {
+                    "type": "qrCode",
+                    "title": "Party website",
+                    "qrcode": "https://party.example.org",
+                    "description": "Entry submission, voting and the live schedule.",
+                    "visible": true
+                },
+                {
+                    "type": "text",
+                    "title": "Wifi",
+                    "content": "Network: `exampleparty`\n\nPassword: ask the info desk.",
+                    "visible": true
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "name": "Doors open",
+            "start": { "dayOffset": 0, "time": "16:00" },
+            "end": null,
+            "visible": true,
+            "triggers": []
+        },
+        {
+            "name": "Opening ceremony",
+            "start": { "dayOffset": 0, "time": "18:00" },
+            "end": { "dayOffset": 0, "time": "18:30" },
+            "visible": true,
+            "triggers": []
+        },
+        {
+            "name": "Deadline: Graphics & Photo",
+            "start": { "dayOffset": 1, "time": "12:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseSubmitting", "compoIndex": 2, "open": false },
+                { "type": "openCloseSubmitting", "compoIndex": 3, "open": false }
+            ]
+        },
+        {
+            "name": "Deadline: Music compos",
+            "start": { "dayOffset": 1, "time": "14:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseSubmitting", "compoIndex": 4, "open": false },
+                { "type": "openCloseSubmitting", "compoIndex": 5, "open": false }
+            ]
+        },
+        {
+            "name": "Deadline: Demo, 4k Intro & Wild",
+            "start": { "dayOffset": 1, "time": "16:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseSubmitting", "compoIndex": 0, "open": false },
+                { "type": "openCloseSubmitting", "compoIndex": 1, "open": false },
+                { "type": "openCloseSubmitting", "compoIndex": 6, "open": false }
+            ]
+        },
+        {
+            "name": "Photo compo",
+            "start": { "dayOffset": 1, "time": "19:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 3, "open": true }
+            ]
+        },
+        {
+            "name": "Graphics compo",
+            "start": { "dayOffset": 1, "time": "19:30" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 2, "open": true }
+            ]
+        },
+        {
+            "name": "Tracker Music compo",
+            "start": { "dayOffset": 1, "time": "20:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 5, "open": true }
+            ]
+        },
+        {
+            "name": "Streaming Music compo",
+            "start": { "dayOffset": 1, "time": "20:30" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 4, "open": true }
+            ]
+        },
+        {
+            "name": "Wild compo",
+            "start": { "dayOffset": 1, "time": "21:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 6, "open": true }
+            ]
+        },
+        {
+            "name": "4k Intro compo",
+            "start": { "dayOffset": 1, "time": "22:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 1, "open": true }
+            ]
+        },
+        {
+            "name": "Demo compo",
+            "start": { "dayOffset": 1, "time": "22:30" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "openCloseVoting", "compoIndex": 0, "open": true }
+            ]
+        },
+        {
+            "name": "Voting deadline",
+            "start": { "dayOffset": 2, "time": "12:00" },
+            "end": null,
+            "visible": true,
+            "triggers": [
+                { "type": "closeVotingForAllCompos" }
+            ]
+        },
+        {
+            "name": "Prizegiving ceremony",
+            "start": { "dayOffset": 2, "time": "14:00" },
+            "end": { "dayOffset": 2, "time": "15:00" },
+            "visible": true,
+            "triggers": []
+        },
+        {
+            "name": "Party ends",
+            "start": { "dayOffset": 2, "time": "16:00" },
+            "end": null,
+            "visible": true,
+            "triggers": []
+        }
+    ]
+}
