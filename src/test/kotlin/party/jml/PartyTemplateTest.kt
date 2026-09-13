@@ -28,6 +28,9 @@ class PartyTemplateTest : PartyboiTester {
     private fun testTemplate() = PartyTemplate(
         partyboiTemplate = PARTY_TEMPLATE_VERSION,
         generalRules = "Be nice",
+        partyDays = 4,
+        timeZone = "Europe/Helsinki",
+        resultsFileHeader = "Test Party results",
         compos = listOf(
             TemplateCompo(
                 name = "4k intro",
@@ -68,6 +71,8 @@ class PartyTemplateTest : PartyboiTester {
                 addTestAdmin(this@setupServices).bind()
                 time.timeZone.set(tz).bind()
                 settings.partyStartDate.set(LocalDate(2025, 8, 1)).bind()
+                settings.partyDays.set(4).bind()
+                settings.resultsFileHeader.set("Example results header").bind()
                 compos.generalRules.set(GeneralRules("Be excellent")).bind()
                 val compo = compos.add(NewCompo("4k intro", "Max 4096 bytes")).bind()
                 compos.update(
@@ -101,6 +106,9 @@ class PartyTemplateTest : PartyboiTester {
 
         val response = it.client.submitFormWithBinaryData("/admin/settings/export", formData {
             append("generalRules", "on")
+            append("partyDays", "on")
+            append("timeZone", "on")
+            append("resultsFileHeader", "on")
             append("compoIds", compoId.toString())
             append("eventIds", eventId.toString())
         })
@@ -113,6 +121,9 @@ class PartyTemplateTest : PartyboiTester {
         val template = TemplateJson.decodeFromString<PartyTemplate>(response.bodyAsText())
         assertEquals(PARTY_TEMPLATE_VERSION, template.partyboiTemplate)
         assertEquals("Be excellent", template.generalRules)
+        assertEquals(4, template.partyDays)
+        assertEquals("Europe/Helsinki", template.timeZone)
+        assertEquals("Example results header", template.resultsFileHeader)
 
         assertEquals(1, template.compos.size)
         val compo = template.compos.first()
@@ -140,7 +151,9 @@ class PartyTemplateTest : PartyboiTester {
             app = this
             either {
                 addTestAdmin(this@setupServices).bind()
-                time.timeZone.set(tz).bind()
+                // The template's timezone (Helsinki) differs from the instance's;
+                // importing it must place events in the imported zone.
+                time.timeZone.set(TimeZone.UTC).bind()
                 // A different party start date than the exporting instance's.
                 settings.partyStartDate.set(LocalDate(2026, 7, 15)).bind()
             }
@@ -158,6 +171,9 @@ class PartyTemplateTest : PartyboiTester {
         it.post("/admin/settings/import/confirm", formData {
             append("payload", payload)
             append("generalRules", "on")
+            append("partyDays", "on")
+            append("timeZone", "on")
+            append("resultsFileHeader", "on")
             append("compos", "0")
             append("events", "0")
         }) {
@@ -166,6 +182,9 @@ class PartyTemplateTest : PartyboiTester {
 
         val services = app!!
         assertEquals("Be nice", services.compos.generalRules.get().getOrNull()!!.rules)
+        assertEquals(4, services.settings.partyDays.get().getOrNull())
+        assertEquals(tz, services.time.timeZone.get().getOrNull())
+        assertEquals("Test Party results", services.settings.resultsFileHeader.get().getOrNull())
 
         val compos = services.compos.getAllCompos().getOrNull()!!
         assertEquals(1, compos.size)

@@ -16,6 +16,8 @@ import party.jml.partyboi.templates.components.cardHeader
 object PartyTemplatePages {
     fun renderExportPage(
         generalRules: String,
+        partyDays: Int,
+        resultsFileHeader: String,
         compos: List<Compo>,
         events: List<Event>,
         timeZone: TimeZone,
@@ -35,6 +37,42 @@ object PartyTemplatePages {
                 }
                 p {
                     small { +"Schedule triggers that point to a compo left out of the export are not included." }
+                }
+
+                fieldSet {
+                    legend { +"Settings" }
+                    label {
+                        input(name = "partyDays") {
+                            type = InputType.checkBox
+                            checked = true
+                        }
+                        span {
+                            +" Party length "
+                            small { +"— $partyDays days" }
+                        }
+                    }
+                    label {
+                        input(name = "timeZone") {
+                            type = InputType.checkBox
+                            checked = true
+                        }
+                        span {
+                            +" Time zone "
+                            small { +"— ${timeZone.id}" }
+                        }
+                    }
+                    label {
+                        input(name = "resultsFileHeader") {
+                            type = InputType.checkBox
+                            checked = resultsFileHeader.isNotBlank()
+                        }
+                        span {
+                            +" results.txt header"
+                            if (resultsFileHeader.isBlank()) {
+                                small { +" (empty)" }
+                            }
+                        }
+                    }
                 }
 
                 fieldSet {
@@ -116,6 +154,56 @@ object PartyTemplatePages {
                 p { +"Select the items to import. Items with a name that already exists are skipped." }
 
                 hiddenInput(name = "payload") { value = payload }
+
+                if (preview.hasSettings) {
+                    fieldSet {
+                        legend { +"Settings" }
+                        preview.partyDays?.let { days ->
+                            label {
+                                input(name = "partyDays") {
+                                    type = InputType.checkBox
+                                    checked = true
+                                }
+                                span {
+                                    +" Party length "
+                                    small { +"— $days days" }
+                                    if (days != preview.currentPartyDays) {
+                                        small { +" (currently ${preview.currentPartyDays})" }
+                                    }
+                                }
+                            }
+                        }
+                        preview.timeZone?.let { tzId ->
+                            label {
+                                input(name = "timeZone") {
+                                    type = InputType.checkBox
+                                    checked = true
+                                }
+                                span {
+                                    +" Time zone "
+                                    small { +"— $tzId" }
+                                    if (tzId != preview.currentTimeZone) {
+                                        small { +" (currently ${preview.currentTimeZone})" }
+                                    }
+                                }
+                            }
+                        }
+                        preview.resultsFileHeader?.let {
+                            label {
+                                input(name = "resultsFileHeader") {
+                                    type = InputType.checkBox
+                                    checked = !preview.resultsFileHeaderOverwrite
+                                }
+                                span {
+                                    +" results.txt header"
+                                    if (preview.resultsFileHeaderOverwrite) {
+                                        small { +" — overwrites the current header" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 if (preview.hasGeneralRules) {
                     fieldSet {
@@ -203,13 +291,14 @@ object PartyTemplatePages {
                 cardHeader("Import results")
                 ul {
                     if (report.generalRulesImported) li { +"General compo rules imported" }
+                    report.importedSettings.forEach { li { +"Setting imported — $it" } }
                     if (report.createdCompos.isNotEmpty()) li { +"Compos created: ${report.createdCompos.joinToString()}" }
                     if (report.skippedCompos.isNotEmpty()) li { +"Compos skipped (already exist): ${report.skippedCompos.joinToString()}" }
                     if (report.createdEvents.isNotEmpty()) li { +"Events created: ${report.createdEvents.joinToString()}" }
                     if (report.skippedEvents.isNotEmpty()) li { +"Events skipped (already exist): ${report.skippedEvents.joinToString()}" }
                     if (report.createdTriggers > 0) li { +"Schedule triggers created: ${report.createdTriggers}" }
                     if (report.droppedTriggers.isNotEmpty()) li { +"Triggers left out: ${report.droppedTriggers.joinToString()}" }
-                    if (!report.generalRulesImported &&
+                    if (!report.generalRulesImported && report.importedSettings.isEmpty() &&
                         report.createdCompos.isEmpty() && report.skippedCompos.isEmpty() &&
                         report.createdEvents.isEmpty() && report.skippedEvents.isEmpty()
                     ) {

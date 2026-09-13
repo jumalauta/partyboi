@@ -38,6 +38,11 @@ data class PartyTemplate(
     val exportedAt: String = "",
     val instanceName: String = "",
     val generalRules: String? = null,
+    // Settings carried over to the next year's instance. All optional so
+    // version 1 files written before these existed still parse.
+    val partyDays: Int? = null,
+    val timeZone: String? = null,
+    val resultsFileHeader: String? = null,
     val compos: List<TemplateCompo> = emptyList(),
     val events: List<TemplateEvent> = emptyList(),
 )

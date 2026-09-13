@@ -45,6 +45,8 @@ fun Application.configurePartyTemplateRouting(app: AppServices) {
     suspend fun renderExportPage(): AppResult<Page> = either {
         PartyTemplatePages.renderExportPage(
             generalRules = app.compos.generalRules.get().bind().rules,
+            partyDays = app.settings.partyDays.get().bind(),
+            resultsFileHeader = app.settings.resultsFileHeader.get().bind(),
             compos = app.compos.getAllCompos().bind(),
             events = app.events.getAll().bind(),
             timeZone = app.time.timeZone(),

@@ -63,6 +63,9 @@ class PartyTemplateMappingTest {
             exportedAt = "2026-09-13T12:00:00Z",
             instanceName = "Test Party",
             generalRules = "Be nice",
+            partyDays = 3,
+            timeZone = "Europe/Helsinki",
+            resultsFileHeader = "Test Party results",
             compos = listOf(
                 TemplateCompo(
                     name = "4k intro",

@@ -47,6 +47,9 @@ class PartyTemplateService(app: AppServices) : Service(app) {
             exportedAt = Clock.System.now().toString(),
             instanceName = app.config.instanceName,
             generalRules = if (selection.generalRules) app.compos.generalRules.get().bind().rules else null,
+            partyDays = if (selection.partyDays) app.settings.partyDays.get().bind() else null,
+            timeZone = if (selection.timeZone) app.time.timeZone.get().bind().id else null,
+            resultsFileHeader = if (selection.resultsFileHeader) app.settings.resultsFileHeader.get().bind() else null,
             compos = compos.map { TemplateCompo.fromCompo(it) },
             events = templateEvents,
         )
@@ -54,13 +57,22 @@ class PartyTemplateService(app: AppServices) : Service(app) {
 
     suspend fun analyze(template: PartyTemplate): AppResult<ImportPreview> = either {
         val partyStart = requirePartyStartDate().bind()
-        val tzAt = timeZoneResolver().bind()
+        // Preview event times with the template's timezone (checked by default on
+        // the selection page), falling back to the instance's own.
+        val templateTz = templateTimeZone(template).bind()
+        val tzAt = templateTz?.let { tz -> { _: LocalDate -> tz } } ?: timeZoneResolver().bind()
         val existingCompoNames = app.compos.getAllCompos().bind().map { it.name.normalized() }.toSet()
         val existingEventNames = app.events.getAll().bind().map { it.name.normalized() }.toSet()
 
         ImportPreview(
             hasGeneralRules = template.generalRules != null,
             generalRulesOverwrite = app.compos.generalRules.get().bind().rules.isNotBlank(),
+            partyDays = template.partyDays,
+            currentPartyDays = app.settings.partyDays.get().bind(),
+            timeZone = template.timeZone,
+            currentTimeZone = app.time.timeZone.get().bind().id,
+            resultsFileHeader = template.resultsFileHeader,
+            resultsFileHeaderOverwrite = app.settings.resultsFileHeader.get().bind().isNotBlank(),
             compos = template.compos.mapIndexed { index, compo ->
                 PreviewItem(index, compo.name, existingCompoNames.contains(compo.name.normalized()))
             },
@@ -79,7 +91,10 @@ class PartyTemplateService(app: AppServices) : Service(app) {
 
     suspend fun import(template: PartyTemplate, selection: ImportSelection): AppResult<ImportReport> = either {
         val partyStart = requirePartyStartDate().bind()
-        val tzAt = timeZoneResolver().bind()
+        // When the template's timezone is imported, events are wall-clock in that
+        // zone; otherwise they land in the instance's current timezone.
+        val importedTz = if (selection.timeZone) templateTimeZone(template).bind() else null
+        val tzAt = importedTz?.let { tz -> { _: LocalDate -> tz } } ?: timeZoneResolver().bind()
         val existingCompos = app.compos.getAllCompos().bind()
         val existingEvents = app.events.getAll().bind()
 
@@ -146,17 +161,31 @@ class PartyTemplateService(app: AppServices) : Service(app) {
                     createdTriggers = createdTriggers,
                     droppedTriggers = droppedTriggers,
                     generalRulesImported = false,
+                    importedSettings = emptyList(),
                 )
             }
         }.bind()
 
         // The property store cannot join the transaction; writing after the commit
-        // means a rollback never leaves the rules half-imported.
+        // means a rollback never leaves the rules or settings half-imported.
         val importRules = selection.generalRules && template.generalRules != null
         if (importRules) {
             app.compos.generalRules.set(GeneralRules(template.generalRules!!)).bind()
         }
-        report.copy(generalRulesImported = importRules)
+        val importedSettings = mutableListOf<String>()
+        if (selection.partyDays && template.partyDays != null) {
+            app.settings.partyDays.set(template.partyDays).bind()
+            importedSettings.add("Party length: ${template.partyDays} days")
+        }
+        if (importedTz != null) {
+            app.time.timeZone.set(importedTz).bind()
+            importedSettings.add("Time zone: ${importedTz.id}")
+        }
+        if (selection.resultsFileHeader && template.resultsFileHeader != null) {
+            app.settings.resultsFileHeader.set(template.resultsFileHeader).bind()
+            importedSettings.add("results.txt header")
+        }
+        report.copy(generalRulesImported = importRules, importedSettings = importedSettings)
     }
 
     private suspend fun requirePartyStartDate(): AppResult<LocalDate> = either {
@@ -170,6 +199,16 @@ class PartyTemplateService(app: AppServices) : Service(app) {
         val base = app.time.timeZone.get().bind()
         ({ date: LocalDate -> overrides[date] ?: base })
     }
+
+    private fun templateTimeZone(template: PartyTemplate): AppResult<TimeZone?> = either {
+        template.timeZone?.let {
+            try {
+                TimeZone.of(it)
+            } catch (e: Exception) {
+                raise(ValidationError("file", "Unknown time zone in template: $it", it))
+            }
+        }
+    }
 }
 
 private fun String.normalized() = trim().lowercase()
@@ -177,6 +216,12 @@ private fun String.normalized() = trim().lowercase()
 data class ExportSelection(
     @Custom
     val generalRules: Boolean,
+    @Custom
+    val partyDays: Boolean,
+    @Custom
+    val timeZone: Boolean,
+    @Custom
+    val resultsFileHeader: Boolean,
     @Custom
     val compoIds: List<UUID>,
     @Custom
@@ -202,6 +247,12 @@ data class ImportSelection(
     @Custom
     val generalRules: Boolean,
     @Custom
+    val partyDays: Boolean,
+    @Custom
+    val timeZone: Boolean,
+    @Custom
+    val resultsFileHeader: Boolean,
+    @Custom
     val compos: List<Int>,
     @Custom
     val events: List<Int>,
@@ -210,10 +261,17 @@ data class ImportSelection(
 data class ImportPreview(
     val hasGeneralRules: Boolean,
     val generalRulesOverwrite: Boolean,
+    val partyDays: Int?,
+    val currentPartyDays: Int,
+    val timeZone: String?,
+    val currentTimeZone: String,
+    val resultsFileHeader: String?,
+    val resultsFileHeaderOverwrite: Boolean,
     val compos: List<PreviewItem>,
     val events: List<PreviewEvent>,
 ) {
-    val hasNothing = !hasGeneralRules && compos.isEmpty() && events.isEmpty()
+    val hasSettings = partyDays != null || timeZone != null || resultsFileHeader != null
+    val hasNothing = !hasGeneralRules && !hasSettings && compos.isEmpty() && events.isEmpty()
 }
 
 data class PreviewItem(
@@ -239,4 +297,5 @@ data class ImportReport(
     val createdTriggers: Int,
     val droppedTriggers: List<String>,
     val generalRulesImported: Boolean,
+    val importedSettings: List<String>,
 )

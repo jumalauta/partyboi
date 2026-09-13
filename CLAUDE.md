@@ -90,8 +90,9 @@ Avoid format-specific names (`hires`, `fullsize`, `image`, `jpg`) for entry prev
 
 ## Party templates
 
-`partytemplate/` exports the reusable party setup (general compo rules, compos, schedule events incl. their
-triggers) as a versioned JSON file and imports it into a fresh instance — from the admin settings page or as
+`partytemplate/` exports the reusable party setup (general compo rules, party length, time zone, results.txt
+header, compos, schedule events incl. their triggers) as a versioned JSON file and imports it into a fresh
+instance — from the admin settings page or as
 step 2 of the setup wizard (`/wizard/import`). Event times are stored wall-clock relative to the party start
 date (`RelativeTime(dayOffset, "HH:mm")`) and remapped to the importing instance's start date; triggers
 reference compos by index in the template's compos list and are rewired to the created (or same-named

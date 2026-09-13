@@ -3,6 +3,9 @@
     "exportedAt": "2026-09-13T12:00:00Z",
     "instanceName": "Example Party",
     "generalRules": "All entries must be made by the submitting group or artist. Only one entry per artist per compo. Entries must not have been publicly released before the party. The organizers reserve the right to move entries to a more suitable compo, combine compos with too few entries, or disqualify entries that break the rules or the law. Remote entries are accepted. By submitting an entry you allow the party to publish it on the big screen, on the party website and in scene archives.",
+    "partyDays": 3,
+    "timeZone": "Europe/Helsinki",
+    "resultsFileHeader": "                      EXAMPLE PARTY\n                   official results\n\n  Results collected with public voting at the party.\n",
     "compos": [
         {
             "name": "Demo",
