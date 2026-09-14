@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import arrow.core.right
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotliquery.TransactionalSession
@@ -18,10 +19,10 @@ import party.jml.partyboi.infoscreen.slides.Slide
 import party.jml.partyboi.infoscreen.slides.TextSlide
 import party.jml.partyboi.signals.Signal
 import party.jml.partyboi.system.AppResult
-import party.jml.partyboi.system.toDate
 import java.util.*
 import kotlin.concurrent.schedule
 import kotlin.io.path.readText
+import kotlin.time.Clock
 
 
 class InfoScreenService(app: AppServices) : Service(app) {
@@ -99,25 +100,28 @@ class InfoScreenService(app: AppServices) : Service(app) {
     ) =
         repository.add(slideSet, slide, makeVisible = makeVisible, readOnly = false, tx = tx)
 
-    // Keep the slide set's schedule slides in sync with the dates that have a public
-    // event: add a (visible) slide for any such date that lacks one, and remove slides
-    // for dates that no longer have a public event. Idempotent, so it is safe to call
-    // after any event change.
+    // Keep exactly one generated schedule slide in the set while any public event
+    // exists (the slide decides at display time which days to show), and remove it
+    // when none do. Idempotent, so it is safe to call after any event change; also
+    // collapses leftover per-date rows from older versions.
     suspend fun syncScheduleSlides(slideSet: String = SlideSetRow.DEFAULT): AppResult<Unit> = either {
-        val publicDates = app.events.getPublic().bind()
-            .map { it.startTime.toDate() }
-            .toSet()
-        val scheduleSlides = repository.getSlideSetSlides(slideSet).bind()
-            .mapNotNull { row -> (row.getSlide() as? ScheduleSlide)?.let { it.date to row.id } }
-        val existingDates = scheduleSlides.map { it.first }.toSet()
-
-        scheduleSlides
-            .filter { (date, _) -> date !in publicDates }
-            .forEach { (_, id) -> repository.delete(id).bind() }
-
-        publicDates.minus(existingDates).sorted().forEach { date ->
-            repository.add(slideSet, ScheduleSlide(date), makeVisible = true, readOnly = false).bind()
+        val hasPublicEvents = app.events.getPublic().bind().isNotEmpty()
+        val scheduleRows = repository.getSlideSetSlides(slideSet).bind()
+            .filter { it.getSlide() is ScheduleSlide }
+        if (hasPublicEvents) {
+            scheduleRows.drop(1).forEach { repository.delete(it.id).bind() }
+            if (scheduleRows.isEmpty()) {
+                repository.add(slideSet, ScheduleSlide(), makeVisible = true, readOnly = false).bind()
+            }
+        } else {
+            scheduleRows.forEach { repository.delete(it.id).bind() }
         }
+    }
+
+    // The party days the schedule slide still has to show, in date order.
+    private suspend fun scheduleDays(): AppResult<List<LocalDate>> = either {
+        val dates = ScheduleSlide.eventDates(app).bind()
+        ScheduleSlide.relevantDays(dates, Clock.System.now(), app.time.timeZone.get().bind())
     }
 
     suspend fun update(id: UUID, slide: Slide<*>) = either {
@@ -182,14 +186,25 @@ class InfoScreenService(app: AppServices) : Service(app) {
     }
 
     suspend fun showNext() {
-        state.value.slideSet?.let { slideSet ->
-            nextSlide(slideSet, state.value.id).fold(
-                { stopSlideSet() },
-                {
-                    showSlide(it)
-                }
-            )
+        val current = state.value
+        val slideSet = current.slideSet ?: return
+        // Mid-schedule: advance to the next remaining party day on the same row before
+        // handing control back to the rotation. `it > shownDay` also skips a day that
+        // rolled into the past while it was on screen.
+        val shownDay = (current.slide as? ScheduleSlide)?.date
+        if (shownDay != null) {
+            val nextDay = scheduleDays().getOrNull()?.firstOrNull { it > shownDay }
+            if (nextDay != null) {
+                state.emit(current.copy(slide = ScheduleSlide(nextDay)))
+                return app.signals.emit(Signal.slideShown(current.id))
+            }
         }
+        nextSlide(slideSet, current.id).fold(
+            { stopSlideSet() },
+            {
+                showSlide(it)
+            }
+        )
     }
 
     suspend fun showNextSlideFromSet(slideSetName: String): AppResult<Unit> =
@@ -234,7 +249,13 @@ class InfoScreenService(app: AppServices) : Service(app) {
         if (slide is AutoRunHalting && slide.haltAutoRun()) {
             stopSlideSet()
         }
-        state.emit(InfoScreenState.fromRow(row))
+        // A stored schedule slide is dateless; resolve the first relevant day here so
+        // the emitted state always carries a concrete date for showNext() to step from.
+        val resolved =
+            if (slide is ScheduleSlide && slide.date == null)
+                scheduleDays().getOrNull()?.firstOrNull()?.let { ScheduleSlide(it) } ?: slide
+            else slide
+        state.emit(InfoScreenState(slideSet = row.slideSet, id = row.id, slide = resolved))
         return app.signals.emit(Signal.slideShown(row.id))
     }
 }

@@ -108,7 +108,7 @@ class PartyTemplateTest : PartyboiTester {
                 screen.addSlide("default", TextSlide("Welcome", "Hello"), makeVisible = true).bind()
                 screen.addSlide("default", QrCodeSlide("Website", "https://example.org", "Visit us")).bind()
                 // Schedule slides are never exported.
-                screen.addSlide("default", ScheduleSlide(LocalDate(2025, 8, 1)), makeVisible = true).bind()
+                screen.addSlide("default", ScheduleSlide(), makeVisible = true).bind()
             }
         }
         it.login("admin")
@@ -253,10 +253,10 @@ class PartyTemplateTest : PartyboiTester {
         )
         assertTrue(actions.any { it is CloseVotingForAllCompos }, "actions: $actions")
 
-        // The imported public event gets its generated schedule slide.
-        val scheduleDates = services.screen.getSlideSet("default").getOrNull()!!
-            .mapNotNull { (it.getSlide() as? ScheduleSlide)?.date }
-        assertEquals(listOf(LocalDate(2026, 7, 16)), scheduleDates)
+        // The imported public event gets the generated (dateless) schedule slide.
+        val scheduleSlides = services.screen.getSlideSet("default").getOrNull()!!
+            .mapNotNull { it.getSlide() as? ScheduleSlide }
+        assertEquals(listOf(ScheduleSlide()), scheduleSlides)
 
         // The slide set was created with its text and QR code slides and its image
         // slide throttle setting.

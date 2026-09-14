@@ -278,9 +278,9 @@ class AdminScheduleTest : PartyboiTester {
         assertEquals(at(23, 30), app!!.events.get(id!!).getOrNull()!!.endTime)
     }
 
-    // Adding (or moving) an event to a date that has no schedule slide yet generates a
-    // visible schedule slide for it in the default slide set. Generation is idempotent:
-    // adding more events on a date that already has a slide does not duplicate it.
+    // The first public event generates the single, visible, dateless schedule slide in
+    // the default slide set. Generation is idempotent: more events — on the same or
+    // other dates — never create a second slide.
     @Test
     fun testEventChangesGenerateScheduleSlides() = test {
         var app: AppServices? = null
@@ -291,22 +291,26 @@ class AdminScheduleTest : PartyboiTester {
 
         it.login("admin")
 
-        // A new date produces a visible schedule slide
+        // The first event produces the visible schedule slide
         it.post("/admin/schedule/events", eventForm("First", 1)) { _ -> }
-        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
 
         // Another event on the same date does not create a duplicate slide
         it.post("/admin/schedule/events", eventForm("Second", 1)) { _ -> }
-        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
 
-        // A second date adds a second slide
+        // Neither does an event on a second date — the one slide covers all days
         it.post("/admin/schedule/events", eventForm("Third", 2)) { _ -> }
-        assertEquals(setOf(LocalDate(2026, 6, 1), LocalDate(2026, 6, 2)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
+
+        // The stored slide is dateless; days are resolved at display time
+        val slide = app!!.screen.getSlideSet(SlideSetRow.DEFAULT).getOrNull()!!
+            .firstNotNullOf { it.getSlide() as? ScheduleSlide }
+        assertEquals(null, slide.date)
     }
 
-    // When a date loses its last public event — by deletion or by being hidden — its
-    // now-empty schedule slide is removed. A date that still has other public events
-    // keeps its slide.
+    // The schedule slide exists as long as any public event does; when the last public
+    // event is deleted or hidden, the slide is removed.
     @Test
     fun testEmptyScheduleSlidesAreRemoved() = test {
         var app: AppServices? = null
@@ -317,27 +321,27 @@ class AdminScheduleTest : PartyboiTester {
 
         it.login("admin")
 
-        // Day 1 has two events, day 2 has one -> a slide for each date
+        // Day 1 has two events, day 2 has one -> one schedule slide
         it.post("/admin/schedule/events", eventForm("A1", 1)) { _ -> }
         it.post("/admin/schedule/events", eventForm("A2", 1)) { _ -> }
         it.post("/admin/schedule/events", eventForm("B", 2)) { _ -> }
-        assertEquals(setOf(LocalDate(2026, 6, 1), LocalDate(2026, 6, 2)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
 
         suspend fun eventId(name: String) = app!!.events.getAll().getOrNull()!!.first { it.name == name }.id
 
-        // Deleting the only event on day 2 removes its slide
+        // Deleting the only event on day 2 keeps the slide (day 1 still has events)
         it.client.delete("/admin/schedule/events/${eventId("B")}")
             .apply { assertEquals(HttpStatusCode.OK, status) }
-        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
 
-        // Deleting one of two events on day 1 keeps the slide (still a public event there)
+        // Deleting one of two events on day 1 keeps the slide too
         it.client.delete("/admin/schedule/events/${eventId("A1")}")
             .apply { assertEquals(HttpStatusCode.OK, status) }
-        assertEquals(setOf(LocalDate(2026, 6, 1)), visibleScheduleSlideDates(app!!))
+        assertEquals(1, visibleScheduleSlideCount(app!!))
 
-        // Hiding the last remaining event on day 1 removes its slide too
+        // Hiding the last remaining public event removes the slide
         it.buttonClick("/admin/schedule/events/${eventId("A2")}/setVisible/false")
-        assertEquals(emptySet(), visibleScheduleSlideDates(app!!))
+        assertEquals(0, visibleScheduleSlideCount(app!!))
     }
 
     // The event forms submit start/end as a day + time-of-day pair sharing the field
@@ -412,10 +416,9 @@ class AdminScheduleTest : PartyboiTester {
         append("visible", "true")
     }
 
-    private suspend fun visibleScheduleSlideDates(app: AppServices): Set<LocalDate> =
+    private suspend fun visibleScheduleSlideCount(app: AppServices): Int =
         app.screen.getSlideSet(SlideSetRow.DEFAULT).getOrNull()!!
-            .mapNotNull { row -> (row.getSlide() as? ScheduleSlide)?.takeIf { row.visible }?.date }
-            .toSet()
+            .count { it.visible && it.getSlide() is ScheduleSlide }
 
     private suspend fun TestHtmlClient.putJson(url: String, body: String) {
         client.put(url) {
