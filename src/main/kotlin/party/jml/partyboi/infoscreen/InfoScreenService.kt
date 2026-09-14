@@ -182,6 +182,12 @@ class InfoScreenService(app: AppServices) : Service(app) {
     }
 
     suspend fun showStoredSlide(slideId: UUID) = either {
+        // Give the manually chosen slide a full slot: restarting the scheduler pushes
+        // the next automatic advance a whole period away, so a tick landing right
+        // after the click cannot replace the slide almost immediately.
+        if (autoRunTimer != null) {
+            startAutoRunScheduler()
+        }
         showSlide(repository.getSlide(slideId).bind())
     }
 
