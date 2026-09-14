@@ -253,6 +253,11 @@ class PartyTemplateTest : PartyboiTester {
         )
         assertTrue(actions.any { it is CloseVotingForAllCompos }, "actions: $actions")
 
+        // The imported public event gets its generated schedule slide.
+        val scheduleDates = services.screen.getSlideSet("default").getOrNull()!!
+            .mapNotNull { (it.getSlide() as? ScheduleSlide)?.date }
+        assertEquals(listOf(LocalDate(2026, 7, 16)), scheduleDates)
+
         // The slide set was created with its text and QR code slides and its image
         // slide throttle setting.
         val infoSet = services.screen.getSlideSets().getOrNull()!!.find { it.id == "info" }
@@ -287,6 +292,11 @@ class PartyTemplateTest : PartyboiTester {
         assertEquals(1, services.compos.getAllCompos().getOrNull()!!.size)
         assertEquals(1, services.events.getAll().getOrNull()!!.size)
         assertEquals(2, services.screen.getSlideSet("info").getOrNull()!!.size)
+        assertEquals(
+            1,
+            services.screen.getSlideSet("default").getOrNull()!!.count { it.getSlide() is ScheduleSlide },
+            "Re-import must not duplicate schedule slides"
+        )
     }
 
     @Test

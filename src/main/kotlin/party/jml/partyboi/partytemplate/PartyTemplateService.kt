@@ -261,6 +261,12 @@ class PartyTemplateService(app: AppServices) : Service(app) {
             }
         }.bind()
 
+        // Imported events need their generated schedule slides; syncScheduleSlides is
+        // not tx-capable, so it runs after the commit like the admin schedule routes.
+        if (report.createdEvents.isNotEmpty()) {
+            app.screen.syncScheduleSlides().bind()
+        }
+
         // The property store cannot join the transaction; writing after the commit
         // means a rollback never leaves the rules or settings half-imported.
         val importRules = selection.generalRules && template.generalRules != null
