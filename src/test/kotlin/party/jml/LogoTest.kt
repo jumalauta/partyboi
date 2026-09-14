@@ -123,15 +123,31 @@ class LogoTest : PartyboiTester {
 
 class RecolorSvgTest {
     @Test
-    fun testStyleDeclarationsAreRecolored() {
-        val svg = """<path style="fill:#f20d5e;stroke:#abc;"/>"""
-        assertEquals("""<path style="fill:#123456;stroke:#123456;"/>""", recolorSvg(svg, "#123456"))
+    fun testOnlyTheBrandColorIsRecolored() {
+        val svg = """<path style="fill:#f20d5e;stroke:#abc;"/><rect fill="#AABBCC"/>"""
+        assertEquals(
+            """<path style="fill:#123456;stroke:#abc;"/><rect fill="#AABBCC"/>""",
+            recolorSvg(svg, "#123456"),
+        )
     }
 
     @Test
-    fun testAttributesAreRecolored() {
-        val svg = """<rect fill="#AABBCC"/><circle stroke='#ff0000aa'/>"""
+    fun testBrandColorCaseIsIgnored() {
+        val svg = """<rect fill="#F20D5E"/><circle stroke='#f20d5e'/>"""
         assertEquals("""<rect fill="#123456"/><circle stroke='#123456'/>""", recolorSvg(svg, "#123456"))
+    }
+
+    @Test
+    fun testGradientStopsAndWhiteAreUntouched() {
+        val svg = """<circle style="fill:url(#_Radial1)"/><stop style="stop-color:#fff;stop-opacity:0.3"/>""" +
+                """<stop style="stop-color:#000;stop-opacity:0.3"/>"""
+        assertEquals(svg, recolorSvg(svg, "#123456"))
+    }
+
+    @Test
+    fun testLongerHexStartingWithBrandDigitsIsUntouched() {
+        val svg = """<rect fill="#f20d5eaa"/>"""
+        assertEquals(svg, recolorSvg(svg, "#123456"))
     }
 
     @Test

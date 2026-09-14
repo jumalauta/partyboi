@@ -114,17 +114,17 @@ suspend fun loadLogo(app: AppServices): AppResult<ThemedLogo> = either {
     }
 }
 
-private val STYLE_COLOR = Regex("""(fill|stroke)\s*:\s*#[0-9a-fA-F]{3,8}""")
-private val ATTR_COLOR = Regex("""(fill|stroke)\s*=\s*(["'])#[0-9a-fA-F]{3,8}\2""")
+// The bundled logo's brand color. The negative lookahead keeps a longer hex value
+// that merely starts with these digits (e.g. an alpha variant) from being mangled.
+private val BRAND_COLOR = Regex("""#f20d5e(?![0-9a-fA-F])""", RegexOption.IGNORE_CASE)
 
 /**
- * Replaces every literal hex color in fill/stroke CSS declarations and XML attributes.
- * `none`, `currentColor`, named colors and gradient references are untouched, so cutouts
- * in the logo survive recoloring.
+ * Replaces the default logo's brand color (#F20D5E) with the theme color wherever it
+ * appears. The logo is no longer monochromatic: its other colors (white highlights,
+ * gradient shading stops) must survive recoloring, so nothing else is touched.
  */
 fun recolorSvg(svg: String, hex: String): String =
-    svg.replace(STYLE_COLOR) { "${it.groupValues[1]}:$hex" }
-        .replace(ATTR_COLOR) { "${it.groupValues[1]}=${it.groupValues[2]}$hex${it.groupValues[2]}" }
+    svg.replace(BRAND_COLOR, Regex.escapeReplacement(hex))
 
 fun rasterizeToPng(svg: String, size: Int): AppResult<ByteArray> = catchError {
     val transcoder = PNGTranscoder()
