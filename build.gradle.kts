@@ -64,7 +64,7 @@ dependencies {
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("com.sksamuel.scrimage:scrimage-core:4.6.9")
-    implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
+    implementation("org.apache.xmlgraphics:batik-transcoder:1.20")
     implementation("org.apache.xmlgraphics:batik-codec:1.20")
     implementation("org.jetbrains:markdown:0.7.18")
     implementation("org.jsoup:jsoup:1.23.2")
