@@ -1,6 +1,6 @@
 services:
   proxy:
-    image: caddy:2.9.0-beta.3-alpine
+    image: caddy:2.11.7-alpine
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
