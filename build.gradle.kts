@@ -67,7 +67,7 @@ dependencies {
     implementation("org.apache.xmlgraphics:batik-transcoder:1.20")
     implementation("org.apache.xmlgraphics:batik-codec:1.20")
     implementation("org.jetbrains:markdown:0.7.18")
-    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("org.jsoup:jsoup:1.24.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
     implementation("com.github.docker-java:docker-java:3.7.1")
@@ -123,7 +123,7 @@ dependencies {
     syncHarnessImplementation("io.ktor:ktor-client-encoding")
     syncHarnessImplementation("io.ktor:ktor-serialization-kotlinx-json")
     syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    syncHarnessImplementation("org.jsoup:jsoup:1.23.2")
+    syncHarnessImplementation("org.jsoup:jsoup:1.24.1")
     syncHarnessImplementation("io.arrow-kt:arrow-core:$arrow_version")
     syncHarnessImplementation(kotlin("stdlib-jdk8"))
 }
