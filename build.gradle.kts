@@ -6,7 +6,7 @@ val postgres_version: String = "42.7.15"
 val h2_version: String = "2.5.252"
 val kotlinx_html_version: String = "0.12.0"
 val flyway_version: String = "13.13.0"
-val arrow_version: String = "2.3.0"
+val arrow_version: String = "2.3.0.1"
 
 plugins {
     kotlin("jvm") version "2.4.21"
