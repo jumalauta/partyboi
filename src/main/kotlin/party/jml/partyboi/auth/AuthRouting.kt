@@ -12,6 +12,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.data.*
 import party.jml.partyboi.email.EmailTemplates
 import party.jml.partyboi.form.Form
+import party.jml.partyboi.plugins.ErrorContext
 import party.jml.partyboi.plugins.LoginRateLimit
 import party.jml.partyboi.settings.AutomaticVoteKeys
 import party.jml.partyboi.templates.Redirection
@@ -126,7 +127,16 @@ fun Application.configureLoginRouting(app: AppServices) {
                             )
                         ).bind()
                         Redirection("/reset-password-sent")
-                    }, {
+                    }, { form ->
+                        // Always answer "sent" so the form cannot be used to probe which emails are
+                        // registered, but record real failures (database, email provider) so they
+                        // show up in the admin error log instead of vanishing.
+                        form.error?.takeIf { it !is UserError }?.let { error ->
+                            app.errors.saveSafely(
+                                error = error.throwable ?: Error(error.message),
+                                context = ErrorContext.of(call),
+                            )
+                        }
                         Redirection("/reset-password-sent")
                     }
                 )
