@@ -1,6 +1,6 @@
 services:
   proxy:
-    image: caddy:2.9.0-beta.3-alpine
+    image: caddy:2.11.9-alpine
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -51,7 +51,7 @@ services:
       retries: 3
 
   db:
-    image: postgres:18
+    image: postgres:19
     restart: unless-stopped
     volumes:
       - "${DIR_DB}:/var/lib/postgresql/data"

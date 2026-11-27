@@ -1,17 +1,17 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlin_version = "2.4.20"
-val logback_version: String = "1.6.3"
-val postgres_version: String = "42.7.13"
-val h2_version: String = "2.5.250"
+val kotlin_version = "2.4.21"
+val logback_version: String = "1.6.8"
+val postgres_version: String = "42.7.15"
+val h2_version: String = "2.5.252"
 val kotlinx_html_version: String = "0.12.0"
-val flyway_version: String = "13.6.0"
-val arrow_version: String = "2.2.3"
+val flyway_version: String = "13.13.0"
+val arrow_version: String = "2.3.0.1"
 
 plugins {
-    kotlin("jvm") version "2.4.20"
-    id("io.ktor.plugin") version "3.5.2"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.20"
+    kotlin("jvm") version "2.4.21"
+    id("io.ktor.plugin") version "3.6.1"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21"
 }
 
 group = "com.example"
@@ -63,11 +63,11 @@ dependencies {
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("org.apache.commons:commons-compress:1.28.0")
-    implementation("com.sksamuel.scrimage:scrimage-core:4.6.8")
-    implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
-    implementation("org.apache.xmlgraphics:batik-codec:1.19")
-    implementation("org.jetbrains:markdown:0.7.12")
-    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("com.sksamuel.scrimage:scrimage-core:4.6.11")
+    implementation("org.apache.xmlgraphics:batik-transcoder:1.20")
+    implementation("org.apache.xmlgraphics:batik-codec:1.20")
+    implementation("org.jetbrains:markdown:0.7.18")
+    implementation("org.jsoup:jsoup:1.24.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     implementation("io.github.g0dkar:qrcode-kotlin:4.5.0")
     implementation("com.github.docker-java:docker-java:3.7.1")
@@ -123,7 +123,7 @@ dependencies {
     syncHarnessImplementation("io.ktor:ktor-client-encoding")
     syncHarnessImplementation("io.ktor:ktor-serialization-kotlinx-json")
     syncHarnessImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    syncHarnessImplementation("org.jsoup:jsoup:1.23.2")
+    syncHarnessImplementation("org.jsoup:jsoup:1.24.1")
     syncHarnessImplementation("io.arrow-kt:arrow-core:$arrow_version")
     syncHarnessImplementation(kotlin("stdlib-jdk8"))
 }
