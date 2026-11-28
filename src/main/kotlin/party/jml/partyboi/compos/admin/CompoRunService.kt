@@ -2,6 +2,7 @@ package party.jml.partyboi.compos.admin
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.recover
 import arrow.core.raise.either
 import kotlinx.serialization.Serializable
 import party.jml.partyboi.AppServices
@@ -38,7 +39,13 @@ class CompoRunService(app: AppServices) : Service(app) {
             .mapIndexed { index, entry -> entry.copy(runOrder = index + 1) }
 
         entries.forEach { entry ->
+            // An entry without a file is expected when it is not deliverable (e.g. a live show).
+            // Skip it but keep its run order number, so the remaining files still match the show order.
             val fileDesc = getLatestFileDesc(entry).bind()
+            if (fileDesc == null) {
+                log.info("Skip entry '${entry.author} - ${entry.title}': it has no file")
+                return@forEach
+            }
             val targetFilename =
                 app.files.makeCompoRunFileOrDirName(
                     fileDesc,
@@ -203,14 +210,10 @@ class CompoRunService(app: AppServices) : Service(app) {
         }
     }
 
-    private suspend fun getLatestFileDesc(entry: Entry) =
+    /** The latest file of the entry, or null when the entry has no file. */
+    private suspend fun getLatestFileDesc(entry: Entry): AppResult<FileDesc?> =
         app.files.getLatest(entry.id, originalsOnly = false)
-            .mapLeft {
-                when (it) {
-                    is NotFound -> NotFound("Entry '${entry.author} - ${entry.title}' has no file. Disqualify it first.")
-                    else -> it
-                }
-            }
+            .recover { if (it is NotFound) null else raise(it) }
 
     private fun copyFile(source: FileDesc, target: Path) = catchError {
         log.info("Copy $source to $target")

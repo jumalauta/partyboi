@@ -115,6 +115,99 @@ class AdminComposTest : PartyboiTester {
     }
 
     @Test
+    fun testCompoDownloadReturnsZip() = test {
+        var compoId: java.util.UUID? = null
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val user = addTestUser(app, "submitter").bind()
+                val compo = compos.add(NewCompo("Tracked Music", "")).bind()
+                compoId = compo.id
+                val entry = entries.add(
+                    NewEntry(
+                        title = "Song",
+                        author = "Musician",
+                        file = FileUpload.createTestData("song.dat", 256),
+                        compoId = compo.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = user.id,
+                    )
+                ).bind()
+                entries.setQualified(entry.id, true).bind()
+            }
+        }
+
+        it.login("admin")
+
+        val bytes = it.client.get("/admin/compos/$compoId/download").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertNotNull(response.headers["Content-Disposition"])
+            response.readRawBytes()
+        }
+        val names = ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            generateSequence { zip.nextEntry }.map { it.name }.toList()
+        }
+        assertEquals(1, names.size, "zip should contain the single entry file, got: $names")
+    }
+
+    @Test
+    fun testCompoDownloadSkipsQualifiedEntryWithoutFile() = test {
+        var compoId: java.util.UUID? = null
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val user = addTestUser(app, "submitter").bind()
+                val compo = compos.add(NewCompo("Tracked Music", "")).bind()
+                compoId = compo.id
+                // A non-deliverable entry (e.g. a live show) runs first and has no file
+                val liveShow = entries.add(
+                    NewEntry(
+                        title = "Live Show",
+                        author = "Performer",
+                        file = FileUpload.Empty,
+                        compoId = compo.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = user.id,
+                    )
+                ).bind()
+                entries.setQualified(liveShow.id, true).bind()
+                val withFile = entries.add(
+                    NewEntry(
+                        title = "Song",
+                        author = "Musician",
+                        file = FileUpload.createTestData("song.dat", 256),
+                        compoId = compo.id,
+                        screenComment = "",
+                        orgComment = "",
+                        userId = user.id,
+                    )
+                ).bind()
+                entries.setQualified(withFile.id, true).bind()
+            }
+        }
+
+        it.login("admin")
+
+        val bytes = it.client.get("/admin/compos/$compoId/download").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            response.readRawBytes()
+        }
+        val names = ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            generateSequence { zip.nextEntry }.map { it.name }.toList()
+        }
+        assertEquals(1, names.size, "only the entry with a file should be in the zip, got: $names")
+        // The skipped entry keeps its slot, so the file is still numbered by its run order
+        assertTrue(
+            names.single().substringAfterLast('/').startsWith("02-"),
+            "file should keep run order number 02, got: ${names.single()}"
+        )
+    }
+
+    @Test
     fun testDistributionZipFollowsSceneOrgRules() = test {
         setupServices {
             val app = this

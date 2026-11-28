@@ -272,6 +272,8 @@ fun Application.configureAdminComposRouting(app: AppServices) {
                     ).toString()
                 )
                 call.respondFile(zipFile)
+            }.onLeft {
+                call.respondPage(it)
             }
         }
 
