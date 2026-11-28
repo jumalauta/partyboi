@@ -22,6 +22,8 @@ fun Application.configureScheduleRouting(app: AppServices) {
             either {
                 val events = app.events.getPublic().bind()
                 call.respond(events)
+            }.onLeft {
+                call.respond(it.statusCode, it.message)
             }
         }
 
@@ -38,6 +40,8 @@ fun Application.configureScheduleRouting(app: AppServices) {
                     "text/calendar; charset=utf-8"
                 )
                 call.respondText { ics }
+            }.onLeft {
+                call.respond(it.statusCode, it.message)
             }
         }
     }

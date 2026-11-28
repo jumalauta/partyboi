@@ -401,24 +401,22 @@ fun Application.configureAdminComposRouting(app: AppServices) {
         }
 
         post("/admin/compos/{id}/manual-results/order") {
-            either {
+            call.apiRespond {
                 val order = call.receive<List<String>>()
                 order
                     .mapIndexed { index, rid -> app.manualResults.setPosition(UUID.fromString(rid), index + 1) }
                     .bindAll()
-                call.respondText("OK")
             }
         }
 
         post("/admin/compos/{compoId}/runOrder") {
-            either {
+            call.apiRespond {
                 val runOrder = call.receive<List<String>>()
                 val compoId = call.parameterUUID("compoId").bind()
                 runOrder
                     .mapIndexed { index, entryId -> app.entries.setRunOrder(UUID.fromString(entryId), index) }
                     .bindAll()
                 app.signals.emit(Signal.compoContentUpdated(compoId, app.time))
-                call.respondText("OK")
             }
         }
     }

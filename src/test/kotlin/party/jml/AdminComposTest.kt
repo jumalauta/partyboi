@@ -208,6 +208,94 @@ class AdminComposTest : PartyboiTester {
     }
 
     @Test
+    fun testCompoDownloadIncludesOriginalNextToProcessedFile() = test {
+        var compoId: java.util.UUID? = null
+        setupServices {
+            val app = this
+            either {
+                addTestAdmin(app).bind()
+                val user = addTestUser(app, "submitter").bind()
+                val compo = compos.add(NewCompo("Tracked Music", "")).bind()
+                compoId = compo.id
+                // Originals are 256 bytes and processed versions 64 bytes, to tell them apart in the zip.
+                // The .dat originals keep the upload post-processing from starting real conversions.
+                listOf(
+                    "Song" to "song (normalized).flac", // e.g. a tracker module rendered to FLAC
+                    "Tune" to "tune (normalized).dat",  // same extension as the original
+                ).forEach { (title, processedName) ->
+                    val entry = entries.add(
+                        NewEntry(
+                            title = title,
+                            author = "Musician",
+                            file = FileUpload.createTestData("${title.lowercase()}.dat", 256),
+                            compoId = compo.id,
+                            screenComment = "",
+                            orgComment = "",
+                            userId = user.id,
+                        )
+                    ).bind()
+                    entries.setQualified(entry.id, true).bind()
+                    val processed = files.store(
+                        tempFile = FileUpload.createTestData(processedName, 64).tempFile,
+                        originalFilename = processedName,
+                        processed = true,
+                    ).bind()
+                    entries.associateFile(processed.id, entry.id).bind()
+                }
+            }
+        }
+
+        it.login("admin")
+
+        val bytes = it.client.get("/admin/compos/$compoId/download").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            response.readRawBytes()
+        }
+        val sizes = ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            generateSequence { zip.nextEntry }.associate { it.name to zip.readBytes().size }
+        }
+        assertEquals(
+            mapOf(
+                "trackedmusic/01-musician-song.flac" to 64,
+                "trackedmusic/01-musician-song.dat" to 256,
+                "trackedmusic/02-musician-tune.dat" to 64,
+                "trackedmusic/02-musician-tune-original.dat" to 256,
+            ),
+            sizes,
+        )
+    }
+
+    @Test
+    fun testToggleApiReportsErrors() = test {
+        setupServices { either { addTestAdmin(this@setupServices).bind() } }
+        it.login("admin")
+
+        // The switch helpers used to discard the result and answer "OK" even when the update failed
+        val response = it.client.put("/admin/compos/${java.util.UUID.randomUUID()}/setVisible/true")
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals("Not found", response.bodyAsText())
+    }
+
+    @Test
+    fun testRunOrderApiReportsErrors() = test {
+        var compoId: java.util.UUID? = null
+        setupServices {
+            either {
+                addTestAdmin(this@setupServices).bind()
+                compoId = compos.add(NewCompo("Demo", "")).bind().id
+            }
+        }
+        it.login("admin")
+
+        val response = it.client.post("/admin/compos/$compoId/runOrder") {
+            contentType(ContentType.Application.Json)
+            setBody("[\"${java.util.UUID.randomUUID()}\"]")
+        }
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals("Not found", response.bodyAsText())
+    }
+
+    @Test
     fun testDistributionZipFollowsSceneOrgRules() = test {
         setupServices {
             val app = this

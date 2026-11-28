@@ -25,6 +25,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.exists
 
 
 class CompoRunService(app: AppServices) : Service(app) {
@@ -39,29 +40,51 @@ class CompoRunService(app: AppServices) : Service(app) {
             .mapIndexed { index, entry -> entry.copy(runOrder = index + 1) }
 
         entries.forEach { entry ->
+            val files = getCompoRunFiles(entry).bind()
             // An entry without a file is expected when it is not deliverable (e.g. a live show).
             // Skip it but keep its run order number, so the remaining files still match the show order.
-            val fileDesc = getLatestFileDesc(entry).bind()
-            if (fileDesc == null) {
+            if (files.isEmpty()) {
                 log.info("Skip entry '${entry.author} - ${entry.title}': it has no file")
-                return@forEach
             }
-            val targetFilename =
-                app.files.makeCompoRunFileOrDirName(
+            files.forEach { fileDesc ->
+                val targetFilename = app.files.makeCompoRunFileOrDirName(
                     fileDesc,
                     entry,
                     compo,
                     tempDir.path,
                     useFoldersForSingleFiles,
                     includeOrderNumber = true,
-                )
-            if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
-                ZipUtils.extract(fileDesc.getStorageFile(), targetFilename)
-            } else {
-                copyFile(fileDesc, targetFilename)
-            }.bind()
+                ).withSuffixIfTaken("-original")
+                if (fileDesc.type == FileDesc.ZIP_ARCHIVE) {
+                    ZipUtils.extract(fileDesc.getStorageFile(), targetFilename)
+                } else {
+                    copyFile(fileDesc, targetFilename)
+                }.bind()
+            }
         }
         tempDir
+    }
+
+    /**
+     * The files of an entry for running the compo: the latest file, and when that is a processed
+     * version (e.g. a tracker module rendered to FLAC), also the author's latest original upload so
+     * it can be played in its native tool. Empty when the entry has no file.
+     */
+    private suspend fun getCompoRunFiles(entry: Entry): AppResult<List<FileDesc>> = either {
+        val latest = getLatestFileDesc(entry, originalsOnly = false).bind() ?: return@either emptyList()
+        if (latest.processed) {
+            listOfNotNull(latest, getLatestFileDesc(entry, originalsOnly = true).bind())
+        } else {
+            listOf(latest)
+        }
+    }
+
+    /** This path, or when it is already taken, a sibling with [suffix] added before the extension. */
+    private fun Path.withSuffixIfTaken(suffix: String): Path {
+        if (!exists()) return this
+        val name = fileName.toString()
+        val dot = name.lastIndexOf('.')
+        return resolveSibling(if (dot > 0) name.take(dot) + suffix + name.drop(dot) else name + suffix)
     }
 
     fun compressDirectory(sourceDir: Path): AppResult<File> =
@@ -210,9 +233,9 @@ class CompoRunService(app: AppServices) : Service(app) {
         }
     }
 
-    /** The latest file of the entry, or null when the entry has no file. */
-    private suspend fun getLatestFileDesc(entry: Entry): AppResult<FileDesc?> =
-        app.files.getLatest(entry.id, originalsOnly = false)
+    /** The latest file of the entry, or null when the entry has no such file. */
+    private suspend fun getLatestFileDesc(entry: Entry, originalsOnly: Boolean): AppResult<FileDesc?> =
+        app.files.getLatest(entry.id, originalsOnly)
             .recover { if (it is NotFound) null else raise(it) }
 
     private fun copyFile(source: FileDesc, target: Path) = catchError {

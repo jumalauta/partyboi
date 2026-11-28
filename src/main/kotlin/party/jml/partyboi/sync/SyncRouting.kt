@@ -13,6 +13,7 @@ import party.jml.partyboi.AppServices
 import party.jml.partyboi.auth.adminRouting
 import party.jml.partyboi.auth.syncRouting
 import party.jml.partyboi.auth.userSession
+import party.jml.partyboi.data.apiRespond
 import party.jml.partyboi.data.jsonRespond
 import party.jml.partyboi.data.parameterEnum
 import party.jml.partyboi.data.parameterUUID
@@ -75,11 +76,9 @@ fun Application.configureSyncRouting(app: AppServices) {
             call.respondEither {
                 val userId = call.userSession(app).bind().id
                 launch {
-                    app.sync.syncDown().bind()
-                    app.messages.sendMessage(
-                        userId,
-                        MessageType.SUCCESS,
-                        "Remote server synced successfully"
+                    app.sync.syncDown().fold(
+                        { app.messages.sendMessage(userId, MessageType.ERROR, "Sync failed: ${it.message}") },
+                        { app.messages.sendMessage(userId, MessageType.SUCCESS, "Remote server synced successfully") },
                     )
                 }
                 Redirection("/sync")
@@ -90,14 +89,16 @@ fun Application.configureSyncRouting(app: AppServices) {
             call.respondEither {
                 val userId = call.userSession(app).bind().id
                 launch {
-                    either {
-                        app.sync.syncUp().bind()
-                        app.messages.sendMessage(
-                            userId,
-                            MessageType.SUCCESS,
-                            "Data and files sent to remote server successfully"
-                        )
-                    }
+                    app.sync.syncUp().fold(
+                        { app.messages.sendMessage(userId, MessageType.ERROR, "Sync failed: ${it.message}") },
+                        {
+                            app.messages.sendMessage(
+                                userId,
+                                MessageType.SUCCESS,
+                                "Data and files sent to remote server successfully"
+                            )
+                        },
+                    )
                 }
                 Redirection("/sync")
             }
@@ -202,7 +203,7 @@ fun Application.configureSyncRouting(app: AppServices) {
         }
 
         post("/sync/file/{fileId}") {
-            either {
+            call.apiRespond {
                 val fileId = call.parameterUUID("fileId").bind()
                 val targetFile = app.files.getStorageFile(fileId)
                 val multipart = call.receiveMultipart()

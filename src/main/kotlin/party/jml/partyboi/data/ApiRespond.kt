@@ -128,22 +128,18 @@ inline fun <reified T : Enum<T>> ApplicationCall.parameterEnum(name: String) =
 
 suspend fun ApplicationCall.switchApiUuid(block: suspend (id: UUID, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
-        either {
-            userSession(null).bind()
-            val id = parameterUUID("id").bind()
-            val state = parameterBoolean("state").bind()
-            block(id, state).bind()
-        }
+        userSession(null).bind()
+        val id = parameterUUID("id").bind()
+        val state = parameterBoolean("state").bind()
+        block(id, state).bind()
     }
 }
 
 suspend fun ApplicationCall.switchApiString(block: suspend (id: String, state: Boolean) -> AppResult<Unit>) {
     apiRespond {
-        either {
-            userSession(null).bind()
-            val id = parameterString("id").bind()
-            val state = parameterBoolean("state").bind()
-            block(id, state).bind()
-        }
+        userSession(null).bind()
+        val id = parameterString("id").bind()
+        val state = parameterBoolean("state").bind()
+        block(id, state).bind()
     }
 }
